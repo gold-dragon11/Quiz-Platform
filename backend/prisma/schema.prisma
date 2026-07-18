@@ -1,0 +1,14 @@
+// Prisma schema for the Quiz Platform backend.
+//
+// This is the initial configuration only, per the Phase 1 — Project Foundation
+// scope (see docs/08-development/roadmap.md). Models are defined in a later
+// phase once the domain and database documentation is implemented.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

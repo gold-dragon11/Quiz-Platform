@@ -1,0 +1,14 @@
+{
+  "name": "quiz-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Quiz Platform monorepo root — houses shared Git tooling only. See backend/ and frontend/ for the applications.",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0"
+  },
+  "type": "module"
+}
