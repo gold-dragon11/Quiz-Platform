@@ -1,8 +1,12 @@
-// Prisma schema for the Quiz Platform backend.
+// Prisma schema for the Quiz Platform — MVP database layer.
 //
-// This is the initial configuration only, per the Phase 1 — Project Foundation
-// scope (see docs/08-development/roadmap.md). Models are defined in a later
-// phase once the domain and database documentation is implemented.
+// This schema is a direct transcription of the documentation in docs/02-domain
+// and docs/03-database. Table names follow the snake_case plural convention
+// from docs/03-database/tables.md §5; column names remain camelCase to match
+// the way columns are referenced throughout docs/03-database/indexes.md.
+//
+// Enums intentionally contain only MVP values; future-scope values noted in the
+// documentation (e.g. Theme.Light, QuizStatus.Abandoned) are deferred.
 
 generator client {
   provider = "prisma-client-js"
@@ -11,4 +15,479 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Enums
+// ============================================================================
+
+/// User account lifecycle status (docs/02-domain/user.md §5).
+enum AccountStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+  DELETED
+}
+
+/// Role-based authorization (docs/01-prd/authentication.md §11,
+/// docs/06-backend/security.md §6). Stored on User.role.
+enum UserRole {
+  USER
+  ADMIN
+}
+
+/// Supported languages — used both for UserSettings.language and as the locale
+/// key on translation tables (docs/02-domain/user-settings.md §5,
+/// docs/01-prd/localization.md).
+enum Language {
+  ENGLISH
+  UKRAINIAN
+}
+
+/// Visual theme (docs/02-domain/user-settings.md §9). MVP ships Dark only;
+/// Light / System are future.
+enum Theme {
+  DARK
+}
+
+/// Avatar source (docs/02-domain/avatar.md §5). Future: AI / Animated / Seasonal.
+enum AvatarType {
+  PREDEFINED
+  CUSTOM_UPLOAD
+}
+
+/// Question format (docs/02-domain/question.md §5). Future: Multiple Choice,
+/// Ordering, Fill in the Blank, Numeric, Drag & Drop, Image Selection.
+enum QuestionType {
+  SINGLE_CHOICE
+  MATCHING
+}
+
+/// Optional question difficulty tag (docs/02-domain/question.md §4).
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+/// Quiz generation mode — used by Quiz.mode and QuizSession.mode
+/// (docs/02-domain/quiz.md §5). Future: Daily Challenge, Mock Exam, Practice,
+/// Custom.
+enum QuizType {
+  SUBJECT_QUIZ
+  RANDOM_QUIZ
+}
+
+/// Quiz session lifecycle status (docs/02-domain/quiz-session.md §6). Abandoned
+/// is future and deferred.
+enum QuizStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+/// Source of an XP award (docs/02-domain/xp-transaction.md §5). Future: Daily
+/// Challenge, Learning Streak, Achievements, Special Events, AI Challenges.
+enum XPSource {
+  QUIZ_COMPLETION
+  HIGH_ACCURACY_BONUS
+}
+
+// ============================================================================
+// Identity
+// ============================================================================
+
+/// docs/02-domain/user.md
+model User {
+  id            String        @id @default(uuid()) @db.Uuid
+  email         String        @unique
+  passwordHash  String
+  emailVerified Boolean       @default(false)
+  accountStatus AccountStatus @default(PENDING_VERIFICATION)
+  role          UserRole      @default(USER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastLoginAt   DateTime?
+
+  profile        Profile?
+  settings       UserSettings?
+  avatar         Avatar?
+  statistics     Statistics?
+  quizSessions   QuizSession[]
+  xpTransactions XPTransaction[]
+
+  @@map("users")
+}
+
+/// docs/02-domain/profile.md
+model Profile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  displayName String
+  username    String   @unique
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+/// docs/02-domain/avatar.md
+model Avatar {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @db.Uuid
+  imageUrl  String
+  type      AvatarType @default(PREDEFINED)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("avatars")
+}
+
+/// docs/02-domain/user-settings.md
+model UserSettings {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @unique @db.Uuid
+  language             Language @default(ENGLISH)
+  theme                Theme    @default(DARK)
+  publicProfileEnabled Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+/// docs/02-domain/statistics.md — aggregated, rebuildable metrics.
+/// The documented attribute table has no createdAt; only updatedAt is present.
+model Statistics {
+  id                       String   @id @default(uuid()) @db.Uuid
+  userId                   String   @unique @db.Uuid
+  totalQuizzes             Int      @default(0)
+  totalQuestions           Int      @default(0)
+  correctAnswers           Int      @default(0)
+  incorrectAnswers         Int      @default(0)
+  totalXP                  Int      @default(0)
+  averageAccuracy          Decimal  @default(0) @db.Decimal(5, 2)
+  totalLearningTimeSeconds Int      @default(0)
+  currentStreak            Int      @default(0)
+  longestStreak            Int      @default(0)
+  updatedAt                DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("statistics")
+}
+
+// ============================================================================
+// Learning content
+// ============================================================================
+
+/// docs/02-domain/subject.md
+model Subject {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String   @unique
+  description  String?
+  icon         String?
+  color        String?
+  isPublished  Boolean  @default(false)
+  displayOrder Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  topics            Topic[]
+  quizzes           Quiz[]
+  quizSessions      QuizSession[]
+  learningMaterials LearningMaterial[]
+  translations      SubjectTranslation[]
+
+  @@index([displayOrder])
+  @@map("subjects")
+}
+
+/// Localized name/description for a Subject (docs/03-database/tables.md,
+/// docs/03-database/indexes.md §4). One row per Subject per locale.
+model SubjectTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  subjectId   String   @db.Uuid
+  locale      Language
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, locale])
+  @@map("subject_translations")
+}
+
+/// docs/02-domain/topic.md
+model Topic {
+  id           String   @id @default(uuid()) @db.Uuid
+  subjectId    String   @db.Uuid
+  name         String
+  slug         String
+  description  String?
+  displayOrder Int
+  isPublished  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  subject           Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions         Question[]
+  quizzes           Quiz[]
+  quizSessions      QuizSession[]
+  learningMaterials LearningMaterial[]
+  translations      TopicTranslation[]
+
+  @@unique([subjectId, slug])
+  @@index([subjectId])
+  @@index([subjectId, displayOrder])
+  @@map("topics")
+}
+
+/// Localized name/description for a Topic (docs/03-database/indexes.md §4).
+model TopicTranslation {
+  id          String   @id @default(uuid()) @db.Uuid
+  topicId     String   @db.Uuid
+  locale      Language
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, locale])
+  @@map("topic_translations")
+}
+
+/// docs/02-domain/question.md
+model Question {
+  id          String       @id @default(uuid()) @db.Uuid
+  topicId     String       @db.Uuid
+  type        QuestionType
+  title       String
+  explanation String?
+  imageUrl    String?
+  difficulty  Difficulty?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  topic         Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  answerOptions AnswerOption[]
+  attempts      QuestionAttempt[]
+  translations  QuestionTranslation[]
+
+  @@index([topicId])
+  @@index([type])
+  @@index([topicId, type])
+  @@map("questions")
+}
+
+/// Localized title for a Question (docs/03-database/indexes.md §4).
+model QuestionTranslation {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  locale     Language
+  title      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, locale])
+  @@map("question_translations")
+}
+
+/// docs/02-domain/answer-option.md
+model AnswerOption {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  content    String
+  imageUrl   String?
+  isCorrect  Boolean
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  question     Question                  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  translations AnswerOptionTranslation[]
+
+  @@index([questionId])
+  @@map("answer_options")
+}
+
+/// Localized content for an AnswerOption (docs/03-database/indexes.md §4).
+model AnswerOptionTranslation {
+  id             String   @id @default(uuid()) @db.Uuid
+  answerOptionId String   @db.Uuid
+  locale         Language
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  answerOption AnswerOption @relation(fields: [answerOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([answerOptionId, locale])
+  @@map("answer_option_translations")
+}
+
+// ============================================================================
+// Quiz configuration
+// ============================================================================
+
+/// docs/02-domain/quiz.md — optional, reusable admin-authored template.
+model Quiz {
+  id            String   @id @default(uuid()) @db.Uuid
+  subjectId     String   @db.Uuid
+  topicId       String?  @db.Uuid
+  title         String
+  description   String?
+  mode          QuizType
+  questionCount Int
+  timerEnabled  Boolean
+  isPublished   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subject      Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic        Topic?        @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  quizSessions QuizSession[]
+
+  @@index([subjectId])
+  @@index([topicId])
+  @@index([subjectId, isPublished])
+  @@map("quizzes")
+}
+
+// ============================================================================
+// Learning process (historical, immutable records)
+// ============================================================================
+
+/// docs/02-domain/quiz-session.md — immutable after completion. All content
+/// references use Restrict so historical sessions can never be invalidated by
+/// deleting a Subject / Topic / Quiz (docs/03-database/er-diagram.md §8).
+model QuizSession {
+  id              String     @id @default(uuid()) @db.Uuid
+  userId          String     @db.Uuid
+  quizId          String?    @db.Uuid
+  subjectId       String     @db.Uuid
+  topicId         String?    @db.Uuid
+  mode            QuizType
+  timerEnabled    Boolean
+  questionCount   Int
+  status          QuizStatus @default(DRAFT)
+  startedAt       DateTime   @default(now())
+  completedAt     DateTime?
+  durationSeconds Int?
+  createdAt       DateTime   @default(now())
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  quiz           Quiz?             @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  subject        Subject           @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic          Topic?            @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  attempts       QuestionAttempt[]
+  result         Result?
+  xpTransactions XPTransaction[]
+
+  @@index([userId])
+  @@index([subjectId])
+  @@index([topicId])
+  @@index([quizId])
+  @@index([userId, completedAt(sort: Desc)])
+  @@map("quiz_sessions")
+}
+
+/// docs/02-domain/question-attempt.md — immutable. questionId uses Restrict so
+/// deleting a Question cannot invalidate historical attempts
+/// (docs/03-database/er-diagram.md §8).
+model QuestionAttempt {
+  id               String   @id @default(uuid()) @db.Uuid
+  quizSessionId    String   @db.Uuid
+  questionId       String   @db.Uuid
+  selectedAnswer   Json?
+  isCorrect        Boolean
+  answeredAt       DateTime @default(now())
+  timeSpentSeconds Int?
+  createdAt        DateTime @default(now())
+
+  quizSession QuizSession @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@index([quizSessionId])
+  @@index([questionId])
+  @@map("question_attempts")
+}
+
+/// docs/02-domain/result.md — one immutable Result per completed QuizSession.
+model Result {
+  id                  String   @id @default(uuid()) @db.Uuid
+  quizSessionId       String   @unique @db.Uuid
+  correctAnswers      Int
+  incorrectAnswers    Int
+  unansweredQuestions Int
+  totalQuestions      Int
+  accuracy            Decimal  @db.Decimal(5, 2)
+  score               Decimal  @db.Decimal(5, 2)
+  completedAt         DateTime
+  createdAt           DateTime @default(now())
+
+  quizSession    QuizSession     @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+  xpTransactions XPTransaction[]
+
+  @@map("results")
+}
+
+/// docs/02-domain/xp-transaction.md — immutable audit record. All references use
+/// Restrict to preserve the complete progression history.
+model XPTransaction {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid
+  quizSessionId String   @db.Uuid
+  resultId      String   @db.Uuid
+  amount        Int
+  reason        XPSource
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  quizSession QuizSession @relation(fields: [quizSessionId], references: [id], onDelete: Restrict)
+  result      Result      @relation(fields: [resultId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([quizSessionId])
+  @@index([resultId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("xp_transactions")
+}
+
+// ============================================================================
+// Learning materials (Post-MVP entity, schema implemented now)
+// ============================================================================
+
+/// docs/02-domain/learning-material.md
+model LearningMaterial {
+  id                   String   @id @default(uuid()) @db.Uuid
+  subjectId            String   @db.Uuid
+  topicId              String?  @db.Uuid
+  title                String
+  description          String?
+  content              String
+  estimatedReadingTime Int?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topic   Topic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
+
+  @@index([subjectId])
+  @@index([topicId])
+  @@map("learning_materials")
 }
