@@ -134,6 +134,13 @@ The system may automatically resize uploaded images.
 
 Every newly registered user receives a default avatar.
 
+The default avatar is created during registration with:
+
+- `type` = Predefined;
+- `imageUrl` = the platform's default avatar asset.
+
+The default avatar asset path is defined once as a shared application constant (`DEFAULT_AVATAR_URL`) rather than repeated across the codebase, so it can be changed in a single place.
+
 The default avatar remains active until the user selects or uploads another image.
 
 ---

@@ -59,6 +59,24 @@ During registration, the system automatically creates:
 - Statistics
 - Default Avatar
 
+These are created atomically: if any step fails, none of them are persisted.
+
+The following values are applied automatically, since registration does not collect them:
+
+| Record | Field | Value |
+|---|---|---|
+| User | Account Status | Pending Verification |
+| User | Email Verified | false |
+| User | Role | User |
+| Profile | Display Name | the chosen username |
+| Profile | Bio | empty |
+| Avatar | Type | Predefined |
+| Avatar | Image | the platform's default avatar asset |
+| User Settings | Language | the preferred language, or English if omitted |
+| User Settings | Theme | Dark |
+| User Settings | Public Profile | enabled |
+| Statistics | all counters | zero |
+
 The user is considered registered only after successful validation.
 
 ---

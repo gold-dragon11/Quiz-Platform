@@ -6,6 +6,7 @@ import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../config/configuration';
 import { JWT_STRATEGY } from './constants/auth.constants';
 import { AuthController } from './controllers/auth.controller';
+import { AuthRepository } from './repositories/auth.repository';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PasswordUtil } from './utils/password.util';
@@ -44,7 +45,7 @@ import { PasswordUtil } from './utils/password.util';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PasswordUtil],
+  providers: [AuthService, AuthRepository, JwtStrategy, PasswordUtil],
   exports: [AuthService, PasswordUtil, JwtModule, PassportModule],
 })
 export class AuthModule {}

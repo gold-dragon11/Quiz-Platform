@@ -72,6 +72,8 @@ A Profile:
 - may contain an optional biography;
 - may use a default avatar.
 
+At registration the Profile is created with `displayName` initialized to the chosen `username`, since registration does not collect a separate display name. The user may change it afterwards through the Profile API.
+
 ---
 
 # 6. Validation Rules
