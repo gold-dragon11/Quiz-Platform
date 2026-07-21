@@ -26,6 +26,12 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/quiz_platform?schema=public
       CORS_ORIGIN: http://localhost:5173
+      # Local-development placeholders only. Real deployments must supply these
+      # from the environment / a secret store, never from this file.
+      JWT_ACCESS_SECRET: local-development-access-secret-not-for-production
+      JWT_REFRESH_SECRET: local-development-refresh-secret-not-for-production
+      JWT_ACCESS_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
     ports:
       - '3000:3000'
     depends_on:

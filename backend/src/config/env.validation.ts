@@ -5,8 +5,12 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
+  MinLength,
   validateSync,
 } from 'class-validator';
+
+/** Minimum length enforced on JWT signing secrets. */
+const MIN_SECRET_LENGTH = 32;
 
 class EnvironmentVariables {
   @IsOptional()
@@ -24,6 +28,24 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   CORS_ORIGIN?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(MIN_SECRET_LENGTH)
+  JWT_ACCESS_SECRET!: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(MIN_SECRET_LENGTH)
+  JWT_REFRESH_SECRET!: string;
+
+  @IsOptional()
+  @IsString()
+  JWT_ACCESS_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  JWT_REFRESH_EXPIRES_IN?: string;
 }
 
 export function validateEnv(
