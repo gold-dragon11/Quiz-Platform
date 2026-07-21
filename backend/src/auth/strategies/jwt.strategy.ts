@@ -1,11 +1,13 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
+import { AccountStatus } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AppConfig } from '../../config/configuration';
 import { JWT_STRATEGY } from '../constants/auth.constants';
 import { AuthenticatedUser } from '../interfaces/authenticated-user.interface';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { AuthRepository } from '../repositories/auth.repository';
 
 /**
  * Validates access tokens presented as `Authorization: Bearer <token>`
@@ -16,7 +18,10 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
-  constructor(configService: ConfigService<AppConfig, true>) {
+  constructor(
+    configService: ConfigService<AppConfig, true>,
+    private readonly authRepository: AuthRepository,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
@@ -28,22 +33,32 @@ export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
    * Runs only after the token's signature and expiry have been verified.
    * The returned value becomes `request.user`.
    *
-   * TODO(Phase 3.2 — Login): load the user through the Users repository and
-   * reject the request when the account no longer exists, is SUSPENDED or
-   * DELETED, or has not completed email verification
-   * (docs/06-backend/authentication.md §13). Until the Users module exists,
-   * the verified token claims are trusted as-is — which is safe here only
-   * because no route has a guard applied yet.
+   * The account is re-read from the database on every request rather than
+   * trusted from the token, so access is revoked the moment an account stops
+   * being Active — a token stays cryptographically valid for its full lifetime,
+   * but a suspended, unverified, or deleted account must not keep using it
+   * (docs/04-api/authentication.md §11, docs/04-api/users.md §8).
+   *
+   * A missing user and a non-Active account are rejected identically, so
+   * neither reveals whether the account exists.
    */
-  validate(payload: JwtPayload): AuthenticatedUser {
+  async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     if (!payload?.sub) {
       throw new UnauthorizedException();
     }
 
+    const account = await this.authRepository.findAccountForAuthorization(
+      payload.sub,
+    );
+
+    if (!account || account.accountStatus !== AccountStatus.ACTIVE) {
+      throw new UnauthorizedException();
+    }
+
     return {
-      id: payload.sub,
-      email: payload.email,
-      role: payload.role,
+      id: account.id,
+      email: account.email,
+      role: account.role,
     };
   }
 }

@@ -1,7 +1,18 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { CurrentUser } from '../decorators/current-user.decorator';
 import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
+import { CurrentUserResponse } from '../types/current-user-response.type';
 import { TokenPair } from '../types/token-pair.type';
 
 /**
@@ -34,5 +45,22 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
     return this.authService.login(loginDto);
+  }
+
+  /**
+   * GET /api/v1/auth/me — returns the authenticated user's session summary
+   * (docs/04-api/authentication.md §11).
+   *
+   * JwtAuthGuard rejects a missing, malformed, or expired token, and its
+   * strategy additionally rejects any account that is no longer Active. Only
+   * the user id is taken from the request; the record itself is loaded from
+   * the database.
+   */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUser(
+    @CurrentUser('id') userId: string,
+  ): Promise<CurrentUserResponse> {
+    return this.authService.getCurrentUser(userId);
   }
 }

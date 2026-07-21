@@ -226,6 +226,32 @@ Requires:
 Authorization: Bearer <access_token>
 ```
 
+The response is the authenticated user's session summary — the account together with the records it owns that the interface needs in order to render:
+
+| Section | Fields |
+|---|---|
+| Account | id, email, role, accountStatus, emailVerified, createdAt |
+| Profile | username, displayName, bio |
+| Avatar | type, imageUrl |
+| Settings | language, theme, publicProfileEnabled |
+
+Learning progress is **not** included. Level, XP, and other metrics are retrieved from the Statistics API.
+
+This endpoint differs from `GET /api/v1/users/me`, which returns account fields only and is used for account management rather than for establishing a session.
+
+The user is always loaded from the database; token claims are never used as the source of profile data.
+
+Responses:
+
+| Condition | Response |
+|---|---|
+| Valid token, Active account | 200 with the session summary |
+| Missing, malformed, or expired token | 401 Unauthorized |
+| Account no longer Active (Pending Verification, Suspended, or Deleted) | 401 Unauthorized |
+| User record no longer exists | 401 Unauthorized |
+
+Account status is re-checked on every authenticated request, so access is revoked as soon as an account stops being Active — even while a previously issued access token is still within its lifetime. All of these failures return the same 401, so none reveals whether an account exists or why it was rejected.
+
 ---
 
 # 12. Password Policy

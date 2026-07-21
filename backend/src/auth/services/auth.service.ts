@@ -15,6 +15,7 @@ import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { AuthRepository } from '../repositories/auth.repository';
+import { CurrentUserResponse } from '../types/current-user-response.type';
 import { TokenPair } from '../types/token-pair.type';
 import { PasswordUtil } from '../utils/password.util';
 
@@ -122,6 +123,26 @@ export class AuthService implements OnModuleInit {
     await this.authRepository.recordSuccessfulLogin(candidate.id);
 
     return tokens;
+  }
+
+  /**
+   * Returns the authenticated user's session summary
+   * (docs/04-api/authentication.md §11).
+   *
+   * The record is read fresh from the database rather than reconstructed from
+   * token claims, so the caller always sees current data. JwtStrategy has
+   * already confirmed the account exists and is Active; the null check here
+   * covers the narrow window in which the account is removed between the
+   * guard's read and this one, and fails the same way.
+   */
+  async getCurrentUser(userId: string): Promise<CurrentUserResponse> {
+    const user = await this.authRepository.findCurrentUser(userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    return user;
   }
 
   /**

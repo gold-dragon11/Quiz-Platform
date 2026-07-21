@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { AccountStatus, AvatarType, Language, UserRole } from '@prisma/client';
+import {
+  AccountStatus,
+  AvatarType,
+  Language,
+  Theme,
+  UserRole,
+} from '@prisma/client';
 import { DEFAULT_AVATAR_URL } from '../../common/constants/avatar.constants';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -13,6 +19,45 @@ export interface AuthenticationCandidate {
   role: UserRole;
   accountStatus: AccountStatus;
   passwordHash: string;
+}
+
+/**
+ * The account state a guarded request needs in order to decide whether the
+ * bearer is still allowed in. Carries no credentials.
+ */
+export interface AuthorizedAccount {
+  id: string;
+  email: string;
+  role: UserRole;
+  accountStatus: AccountStatus;
+}
+
+/**
+ * The session summary returned by GET /auth/me
+ * (docs/04-api/authentication.md §11). `passwordHash` is never part of this
+ * shape, so it cannot leak through the endpoint.
+ */
+export interface CurrentUserRecord {
+  id: string;
+  email: string;
+  role: UserRole;
+  accountStatus: AccountStatus;
+  emailVerified: boolean;
+  createdAt: Date;
+  profile: {
+    username: string;
+    displayName: string;
+    bio: string | null;
+  } | null;
+  avatar: {
+    type: AvatarType;
+    imageUrl: string;
+  } | null;
+  settings: {
+    language: Language;
+    theme: Theme;
+    publicProfileEnabled: boolean;
+  } | null;
 }
 
 /** Values needed to persist a new account and its owned records. */
@@ -64,6 +109,57 @@ export class AuthRepository {
         role: true,
         accountStatus: true,
         passwordHash: true,
+      },
+    });
+  }
+
+  /**
+   * Loads the account state needed to authorize an already-authenticated
+   * request. Selects no credentials — only what the guard must decide on.
+   */
+  async findAccountForAuthorization(
+    userId: string,
+  ): Promise<AuthorizedAccount | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+      },
+    });
+  }
+
+  /**
+   * Loads the full session summary for GET /auth/me — the account plus the
+   * records it owns that the interface needs (docs/04-api/authentication.md
+   * §11). Statistics are deliberately excluded; they belong to the Statistics
+   * API. `passwordHash` is never selected.
+   */
+  async findCurrentUser(userId: string): Promise<CurrentUserRecord | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        emailVerified: true,
+        createdAt: true,
+        profile: {
+          select: { username: true, displayName: true, bio: true },
+        },
+        avatar: {
+          select: { type: true, imageUrl: true },
+        },
+        settings: {
+          select: {
+            language: true,
+            theme: true,
+            publicProfileEnabled: true,
+          },
+        },
       },
     });
   }
