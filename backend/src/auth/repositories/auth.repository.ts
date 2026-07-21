@@ -1,7 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { AvatarType, Language } from '@prisma/client';
+import { AccountStatus, AvatarType, Language, UserRole } from '@prisma/client';
 import { DEFAULT_AVATAR_URL } from '../../common/constants/avatar.constants';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/**
+ * The columns login needs. Deliberately narrow — nothing beyond what
+ * authentication and token issuance require is read.
+ */
+export interface AuthenticationCandidate {
+  id: string;
+  email: string;
+  role: UserRole;
+  accountStatus: AccountStatus;
+  passwordHash: string;
+}
 
 /** Values needed to persist a new account and its owned records. */
 export interface CreateUserWithRelationsParams {
@@ -34,6 +46,33 @@ export class AuthRepository {
     return this.prisma.profile.findUnique({
       where: { username },
       select: { id: true },
+    });
+  }
+
+  /**
+   * Loads the credentials and account state needed to authenticate a login
+   * attempt. Never selects columns the caller does not need.
+   */
+  async findUserForAuthentication(
+    email: string,
+  ): Promise<AuthenticationCandidate | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        passwordHash: true,
+      },
+    });
+  }
+
+  /** Records the moment of a successful login (docs/02-domain/user.md §4). */
+  async recordSuccessfulLogin(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastLoginAt: new Date() },
     });
   }
 

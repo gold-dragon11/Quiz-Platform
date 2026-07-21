@@ -1,6 +1,8 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { LoginDto } from '../dto/login.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { AuthService } from '../services/auth.service';
+import { TokenPair } from '../types/token-pair.type';
 
 /**
  * Authentication endpoints (docs/04-api/authentication.md).
@@ -22,5 +24,15 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto): Promise<void> {
     await this.authService.register(registerDto);
+  }
+
+  /**
+   * POST /api/v1/auth/login — authenticates a user and returns an access and
+   * refresh token pair (docs/04-api/authentication.md §6).
+   */
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
+    return this.authService.login(loginDto);
   }
 }

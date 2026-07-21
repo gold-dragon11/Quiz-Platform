@@ -10,14 +10,10 @@ import {
   MinLength,
   Matches,
 } from 'class-validator';
-
-/** Trims a string value, leaving non-string input untouched for the validators to reject. */
-const trim = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim() : value;
-
-/** Trims and lower-cases an email (docs/06-backend/validation.md §8). */
-const normalizeEmail = ({ value }: { value: unknown }): unknown =>
-  typeof value === 'string' ? value.trim().toLowerCase() : value;
+import {
+  normalizeEmail,
+  trim,
+} from '../../common/transformers/normalize.transformer';
 
 /**
  * Registration payload — exactly the fields documented in

@@ -88,12 +88,20 @@ Users log in using:
 - Email
 - Password
 
-Accounts that have not completed email verification cannot log in until verification is complete.
+Only Active accounts may log in:
+
+- accounts that have not completed email verification cannot log in until verification is complete;
+- suspended accounts cannot log in;
+- deleted accounts receive the same response as invalid credentials, so they never reveal that the account once existed.
+
+An unknown email address and an incorrect password produce identical responses, so neither reveals whether an account exists.
 
 After successful authentication, the system returns:
 
 - Access Token
 - Refresh Token
+
+Details of the authenticated user are retrieved separately after login.
 
 The user is redirected to the Dashboard.
 

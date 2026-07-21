@@ -140,7 +140,19 @@ Returns:
 
 - Access Token
 - Refresh Token
-- User Summary
+
+The response contains tokens only. Details of the authenticated user are retrieved separately through `GET /api/v1/auth/me`.
+
+Login succeeds only for Active accounts:
+
+| Account Status | Response |
+|---|---|
+| Active | 200 with tokens |
+| Pending Verification | 403 Email not verified |
+| Suspended | 403 Account suspended |
+| Deleted | 401 Unauthorized, identical to invalid credentials |
+
+An unknown email and an incorrect password return exactly the same 401 response, so neither reveals whether an account exists. Deleted accounts are treated the same way and never reveal that they once existed.
 
 ---
 
@@ -305,7 +317,7 @@ Standard HTTP status codes:
 | 201 | Account Created |
 | 400 | Validation Error |
 | 401 | Unauthorized |
-| 403 | Email Not Verified |
+| 403 | Email Not Verified / Account Suspended |
 | 404 | Resource Not Found |
 | 409 | Email Already Exists |
 | 429 | Too Many Requests |
