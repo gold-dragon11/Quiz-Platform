@@ -166,6 +166,16 @@ POST /api/v1/auth/logout
 
 Invalidates the current refresh token.
 
+Request body:
+
+```json
+{ "refreshToken": "..." }
+```
+
+The refresh token itself is the credential — no access token is required, so logout works even after the access token has expired.
+
+Logout is idempotent and responds `204 No Content` whether the token was active, already revoked, unknown, or malformed. It therefore cannot be used to probe whether a token is valid.
+
 Access tokens expire naturally.
 
 ---
@@ -178,9 +188,27 @@ Access tokens expire naturally.
 POST /api/v1/auth/refresh
 ```
 
-Returns a new Access Token using a valid Refresh Token.
+Exchanges a valid Refresh Token for a new token pair.
 
 The user does not need to log in again.
+
+Request body:
+
+```json
+{ "refreshToken": "..." }
+```
+
+Returns both a new Access Token **and** a new Refresh Token. Refresh Token Rotation is enabled: the presented token is invalidated the moment it is used, and the client must store its replacement.
+
+Refresh succeeds only when the presented token:
+
+- carries a valid signature and has not expired;
+- matches a stored, unrevoked session record;
+- belongs to an account that is still Active.
+
+Every failure returns the same `401 Unauthorized`.
+
+**Reuse detection:** presenting a refresh token that has already been rotated or logged out is treated as evidence of token theft — all of that user's active sessions are revoked, and the request is rejected with 401.
 
 ---
 

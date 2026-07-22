@@ -28,6 +28,7 @@ Responsible for authentication and user identity.
 - profiles
 - avatars
 - user_settings
+- refresh_tokens
 
 ---
 
@@ -132,6 +133,21 @@ Responsibilities:
 - future personalization settings.
 
 Each user owns exactly one settings record.
+
+---
+
+## refresh_tokens
+
+Stores refresh-token sessions.
+
+Responsibilities:
+
+- one row per authenticated session;
+- Argon2 hash of the refresh token (the plaintext token is never stored);
+- expiration time;
+- revocation state (rotation, logout, reuse detection).
+
+Each row belongs to one User. A User may hold many active sessions at once — one per device or login.
 
 ---
 
@@ -313,6 +329,7 @@ users
 ├── profiles
 ├── avatars
 ├── user_settings
+├── refresh_tokens
 ├── statistics
 └── quiz_sessions
           │

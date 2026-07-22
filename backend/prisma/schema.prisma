@@ -115,8 +115,27 @@ model User {
   statistics     Statistics?
   quizSessions   QuizSession[]
   xpTransactions XPTransaction[]
+  refreshTokens  RefreshToken[]
 
   @@map("users")
+}
+
+/// Persisted refresh-token sessions (docs/06-backend/security.md §5,
+/// docs/06-backend/authentication.md §11). Stores only the Argon2 hash of the
+/// token — the plaintext refresh token never touches the database. The row id
+/// doubles as the token's `jti` claim, giving O(1) lookup on refresh.
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 /// docs/02-domain/profile.md

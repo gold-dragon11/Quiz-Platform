@@ -8,12 +8,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountStatus, Language, Prisma, UserRole } from '@prisma/client';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../../config/configuration';
 import { LoginDto } from '../dto/login.dto';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import {
+  JwtPayload,
+  RefreshTokenPayload,
+} from '../interfaces/jwt-payload.interface';
 import { AuthRepository } from '../repositories/auth.repository';
 import { CurrentUserResponse } from '../types/current-user-response.type';
 import { TokenPair } from '../types/token-pair.type';
@@ -32,8 +36,8 @@ const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
 /**
  * Authentication use cases (docs/06-backend/authentication.md §2).
  *
- * Registration is implemented here; login, token refresh, logout, email
- * verification, and password reset belong to later phases.
+ * Registration, login, token refresh, and logout are implemented here; email
+ * verification and password reset belong to later phases.
  */
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -126,6 +130,97 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
+   * Exchanges a valid refresh token for a new token pair
+   * (docs/04-api/authentication.md §8).
+   *
+   * Rotation is enforced through an atomic compare-and-swap on the session
+   * row: exactly one caller can rotate a given token. Presenting a token whose
+   * session is already revoked — whether by earlier rotation, logout, or a
+   * concurrent request — is treated as evidence of theft, and every active
+   * session the user holds is revoked.
+   *
+   * Every failure path returns the same bare 401 so the endpoint reveals
+   * nothing about why a token was rejected.
+   */
+  async refresh(dto: RefreshTokenDto): Promise<TokenPair> {
+    const payload = await this.verifyRefreshToken(dto.refreshToken);
+
+    if (!payload) {
+      throw new UnauthorizedException();
+    }
+
+    const session = await this.authRepository.findRefreshTokenById(payload.jti);
+
+    if (!session || session.userId !== payload.sub) {
+      throw new UnauthorizedException();
+    }
+
+    // The stored Argon2 hash must match the presented token — a database leak
+    // alone can never produce a usable refresh token
+    // (docs/06-backend/security.md §5).
+    const tokenMatchesStoredHash = await this.passwordUtil.verifyPassword(
+      session.tokenHash,
+      dto.refreshToken,
+    );
+
+    if (!tokenMatchesStoredHash || session.expiresAt <= new Date()) {
+      throw new UnauthorizedException();
+    }
+
+    const rotatedByThisCall =
+      await this.authRepository.revokeRefreshTokenIfActive(session.id);
+
+    if (!rotatedByThisCall) {
+      // Reuse detection (docs/04-api/authentication.md §8): the token was
+      // already spent, so someone is replaying it. Kill every active session.
+      await this.authRepository.revokeAllRefreshTokensForUser(session.userId);
+      throw new UnauthorizedException();
+    }
+
+    const account = await this.authRepository.findAccountForAuthorization(
+      payload.sub,
+    );
+
+    if (!account || account.accountStatus !== AccountStatus.ACTIVE) {
+      throw new UnauthorizedException();
+    }
+
+    return this.issueTokens(account);
+  }
+
+  /**
+   * Invalidates the presented refresh token (docs/04-api/authentication.md §7).
+   *
+   * Idempotent by design: an unknown, malformed, expired, or already-revoked
+   * token is silently ignored, so logout always succeeds and can never be used
+   * to probe token validity. Access tokens are untouched and expire naturally.
+   */
+  async logout(dto: RefreshTokenDto): Promise<void> {
+    const payload = await this.verifyRefreshToken(dto.refreshToken);
+
+    if (!payload) {
+      return;
+    }
+
+    const session = await this.authRepository.findRefreshTokenById(payload.jti);
+
+    if (!session || session.userId !== payload.sub) {
+      return;
+    }
+
+    const tokenMatchesStoredHash = await this.passwordUtil.verifyPassword(
+      session.tokenHash,
+      dto.refreshToken,
+    );
+
+    if (!tokenMatchesStoredHash) {
+      return;
+    }
+
+    await this.authRepository.revokeRefreshTokenIfActive(session.id);
+  }
+
+  /**
    * Returns the authenticated user's session summary
    * (docs/04-api/authentication.md §11).
    *
@@ -164,10 +259,13 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
-   * Signs the access and refresh tokens. Both carry the same claims, but the
-   * refresh token is signed with its own secret and lifetime so a leaked
+   * Signs the access and refresh tokens and persists the refresh session.
+   *
+   * The refresh token is signed with its own secret and lifetime so a leaked
    * access secret can never mint refresh tokens
-   * (docs/06-backend/authentication.md §7).
+   * (docs/06-backend/authentication.md §7). It additionally carries a `jti`
+   * identifying its session row; access tokens never do. Only the Argon2 hash
+   * of the refresh token is stored (docs/06-backend/security.md §5).
    */
   private async issueTokens(user: {
     id: string;
@@ -180,17 +278,53 @@ export class AuthService implements OnModuleInit {
       role: user.role,
     };
     const jwt = this.configService.get('jwt', { infer: true });
+    const sessionId = randomUUID();
+    const refreshPayload: RefreshTokenPayload = { ...payload, jti: sessionId };
 
     const [accessToken, refreshToken] = await Promise.all([
       // Access token uses the secret and lifetime registered on JwtModule.
       this.jwtService.signAsync(payload),
-      this.jwtService.signAsync(payload, {
+      this.jwtService.signAsync(refreshPayload, {
         secret: jwt.refreshSecret,
         expiresIn: jwt.refreshExpiresIn as SignOptions['expiresIn'],
       }),
     ]);
 
+    // The session row mirrors the token's own exp claim so the database and
+    // the JWT can never disagree about the expiration time.
+    const { exp } = this.jwtService.decode<{ exp: number }>(refreshToken);
+    const tokenHash = await this.passwordUtil.hashPassword(refreshToken);
+
+    await this.authRepository.createRefreshTokenSession({
+      id: sessionId,
+      userId: user.id,
+      tokenHash,
+      expiresAt: new Date(exp * 1000),
+    });
+
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Verifies a presented refresh token's signature, expiry, and claim shape
+   * against the refresh secret. Returns null instead of throwing so callers
+   * decide the failure mode — refresh answers 401, logout stays idempotent.
+   */
+  private async verifyRefreshToken(
+    token: string,
+  ): Promise<RefreshTokenPayload | null> {
+    const jwt = this.configService.get('jwt', { infer: true });
+
+    try {
+      const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(
+        token,
+        { secret: jwt.refreshSecret },
+      );
+
+      return payload.sub && payload.jti ? payload : null;
+    } catch {
+      return null;
+    }
   }
 
   /**

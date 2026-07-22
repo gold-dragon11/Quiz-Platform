@@ -86,8 +86,9 @@ The database consists of four logical domains.
 - Profile
 - Avatar
 - UserSettings
+- RefreshToken
 
-Responsible for account management and personalization.
+Responsible for account management, sessions, and personalization.
 
 ---
 
@@ -136,10 +137,11 @@ User
 ├── Profile
 ├── Avatar
 ├── UserSettings
-└── Statistics
+├── Statistics
+└── RefreshToken (N)
 ```
 
-Each User owns exactly one Profile, one Avatar, one UserSettings record, and one Statistics record.
+Each User owns exactly one Profile, one Avatar, one UserSettings record, and one Statistics record, plus any number of RefreshToken session records — one per login.
 
 ---
 
@@ -255,6 +257,7 @@ LearningMaterial
 | User → Avatar | 1 : 1 |
 | User → UserSettings | 1 : 1 |
 | User → Statistics | 1 : 1 |
+| User → RefreshToken | 1 : N |
 | User → QuizSession | 1 : N |
 | Quiz → QuizSession | 1 : N (optional) |
 | QuizSession → QuestionAttempt | 1 : N |

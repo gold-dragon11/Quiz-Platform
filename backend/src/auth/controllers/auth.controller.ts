@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { LoginDto } from '../dto/login.dto';
+import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
@@ -45,6 +46,28 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
     return this.authService.login(loginDto);
+  }
+
+  /**
+   * POST /api/v1/auth/refresh — exchanges a valid refresh token for a new
+   * token pair; the presented token is rotated out in the same operation
+   * (docs/04-api/authentication.md §8).
+   */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokenPair> {
+    return this.authService.refresh(refreshTokenDto);
+  }
+
+  /**
+   * POST /api/v1/auth/logout — invalidates the presented refresh token.
+   * Idempotent: responds 204 whether or not the token was active
+   * (docs/04-api/authentication.md §7).
+   */
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async logout(@Body() refreshTokenDto: RefreshTokenDto): Promise<void> {
+    await this.authService.logout(refreshTokenDto);
   }
 
   /**

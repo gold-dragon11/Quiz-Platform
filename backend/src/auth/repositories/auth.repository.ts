@@ -173,6 +173,65 @@ export class AuthRepository {
   }
 
   /**
+   * Persists a refresh-token session. Only the Argon2 hash is stored — the
+   * plaintext token never touches the database
+   * (docs/06-backend/security.md §5).
+   */
+  async createRefreshTokenSession(params: {
+    id: string;
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.prisma.refreshToken.create({ data: params });
+  }
+
+  async findRefreshTokenById(id: string): Promise<{
+    id: string;
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+    revokedAt: Date | null;
+  } | null> {
+    return this.prisma.refreshToken.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        userId: true,
+        tokenHash: true,
+        expiresAt: true,
+        revokedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Atomically revokes a session only if it is still active, and reports
+   * whether this call was the one that revoked it. Two concurrent refreshes of
+   * the same token therefore cannot both rotate it — exactly one wins, and the
+   * loser is handled as reuse.
+   */
+  async revokeRefreshTokenIfActive(id: string): Promise<boolean> {
+    const result = await this.prisma.refreshToken.updateMany({
+      where: { id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    return result.count === 1;
+  }
+
+  /**
+   * Revokes every active session a user holds — the reuse-detection response
+   * (docs/04-api/authentication.md §8).
+   */
+  async revokeAllRefreshTokensForUser(userId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /**
    * Creates the User together with the four records every account must own —
    * Profile, Avatar, UserSettings, and Statistics
    * (docs/01-prd/authentication.md §3).

@@ -134,6 +134,7 @@ Examples include:
 | Avatar | userId |
 | UserSettings | userId |
 | Statistics | userId |
+| RefreshToken | userId |
 | Topic | subjectId |
 | Question | topicId |
 | AnswerOption | questionId |

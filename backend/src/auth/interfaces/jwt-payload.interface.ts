@@ -21,3 +21,13 @@ export interface VerifiedJwtPayload extends JwtPayload {
   iat: number;
   exp: number;
 }
+
+/**
+ * Claims carried by a refresh token — the standard claims plus `jti`
+ * (RFC 7519 §4.1.7), which identifies the persisted session record so each
+ * refresh token can be individually rotated and revoked
+ * (docs/04-api/authentication.md §8). Access tokens never carry `jti`.
+ */
+export interface RefreshTokenPayload extends JwtPayload {
+  jti: string;
+}
