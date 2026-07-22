@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../config/configuration';
+import { EmailModule } from '../email/email.module';
 import { JWT_STRATEGY } from './constants/auth.constants';
 import { AuthController } from './controllers/auth.controller';
 import { AuthRepository } from './repositories/auth.repository';
@@ -24,6 +25,7 @@ import { PasswordUtil } from './utils/password.util';
  */
 @Module({
   imports: [
+    EmailModule,
     PassportModule.register({ defaultStrategy: JWT_STRATEGY }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

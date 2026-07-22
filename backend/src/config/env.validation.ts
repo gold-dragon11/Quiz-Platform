@@ -46,6 +46,19 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   JWT_REFRESH_EXPIRES_IN?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(MIN_SECRET_LENGTH)
+  EMAIL_VERIFICATION_SECRET!: string;
+
+  @IsOptional()
+  @IsString()
+  EMAIL_VERIFICATION_EXPIRES_IN?: string;
+
+  @IsOptional()
+  @IsString()
+  FRONTEND_URL?: string;
 }
 
 export function validateEnv(

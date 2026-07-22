@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,10 +13,15 @@ import { AccountStatus, Language, Prisma, UserRole } from '@prisma/client';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../../config/configuration';
+import { EmailService } from '../../email/email.service';
+import { EMAIL_VERIFICATION_PURPOSE } from '../constants/auth.constants';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { VerifyEmailDto } from '../dto/verify-email.dto';
 import {
+  EmailVerificationPayload,
   JwtPayload,
   RefreshTokenPayload,
 } from '../interfaces/jwt-payload.interface';
@@ -34,6 +41,15 @@ const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
 
 /**
+ * The single response for every failed verification attempt — invalid,
+ * expired, malformed, wrong-purpose, unknown user, or an account not awaiting
+ * verification — so no failure mode is distinguishable from another
+ * (docs/04-api/authentication.md §5).
+ */
+const INVALID_VERIFICATION_TOKEN_MESSAGE =
+  'Invalid or expired verification token.';
+
+/**
  * Authentication use cases (docs/06-backend/authentication.md §2).
  *
  * Registration, login, token refresh, and logout are implemented here; email
@@ -49,11 +65,14 @@ export class AuthService implements OnModuleInit {
    */
   private decoyPasswordHash!: string;
 
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly passwordUtil: PasswordUtil,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly emailService: EmailService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -74,8 +93,10 @@ export class AuthService implements OnModuleInit {
 
     const passwordHash = await this.passwordUtil.hashPassword(dto.password);
 
+    let createdUser: { id: string };
+
     try {
-      await this.authRepository.createUserWithRelations({
+      createdUser = await this.authRepository.createUserWithRelations({
         email: dto.email,
         passwordHash,
         username: dto.username,
@@ -89,6 +110,52 @@ export class AuthService implements OnModuleInit {
       // insert; the database constraint is the authoritative guard.
       throw this.toRegistrationError(error);
     }
+
+    // The verification email is dispatched only after the registration has
+    // committed, and a delivery failure never rolls it back — the resend
+    // endpoint is the documented recovery path
+    // (docs/06-backend/authentication.md §8).
+    await this.sendVerificationEmailSafely(createdUser.id, dto.email);
+  }
+
+  /**
+   * Activates the account identified by a valid verification token
+   * (docs/04-api/authentication.md §5). Every failure returns the same
+   * generic 400 so no failure mode is distinguishable from another.
+   */
+  async verifyEmail(dto: VerifyEmailDto): Promise<void> {
+    const payload = await this.verifyEmailVerificationToken(dto.token);
+
+    if (!payload) {
+      throw new BadRequestException(INVALID_VERIFICATION_TOKEN_MESSAGE);
+    }
+
+    const activated = await this.authRepository.activateAccountIfPending(
+      payload.sub,
+    );
+
+    if (!activated) {
+      throw new BadRequestException(INVALID_VERIFICATION_TOKEN_MESSAGE);
+    }
+  }
+
+  /**
+   * Issues a fresh verification token and re-sends the email
+   * (docs/04-api/authentication.md §5).
+   *
+   * Always resolves so the endpoint answers 202 regardless of whether the
+   * email exists, is pending, or is already verified — it cannot be used to
+   * discover which addresses are registered. An email is actually sent only
+   * for accounts still awaiting verification.
+   */
+  async resendVerification(dto: ResendVerificationDto): Promise<void> {
+    const user = await this.authRepository.findUserStatusByEmail(dto.email);
+
+    if (!user || user.accountStatus !== AccountStatus.PENDING_VERIFICATION) {
+      return;
+    }
+
+    await this.sendVerificationEmailSafely(user.id, user.email);
   }
 
   /**
@@ -303,6 +370,75 @@ export class AuthService implements OnModuleInit {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  /**
+   * Builds the verification link, signs the token, and dispatches the email.
+   * Failures are logged (without the token) and swallowed: neither
+   * registration nor resend may fail because delivery did
+   * (docs/06-backend/authentication.md §8).
+   */
+  private async sendVerificationEmailSafely(
+    userId: string,
+    email: string,
+  ): Promise<void> {
+    try {
+      const { secret, expiresIn } = this.configService.get(
+        'emailVerification',
+        {
+          infer: true,
+        },
+      );
+      const frontendUrl = this.configService.get('frontendUrl', {
+        infer: true,
+      });
+
+      const payload: EmailVerificationPayload = {
+        sub: userId,
+        purpose: EMAIL_VERIFICATION_PURPOSE,
+      };
+
+      const token = await this.jwtService.signAsync(payload, {
+        secret,
+        expiresIn: expiresIn as SignOptions['expiresIn'],
+      });
+
+      const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
+
+      await this.emailService.sendVerificationEmail(email, verificationUrl);
+    } catch (error) {
+      // Never include the token or link here (docs/06-backend/security.md §13).
+      this.logger.error(
+        `Failed to send verification email to user ${userId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
+
+  /**
+   * Verifies an email verification token's signature, expiry, and purpose
+   * claim against the dedicated verification secret. Returns null on any
+   * failure so the caller answers with the single generic error.
+   */
+  private async verifyEmailVerificationToken(
+    token: string,
+  ): Promise<EmailVerificationPayload | null> {
+    const { secret } = this.configService.get('emailVerification', {
+      infer: true,
+    });
+
+    try {
+      const payload =
+        await this.jwtService.verifyAsync<EmailVerificationPayload>(token, {
+          secret,
+        });
+
+      return payload.sub && payload.purpose === EMAIL_VERIFICATION_PURPOSE
+        ? payload
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   /**

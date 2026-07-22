@@ -158,6 +158,22 @@ The verification process:
 
 Expired tokens cannot be reused.
 
+## Verification Token Design
+
+Verification tokens are stateless signed JWTs. They are not persisted — unlike refresh tokens, which require hashed storage.
+
+Each token carries:
+
+- the user id (`sub`);
+- a `purpose` claim identifying it as an email verification token;
+- an expiration set by configuration (24 hours by default).
+
+Tokens are signed with a dedicated secret (`EMAIL_VERIFICATION_SECRET`), separate from both JWT secrets, so a verification token can never be accepted as an access or refresh token — and vice versa.
+
+Activation is atomic: the account is switched to Active only if it is still Pending Verification. A replayed token therefore finds an already-active account and is rejected with the same generic error as any other invalid token.
+
+Verification emails are sent after registration commits. A delivery failure is logged but never rolls back the registration — the resend endpoint is the documented recovery path.
+
 ---
 
 # 9. Password Reset

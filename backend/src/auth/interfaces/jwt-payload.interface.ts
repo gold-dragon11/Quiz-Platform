@@ -31,3 +31,14 @@ export interface VerifiedJwtPayload extends JwtPayload {
 export interface RefreshTokenPayload extends JwtPayload {
   jti: string;
 }
+
+/**
+ * Claims carried by an email verification token
+ * (docs/06-backend/authentication.md §8). Deliberately minimal — no email or
+ * role — and marked with a purpose claim so it is only ever usable for
+ * verification.
+ */
+export interface EmailVerificationPayload {
+  sub: string;
+  purpose: string;
+}

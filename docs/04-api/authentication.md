@@ -107,7 +107,23 @@ POST /api/v1/auth/verify-email
 
 Verifies the user's email using a verification token.
 
-Successful verification activates the account.
+Request body:
+
+```json
+{ "token": "..." }
+```
+
+The token is delivered to the user as a verification link pointing at the frontend's `/verify-email` route; the frontend submits it to this endpoint.
+
+Successful verification activates the account: `emailVerified` becomes true and the account status changes from Pending Verification to Active. Responds `200` with an empty body.
+
+Every failure — an invalid, expired, malformed, or wrong-purpose token, or an account that is not awaiting verification — returns the same generic response:
+
+```http
+400 Bad Request — "Invalid or expired verification token."
+```
+
+No failure mode is distinguishable from another, so the endpoint reveals nothing about accounts or tokens.
 
 ---
 
@@ -118,6 +134,16 @@ POST /api/v1/auth/resend-verification
 ```
 
 Sends a new verification email.
+
+Request body:
+
+```json
+{ "email": "..." }
+```
+
+Always responds `202 Accepted` with an empty body — whether the email is unknown, already verified, or pending — so the endpoint cannot be used to discover which addresses are registered. An email is actually sent only for existing accounts still awaiting verification.
+
+Previously issued verification tokens remain valid until they expire; every valid token performs the same single action on the same account.
 
 ---
 

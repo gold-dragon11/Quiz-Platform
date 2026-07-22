@@ -11,6 +11,8 @@ import { CurrentUser } from '../decorators/current-user.decorator';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
+import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
 import { CurrentUserResponse } from '../types/current-user-response.type';
@@ -46,6 +48,30 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
     return this.authService.login(loginDto);
+  }
+
+  /**
+   * POST /api/v1/auth/verify-email — activates the account identified by a
+   * valid verification token (docs/04-api/authentication.md §5). Responds 200
+   * with an empty body; every failure is the same generic 400.
+   */
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<void> {
+    await this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  /**
+   * POST /api/v1/auth/resend-verification — re-sends the verification email
+   * (docs/04-api/authentication.md §5). Always responds 202 with an empty
+   * body so the endpoint cannot reveal which addresses are registered.
+   */
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ): Promise<void> {
+    await this.authService.resendVerification(resendVerificationDto);
   }
 
   /**

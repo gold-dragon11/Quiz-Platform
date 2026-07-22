@@ -164,6 +164,37 @@ export class AuthRepository {
     });
   }
 
+  /**
+   * Loads the minimal account state resend-verification needs to decide
+   * whether an email should actually be sent. No credentials selected.
+   */
+  async findUserStatusByEmail(email: string): Promise<{
+    id: string;
+    email: string;
+    accountStatus: AccountStatus;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, accountStatus: true },
+    });
+  }
+
+  /**
+   * Atomically activates an account, but only while it is still awaiting
+   * verification (docs/06-backend/authentication.md §8). Returns whether this
+   * call performed the activation — a replayed token, an unknown user, or an
+   * account in any other state all report false and are answered with the
+   * same generic error.
+   */
+  async activateAccountIfPending(userId: string): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: { id: userId, accountStatus: AccountStatus.PENDING_VERIFICATION },
+      data: { emailVerified: true, accountStatus: AccountStatus.ACTIVE },
+    });
+
+    return result.count === 1;
+  }
+
   /** Records the moment of a successful login (docs/02-domain/user.md §4). */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     await this.prisma.user.update({
