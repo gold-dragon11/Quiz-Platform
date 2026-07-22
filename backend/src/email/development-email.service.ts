@@ -24,4 +24,12 @@ export class DevelopmentEmailService extends EmailService {
 
     return Promise.resolve();
   }
+
+  sendPasswordResetEmail(recipient: string, resetUrl: string): Promise<void> {
+    this.logger.log(
+      `[DEV EMAIL] To: ${recipient} — Reset your password: ${resetUrl}`,
+    );
+
+    return Promise.resolve();
+  }
 }

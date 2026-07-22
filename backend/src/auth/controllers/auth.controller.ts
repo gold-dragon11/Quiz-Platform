@@ -8,10 +8,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
@@ -72,6 +74,32 @@ export class AuthController {
     @Body() resendVerificationDto: ResendVerificationDto,
   ): Promise<void> {
     await this.authService.resendVerification(resendVerificationDto);
+  }
+
+  /**
+   * POST /api/v1/auth/forgot-password — starts password recovery
+   * (docs/04-api/authentication.md §9). Always responds 202 with an empty
+   * body regardless of whether the email exists or an email was sent.
+   */
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<void> {
+    await this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  /**
+   * POST /api/v1/auth/reset-password — sets a new password using a valid
+   * reset token (docs/04-api/authentication.md §10). Responds 200 with an
+   * empty body; every token failure is the same generic 400.
+   */
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<void> {
+    await this.authService.resetPassword(resetPasswordDto);
   }
 
   /**

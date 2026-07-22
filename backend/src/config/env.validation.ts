@@ -56,6 +56,15 @@ class EnvironmentVariables {
   @IsString()
   EMAIL_VERIFICATION_EXPIRES_IN?: string;
 
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(MIN_SECRET_LENGTH)
+  PASSWORD_RESET_SECRET!: string;
+
+  @IsOptional()
+  @IsString()
+  PASSWORD_RESET_EXPIRES_IN?: string;
+
   @IsOptional()
   @IsString()
   FRONTEND_URL?: string;

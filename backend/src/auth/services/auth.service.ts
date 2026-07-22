@@ -10,19 +10,30 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountStatus, Language, Prisma, UserRole } from '@prisma/client';
-import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  createHmac,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
 import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../../config/configuration';
 import { EmailService } from '../../email/email.service';
-import { EMAIL_VERIFICATION_PURPOSE } from '../constants/auth.constants';
+import {
+  EMAIL_VERIFICATION_PURPOSE,
+  PASSWORD_RESET_PURPOSE,
+} from '../constants/auth.constants';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import {
   EmailVerificationPayload,
   JwtPayload,
+  PasswordResetPayload,
   RefreshTokenPayload,
 } from '../interfaces/jwt-payload.interface';
 import { AuthRepository } from '../repositories/auth.repository';
@@ -48,6 +59,13 @@ const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
  */
 const INVALID_VERIFICATION_TOKEN_MESSAGE =
   'Invalid or expired verification token.';
+
+/**
+ * The single response for every failed password reset — invalid, expired,
+ * malformed, wrong-purpose, fingerprint-mismatched, replayed, unknown user, or
+ * inactive account (docs/04-api/authentication.md §10).
+ */
+const INVALID_RESET_TOKEN_MESSAGE = 'Invalid or expired reset token.';
 
 /**
  * Authentication use cases (docs/06-backend/authentication.md §2).
@@ -373,6 +391,77 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
+   * Starts the password recovery flow (docs/04-api/authentication.md §9).
+   *
+   * Always resolves so the endpoint answers 202 identically whether the email
+   * is unknown, pending verification, suspended, or deleted — it reveals
+   * nothing about accounts. A reset email is actually sent only for Active
+   * accounts.
+   */
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const user = await this.authRepository.findUserForAuthentication(dto.email);
+
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+      return;
+    }
+
+    await this.sendPasswordResetEmailSafely(
+      user.id,
+      user.email,
+      user.passwordHash,
+    );
+  }
+
+  /**
+   * Sets a new password using a valid reset token
+   * (docs/04-api/authentication.md §10).
+   *
+   * The token's `pwd` fingerprint must still match the account's current
+   * password hash, and the swap itself is an atomic compare-and-swap on that
+   * hash — so a token is spent the instant any reset succeeds, concurrent
+   * resets cannot both win, and every previously issued token dies with the
+   * old hash. All refresh sessions are then revoked
+   * (docs/06-backend/security.md §5, docs/06-backend/authentication.md §9).
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    const payload = await this.verifyPasswordResetToken(dto.token);
+
+    if (!payload) {
+      throw new BadRequestException(INVALID_RESET_TOKEN_MESSAGE);
+    }
+
+    const user = await this.authRepository.findUserCredentialsById(payload.sub);
+
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new BadRequestException(INVALID_RESET_TOKEN_MESSAGE);
+    }
+
+    const expectedFingerprint = this.passwordFingerprint(user.passwordHash);
+
+    if (!this.fingerprintsMatch(payload.pwd, expectedFingerprint)) {
+      throw new BadRequestException(INVALID_RESET_TOKEN_MESSAGE);
+    }
+
+    const newPasswordHash = await this.passwordUtil.hashPassword(
+      dto.newPassword,
+    );
+
+    const updated = await this.authRepository.updatePasswordIfUnchanged(
+      user.id,
+      user.passwordHash,
+      newPasswordHash,
+    );
+
+    if (!updated) {
+      throw new BadRequestException(INVALID_RESET_TOKEN_MESSAGE);
+    }
+
+    // Documented consequence: previous sessions are invalidated. Access tokens
+    // are untouched and expire naturally; no new tokens are issued here.
+    await this.authRepository.revokeAllRefreshTokensForUser(user.id);
+  }
+
+  /**
    * Builds the verification link, signs the token, and dispatches the email.
    * Failures are logged (without the token) and swallowed: neither
    * registration nor resend may fail because delivery did
@@ -412,6 +501,103 @@ export class AuthService implements OnModuleInit {
         `Failed to send verification email to user ${userId}`,
         error instanceof Error ? error.stack : undefined,
       );
+    }
+  }
+
+  /**
+   * A short one-way HMAC fingerprint of a password hash, keyed with the reset
+   * secret. Embedded in reset tokens so they bind to the password they were
+   * issued against; it reveals nothing about the hash and cannot be computed
+   * without the secret.
+   */
+  private passwordFingerprint(passwordHash: string): string {
+    const { secret } = this.configService.get('passwordReset', {
+      infer: true,
+    });
+
+    return createHmac('sha256', secret)
+      .update(passwordHash)
+      .digest('hex')
+      .slice(0, 16);
+  }
+
+  /** Constant-time fingerprint comparison. */
+  private fingerprintsMatch(presented: string, expected: string): boolean {
+    const presentedBuffer = Buffer.from(presented);
+    const expectedBuffer = Buffer.from(expected);
+
+    return (
+      presentedBuffer.length === expectedBuffer.length &&
+      timingSafeEqual(presentedBuffer, expectedBuffer)
+    );
+  }
+
+  /**
+   * Builds the reset link, signs the token, and dispatches the email.
+   * Failures are logged (without the token) and swallowed so the endpoint's
+   * response never varies (docs/04-api/authentication.md §9).
+   */
+  private async sendPasswordResetEmailSafely(
+    userId: string,
+    email: string,
+    currentPasswordHash: string,
+  ): Promise<void> {
+    try {
+      const { secret, expiresIn } = this.configService.get('passwordReset', {
+        infer: true,
+      });
+      const frontendUrl = this.configService.get('frontendUrl', {
+        infer: true,
+      });
+
+      const payload: PasswordResetPayload = {
+        sub: userId,
+        purpose: PASSWORD_RESET_PURPOSE,
+        pwd: this.passwordFingerprint(currentPasswordHash),
+      };
+
+      const token = await this.jwtService.signAsync(payload, {
+        secret,
+        expiresIn: expiresIn as SignOptions['expiresIn'],
+      });
+
+      const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+      await this.emailService.sendPasswordResetEmail(email, resetUrl);
+    } catch (error) {
+      // Never include the token or link here (docs/06-backend/security.md §13).
+      this.logger.error(
+        `Failed to send password reset email to user ${userId}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
+  }
+
+  /**
+   * Verifies a password reset token's signature, expiry, and claim shape
+   * against the dedicated reset secret. Returns null on any failure so the
+   * caller answers with the single generic error.
+   */
+  private async verifyPasswordResetToken(
+    token: string,
+  ): Promise<PasswordResetPayload | null> {
+    const { secret } = this.configService.get('passwordReset', {
+      infer: true,
+    });
+
+    try {
+      const payload = await this.jwtService.verifyAsync<PasswordResetPayload>(
+        token,
+        { secret },
+      );
+
+      return payload.sub &&
+        payload.purpose === PASSWORD_RESET_PURPOSE &&
+        typeof payload.pwd === 'string'
+        ? payload
+        : null;
+    } catch {
+      return null;
     }
   }
 

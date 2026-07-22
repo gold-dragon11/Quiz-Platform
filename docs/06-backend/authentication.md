@@ -187,6 +187,23 @@ Password recovery flow:
 5. update password;
 6. invalidate previous sessions.
 
+## Reset Token Design
+
+Reset tokens are stateless signed JWTs, like email verification tokens — they are never persisted.
+
+Each token carries:
+
+- the user id (`sub`);
+- a `purpose` claim identifying it as a password reset token;
+- `pwd` — a short one-way HMAC fingerprint of the user's current password hash;
+- an expiration set by configuration (1 hour by default).
+
+Tokens are signed with a dedicated secret (`PASSWORD_RESET_SECRET`), distinct from every other signing secret.
+
+The `pwd` fingerprint is what makes stateless tokens single-use: a token is only accepted while the account still holds the password hash it was issued against, and the password swap itself is an atomic compare-and-swap on that hash. The moment any reset succeeds, the hash changes and every outstanding reset token for the account stops matching. The fingerprint is HMAC-derived and truncated, so it reveals nothing about the hash and cannot be forged without the secret.
+
+Reset emails are sent only for Active accounts; the endpoint's response never varies, so it cannot be used to probe account existence or status. After a successful reset, all refresh-token sessions are revoked (see Security §5); access tokens expire naturally.
+
 ---
 
 # 10. Authentication Guards

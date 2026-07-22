@@ -195,6 +195,45 @@ export class AuthRepository {
     return result.count === 1;
   }
 
+  /**
+   * Loads the state needed to validate a password reset: the current hash
+   * (for the token's fingerprint check) and the account status.
+   */
+  async findUserCredentialsById(userId: string): Promise<{
+    id: string;
+    passwordHash: string;
+    accountStatus: AccountStatus;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true, accountStatus: true },
+    });
+  }
+
+  /**
+   * Atomically replaces the password, but only while the account is still
+   * Active and still holds the hash the reset token was issued against.
+   * Reports whether this call performed the change — a replayed token, a
+   * concurrent reset, or an account that changed state all report false and
+   * are answered with the same generic error.
+   */
+  async updatePasswordIfUnchanged(
+    userId: string,
+    expectedCurrentHash: string,
+    newPasswordHash: string,
+  ): Promise<boolean> {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        passwordHash: expectedCurrentHash,
+        accountStatus: AccountStatus.ACTIVE,
+      },
+      data: { passwordHash: newPasswordHash },
+    });
+
+    return result.count === 1;
+  }
+
   /** Records the moment of a successful login (docs/02-domain/user.md §4). */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     await this.prisma.user.update({

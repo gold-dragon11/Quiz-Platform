@@ -32,6 +32,11 @@ class CapturingEmailService extends EmailService {
     return Promise.resolve();
   }
 
+  // Required by the abstraction; this suite never sends reset emails.
+  sendPasswordResetEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
   lastFor(recipient: string): CapturedEmail | undefined {
     return [...this.sent].reverse().find((e) => e.recipient === recipient);
   }

@@ -20,6 +20,16 @@ export interface EmailVerificationConfig {
   expiresIn: string;
 }
 
+/**
+ * Password reset token configuration
+ * (docs/06-backend/authentication.md §9). Signed with its own dedicated
+ * secret, distinct from the JWT and email verification secrets.
+ */
+export interface PasswordResetConfig {
+  secret: string;
+  expiresIn: string;
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
@@ -29,6 +39,7 @@ export interface AppConfig {
   frontendUrl: string;
   jwt: JwtConfig;
   emailVerification: EmailVerificationConfig;
+  passwordReset: PasswordResetConfig;
 }
 
 export default (): AppConfig => ({
@@ -46,5 +57,9 @@ export default (): AppConfig => ({
   emailVerification: {
     secret: process.env.EMAIL_VERIFICATION_SECRET ?? '',
     expiresIn: process.env.EMAIL_VERIFICATION_EXPIRES_IN ?? '24h',
+  },
+  passwordReset: {
+    secret: process.env.PASSWORD_RESET_SECRET ?? '',
+    expiresIn: process.env.PASSWORD_RESET_EXPIRES_IN ?? '1h',
   },
 });

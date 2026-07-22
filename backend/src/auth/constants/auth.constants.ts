@@ -17,3 +17,10 @@ export const ROLES_KEY = 'roles';
  * dedicated secret so they can never act as access or refresh tokens.
  */
 export const EMAIL_VERIFICATION_PURPOSE = 'email_verification';
+
+/**
+ * `purpose` claim carried by password reset tokens
+ * (docs/06-backend/authentication.md §9). Signed with their own dedicated
+ * secret, so a reset token can never act as any other token type.
+ */
+export const PASSWORD_RESET_PURPOSE = 'password_reset';

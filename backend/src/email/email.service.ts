@@ -16,4 +16,13 @@ export abstract class EmailService {
     recipient: string,
     verificationUrl: string,
   ): Promise<void>;
+
+  /**
+   * Sends the password reset email containing the given link
+   * (docs/04-api/authentication.md §9).
+   */
+  abstract sendPasswordResetEmail(
+    recipient: string,
+    resetUrl: string,
+  ): Promise<void>;
 }

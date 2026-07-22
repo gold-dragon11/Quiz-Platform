@@ -14,6 +14,7 @@ import {
   normalizeEmail,
   trim,
 } from '../../common/transformers/normalize.transformer';
+import { IsValidPassword } from '../decorators/is-valid-password.decorator';
 
 /**
  * Registration payload — exactly the fields documented in
@@ -26,22 +27,9 @@ export class RegisterDto {
   @IsEmail()
   email!: string;
 
-  // docs/01-prd/authentication.md §6, docs/04-api/authentication.md §12.
-  // Split into one rule per requirement so the response names the exact
-  // failing constraint (docs/06-backend/validation.md §13-14).
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8, { message: 'password must be at least 8 characters long' })
-  @Matches(/[A-Z]/, {
-    message: 'password must contain at least one uppercase letter',
-  })
-  @Matches(/[a-z]/, {
-    message: 'password must contain at least one lowercase letter',
-  })
-  @Matches(/[0-9]/, { message: 'password must contain at least one number' })
-  @Matches(/[^A-Za-z0-9]/, {
-    message: 'password must contain at least one special character',
-  })
+  // The shared platform password policy (docs/01-prd/authentication.md §6);
+  // password reset applies the identical rules and messages.
+  @IsValidPassword()
   password!: string;
 
   // docs/02-domain/profile.md §6: unique, 3-30 characters, letters, numbers,

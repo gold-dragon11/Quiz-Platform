@@ -42,3 +42,16 @@ export interface EmailVerificationPayload {
   sub: string;
   purpose: string;
 }
+
+/**
+ * Claims carried by a password reset token
+ * (docs/06-backend/authentication.md §9). `pwd` is a short one-way HMAC
+ * fingerprint of the user's *current* password hash: the moment any reset
+ * succeeds, the hash changes and every outstanding reset token stops
+ * matching — single use with no database storage.
+ */
+export interface PasswordResetPayload {
+  sub: string;
+  purpose: string;
+  pwd: string;
+}

@@ -248,7 +248,17 @@ POST /api/v1/auth/forgot-password
 
 Sends a password reset email.
 
-For security reasons, the response is always identical regardless of whether the email exists.
+Request body:
+
+```json
+{ "email": "..." }
+```
+
+Always responds `202 Accepted` with an empty body.
+
+For security reasons, the response is always identical regardless of whether the email exists — and regardless of the account's status. A reset email is actually sent only for Active accounts; pending, suspended, deleted, and unknown addresses receive the same 202 and no email.
+
+The reset link points at the frontend's `/reset-password` route.
 
 ---
 
@@ -261,6 +271,24 @@ POST /api/v1/auth/reset-password
 ```
 
 Allows the user to set a new password using a valid reset token.
+
+Request body:
+
+```json
+{ "token": "...", "newPassword": "..." }
+```
+
+The new password must satisfy exactly the registration password policy, enforced with the same rules and error messages.
+
+On success the endpoint responds `200` with an empty body, and every refresh-token session the user holds is revoked — previously issued access tokens expire naturally, and no new tokens are issued by this endpoint. The user logs in again with the new password.
+
+Reset tokens are single-use: the moment a reset succeeds, the presented token and every other outstanding reset token for that account become invalid.
+
+Every token-related failure — invalid, expired, malformed, wrong-purpose, replayed, unknown user, or an account that is not Active — returns the same generic response:
+
+```http
+400 Bad Request — "Invalid or expired reset token."
+```
 
 ---
 
