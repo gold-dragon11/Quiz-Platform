@@ -217,6 +217,27 @@ Examples:
 
 Guards execute before controller logic.
 
+## Guard Architecture
+
+Route protection is explicit: each protected route opts in with its guards. There are no global guards.
+
+Two guards implement the documented protection:
+
+- **JwtAuthGuard** — authenticates the request. It validates the access token and loads the account from the database; a missing, malformed, or expired token — or an account that is no longer Active — is rejected with `401 Unauthorized`.
+- **RolesGuard** — authorizes the request. It compares the authenticated user's role against the roles declared on the route with `@Roles()`. An authenticated user without a required role is rejected with `403 Forbidden`.
+
+The "Admin Guard" named above is realized as the composite `@AdminOnly()` decorator — a thin wrapper that applies `@Roles(ADMIN)` together with both guards in the correct order (authentication first, then authorization). A route can therefore never carry the admin requirement without its enforcement.
+
+Usage rules:
+
+- routes for any authenticated user apply `JwtAuthGuard` alone — `@Roles(USER)` is never used;
+- administrator-only routes apply `@AdminOnly()`;
+- there is no role hierarchy: a role requirement matches exactly.
+
+The role checked by RolesGuard is the one loaded from the database on the current request — never the token claim — so a role change takes effect immediately, within the lifetime of already-issued tokens.
+
+Denied authorization attempts are security-logged (see Security §14) with the user id, role, method, and path only — never tokens or request bodies.
+
 ---
 
 # 11. Session Management

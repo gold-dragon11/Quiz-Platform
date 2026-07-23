@@ -90,6 +90,10 @@ Protected endpoints verify both:
 - authentication;
 - authorization.
 
+Role requirements are declared on routes with the `@Roles()` decorator and enforced by `RolesGuard`. Administrator-only routes use the composite `@AdminOnly()` decorator, which bundles the role requirement with the guards that enforce it. There is no role hierarchy — a role requirement matches exactly, and routes open to any authenticated user require authentication alone.
+
+The role used for authorization is loaded from the database on every request, never taken from the token claim, so role changes take effect immediately.
+
 ---
 
 # 7. Route Protection
