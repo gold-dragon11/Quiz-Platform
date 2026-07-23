@@ -219,6 +219,9 @@ model Subject {
   displayOrder Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
+  /// row so historical Quiz Sessions stay valid. Slug and name stay reserved.
+  deletedAt    DateTime?
 
   topics            Topic[]
   quizzes           Quiz[]

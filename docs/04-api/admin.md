@@ -56,9 +56,22 @@ Users without administrator permissions return:
 GET /api/v1/admin/subjects
 ```
 
-Returns all subjects.
+Returns subjects — published and unpublished. Soft-deleted subjects are never returned.
 
-Supports filtering, sorting, and pagination.
+Supported query parameters:
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| isPublished | — | true or false |
+| search | — | case-insensitive match against name and slug |
+| sortBy | displayOrder | displayOrder, name, or createdAt |
+| sortOrder | asc | asc or desc |
+
+Responses use the pagination envelope (§12).
+
+There is no single-subject endpoint — the list endpoint is the only read.
 
 ---
 
@@ -68,7 +81,7 @@ Supports filtering, sorting, and pagination.
 POST /api/v1/admin/subjects
 ```
 
-Creates a new subject.
+Creates a new subject in the default locale (English). `locale` is not accepted here — translations are managed through Update Subject.
 
 Required fields:
 
@@ -80,7 +93,26 @@ Optional fields:
 - description
 - icon
 - color
-- displayOrder
+- displayOrder (append to the end — max + 1 — when omitted)
+
+New subjects always start unpublished; publishing happens through Update Subject.
+
+Responds `201 Created` with the created subject.
+
+Uniqueness (all violations return `409 Conflict`):
+
+- name — unique, including soft-deleted subjects (names stay reserved);
+- slug — unique, including soft-deleted subjects (slugs stay reserved);
+- displayOrder — unique among non-deleted subjects.
+
+Field validation (`400 Bad Request` on violation):
+
+- name: 1–100 characters;
+- slug: 1–100 characters, `^[a-z0-9]+(?:-[a-z0-9]+)*$`;
+- description: up to 500 characters;
+- icon: up to 100 characters;
+- color: hex `#RRGGBB`;
+- displayOrder: integer ≥ 0.
 
 ---
 
@@ -90,7 +122,20 @@ Optional fields:
 PUT /api/v1/admin/subjects/{id}
 ```
 
-Updates an existing subject.
+Updates an existing subject using **merge semantics**: only supplied fields change, and an explicit `null` clears a nullable field (description, icon, color). Omitted fields are never touched — there is no destructive full replacement.
+
+All Create Subject fields may be supplied, plus `isPublished` to publish or unpublish.
+
+The same uniqueness and validation rules as Create Subject apply. Responds `200` with the updated subject; an unknown or deleted id returns `404 Not Found`.
+
+### Localization
+
+Update Subject accepts an optional `locale` field. When provided, the request upserts the SubjectTranslation for that locale instead of updating the default-locale record:
+
+- only the localizable fields — `name` and `description` — may accompany `locale`; any other field returns `400`;
+- `locale` must be a non-default locale — English content lives on the Subject itself;
+- `name` is required when the translation does not exist yet;
+- responds `200` with the translation (`locale`, `name`, `description`).
 
 ---
 
@@ -100,13 +145,9 @@ Updates an existing subject.
 DELETE /api/v1/admin/subjects/{id}
 ```
 
-Performs a soft delete.
+Performs a soft delete: the subject disappears from every listing, but its slug and name remain reserved, and historical learning data remains valid.
 
-Historical learning data must remain valid.
-
----
-
-Create Subject and Update Subject both accept an optional `locale` field. When provided, the request creates or updates a SubjectTranslation instead of the default-locale record.
+Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Found`.
 
 ---
 

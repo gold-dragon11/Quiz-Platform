@@ -70,6 +70,7 @@ AnswerOption (N)
 | displayOrder | Integer | Yes | Display order |
 | createdAt | DateTime | Yes | Creation timestamp |
 | updatedAt | DateTime | Yes | Last update timestamp |
+| deletedAt | DateTime | No | Soft-delete timestamp; set instead of removing the row |
 
 ---
 
@@ -107,6 +108,8 @@ The system validates:
 - slug is unique;
 - display order is unique;
 - published subjects contain valid metadata.
+
+Name and slug uniqueness include soft-deleted subjects — both stay reserved after deletion. Display order uniqueness applies among non-deleted subjects and is enforced at the service level; the database index on displayOrder remains non-unique.
 
 Invalid Subjects cannot be published.
 

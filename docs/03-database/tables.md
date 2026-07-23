@@ -181,6 +181,8 @@ Subjects organize Topics.
 
 The `name` and `description` columns hold the default-locale (English) values.
 
+Soft delete: a `deleted_at` timestamp marks removed subjects (see §6). Deleted subjects disappear from all queries, but their slug and name stay reserved.
+
 ---
 
 ## subject_translations
