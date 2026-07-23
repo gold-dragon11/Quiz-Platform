@@ -116,7 +116,18 @@ For Matching questions:
 
 each Answer Option represents one matching element.
 
-The matching relationship is defined by the Question's `configuration` field: correct pairs reference the participating options' order values, and every option belongs to exactly one pair. `isCorrect` is not used for Matching options.
+The matching relationship is defined by the Question's `configuration` field: correct pairs reference the participating options' order values. `isCorrect` is not used for Matching options.
+
+A valid Matching configuration requires:
+
+- at least two pairs (so at least four options);
+- an even number of options — every option belongs to exactly one pair;
+- no self pair (left equals right);
+- no duplicate pair;
+- no overlap between left and right sides;
+- only existing option orders referenced.
+
+Every violation is rejected with `400 Bad Request`.
 
 Future implementations may use dedicated matching entities if additional flexibility is required.
 
@@ -125,6 +136,8 @@ Future implementations may use dedicated matching entities if additional flexibi
 # 10. Ordering
 
 Answer Options contain an explicit display order.
+
+Persisted orders are always **contiguous**: `0..n-1` with no gaps. When options are created, updated, or deleted, the final order sequence is normalized — explicit order values supplied by an administrator decide the ordering, array position is the fallback, and the persisted values are renumbered from zero. For Matching questions the correct-pair configuration is remapped alongside, so pairs keep following their options.
 
 The stored order determines the default presentation.
 
@@ -153,6 +166,12 @@ Answer content should support multiple languages.
 Each localized version represents the same logical answer.
 
 Translated values are stored in a dedicated AnswerOptionTranslation record per Answer Option per locale (see the Database documentation). The `content` field on the Answer Option itself holds the default-locale (English) value, used as a fallback whenever a translation is missing.
+
+Translation lifecycle:
+
+- translations survive question updates as long as their option's id survives the merge;
+- deleting an option deletes its translations with it;
+- a newly created option starts without translations.
 
 Translations should remain synchronized.
 

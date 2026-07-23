@@ -305,7 +305,9 @@ Optional fields:
 - difficulty
 - configuration (MATCHING only — see below)
 
-Each option carries `content` (required, text and/or LaTeX), optional `imageUrl`, optional `isCorrect` (SINGLE_CHOICE only), and optional `order`. Either every option provides `order` or none does — when omitted, order is assigned from array position. Option ids are not accepted at creation.
+Each option carries `content` (required, text and/or LaTeX), optional `imageUrl`, optional `isCorrect` (SINGLE_CHOICE only), and optional `order`. Either every option provides `order` or none does — when omitted, array position decides the ordering. Option ids are not accepted at creation.
+
+**Order normalization:** persisted orders are always contiguous (`0..n-1`). Explicit order values only decide the *ordering* — the persisted values are renumbered from zero, and a MATCHING configuration referencing the payload's orders is remapped alongside.
 
 Correctness rules by type:
 
@@ -316,7 +318,7 @@ Correctness rules by type:
 { "pairs": [ { "left": 0, "right": 1 }, { "left": 2, "right": 3 } ] }
 ```
 
-Every option order must appear in exactly one pair.
+A valid MATCHING configuration has at least two pairs; every option order appears in exactly one pair (so the option count is even); no self pairs, no duplicate pairs, no overlap between left and right sides; only existing orders may be referenced.
 
 New questions always start unpublished; publishing happens through the publish endpoint (§10). `explanation` is not part of the MVP schema and is rejected. `isPublished` is likewise rejected.
 
@@ -344,7 +346,11 @@ When the request includes `options`, the array is the complete desired option se
 - an entry without an `id` creates a new option;
 - persisted options missing from the array are deleted.
 
-Omitting `options` entirely leaves the option set untouched. After every update the complete option set and configuration are re-validated against the question type; the same rules as Create Question apply. The whole update is atomic.
+Omitting `options` entirely leaves the option set untouched. After every update the complete option set and configuration are re-validated against the question type; the same rules as Create Question apply, and persisted orders are renormalized to `0..n-1`. The whole update — scalars, options, translations, configuration — is atomic: a failure changes nothing.
+
+For MATCHING questions, when `options` is supplied without `configuration`, the stored pairs follow their options: each pair is translated to the options' new orders, and a pair whose option was deleted makes the request fail with `400`. When `configuration` is supplied, its pairs reference the payload's own order values.
+
+Answer-option translations survive a merge as long as their option's id survives; deleting an option deletes its translations; new options start without translations.
 
 Responds `200` with the updated question; an unknown or deleted id returns `404 Not Found`.
 

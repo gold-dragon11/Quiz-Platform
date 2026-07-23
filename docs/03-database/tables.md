@@ -252,7 +252,11 @@ Each Answer Option belongs to one Question.
 
 Supported question types determine answer structure.
 
-The `content` column holds the default-locale (English) value.
+The `content` column holds the default-locale (English) value. An optional `image_url` may accompany or replace the text.
+
+The `order` column is always a contiguous `0..n-1` sequence within its question — every mutation renormalizes it.
+
+Answer Options have no soft delete: they are created, updated, and hard-deleted through their question's edits, atomically. Deleting an option cascades to its translations.
 
 ---
 

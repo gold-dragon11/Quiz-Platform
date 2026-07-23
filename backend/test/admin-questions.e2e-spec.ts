@@ -316,7 +316,7 @@ describe('Admin Questions (e2e)', () => {
       expect(body.answerOptions.filter((o) => o.isCorrect)).toHaveLength(1);
     });
 
-    it('honors explicit option orders', async () => {
+    it('honors explicit option orders and normalizes them to 0..n-1', async () => {
       const body = await createQuestion(
         singleChoicePayload({
           options: [
@@ -326,8 +326,12 @@ describe('Admin Questions (e2e)', () => {
         }),
       );
 
-      // Options come back sorted by order.
-      expect(body.answerOptions.map((o) => o.order)).toEqual([5, 10]);
+      // Supplied values decide the ordering; persisted orders are contiguous.
+      expect(body.answerOptions.map((o) => o.order)).toEqual([0, 1]);
+      expect(body.answerOptions.map((o) => o.content)).toEqual([
+        'Wrong',
+        'Correct',
+      ]);
     });
 
     it('returns 404 for an unknown and a soft-deleted parent topic', async () => {
@@ -718,11 +722,21 @@ describe('Admin Questions (e2e)', () => {
 
       // Supplying a consistent new set + configuration succeeds.
       const body = await updateQuestion(created.id, {
-        options: [{ id: options[0].id }, { id: options[1].id }],
-        configuration: { pairs: [{ left: 0, right: 1 }] },
+        options: options.map((option) => ({ id: option.id })),
+        configuration: {
+          pairs: [
+            { left: 0, right: 3 },
+            { left: 2, right: 1 },
+          ],
+        },
       });
-      expect(body.configuration).toEqual({ pairs: [{ left: 0, right: 1 }] });
-      expect(body.answerOptions as OptionBody[]).toHaveLength(2);
+      expect(body.configuration).toEqual({
+        pairs: [
+          { left: 0, right: 3 },
+          { left: 2, right: 1 },
+        ],
+      });
+      expect(body.answerOptions as OptionBody[]).toHaveLength(4);
     });
 
     it('returns 404 for an unknown id and 400 for a malformed id', async () => {

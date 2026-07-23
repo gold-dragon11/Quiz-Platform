@@ -23,6 +23,7 @@ const DEFAULT_LOCALE = Language.ENGLISH;
 
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
+const MIN_MATCHING_PAIRS = 2;
 
 const QUESTION_NOT_FOUND_MESSAGE = 'Question not found.';
 const TOPIC_NOT_FOUND_MESSAGE = 'Topic not found.';
@@ -47,6 +48,7 @@ const CONFIGURATION_FORBIDDEN_MESSAGE =
   'configuration is not allowed for SINGLE_CHOICE questions.';
 const CONFIGURATION_INVALID_MESSAGE =
   'configuration must pair every option order exactly once.';
+const CONFIGURATION_MIN_PAIRS_MESSAGE = `MATCHING questions require at least ${MIN_MATCHING_PAIRS} pairs.`;
 const DEFAULT_LOCALE_MESSAGE =
   'locale must be a non-default locale; update the question itself for English content.';
 const LOCALIZED_FIELDS_MESSAGE =
@@ -56,14 +58,26 @@ const LOCALIZED_OPTION_SHAPE_MESSAGE =
 const TRANSLATION_TITLE_REQUIRED_MESSAGE =
   'title is required when creating a new translation.';
 
+/** One correct matching pair, expressed in option order values. */
+interface MatchingPair {
+  left: number;
+  right: number;
+}
+
 /**
- * Question management use cases (docs/04-api/admin.md §6, §10,
+ * Question management use cases (docs/04-api/admin.md §6-7, §10,
  * docs/02-domain/question.md, docs/02-domain/answer-option.md).
  *
  * Correctness rules by type (docs/02-domain/answer-option.md §8-9):
  * - SINGLE_CHOICE — exactly one option isCorrect, no configuration;
  * - MATCHING — correctness lives in `configuration.pairs` referencing option
- *   order values; isCorrect is not accepted on options.
+ *   order values; isCorrect is not accepted on options; at least two pairs,
+ *   every option in exactly one pair.
+ *
+ * Persisted option orders are always normalized to a contiguous 0..n-1
+ * sequence (docs/02-domain/answer-option.md §10): explicit order values
+ * decide the ordering, array position is the fallback, and the MATCHING
+ * configuration is remapped alongside so pairs keep following their options.
  *
  * The question type is immutable and publication state changes only through
  * the publish endpoint — both fields are absent from the update DTO, so the
@@ -110,8 +124,12 @@ export class QuestionsService {
       throw new BadRequestException(OPTION_IDS_AT_CREATION_MESSAGE);
     }
 
-    const orders = this.resolveOrders(dto.options);
-    const options: OptionWrite[] = dto.options.map((option, index) => {
+    const effectiveOrders = this.resolveEffectiveOrders(dto.options);
+    const isCorrectProvided = dto.options.some(
+      (option) => option.isCorrect !== undefined,
+    );
+
+    const merged: OptionWrite[] = dto.options.map((option, index) => {
       if (option.content === undefined) {
         throw new BadRequestException(OPTION_CONTENT_REQUIRED_MESSAGE);
       }
@@ -119,16 +137,29 @@ export class QuestionsService {
         content: option.content,
         imageUrl: option.imageUrl ?? null,
         isCorrect: option.isCorrect ?? false,
-        order: orders[index],
+        order: effectiveOrders[index],
       };
     });
 
-    this.validateOptionSet(
-      dto.type,
-      options,
-      dto.configuration,
-      dto.options.some((option) => option.isCorrect !== undefined),
-    );
+    let configuration: Prisma.InputJsonValue | undefined;
+    let options: OptionWrite[];
+
+    if (dto.type === QuestionType.SINGLE_CHOICE) {
+      this.assertSingleChoiceRules(merged, dto.configuration !== undefined);
+      options = this.normalizeOrders(merged).options;
+    } else {
+      this.assertMatchingOptionRules(merged, isCorrectProvided);
+      if (dto.configuration === undefined) {
+        throw new BadRequestException(CONFIGURATION_REQUIRED_MESSAGE);
+      }
+      // Pairs reference the payload's own (effective) orders and are
+      // remapped to the normalized ones persisted below.
+      const pairs = this.parseMatchingPairs(dto.configuration);
+      this.assertValidPairs(pairs, effectiveOrders);
+      const normalized = this.normalizeOrders(merged);
+      options = normalized.options;
+      configuration = this.remapPairs(pairs, normalized.orderMap);
+    }
 
     return this.questionsRepository.createWithOptions({
       topicId: dto.topicId,
@@ -136,7 +167,7 @@ export class QuestionsService {
       title: dto.title,
       imageUrl: dto.imageUrl,
       difficulty: dto.difficulty,
-      configuration: dto.configuration as Prisma.InputJsonValue | undefined,
+      configuration,
       options,
     });
   }
@@ -154,103 +185,120 @@ export class QuestionsService {
       throw new NotFoundException(QUESTION_NOT_FOUND_MESSAGE);
     }
 
-    let optionWrites: OptionWrite[] | undefined;
-    let deleteOptionIds: string[] = [];
-    let isCorrectProvided = false;
-
-    if (dto.options !== undefined) {
-      const existingById = new Map(
-        question.answerOptions.map((option) => [option.id, option]),
-      );
-
-      const seenIds = new Set<string>();
-      for (const entry of dto.options) {
-        if (entry.id !== undefined) {
-          if (!existingById.has(entry.id)) {
-            throw new BadRequestException(OPTION_ID_UNKNOWN_MESSAGE);
-          }
-          if (seenIds.has(entry.id)) {
-            throw new BadRequestException(OPTION_ID_DUPLICATE_MESSAGE);
-          }
-          seenIds.add(entry.id);
-        }
-      }
-
-      if (
-        dto.options.length < MIN_OPTIONS ||
-        dto.options.length > MAX_OPTIONS
-      ) {
-        throw new BadRequestException(OPTION_COUNT_MESSAGE);
-      }
-
-      const orders = this.resolveOrders(dto.options);
-      isCorrectProvided = dto.options.some(
-        (entry) => entry.isCorrect !== undefined,
-      );
-
-      // The payload is the complete desired option set, merged by id
-      // (docs/04-api/admin.md §6).
-      optionWrites = dto.options.map((entry, index) => {
-        const existing = entry.id ? existingById.get(entry.id) : undefined;
-        if (!existing && entry.content === undefined) {
-          throw new BadRequestException(OPTION_CONTENT_REQUIRED_MESSAGE);
-        }
-        return {
-          id: entry.id,
-          content: entry.content ?? (existing?.content as string),
-          imageUrl:
-            entry.imageUrl === undefined
-              ? (existing?.imageUrl ?? null)
-              : entry.imageUrl,
-          isCorrect: entry.isCorrect ?? existing?.isCorrect ?? false,
-          order: orders[index],
-        };
-      });
-
-      deleteOptionIds = question.answerOptions
-        .map((option) => option.id)
-        .filter((optionId) => !seenIds.has(optionId));
-    }
-
-    const finalOptions: OptionWrite[] =
-      optionWrites ??
-      question.answerOptions.map((option) => ({
-        id: option.id,
-        content: option.content,
-        imageUrl: option.imageUrl,
-        isCorrect: option.isCorrect,
-        order: option.order,
-      }));
-
-    const effectiveConfiguration =
-      dto.configuration !== undefined
-        ? dto.configuration
-        : (question.configuration ?? undefined);
-
-    // Every update revalidates the complete option set against the
-    // (immutable) question type (docs/02-domain/question.md §7).
-    this.validateOptionSet(
-      question.type,
-      finalOptions,
-      effectiveConfiguration,
-      isCorrectProvided,
-      dto.configuration !== undefined,
-    );
-
     const data: Prisma.QuestionUpdateInput = {
       ...(dto.title === undefined ? {} : { title: dto.title }),
       ...(dto.imageUrl === undefined ? {} : { imageUrl: dto.imageUrl }),
       ...(dto.difficulty === undefined ? {} : { difficulty: dto.difficulty }),
-      ...(dto.configuration === undefined
-        ? {}
-        : { configuration: dto.configuration as Prisma.InputJsonValue }),
     };
+
+    if (question.type === QuestionType.SINGLE_CHOICE) {
+      if (dto.configuration !== undefined) {
+        throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+      }
+
+      if (dto.options === undefined) {
+        return this.questionsRepository.updateWithOptions(
+          id,
+          data,
+          undefined,
+          [],
+        );
+      }
+
+      const { merged, deleteIds } = this.mergeOptionSet(question, dto.options);
+      this.assertSingleChoiceRules(merged, false);
+      const { options } = this.normalizeOrders(merged);
+      return this.questionsRepository.updateWithOptions(
+        id,
+        data,
+        options,
+        deleteIds,
+      );
+    }
+
+    // MATCHING — the configuration and the option set move together.
+    if (dto.options === undefined) {
+      if (dto.configuration !== undefined) {
+        // New pairs against the persisted (already normalized) orders.
+        const pairs = this.parseMatchingPairs(dto.configuration);
+        this.assertValidPairs(
+          pairs,
+          question.answerOptions.map((option) => option.order),
+        );
+        data.configuration = dto.configuration as Prisma.InputJsonValue;
+      }
+      return this.questionsRepository.updateWithOptions(
+        id,
+        data,
+        undefined,
+        [],
+      );
+    }
+
+    const isCorrectProvided = dto.options.some(
+      (entry) => entry.isCorrect !== undefined,
+    );
+    const { merged, deleteIds, effectiveOrders } = this.mergeOptionSetDetailed(
+      question,
+      dto.options,
+    );
+    this.assertMatchingOptionRules(merged, isCorrectProvided);
+
+    let pairs: MatchingPair[];
+    if (dto.configuration !== undefined) {
+      // Supplied pairs reference the payload's effective orders.
+      pairs = this.parseMatchingPairs(dto.configuration);
+      this.assertValidPairs(pairs, effectiveOrders);
+      const normalized = this.normalizeOrders(merged);
+      const configuration = this.remapPairs(pairs, normalized.orderMap);
+      return this.questionsRepository.updateWithOptions(
+        id,
+        { ...data, configuration },
+        normalized.options,
+        deleteIds,
+      );
+    }
+
+    // Configuration omitted: the stored pairs follow their options — each
+    // stored order is translated through the option id to its new order.
+    // A pair whose option was deleted no longer matches every option and is
+    // rejected, exactly like any other invalid structure.
+    pairs = this.parseMatchingPairs(question.configuration ?? undefined);
+    const normalized = this.normalizeOrders(merged);
+    const idByStoredOrder = new Map(
+      question.answerOptions.map((option) => [option.order, option.id]),
+    );
+    const newOrderById = new Map<string, number>();
+    normalized.options.forEach((option, index) => {
+      if (option.id) {
+        newOrderById.set(option.id, normalized.options[index].order);
+      }
+    });
+
+    const followedPairs: MatchingPair[] = pairs.map((pair) => {
+      const leftId = idByStoredOrder.get(pair.left);
+      const rightId = idByStoredOrder.get(pair.right);
+      const left = leftId !== undefined ? newOrderById.get(leftId) : undefined;
+      const right =
+        rightId !== undefined ? newOrderById.get(rightId) : undefined;
+      if (left === undefined || right === undefined) {
+        throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+      }
+      return { left, right };
+    });
+    this.assertValidPairs(
+      followedPairs,
+      normalized.options.map((option) => option.order),
+    );
 
     return this.questionsRepository.updateWithOptions(
       id,
-      data,
-      optionWrites,
-      deleteOptionIds,
+      {
+        ...data,
+        configuration: this.pairsToJson(followedPairs),
+      },
+      normalized.options,
+      deleteIds,
     );
   }
 
@@ -276,12 +324,21 @@ export class QuestionsService {
     }
 
     if (dto.isPublished) {
-      this.validateOptionSet(
-        question.type,
-        question.answerOptions,
-        question.configuration ?? undefined,
-        false,
-      );
+      const orders = question.answerOptions.map((option) => option.order);
+      if (
+        question.answerOptions.length < MIN_OPTIONS ||
+        question.answerOptions.length > MAX_OPTIONS
+      ) {
+        throw new BadRequestException(OPTION_COUNT_MESSAGE);
+      }
+      if (question.type === QuestionType.SINGLE_CHOICE) {
+        this.assertSingleChoiceRules(question.answerOptions, false);
+      } else {
+        const pairs = this.parseMatchingPairs(
+          question.configuration ?? undefined,
+        );
+        this.assertValidPairs(pairs, orders);
+      }
     }
 
     await this.questionsRepository.setPublished(id, dto.isPublished);
@@ -352,74 +409,152 @@ export class QuestionsService {
     });
   }
 
-  /**
-   * Resolves the display order for a full option payload: either every entry
-   * supplies `order` (used as-is) or none does (assigned from array
-   * position) — a mix is rejected (docs/04-api/admin.md §6).
-   */
-  private resolveOrders(entries: AnswerOptionInputDto[]): number[] {
-    const provided = entries.filter((entry) => entry.order !== undefined);
-
-    if (provided.length === 0) {
-      return entries.map((_, index) => index);
-    }
-    if (provided.length !== entries.length) {
-      throw new BadRequestException(OPTION_ORDER_ALL_OR_NONE_MESSAGE);
-    }
-    return entries.map((entry) => entry.order as number);
+  /** Merge-by-id bookkeeping shared by both question types. */
+  private mergeOptionSet(
+    question: QuestionRecord,
+    entries: AnswerOptionInputDto[],
+  ): { merged: OptionWrite[]; deleteIds: string[] } {
+    const { merged, deleteIds } = this.mergeOptionSetDetailed(
+      question,
+      entries,
+    );
+    return { merged, deleteIds };
   }
 
   /**
-   * Validates the complete option set and correct-answer configuration for
-   * the question type (docs/02-domain/question.md §6-7,
-   * docs/02-domain/answer-option.md §6, §8-9).
+   * Applies merge-by-id semantics (docs/04-api/admin.md §6): the payload is
+   * the complete desired option set. Returns the merged writes carrying
+   * their *effective* orders — normalization happens afterwards.
    */
-  private validateOptionSet(
-    type: QuestionType,
-    options: OptionWrite[] | { isCorrect: boolean; order: number }[],
-    configuration: unknown,
-    isCorrectProvided: boolean,
-    configurationProvided = false,
-  ): void {
-    if (options.length < MIN_OPTIONS || options.length > MAX_OPTIONS) {
+  private mergeOptionSetDetailed(
+    question: QuestionRecord,
+    entries: AnswerOptionInputDto[],
+  ): {
+    merged: OptionWrite[];
+    deleteIds: string[];
+    effectiveOrders: number[];
+  } {
+    const existingById = new Map(
+      question.answerOptions.map((option) => [option.id, option]),
+    );
+
+    const seenIds = new Set<string>();
+    for (const entry of entries) {
+      if (entry.id !== undefined) {
+        if (!existingById.has(entry.id)) {
+          throw new BadRequestException(OPTION_ID_UNKNOWN_MESSAGE);
+        }
+        if (seenIds.has(entry.id)) {
+          throw new BadRequestException(OPTION_ID_DUPLICATE_MESSAGE);
+        }
+        seenIds.add(entry.id);
+      }
+    }
+
+    if (entries.length < MIN_OPTIONS || entries.length > MAX_OPTIONS) {
       throw new BadRequestException(OPTION_COUNT_MESSAGE);
     }
 
-    const orders = options.map((option) => option.order);
-    if (new Set(orders).size !== orders.length) {
-      throw new BadRequestException(OPTION_ORDER_UNIQUE_MESSAGE);
-    }
+    const effectiveOrders = this.resolveEffectiveOrders(entries);
 
-    if (type === QuestionType.SINGLE_CHOICE) {
-      if (configuration !== undefined || configurationProvided) {
-        throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    const merged: OptionWrite[] = entries.map((entry, index) => {
+      const existing = entry.id ? existingById.get(entry.id) : undefined;
+      if (!existing && entry.content === undefined) {
+        throw new BadRequestException(OPTION_CONTENT_REQUIRED_MESSAGE);
       }
-      const correctCount = options.filter((option) => option.isCorrect).length;
-      if (correctCount !== 1) {
-        throw new BadRequestException(SINGLE_CHOICE_CORRECT_MESSAGE);
-      }
-      return;
-    }
+      return {
+        id: entry.id,
+        content: entry.content ?? (existing?.content as string),
+        imageUrl:
+          entry.imageUrl === undefined
+            ? (existing?.imageUrl ?? null)
+            : entry.imageUrl,
+        isCorrect: entry.isCorrect ?? existing?.isCorrect ?? false,
+        order: effectiveOrders[index],
+      };
+    });
 
-    // MATCHING: correctness lives exclusively in the configuration.
-    if (isCorrectProvided) {
-      throw new BadRequestException(MATCHING_IS_CORRECT_MESSAGE);
-    }
-    if (configuration === undefined) {
-      throw new BadRequestException(CONFIGURATION_REQUIRED_MESSAGE);
-    }
-    this.validateMatchingConfiguration(configuration, orders);
+    const deleteIds = question.answerOptions
+      .map((option) => option.id)
+      .filter((optionId) => !seenIds.has(optionId));
+
+    return { merged, deleteIds, effectiveOrders };
   }
 
   /**
-   * The MATCHING configuration is `{pairs: [{left, right}]}` where left and
-   * right reference option order values, and every option participates in
-   * exactly one pair (docs/02-domain/answer-option.md §9).
+   * Resolves the effective ordering of a full option payload: either every
+   * entry supplies `order` (used as the ordering key) or none does (array
+   * position) — a mix is rejected, as are duplicates
+   * (docs/04-api/admin.md §6).
    */
-  private validateMatchingConfiguration(
-    configuration: unknown,
-    orders: number[],
+  private resolveEffectiveOrders(entries: AnswerOptionInputDto[]): number[] {
+    const provided = entries.filter((entry) => entry.order !== undefined);
+
+    let orders: number[];
+    if (provided.length === 0) {
+      orders = entries.map((_, index) => index);
+    } else if (provided.length !== entries.length) {
+      throw new BadRequestException(OPTION_ORDER_ALL_OR_NONE_MESSAGE);
+    } else {
+      orders = entries.map((entry) => entry.order as number);
+    }
+
+    if (new Set(orders).size !== orders.length) {
+      throw new BadRequestException(OPTION_ORDER_UNIQUE_MESSAGE);
+    }
+    return orders;
+  }
+
+  /**
+   * Normalizes persisted orders to a contiguous 0..n-1 sequence
+   * (docs/02-domain/answer-option.md §10): options are sorted by their
+   * effective order and re-numbered. `orderMap` translates effective orders
+   * to normalized ones for configuration remapping.
+   */
+  private normalizeOrders(merged: OptionWrite[]): {
+    options: OptionWrite[];
+    orderMap: Map<number, number>;
+  } {
+    const sorted = [...merged].sort((a, b) => a.order - b.order);
+    const orderMap = new Map<number, number>();
+    const options = sorted.map((option, index) => {
+      orderMap.set(option.order, index);
+      return { ...option, order: index };
+    });
+    return { options, orderMap };
+  }
+
+  private assertSingleChoiceRules(
+    options: { isCorrect: boolean }[],
+    configurationProvided: boolean,
   ): void {
+    if (configurationProvided) {
+      throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    }
+    const correctCount = options.filter((option) => option.isCorrect).length;
+    if (correctCount !== 1) {
+      throw new BadRequestException(SINGLE_CHOICE_CORRECT_MESSAGE);
+    }
+  }
+
+  private assertMatchingOptionRules(
+    options: OptionWrite[],
+    isCorrectProvided: boolean,
+  ): void {
+    if (isCorrectProvided) {
+      throw new BadRequestException(MATCHING_IS_CORRECT_MESSAGE);
+    }
+    void options;
+  }
+
+  /**
+   * Parses `{pairs: [{left, right}]}` strictly — any structural deviation is
+   * rejected (docs/02-domain/answer-option.md §9).
+   */
+  private parseMatchingPairs(configuration: unknown): MatchingPair[] {
+    if (configuration === undefined) {
+      throw new BadRequestException(CONFIGURATION_REQUIRED_MESSAGE);
+    }
     if (
       typeof configuration !== 'object' ||
       configuration === null ||
@@ -430,12 +565,11 @@ export class QuestionsService {
 
     const keys = Object.keys(configuration);
     const pairs = (configuration as { pairs?: unknown }).pairs;
-    if (keys.length !== 1 || !Array.isArray(pairs) || pairs.length === 0) {
+    if (keys.length !== 1 || !Array.isArray(pairs)) {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
 
-    const used: number[] = [];
-    for (const pair of pairs as unknown[]) {
+    return pairs.map((pair): MatchingPair => {
       if (typeof pair !== 'object' || pair === null || Array.isArray(pair)) {
         throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
       }
@@ -447,14 +581,64 @@ export class QuestionsService {
       ) {
         throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
       }
-      used.push(left as number, right as number);
+      return { left: left as number, right: right as number };
+    });
+  }
+
+  /**
+   * Validates matching pairs against an option order set
+   * (docs/02-domain/answer-option.md §9): at least two pairs; no self pair;
+   * no duplicate pair; left and right sides never overlap; every option
+   * order appears in exactly one pair.
+   */
+  private assertValidPairs(pairs: MatchingPair[], orders: number[]): void {
+    if (pairs.length < MIN_MATCHING_PAIRS) {
+      throw new BadRequestException(CONFIGURATION_MIN_PAIRS_MESSAGE);
     }
 
-    const orderSet = new Set(orders);
-    const everyUsedExists = used.every((order) => orderSet.has(order));
-    const usedExactlyOnce = new Set(used).size === used.length;
-    if (!everyUsedExists || !usedExactlyOnce || used.length !== orders.length) {
+    const lefts = pairs.map((pair) => pair.left);
+    const rights = pairs.map((pair) => pair.right);
+
+    if (pairs.some((pair) => pair.left === pair.right)) {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
+    const pairKeys = pairs.map((pair) => `${pair.left}:${pair.right}`);
+    if (new Set(pairKeys).size !== pairKeys.length) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+    const leftSet = new Set(lefts);
+    const rightSet = new Set(rights);
+    if (rights.some((order) => leftSet.has(order))) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+    if (leftSet.size !== lefts.length || rightSet.size !== rights.length) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+
+    const used = [...lefts, ...rights];
+    const orderSet = new Set(orders);
+    const everyUsedExists = used.every((order) => orderSet.has(order));
+    if (!everyUsedExists || used.length !== orders.length) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+  }
+
+  /** Remaps pair orders through the effective→normalized order map. */
+  private remapPairs(
+    pairs: MatchingPair[],
+    orderMap: Map<number, number>,
+  ): Prisma.InputJsonValue {
+    return this.pairsToJson(
+      pairs.map((pair) => ({
+        left: orderMap.get(pair.left) as number,
+        right: orderMap.get(pair.right) as number,
+      })),
+    );
+  }
+
+  private pairsToJson(pairs: MatchingPair[]): Prisma.InputJsonValue {
+    return {
+      pairs: pairs.map((pair) => ({ left: pair.left, right: pair.right })),
+    };
   }
 }
