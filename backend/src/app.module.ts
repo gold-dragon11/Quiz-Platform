@@ -3,6 +3,7 @@ import { AuthModule } from './auth/auth.module';
 import { AppConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuestionsModule } from './questions/questions.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { TopicsModule } from './topics/topics.module';
 
@@ -14,6 +15,7 @@ import { TopicsModule } from './topics/topics.module';
     AuthModule,
     SubjectsModule,
     TopicsModule,
+    QuestionsModule,
   ],
 })
 export class AppModule {}

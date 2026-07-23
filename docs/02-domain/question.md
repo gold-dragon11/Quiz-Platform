@@ -68,8 +68,11 @@ Answer Option (2..N)
 | explanation | Text | No | Explanation shown after review (future) |
 | imageUrl | String | No | Optional illustration |
 | difficulty | Enum | No | Difficulty level (Beginner / Intermediate / Advanced) |
+| configuration | JSON | No | Type-specific correct-answer configuration (required for Matching) |
+| isPublished | Boolean | Yes | Visibility status |
 | createdAt | DateTime | Yes | Creation timestamp |
 | updatedAt | DateTime | Yes | Last update timestamp |
+| deletedAt | DateTime | No | Soft-delete timestamp; set instead of removing the row |
 
 ---
 
@@ -117,6 +120,13 @@ The system validates:
 - referenced Topic exists;
 - at least two answer options exist;
 - the correct answer configuration matches the question type.
+
+Correctness by type:
+
+- **Single Choice** — exactly one Answer Option has `isCorrect = true`; `configuration` stays empty.
+- **Matching** — correctness lives in `configuration` as pairs of option order values (`{"pairs": [{"left": 0, "right": 1}]}`); every option participates in exactly one pair, and `isCorrect` is not used.
+
+The question type is immutable after creation — administrators create a new question instead of converting an existing one.
 
 Invalid questions cannot be published.
 

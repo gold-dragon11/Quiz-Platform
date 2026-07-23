@@ -116,7 +116,7 @@ For Matching questions:
 
 each Answer Option represents one matching element.
 
-The matching relationship is defined by the Question configuration.
+The matching relationship is defined by the Question's `configuration` field: correct pairs reference the participating options' order values, and every option belongs to exactly one pair. `isCorrect` is not used for Matching options.
 
 Future implementations may use dedicated matching entities if additional flexibility is required.
 

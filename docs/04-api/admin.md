@@ -263,12 +263,24 @@ Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Fou
 GET /api/v1/admin/questions
 ```
 
-Supports:
+Returns questions — published and unpublished. Soft-deleted questions are never returned.
 
-- pagination;
-- search;
-- filtering;
-- sorting.
+Supported query parameters:
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| topicId | — | UUID |
+| subjectId | — | UUID; filters through the topic relation |
+| type | — | SINGLE_CHOICE or MATCHING |
+| difficulty | — | BEGINNER, INTERMEDIATE, or ADVANCED |
+| isPublished | — | true or false |
+| search | — | case-insensitive match against the title |
+| sortBy | createdAt | createdAt or title |
+| sortOrder | desc | asc or desc |
+
+Responses use the pagination envelope (§12). Every item includes its answer options (with `isCorrect`) and its `configuration` — there is no single-question endpoint, so the list is the editing source.
 
 ---
 
@@ -278,21 +290,37 @@ Supports:
 POST /api/v1/admin/questions
 ```
 
-Creates a new question.
+Creates a new question with its answer options, in the default locale (English). `locale` is not accepted here — translations are managed through Update Question.
 
-Supported question types:
+Required fields:
 
-- Single Choice
-- Multiple Choice (future)
-- Matching
+- topicId — the parent topic must exist and not be soft-deleted, otherwise `404 Not Found`;
+- type — SINGLE_CHOICE or MATCHING (Multiple Choice is future);
+- title (plain text and/or raw LaTeX);
+- options — 2 to 20 answer options.
 
-Supports:
+Optional fields:
 
-- images;
-- LaTeX;
-- difficulty tagging.
+- imageUrl
+- difficulty
+- configuration (MATCHING only — see below)
 
-Explanations are not part of the MVP question schema (future).
+Each option carries `content` (required, text and/or LaTeX), optional `imageUrl`, optional `isCorrect` (SINGLE_CHOICE only), and optional `order`. Either every option provides `order` or none does — when omitted, order is assigned from array position. Option ids are not accepted at creation.
+
+Correctness rules by type:
+
+- **SINGLE_CHOICE** — exactly one option has `isCorrect: true`; `configuration` is not allowed.
+- **MATCHING** — `isCorrect` is not accepted on options; `configuration` is required and defines the correct pairs by option order:
+
+```json
+{ "pairs": [ { "left": 0, "right": 1 }, { "left": 2, "right": 3 } ] }
+```
+
+Every option order must appear in exactly one pair.
+
+New questions always start unpublished; publishing happens through the publish endpoint (§10). `explanation` is not part of the MVP schema and is rejected. `isPublished` is likewise rejected.
+
+Responds `201 Created` with the created question, including its options.
 
 ---
 
@@ -302,7 +330,34 @@ Explanations are not part of the MVP question schema (future).
 PUT /api/v1/admin/questions/{id}
 ```
 
-Updates an existing question.
+Updates an existing question using **merge semantics**: only supplied fields change; explicit `null` clears the nullable imageUrl and difficulty.
+
+Not updatable here:
+
+- `type` — immutable; create a new question instead;
+- `isPublished` — changes only through the publish endpoint (§10);
+- `explanation` — not part of the MVP schema.
+
+When the request includes `options`, the array is the complete desired option set, **merged by id**:
+
+- an entry with an `id` updates that option (omitted fields keep their values);
+- an entry without an `id` creates a new option;
+- persisted options missing from the array are deleted.
+
+Omitting `options` entirely leaves the option set untouched. After every update the complete option set and configuration are re-validated against the question type; the same rules as Create Question apply. The whole update is atomic.
+
+Responds `200` with the updated question; an unknown or deleted id returns `404 Not Found`.
+
+### Localization
+
+Update Question accepts an optional `locale` field. When provided, the request upserts translations instead of updating the default-locale record:
+
+- `title` upserts the QuestionTranslation for that locale;
+- `options` entries of the form `{ "id": "...", "content": "..." }` upsert AnswerOptionTranslations — each id must belong to this question;
+- only `title` and `options` may accompany `locale`; any other field returns `400`;
+- `locale` must be a non-default locale — English content lives on the Question and its options;
+- `title` is required when the question's translation does not exist yet;
+- responds `200` with the written translation (`locale`, `title`, `options`).
 
 ---
 
@@ -312,21 +367,30 @@ Updates an existing question.
 DELETE /api/v1/admin/questions/{id}
 ```
 
-Uses soft delete.
+Performs a soft delete: the question disappears from every listing. Historical Quiz Sessions remain unaffected.
 
-Historical Quiz Sessions remain unaffected.
+Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Found`.
 
 ---
 
-Create Question and Update Question both accept an optional `locale` field. When provided, the request creates or updates a QuestionTranslation instead of the default-locale record.
+Field validation (`400 Bad Request` on violation):
+
+- title: 1–2000 characters;
+- option content: 1–500 characters;
+- imageUrl (question and options): up to 500 characters;
+- options: 2–20 entries;
+- order: integer ≥ 0, unique within the question;
+- type and difficulty: enum values.
+
+Question titles have no uniqueness requirement.
 
 ---
 
 # 7. Answer Options
 
-Answer Options are managed together with their parent Question.
+Answer Options are managed together with their parent Question — inline in Create Question and Update Question (§6).
 
-Separate endpoints are not required in the MVP.
+Separate endpoints are not required in the MVP. Answer Options have no soft delete: they are created, updated, and deleted through their question's edits.
 
 ---
 
@@ -414,11 +478,21 @@ DELETE /api/v1/admin/learning-materials/{id}
 
 Content can be published or unpublished.
 
-Example endpoint:
+Subjects and Topics change publication state through their Update endpoints (`isPublished` in the PUT body, §4-5).
+
+Questions use a dedicated endpoint — the only way their publication state changes:
 
 ```http
 PATCH /api/v1/admin/questions/{id}/publish
 ```
+
+Request body:
+
+```json
+{ "isPublished": true }
+```
+
+Publication re-validates the question: invalid questions cannot be published. Responds `200` with the updated question; an unknown or deleted id returns `404 Not Found`.
 
 Publishing changes visibility without affecting historical data.
 

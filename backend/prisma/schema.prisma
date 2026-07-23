@@ -303,8 +303,17 @@ model Question {
   explanation String?
   imageUrl    String?
   difficulty  Difficulty?
+  /// Type-specific correct-answer configuration
+  /// (docs/02-domain/answer-option.md §9). For MATCHING it stores the correct
+  /// pairs referencing option order values; SINGLE_CHOICE questions keep it
+  /// null — their correctness lives on AnswerOption.isCorrect.
+  configuration Json?
+  isPublished Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
+  /// row so historical Quiz Sessions stay valid.
+  deletedAt   DateTime?
 
   topic         Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
   answerOptions AnswerOption[]

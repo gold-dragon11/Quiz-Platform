@@ -230,6 +230,10 @@ Questions contain no user-specific data.
 
 The `title` column holds the default-locale (English) value.
 
+The `configuration` JSON column stores the type-specific correct-answer configuration (Matching pairs); `is_published` controls visibility.
+
+Soft delete: a `deleted_at` timestamp marks removed questions (see §6). Deleted questions disappear from all queries; historical Quiz Sessions remain valid.
+
 ---
 
 ## question_translations

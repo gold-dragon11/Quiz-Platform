@@ -49,6 +49,16 @@ export class TopicsService {
     private readonly subjectsService: SubjectsService,
   ) {}
 
+  /**
+   * Whether a visible (non-deleted) topic with this id exists. Public
+   * interface for other modules (docs/06-backend/architecture.md §11) — the
+   * Questions module uses it to validate the parent topic.
+   */
+  async topicExists(id: string): Promise<boolean> {
+    const topic = await this.topicsRepository.findActiveById(id);
+    return topic !== null;
+  }
+
   async list(query: ListTopicsQueryDto): Promise<PaginatedTopics> {
     const { items, totalItems } = await this.topicsRepository.findPage({
       skip: (query.page - 1) * query.pageSize,
