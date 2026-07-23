@@ -54,13 +54,13 @@ Unauthorized requests return:
 GET /api/v1/subjects
 ```
 
-Returns all published Subjects, ordered by displayOrder.
+Returns all published Subjects, ordered by displayOrder ascending. The list is complete — no pagination.
 
 Supported query parameters:
 
-- locale (optional — defaults to the user's UserSettings.language, falling back to English)
+- locale (optional — see §4a Localization)
 
-Each Subject includes:
+Each Subject includes exactly:
 
 - id;
 - name;
@@ -69,30 +69,23 @@ Each Subject includes:
 - icon;
 - color.
 
-Unpublished Subjects are never returned.
+Unpublished and soft-deleted Subjects are never returned.
 
 ---
 
 ## Get Topics
 
 ```http
-GET /api/v1/topics
+GET /api/v1/subjects/{subjectId}/topics
 ```
 
-Returns published Topics for a Subject.
+Returns published Topics of one published Subject, ordered by displayOrder ascending. The list is complete — no pagination.
 
 Supported query parameters:
 
-- subjectId (required)
-- locale (optional — defaults to the user's UserSettings.language, falling back to English)
+- locale (optional — see §4a Localization)
 
-Example:
-
-```http
-GET /api/v1/topics?subjectId=uuid
-```
-
-Each Topic includes:
+Each Topic includes exactly:
 
 - id;
 - name;
@@ -100,73 +93,82 @@ Each Topic includes:
 - description;
 - displayOrder.
 
-Unpublished Topics are never returned.
+Unpublished and soft-deleted Topics are never returned. An unknown, unpublished, or soft-deleted Subject returns `404 Not Found` — all indistinguishable. A malformed subjectId returns `400`.
 
 ---
 
-# 5. Get Question
+## 4a. Localization
 
-## Retrieve Question
+Every public content endpoint accepts an optional `locale` query parameter (a language name, case-insensitive).
 
-```http
-GET /api/v1/questions/{id}
-```
+Resolution chain:
 
-Returns a single question.
+1. the requested `locale`, when it names a supported language;
+2. otherwise the user's UserSettings.language;
+3. otherwise English.
 
-Supported query parameters:
+An unsupported `locale` value is never an error — it simply falls back.
 
-- locale (optional — defaults to the user's UserSettings.language, falling back to English)
-
-The response includes:
-
-- question ID;
-- question type;
-- question text;
-- optional image;
-- optional LaTeX content;
-- answer options.
-
-Correct answers are never included.
+Translated fields: subject name and description, topic name and description, question title, answer option content. A missing translation falls back to the default-locale (English) value stored on the record itself, field by field. Everything else always comes from the default records.
 
 ---
 
-# 6. Get Questions by Topic
+# 5. Get Questions by Topic
 
 ## Retrieve Topic Questions
 
 ```http
-GET /api/v1/questions
+GET /api/v1/topics/{topicId}/questions
 ```
+
+Returns published questions of one fully published Topic, newest first (createdAt descending), paginated.
 
 Supported query parameters:
 
-- topicId
-- page
-- pageSize
-- locale (optional — defaults to the user's UserSettings.language, falling back to English)
+- page (default 1)
+- pageSize (default 20, maximum 100)
+- locale (optional — see §4a Localization)
 
-Example:
+Responses use the standard pagination envelope (items, page, pageSize, totalItems, totalPages).
 
-```http
-GET /api/v1/questions?topicId=uuid&page=1&pageSize=20
-```
+A question is visible only when the entire publication chain holds:
 
-This endpoint is primarily intended for administrative previews or future learning features, not for active quiz sessions.
+- the question is published and not deleted;
+- its topic is published and not deleted;
+- the topic's subject is published and not deleted.
+
+An unknown, unpublished, or soft-deleted topic — or a topic under an unpublished or deleted subject — returns `404 Not Found`, all indistinguishable. A malformed topicId returns `400`.
+
+There is no single-question endpoint in the MVP; questions are always delivered through their topic.
 
 ---
 
-# 7. Question Response
+# 6. Question Response
 
-Each question may contain:
+Each question carries exactly what taking a quiz requires:
 
-- text;
-- image;
-- LaTeX expressions;
-- explanation (future — not part of the MVP schema, see §11);
-- answer options.
+- id;
+- type;
+- title (text and/or raw LaTeX, localized);
+- difficulty;
+- imageUrl;
+- answerOptions — each with id, content (localized), imageUrl, order;
+- configuration — MATCHING questions only; absent for SINGLE_CHOICE.
+
+Never included:
+
+- isCorrect;
+- explanation;
+- isPublished, deletedAt, timestamps, or any other internal metadata;
+- raw translation records.
+
+---
+
+# 7. Rendering
 
 The client should render the content according to the question type.
+
+Answer options arrive in their stored order (0..n-1); the quiz engine may shuffle the presentation without modifying stored data.
 
 ---
 

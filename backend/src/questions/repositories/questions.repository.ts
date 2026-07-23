@@ -40,6 +40,29 @@ export interface QuestionTranslationRecord {
   options: { id: string; content: string }[];
 }
 
+/**
+ * A published question with per-locale translations riding along, as read
+ * for the public API (docs/04-api/questions.md §5). isCorrect is never even
+ * selected here — answer leakage is prevented at the query level
+ * (docs/04-api/questions.md §14).
+ */
+export interface PublishedQuestionRow {
+  id: string;
+  type: QuestionType;
+  title: string;
+  imageUrl: string | null;
+  difficulty: Difficulty | null;
+  configuration: Prisma.JsonValue;
+  translations: { title: string }[];
+  answerOptions: {
+    id: string;
+    content: string;
+    imageUrl: string | null;
+    order: number;
+    translations: { content: string }[];
+  }[];
+}
+
 /** One option to update, create, or keep during a merge-by-id update. */
 export interface OptionWrite {
   id?: string;
@@ -130,6 +153,63 @@ export class QuestionsRepository {
       where: { id, deletedAt: null },
       select: QUESTION_SELECT,
     });
+  }
+
+  /**
+   * Published, non-deleted questions of one topic for the public API,
+   * newest first (docs/04-api/questions.md §5-6). The caller has already
+   * verified the topic's own publication chain. When `locale` is given, the
+   * matching title and option-content translations ride along.
+   */
+  async findPublishedPageForTopic(params: {
+    topicId: string;
+    skip: number;
+    take: number;
+    locale?: Language;
+  }): Promise<{ items: PublishedQuestionRow[]; totalItems: number }> {
+    const where: Prisma.QuestionWhereInput = {
+      topicId: params.topicId,
+      deletedAt: null,
+      isPublished: true,
+    };
+    const translationsWhere =
+      params.locale === undefined
+        ? { locale: { in: [] as Language[] } }
+        : { locale: params.locale };
+
+    const [items, totalItems] = await this.prisma.$transaction([
+      this.prisma.question.findMany({
+        where,
+        select: {
+          id: true,
+          type: true,
+          title: true,
+          imageUrl: true,
+          difficulty: true,
+          configuration: true,
+          translations: { where: translationsWhere, select: { title: true } },
+          answerOptions: {
+            select: {
+              id: true,
+              content: true,
+              imageUrl: true,
+              order: true,
+              translations: {
+                where: translationsWhere,
+                select: { content: true },
+              },
+            },
+            orderBy: { order: 'asc' },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: params.skip,
+        take: params.take,
+      }),
+      this.prisma.question.count({ where }),
+    ]);
+
+    return { items, totalItems };
   }
 
   async createWithOptions(data: {

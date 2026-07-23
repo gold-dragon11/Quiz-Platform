@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { SettingsModule } from '../settings/settings.module';
 import { TopicsModule } from '../topics/topics.module';
 import { AdminQuestionsController } from './controllers/admin-questions.controller';
+import { PublicQuestionsController } from './controllers/public-questions.controller';
 import { QuestionsRepository } from './repositories/questions.repository';
 import { QuestionsService } from './services/questions.service';
 
@@ -12,8 +14,8 @@ import { QuestionsService } from './services/questions.service';
  * (docs/06-backend/architecture.md §11).
  */
 @Module({
-  imports: [TopicsModule],
-  controllers: [AdminQuestionsController],
+  imports: [TopicsModule, SettingsModule],
+  controllers: [AdminQuestionsController, PublicQuestionsController],
   providers: [QuestionsService, QuestionsRepository],
   exports: [QuestionsService],
 })

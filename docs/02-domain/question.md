@@ -192,7 +192,17 @@ The platform should preserve historical accuracy.
 
 ---
 
-# 13. Administration
+# 13. Public Exposure
+
+Questions reach learners through the read-only Questions API.
+
+A question is publicly visible only when the whole publication chain holds: the question, its Topic, and the Topic's Subject are all published and not soft-deleted.
+
+The public representation carries only what taking a quiz requires: id, type, localized title, difficulty, imageUrl, ordered answer options (id, localized content, imageUrl, order), and — for Matching questions — the configuration. `isCorrect`, `explanation`, publication and deletion metadata, and raw translation records are never exposed.
+
+---
+
+# 14. Administration
 
 Questions are managed through the Admin Panel.
 
@@ -207,7 +217,7 @@ Deleted questions should not invalidate historical quiz sessions.
 
 ---
 
-# 14. Future Improvements
+# 15. Future Improvements
 
 Potential future enhancements include:
 
@@ -223,7 +233,7 @@ These features are outside the MVP.
 
 ---
 
-# 15. Constraints
+# 16. Constraints
 
 The Question entity:
 
@@ -236,7 +246,7 @@ Business logic belongs to dedicated services.
 
 ---
 
-# 16. Non-Functional Requirements
+# 17. Non-Functional Requirements
 
 The Question entity should:
 
@@ -247,7 +257,7 @@ The Question entity should:
 
 ---
 
-# 17. Success Criteria
+# 18. Success Criteria
 
 The Question entity is considered successful if it:
 

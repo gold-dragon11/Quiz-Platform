@@ -24,6 +24,22 @@ export interface SubjectTranslationRecord {
   description: string | null;
 }
 
+/**
+ * A published subject with its (optional) translation for one locale,
+ * as read for the public catalog (docs/04-api/questions.md §4).
+ */
+export interface PublishedSubjectRow {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  icon: string | null;
+  color: string | null;
+  translations: { name: string; description: string | null }[];
+}
+
+const TRANSLATION_MERGE_SELECT = { name: true, description: true } as const;
+
 const SUBJECT_SELECT = {
   id: true,
   name: true,
@@ -88,6 +104,43 @@ export class SubjectsRepository {
     return this.prisma.subject.findFirst({
       where: { id, deletedAt: null },
       select: SUBJECT_SELECT,
+    });
+  }
+
+  /** Whether a published, non-deleted subject with this id exists. */
+  async publishedExists(id: string): Promise<boolean> {
+    const subject = await this.prisma.subject.findFirst({
+      where: { id, deletedAt: null, isPublished: true },
+      select: { id: true },
+    });
+    return subject !== null;
+  }
+
+  /**
+   * Published, non-deleted subjects for the public catalog, displayOrder
+   * ascending (docs/04-api/questions.md §4). When `locale` is given the
+   * matching translation row rides along for the service to merge; the
+   * default locale needs none.
+   */
+  async findPublished(locale?: Language): Promise<PublishedSubjectRow[]> {
+    return this.prisma.subject.findMany({
+      where: { deletedAt: null, isPublished: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        color: true,
+        translations:
+          locale === undefined
+            ? {
+                where: { locale: { in: [] } },
+                select: TRANSLATION_MERGE_SELECT,
+              }
+            : { where: { locale }, select: TRANSLATION_MERGE_SELECT },
+      },
+      orderBy: { displayOrder: 'asc' },
     });
   }
 

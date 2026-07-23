@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Language, Prisma } from '@prisma/client';
+import { SettingsService } from '../../settings/services/settings.service';
 import { SubjectsService } from '../../subjects/services/subjects.service';
 import { CreateTopicDto } from '../dto/create-topic.dto';
 import { ListTopicsQueryDto } from '../dto/list-topics-query.dto';
@@ -15,6 +16,7 @@ import {
   TopicsRepository,
 } from '../repositories/topics.repository';
 import { PaginatedTopics } from '../types/paginated-topics.type';
+import { PublicTopic } from '../types/public-topic.type';
 
 /** The default locale lives on the Topic row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -47,7 +49,52 @@ export class TopicsService {
   constructor(
     private readonly topicsRepository: TopicsRepository,
     private readonly subjectsService: SubjectsService,
+    private readonly settingsService: SettingsService,
   ) {}
+
+  /**
+   * Public catalog (docs/04-api/questions.md §4): published topics of a
+   * published subject, localized with fallback. An unknown, unpublished, or
+   * deleted subject is indistinguishable — all 404.
+   */
+  async listPublishedForSubject(
+    subjectId: string,
+    requestedLocale: string | undefined,
+    userId: string,
+  ): Promise<PublicTopic[]> {
+    if (!(await this.subjectsService.publishedSubjectExists(subjectId))) {
+      throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
+    }
+
+    const locale = await this.settingsService.resolveLocale(
+      requestedLocale,
+      userId,
+    );
+    const rows = await this.topicsRepository.findPublishedForSubject(
+      subjectId,
+      locale === Language.ENGLISH ? undefined : locale,
+    );
+
+    return rows.map((row) => {
+      const translation = row.translations[0];
+      return {
+        id: row.id,
+        name: translation?.name ?? row.name,
+        slug: row.slug,
+        description: translation?.description ?? row.description,
+        displayOrder: row.displayOrder,
+      };
+    });
+  }
+
+  /**
+   * Whether this topic is fully visible to the public: published and
+   * non-deleted itself, under a published, non-deleted subject. Public
+   * interface for the Questions module (docs/04-api/questions.md §12).
+   */
+  async publishedTopicExists(id: string): Promise<boolean> {
+    return this.topicsRepository.publishedExistsWithPublishedSubject(id);
+  }
 
   /**
    * Whether a visible (non-deleted) topic with this id exists. Public

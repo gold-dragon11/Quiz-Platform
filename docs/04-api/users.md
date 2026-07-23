@@ -34,6 +34,8 @@ Users can only manage their own accounts unless they have administrative privile
 
 All endpoints require authentication, with one exception: retrieving another user's Public Profile (§12) is a public route and does not require an access token.
 
+The public *content* catalog (subjects, topics, questions) is a separate surface documented in the Questions API — those routes also require authentication and are read-only for every role.
+
 ```http
 Authorization: Bearer <access_token>
 ```

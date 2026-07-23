@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Language, Prisma, QuestionType } from '@prisma/client';
+import { SettingsService } from '../../settings/services/settings.service';
 import { TopicsService } from '../../topics/services/topics.service';
 import { AnswerOptionInputDto } from '../dto/answer-option-input.dto';
 import { CreateQuestionDto } from '../dto/create-question.dto';
@@ -16,7 +17,12 @@ import {
   QuestionTranslationRecord,
   QuestionsRepository,
 } from '../repositories/questions.repository';
+import { ListPublicQuestionsQueryDto } from '../dto/list-public-questions-query.dto';
 import { PaginatedQuestions } from '../types/paginated-questions.type';
+import {
+  PaginatedPublicQuestions,
+  PublicQuestion,
+} from '../types/public-question.type';
 
 /** The default locale lives on the Question row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -88,7 +94,64 @@ export class QuestionsService {
   constructor(
     private readonly questionsRepository: QuestionsRepository,
     private readonly topicsService: TopicsService,
+    private readonly settingsService: SettingsService,
   ) {}
+
+  /**
+   * Public question delivery (docs/04-api/questions.md §5-§8, §14):
+   * published questions of a fully published topic (subject included),
+   * newest first, localized with fallback. The response carries exactly
+   * what taking a quiz requires — isCorrect never leaves this method, and
+   * `configuration` is included for MATCHING questions only.
+   */
+  async listPublishedForTopic(
+    topicId: string,
+    query: ListPublicQuestionsQueryDto,
+    userId: string,
+  ): Promise<PaginatedPublicQuestions> {
+    // The full ancestor publication chain: an unknown, unpublished, or
+    // deleted topic — or one under an unpublished subject — is the same 404.
+    if (!(await this.topicsService.publishedTopicExists(topicId))) {
+      throw new NotFoundException(TOPIC_NOT_FOUND_MESSAGE);
+    }
+
+    const locale = await this.settingsService.resolveLocale(
+      query.locale,
+      userId,
+    );
+    const { items, totalItems } =
+      await this.questionsRepository.findPublishedPageForTopic({
+        topicId,
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        locale: locale === Language.ENGLISH ? undefined : locale,
+      });
+
+    const publicItems: PublicQuestion[] = items.map((row) => ({
+      id: row.id,
+      type: row.type,
+      title: row.translations[0]?.title ?? row.title,
+      difficulty: row.difficulty,
+      imageUrl: row.imageUrl,
+      answerOptions: row.answerOptions.map((option) => ({
+        id: option.id,
+        content: option.translations[0]?.content ?? option.content,
+        imageUrl: option.imageUrl,
+        order: option.order,
+      })),
+      ...(row.type === QuestionType.MATCHING
+        ? { configuration: row.configuration }
+        : {}),
+    }));
+
+    return {
+      items: publicItems,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / query.pageSize),
+    };
+  }
 
   async list(query: ListQuestionsQueryDto): Promise<PaginatedQuestions> {
     const { items, totalItems } = await this.questionsRepository.findPage({

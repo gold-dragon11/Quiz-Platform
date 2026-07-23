@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Language, Prisma } from '@prisma/client';
+import { SettingsService } from '../../settings/services/settings.service';
 import { CreateSubjectDto } from '../dto/create-subject.dto';
 import { ListSubjectsQueryDto } from '../dto/list-subjects-query.dto';
 import { UpdateSubjectDto } from '../dto/update-subject.dto';
@@ -14,6 +15,7 @@ import {
   SubjectsRepository,
 } from '../repositories/subjects.repository';
 import { PaginatedSubjects } from '../types/paginated-subjects.type';
+import { PublicSubject } from '../types/public-subject.type';
 
 /** The default locale lives on the Subject row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -41,7 +43,49 @@ const TRANSLATION_NAME_REQUIRED_MESSAGE =
  */
 @Injectable()
 export class SubjectsService {
-  constructor(private readonly subjectsRepository: SubjectsRepository) {}
+  constructor(
+    private readonly subjectsRepository: SubjectsRepository,
+    private readonly settingsService: SettingsService,
+  ) {}
+
+  /**
+   * Public catalog (docs/04-api/questions.md §4): published, non-deleted
+   * subjects in display order, localized with fallback to the default-locale
+   * values stored on the subject itself.
+   */
+  async listPublished(
+    requestedLocale: string | undefined,
+    userId: string,
+  ): Promise<PublicSubject[]> {
+    const locale = await this.settingsService.resolveLocale(
+      requestedLocale,
+      userId,
+    );
+    const rows = await this.subjectsRepository.findPublished(
+      locale === Language.ENGLISH ? undefined : locale,
+    );
+
+    return rows.map((row) => {
+      const translation = row.translations[0];
+      return {
+        id: row.id,
+        name: translation?.name ?? row.name,
+        slug: row.slug,
+        description: translation?.description ?? row.description,
+        icon: row.icon,
+        color: row.color,
+      };
+    });
+  }
+
+  /**
+   * Whether a published, non-deleted subject with this id exists. Public
+   * interface for the Topics module's ancestor checks
+   * (docs/04-api/questions.md §4).
+   */
+  async publishedSubjectExists(id: string): Promise<boolean> {
+    return this.subjectsRepository.publishedExists(id);
+  }
 
   /**
    * Whether a visible (non-deleted) subject with this id exists. Public

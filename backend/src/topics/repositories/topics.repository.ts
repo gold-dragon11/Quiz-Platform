@@ -24,6 +24,19 @@ export interface TopicTranslationRecord {
   description: string | null;
 }
 
+/**
+ * A published topic with its (optional) translation for one locale, as read
+ * for the public catalog (docs/04-api/questions.md §4).
+ */
+export interface PublishedTopicRow {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  displayOrder: number;
+  translations: { name: string; description: string | null }[];
+}
+
 const TOPIC_SELECT = {
   id: true,
   subjectId: true,
@@ -94,6 +107,50 @@ export class TopicsRepository {
     return this.prisma.topic.findFirst({
       where: { id, deletedAt: null },
       select: TOPIC_SELECT,
+    });
+  }
+
+  /**
+   * Whether a published, non-deleted topic with this id exists under a
+   * published, non-deleted subject — the full ancestor publication chain
+   * (docs/04-api/questions.md §12).
+   */
+  async publishedExistsWithPublishedSubject(id: string): Promise<boolean> {
+    const topic = await this.prisma.topic.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        isPublished: true,
+        subject: { deletedAt: null, isPublished: true },
+      },
+      select: { id: true },
+    });
+    return topic !== null;
+  }
+
+  /**
+   * Published, non-deleted topics of one subject for the public catalog,
+   * displayOrder ascending (docs/04-api/questions.md §4). When `locale` is
+   * given the matching translation rides along for the service to merge.
+   */
+  async findPublishedForSubject(
+    subjectId: string,
+    locale?: Language,
+  ): Promise<PublishedTopicRow[]> {
+    return this.prisma.topic.findMany({
+      where: { subjectId, deletedAt: null, isPublished: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        displayOrder: true,
+        translations: {
+          where: locale === undefined ? { locale: { in: [] } } : { locale },
+          select: { name: true, description: true },
+        },
+      },
+      orderBy: { displayOrder: 'asc' },
     });
   }
 

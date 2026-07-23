@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { SettingsModule } from '../settings/settings.module';
 import { SubjectsModule } from '../subjects/subjects.module';
 import { AdminTopicsController } from './controllers/admin-topics.controller';
+import { PublicTopicsController } from './controllers/public-topics.controller';
 import { TopicsRepository } from './repositories/topics.repository';
 import { TopicsService } from './services/topics.service';
 
@@ -11,8 +13,8 @@ import { TopicsService } from './services/topics.service';
  * the parent subject (docs/06-backend/architecture.md §11).
  */
 @Module({
-  imports: [SubjectsModule],
-  controllers: [AdminTopicsController],
+  imports: [SubjectsModule, SettingsModule],
+  controllers: [AdminTopicsController, PublicTopicsController],
   providers: [TopicsService, TopicsRepository],
   exports: [TopicsService],
 })
