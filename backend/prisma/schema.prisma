@@ -261,6 +261,9 @@ model Topic {
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
+  /// row. Name and slug stay reserved within the subject.
+  deletedAt    DateTime?
 
   subject           Subject            @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   questions         Question[]

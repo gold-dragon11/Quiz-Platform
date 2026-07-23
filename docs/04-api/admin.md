@@ -159,9 +159,23 @@ Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Fou
 GET /api/v1/admin/topics
 ```
 
-Returns all topics.
+Returns topics — published and unpublished. Soft-deleted topics are never returned.
 
-Supports filtering by subject.
+Supported query parameters:
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| subjectId | — | UUID; restricts the list to one subject |
+| isPublished | — | true or false |
+| search | — | case-insensitive match against name and slug |
+| sortBy | displayOrder | displayOrder, name, or createdAt |
+| sortOrder | asc | asc or desc |
+
+Responses use the pagination envelope (§12).
+
+There is no single-topic endpoint — the list endpoint is the only read.
 
 ---
 
@@ -171,7 +185,38 @@ Supports filtering by subject.
 POST /api/v1/admin/topics
 ```
 
-Creates a new topic.
+Creates a new topic in the default locale (English). `locale` is not accepted here — translations are managed through Update Topic.
+
+Required fields:
+
+- subjectId — the parent subject must exist and not be soft-deleted, otherwise `404 Not Found`;
+- name
+- slug
+
+Optional fields:
+
+- description
+- displayOrder (append at the end of the subject — max + 1 within it — when omitted)
+
+New topics always start unpublished; publishing happens through Update Topic.
+
+Responds `201 Created` with the created topic.
+
+Uniqueness is scoped to the parent subject (violations return `409 Conflict`):
+
+- name — unique within the subject, including soft-deleted topics (names stay reserved);
+- slug — unique within the subject, including soft-deleted topics (slugs stay reserved);
+- displayOrder — unique among the subject's non-deleted topics.
+
+Different subjects may contain topics with identical names or slugs.
+
+Field validation (`400 Bad Request` on violation):
+
+- subjectId: UUID, required;
+- name: 1–100 characters;
+- slug: 1–100 characters, `^[a-z0-9]+(?:-[a-z0-9]+)*$`;
+- description: up to 500 characters;
+- displayOrder: integer ≥ 0.
 
 ---
 
@@ -181,7 +226,20 @@ Creates a new topic.
 PUT /api/v1/admin/topics/{id}
 ```
 
-Updates topic information.
+Updates an existing topic using **merge semantics**: only supplied fields change, and an explicit `null` clears the nullable description. Omitted fields are never touched — there is no destructive full replacement.
+
+All Create Topic fields may be supplied except `subjectId` — a topic cannot be moved to another subject — plus `isPublished` to publish or unpublish.
+
+The same uniqueness and validation rules as Create Topic apply. Responds `200` with the updated topic; an unknown or deleted id returns `404 Not Found`.
+
+### Localization
+
+Update Topic accepts an optional `locale` field. When provided, the request upserts the TopicTranslation for that locale instead of updating the default-locale record:
+
+- only the localizable fields — `name` and `description` — may accompany `locale`; any other field returns `400`;
+- `locale` must be a non-default locale — English content lives on the Topic itself;
+- `name` is required when the translation does not exist yet;
+- responds `200` with the translation (`locale`, `name`, `description`).
 
 ---
 
@@ -191,11 +249,9 @@ Updates topic information.
 DELETE /api/v1/admin/topics/{id}
 ```
 
-Performs a soft delete.
+Performs a soft delete: the topic disappears from every listing, but its name and slug remain reserved within its subject, and historical learning data remains valid.
 
----
-
-Create Topic and Update Topic both accept an optional `locale` field. When provided, the request creates or updates a TopicTranslation instead of the default-locale record.
+Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Found`.
 
 ---
 

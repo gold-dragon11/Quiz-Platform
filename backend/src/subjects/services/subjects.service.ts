@@ -43,6 +43,16 @@ const TRANSLATION_NAME_REQUIRED_MESSAGE =
 export class SubjectsService {
   constructor(private readonly subjectsRepository: SubjectsRepository) {}
 
+  /**
+   * Whether a visible (non-deleted) subject with this id exists. Public
+   * interface for other modules (docs/06-backend/architecture.md §11) — the
+   * Topics module uses it to validate the parent subject.
+   */
+  async subjectExists(id: string): Promise<boolean> {
+    const subject = await this.subjectsRepository.findActiveById(id);
+    return subject !== null;
+  }
+
   async list(query: ListSubjectsQueryDto): Promise<PaginatedSubjects> {
     const { items, totalItems } = await this.subjectsRepository.findPage({
       skip: (query.page - 1) * query.pageSize,

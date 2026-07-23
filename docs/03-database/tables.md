@@ -203,6 +203,8 @@ Topics organize Questions.
 
 The `name` and `description` columns hold the default-locale (English) values.
 
+Soft delete: a `deleted_at` timestamp marks removed topics (see §6). Deleted topics disappear from all queries, but their name and slug stay reserved within their subject.
+
 ---
 
 ## topic_translations

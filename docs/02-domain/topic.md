@@ -69,6 +69,7 @@ AnswerOption (N)
 | isPublished | Boolean | Yes | Visibility status |
 | createdAt | DateTime | Yes | Creation timestamp |
 | updatedAt | DateTime | Yes | Last update timestamp |
+| deletedAt | DateTime | No | Soft-delete timestamp; set instead of removing the row |
 
 ---
 
@@ -93,6 +94,8 @@ The system validates:
 - name is required;
 - slug is unique within the Subject;
 - displayOrder is unique within the Subject.
+
+Name and slug uniqueness include soft-deleted topics of the same subject — both stay reserved after deletion. Display order uniqueness applies among the subject's non-deleted topics and is enforced at the service level. A topic's subject is fixed at creation and cannot be changed.
 
 Only valid Topics can be published.
 
