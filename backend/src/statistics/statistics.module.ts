@@ -1,15 +1,25 @@
 import { Module } from '@nestjs/common';
+import { SettingsModule } from '../settings/settings.module';
+import { StatisticsController } from './controllers/statistics.controller';
+import { StatisticsQueryRepository } from './repositories/statistics-query.repository';
 import { StatisticsRepository } from './repositories/statistics.repository';
+import { LevelService } from './services/level.service';
 import { StatisticsService } from './services/statistics.service';
 
 /**
- * Statistics module (docs/06-backend/architecture.md §6). Minimal for now — it
- * owns Statistics and XP persistence and serves the Quiz engine's completion
- * hook. Read endpoints (level, progress, trends) arrive in the Statistics
- * phase (decision D16).
+ * Statistics module (docs/06-backend/architecture.md §6). Owns the Statistics
+ * write hook consumed by the Quiz engine (Phase 5.1) and the read-only
+ * progress API (Phase 5.2). Depends on Settings for locale resolution.
  */
 @Module({
-  providers: [StatisticsService, StatisticsRepository],
+  imports: [SettingsModule],
+  controllers: [StatisticsController],
+  providers: [
+    StatisticsService,
+    StatisticsRepository,
+    StatisticsQueryRepository,
+    LevelService,
+  ],
   exports: [StatisticsService],
 })
 export class StatisticsModule {}

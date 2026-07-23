@@ -56,15 +56,30 @@ GET /api/v1/statistics
 
 Returns the authenticated user's overall learning statistics.
 
-Response includes:
+Response fields:
 
-- total XP;
-- current level;
-- completed quizzes;
-- average accuracy;
-- total questions answered;
-- total correct answers;
-- total study time.
+- totalXP;
+- currentLevel;
+- completedQuizzes;
+- averageAccuracy (cumulative: correctAnswers ÷ totalQuestions × 100);
+- totalQuestions;
+- correctAnswers;
+- totalStudyTime (seconds);
+- xpForCurrentLevel, xpForNextLevel, xpIntoLevel, completionPercent.
+
+Internal fields (incorrect answers, streaks, raw records) are never exposed. A user with no completed quizzes receives a well-formed zero payload (level 1, 0 XP) rather than an empty response.
+
+### Level formula
+
+Level is derived from total XP with a linear MVP progression of 100 XP per level:
+
+- `currentLevel = floor(totalXP / 100) + 1`
+- `xpForCurrentLevel = (currentLevel - 1) × 100`
+- `xpForNextLevel = currentLevel × 100`
+- `xpIntoLevel = totalXP - xpForCurrentLevel`
+- `completionPercent = (xpIntoLevel / 100) × 100`
+
+The formula is isolated in a dedicated service so the curve can evolve without changing the API.
 
 ---
 
@@ -76,14 +91,16 @@ Response includes:
 GET /api/v1/statistics/subjects
 ```
 
-Returns learning statistics grouped by subject.
+Returns learning statistics grouped by subject, computed at request time from completed Quiz Sessions (no precomputed per-subject table). Only subjects the user has completed at least one quiz in are returned; the array is empty otherwise. Subject names are localized (see §10a). Supports an optional `locale` query parameter.
 
 Each subject includes:
 
-- completed quizzes;
-- average accuracy;
-- earned XP;
-- total questions answered.
+- subjectId;
+- subjectName;
+- completedQuizzes;
+- totalQuestions;
+- averageAccuracy (correctAnswers ÷ totalQuestions × 100 for that subject);
+- earnedXP.
 
 ---
 
@@ -95,7 +112,18 @@ Each subject includes:
 GET /api/v1/statistics/topics
 ```
 
-Returns learning statistics grouped by topic.
+Returns learning statistics grouped by topic, computed at request time. Only topics the user has completed at least one quiz in appear (topic-scoped sessions only — Random Quizzes without a topic are excluded). Supports an optional `subjectId` filter and an optional `locale` parameter. Names are localized (see §10a).
+
+Each topic includes:
+
+- topicId;
+- topicName;
+- subjectId;
+- subjectName;
+- completedQuizzes;
+- totalQuestions;
+- averageAccuracy;
+- earnedXP.
 
 This endpoint supports progress tracking within individual topics.
 
@@ -128,17 +156,19 @@ Typical response includes:
 GET /api/v1/statistics/recent
 ```
 
-Returns the user's latest quiz sessions.
+Returns the user's latest **completed** quiz sessions, newest first, using the standard pagination envelope (items, page, pageSize, totalItems, totalPages). Query parameters: `page` (default 1), `pageSize` (default 20, max 100), optional `locale`.
 
-Each item may include:
+Each item includes:
 
-- quiz date;
-- subject;
-- topic;
+- sessionId;
+- subjectId, subjectName;
+- topicId, topicName (null for Random Quizzes);
 - score;
-- earned XP.
+- accuracy;
+- xpEarned;
+- completedAt.
 
-Supports pagination.
+Names are localized (see §10a). In-progress sessions never appear.
 
 ---
 
@@ -150,15 +180,13 @@ Supports pagination.
 GET /api/v1/statistics/trends
 ```
 
-Returns historical learning metrics.
+**Deferred.** Trend/chart data (quiz activity over time, accuracy trend, XP progression) is not part of the MVP statistics API; it is deferred to the future analytics phase, where its bucket granularity, time window, and response schema will be specified. This endpoint is not implemented.
 
-Examples include:
+---
 
-- quiz activity over time;
-- accuracy trend;
-- XP progression.
+# 9a. Localization
 
-The API returns data optimized for chart visualization.
+The subjects, topics, and recent-activity endpoints accept an optional `locale` query parameter. Locale is resolved as: the requested `locale`, then the user's language setting, then English — an unsupported value simply falls back. Subject and topic names use the translated value with per-record fallback, exactly like the Public Content API.
 
 ---
 

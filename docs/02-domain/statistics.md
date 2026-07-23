@@ -139,10 +139,8 @@ Statistics should always reflect completed Quiz Sessions.
 
 # 10. Future Metrics
 
-Future versions may include:
+Per-subject and per-topic performance are exposed read-only through the Statistics API, computed at request time from completed Quiz Sessions rather than stored on this entity. The deeper analytics below remain future work:
 
-- Subject Performance
-- Topic Performance
 - Weak Topics
 - Strong Topics
 - Learning Heatmap
