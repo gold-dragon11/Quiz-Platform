@@ -4,6 +4,7 @@ import { AppConfigModule } from './config/config.module';
 import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
+import { QuizModule } from './quiz/quiz.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { TopicsModule } from './topics/topics.module';
 
@@ -16,6 +17,7 @@ import { TopicsModule } from './topics/topics.module';
     SubjectsModule,
     TopicsModule,
     QuestionsModule,
+    QuizModule,
   ],
 })
 export class AppModule {}

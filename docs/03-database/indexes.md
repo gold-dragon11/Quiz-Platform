@@ -56,6 +56,31 @@ The following fields require unique indexes.
 
 ---
 
+## QuizSession
+
+| Column | Reason |
+|----------|-------------------------------|
+| userId (partial, WHERE status = ACTIVE) | At most one active session per user |
+
+---
+
+## QuizSessionQuestion
+
+| Column | Reason |
+|----------|-------------------------------|
+| quizSessionId + questionId | One snapshot row per question per session |
+| quizSessionId + position | Unique ordering within a session |
+
+---
+
+## QuestionAttempt
+
+| Column | Reason |
+|----------|-------------------------------|
+| quizSessionId + questionId | One attempt per question per session (upsert) |
+
+---
+
 ## Profile
 
 | Column | Reason |

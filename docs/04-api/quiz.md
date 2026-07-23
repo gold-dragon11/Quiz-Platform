@@ -54,34 +54,27 @@ Unauthorized requests return:
 POST /api/v1/quiz/start
 ```
 
-Creates a new Quiz Session.
+Creates a new Quiz Session, generated ad hoc. (`quizId` templates are reserved for a later phase and not accepted yet.)
 
-Request may include:
+Request body:
 
-- quizId (optional — starts a session from a stored Quiz configuration)
-- subjectId (required if quizId is not provided)
+- subjectId (required)
 - topicId (optional)
-- questionCount (required if quizId is not provided)
-- timerEnabled (required if quizId is not provided)
+- questionCount (required, 1–50)
+- timerEnabled (required)
 
-If quizId is provided, the Subject, Topic, question count, and timer default are loaded from the referenced Quiz. Otherwise, the session is generated ad hoc directly from subjectId/topicId, following the Subject Quiz and Random Quiz modes.
+The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
 
-The backend:
+The backend, in a single transaction:
 
-- creates QuizSession;
-- selects random questions;
-- stores the generated question set.
+- verifies the user has no other active session (otherwise `409 Conflict`);
+- selects `questionCount` random questions whose full publication chain holds (question, topic, and subject all published and not deleted);
+- if fewer eligible questions exist than requested, creates nothing and returns `409 Conflict`;
+- creates the QuizSession directly as **Active**, stores the fixed question set, and — when the timer is enabled — stores the deadline (`60 seconds × questionCount`).
 
-Response:
+Only one Active session may exist per user at a time.
 
-```http
-201 Created
-```
-
-Returns:
-
-- sessionId
-- quiz metadata
+Response `201 Created` returns the session metadata: sessionId, mode, subjectId, topicId, questionCount, timerEnabled, status, startedAt, expiresAt.
 
 ---
 
@@ -93,17 +86,18 @@ Returns:
 GET /api/v1/quiz/{sessionId}/questions
 ```
 
-Returns the questions assigned to the Quiz Session.
+Returns the questions assigned to the Quiz Session, in their fixed order, localized (optional `locale` query — resolved against the user's language, falling back to English).
 
 Each question includes:
 
-- text;
+- id;
 - type;
-- image (optional);
-- LaTeX (optional);
-- answer options.
+- title (text and/or LaTeX);
+- difficulty;
+- imageUrl (optional);
+- answerOptions — each with id, content, imageUrl, order.
 
-Correct answers are never returned.
+Correct answers are **never** returned while the session is active: `AnswerOption.isCorrect` and (for Matching) the question `configuration` are withheld — the client submits its guesses and the backend evaluates. These values become available only in the result review after completion.
 
 ---
 
@@ -115,18 +109,19 @@ Correct answers are never returned.
 POST /api/v1/quiz/{sessionId}/answers
 ```
 
-Creates or updates a QuestionAttempt.
+Creates or updates a QuestionAttempt (upsert keyed by session + question). Answers may be changed until completion; the latest submission wins.
 
-Request includes:
+Request body:
 
 - questionId
-- selectedAnswer
+- selectedAnswer — shape depends on the question type:
+  - Single Choice: `{ "answerOptionId": "uuid" }`
+  - Matching: `{ "pairs": [ { "left": "uuid", "right": "uuid" } ] }`
+- timeSpentSeconds (optional, analytics only — never affects scoring or XP)
 
-The backend validates:
+The backend validates session ownership (a foreign or unknown session is `404`), that the question belongs to the session's fixed set (`404` otherwise), and that the session is active (`409` otherwise — including a session whose timer has expired, which is auto-completed on access). The submitted answer must reference options that belong to the question, otherwise `400`; a well-formed but wrong answer is accepted and recorded as incorrect.
 
-- session ownership;
-- question belongs to session;
-- session is active.
+Correctness is evaluated immediately and stored, but is **never** returned here. Responds `200` echoing the saved `questionId` and `selectedAnswer`.
 
 ---
 
@@ -138,17 +133,19 @@ The backend validates:
 POST /api/v1/quiz/{sessionId}/complete
 ```
 
-Completes the Quiz Session.
+Completes the Quiz Session. In a single atomic transaction, guarded so it can only succeed once, the backend:
 
-The backend:
-
-1. finalizes QuestionAttempts;
-2. calculates Result;
+1. flips the session from Active to Completed (a second attempt returns `409`);
+2. calculates the Result from the stored QuestionAttempts;
 3. awards XP;
 4. updates Statistics;
-5. closes the Quiz Session.
+5. stamps completion time and server-computed duration.
 
-The operation is atomic.
+**Scoring:** `score = accuracy = correctAnswers ÷ totalQuestions × 100`, stored to two decimals. Unanswered questions count against the total (i.e. as incorrect). Matching is all-or-nothing.
+
+**XP:** a `QUIZ_COMPLETION` transaction of `round(accuracy)` XP is always recorded (even 0). When the exact accuracy is ≥ 90.00%, an additional `HIGH_ACCURACY_BONUS` transaction of 25 XP is recorded. Examples: 82% → 82 XP; 91% → 91 + 25 = 116 XP; 100% → 100 + 25 = 125 XP.
+
+Responds `200` with the aggregate result summary (counts, accuracy, score, xpEarned, completedAt).
 
 ---
 
@@ -160,16 +157,12 @@ The operation is atomic.
 GET /api/v1/quiz/{sessionId}/result
 ```
 
-Returns:
+Returns the full post-completion **review** — available only after the session is Completed (`409` otherwise):
 
-- score;
-- accuracy;
-- correct answers;
-- incorrect answers;
-- unanswered questions;
-- earned XP.
+- `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
+- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and `explanation` (reserved; always null until the Explanation field is introduced).
 
-Question explanations will be included here once the Explanation field is introduced; it is not part of the MVP question schema (see the Question domain documentation).
+The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.
 
 ---
 
@@ -181,7 +174,7 @@ Question explanations will be included here once the Explanation field is introd
 GET /api/v1/quiz/{sessionId}
 ```
 
-Returns the current Quiz Session state.
+Returns the current Quiz Session state for recovery after a refresh or reconnect: the session metadata, its questions (same withheld-answer view as §5), and the user's own already-saved selections (`answers`). Correctness, correct answers, and Matching configuration are never included.
 
 Used when:
 

@@ -315,10 +315,11 @@ model Question {
   /// row so historical Quiz Sessions stay valid.
   deletedAt   DateTime?
 
-  topic         Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
-  answerOptions AnswerOption[]
-  attempts      QuestionAttempt[]
-  translations  QuestionTranslation[]
+  topic                Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  answerOptions        AnswerOption[]
+  attempts             QuestionAttempt[]
+  translations         QuestionTranslation[]
+  quizSessionQuestions QuizSessionQuestion[]
 
   @@index([topicId])
   @@index([type])
@@ -420,14 +421,19 @@ model QuizSession {
   questionCount   Int
   status          QuizStatus @default(DRAFT)
   startedAt       DateTime   @default(now())
+  /// Timer deadline, set at creation when timerEnabled
+  /// (60s x questionCount). Null for untimed sessions. Stored, not computed
+  /// (docs/04-api/quiz.md §11).
+  expiresAt       DateTime?
   completedAt     DateTime?
   durationSeconds Int?
   createdAt       DateTime   @default(now())
 
-  user           User              @relation(fields: [userId], references: [id], onDelete: Restrict)
-  quiz           Quiz?             @relation(fields: [quizId], references: [id], onDelete: Restrict)
-  subject        Subject           @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-  topic          Topic?            @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+  quiz           Quiz?                 @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  subject        Subject               @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic          Topic?                @relation(fields: [topicId], references: [id], onDelete: Restrict)
+  questions      QuizSessionQuestion[]
   attempts       QuestionAttempt[]
   result         Result?
   xpTransactions XPTransaction[]
@@ -438,6 +444,25 @@ model QuizSession {
   @@index([quizId])
   @@index([userId, completedAt(sort: Desc)])
   @@map("quiz_sessions")
+}
+
+/// The fixed question set of a session, captured at start
+/// (docs/02-domain/quiz-session.md §8). Stores ids and order only — question
+/// content stays in the (soft-delete-preserved) question rows.
+model QuizSessionQuestion {
+  id            String   @id @default(uuid()) @db.Uuid
+  quizSessionId String   @db.Uuid
+  questionId    String   @db.Uuid
+  position      Int
+  createdAt     DateTime @default(now())
+
+  quizSession QuizSession @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([quizSessionId, questionId])
+  @@unique([quizSessionId, position])
+  @@index([quizSessionId])
+  @@map("quiz_session_questions")
 }
 
 /// docs/02-domain/question-attempt.md — immutable. questionId uses Restrict so
@@ -456,6 +481,7 @@ model QuestionAttempt {
   quizSession QuizSession @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
   question    Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
 
+  @@unique([quizSessionId, questionId])
   @@index([quizSessionId])
   @@index([questionId])
   @@map("question_attempts")

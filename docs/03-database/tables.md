@@ -284,7 +284,15 @@ Stores quiz attempts.
 
 Each Quiz Session belongs to one User and may optionally reference the Quiz used to generate it.
 
+The `expires_at` column holds the timer deadline for timed sessions (null when untimed). A partial unique index enforces at most one Active session per user.
+
 Completed Quiz Sessions generate Results.
+
+---
+
+## quiz_session_questions
+
+Stores the fixed question set captured when a session starts — one row per selected question, with its `position`. Holds question ids and order only, not content. Unique per `(quiz_session_id, question_id)` and per `(quiz_session_id, position)`.
 
 ---
 
@@ -297,7 +305,7 @@ Each Question Attempt belongs to:
 - one Quiz Session;
 - one Question.
 
-Question Attempts remain immutable.
+At most one attempt exists per `(quiz_session_id, question_id)` (unique); submissions upsert this row. Question Attempts remain immutable after the session is completed.
 
 ---
 

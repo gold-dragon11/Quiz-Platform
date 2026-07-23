@@ -108,6 +108,10 @@ Matching
 
 This approach allows support for future question types without modifying the domain model.
 
+Both Single Choice `answerOptionId` and Matching `left`/`right` values are **Answer Option UUIDs**. Matching correctness is stored on the Question as `configuration` using option *order* values; the evaluator translates the submitted UUIDs to orders to compare them. The submitted answer is always stored verbatim, exactly as the user provided it.
+
+There is at most one QuestionAttempt per question per session (a unique constraint on `quizSessionId + questionId`); re-answering upserts the same row, and the latest submission wins.
+
 ---
 
 # 7. Validation Rules

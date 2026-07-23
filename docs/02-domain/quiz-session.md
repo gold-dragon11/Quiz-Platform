@@ -77,9 +77,12 @@ XPTransaction (1)
 | questionCount | Integer | Yes | Number of generated questions |
 | status | Enum | Yes | Session status |
 | startedAt | DateTime | Yes | Quiz start time |
+| expiresAt | DateTime | No | Timer deadline; set at creation when the timer is enabled (60s × questionCount), null otherwise |
 | completedAt | DateTime | No | Quiz completion time |
-| durationSeconds | Integer | No | Total session duration |
+| durationSeconds | Integer | No | Total session duration (server-computed at completion) |
 | createdAt | DateTime | Yes | Creation timestamp |
+
+The fixed question set is captured at creation in a dedicated `QuizSessionQuestion` snapshot (one row per question, with its position). The snapshot stores question ids and order only — question content stays in the question rows, which persist through soft deletion, preserving historical accuracy.
 
 ---
 
@@ -105,10 +108,6 @@ The architecture should support additional quiz modes without redesign.
 
 A QuizSession progresses through the following states:
 
-Draft *(temporary during generation)*
-
-↓
-
 Active
 
 ↓
@@ -119,7 +118,7 @@ or
 
 Abandoned *(future)*
 
-Only completed sessions generate Results and XP.
+Sessions are created directly as **Active** in a single transaction; the `Draft` status is reserved for future asynchronous generation and is not persisted in the MVP. Only one Active session may exist per user at a time. A session becomes **Completed** when the user submits it, finishes early, or its timer expires (an expired timer auto-completes the session on the next access). Only completed sessions generate Results and XP.
 
 ---
 
