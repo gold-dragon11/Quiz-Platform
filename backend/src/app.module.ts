@@ -5,6 +5,7 @@ import { HealthModule } from './health/health.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { QuizModule } from './quiz/quiz.module';
+import { QuizzesModule } from './quizzes/quizzes.module';
 import { SettingsModule } from './settings/settings.module';
 import { StatisticsModule } from './statistics/statistics.module';
 import { SubjectsModule } from './subjects/subjects.module';
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     TopicsModule,
     QuestionsModule,
     QuizModule,
+    QuizzesModule,
     StatisticsModule,
     SettingsModule,
     UsersModule,

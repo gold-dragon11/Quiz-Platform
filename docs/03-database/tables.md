@@ -276,6 +276,8 @@ Each Quiz belongs to one Subject and, optionally, one Topic.
 
 Quizzes are not required to start a session — the Subject Quiz and Random Quiz modes generate sessions directly from a Subject/Topic without referencing a Quiz.
 
+Soft delete: a `deleted_at` timestamp marks removed quizzes (see §6). Deleted quizzes disappear from all queries; historical Quiz Sessions that reference them remain valid.
+
 ---
 
 ## quiz_sessions

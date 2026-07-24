@@ -70,6 +70,7 @@ QuizSession (N)
 | isPublished | Boolean | Yes | Availability status |
 | createdAt | DateTime | Yes | Creation timestamp |
 | updatedAt | DateTime | Yes | Last update timestamp |
+| deletedAt | DateTime | No | Soft-delete timestamp; set instead of removing the row |
 
 ---
 

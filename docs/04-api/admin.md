@@ -408,9 +408,22 @@ Separate endpoints are not required in the MVP. Answer Options have no soft dele
 GET /api/v1/admin/quizzes
 ```
 
-Returns all Quiz configurations.
+Returns Quiz configurations — published and unpublished. Soft-deleted quizzes are never returned.
 
-Supports filtering by subject, topic, and published status, plus pagination.
+Supported query parameters:
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| subjectId | — | UUID |
+| topicId | — | UUID |
+| isPublished | — | true or false |
+| search | — | case-insensitive match against the title |
+| sortBy | createdAt | createdAt or title |
+| sortOrder | desc | asc or desc |
+
+Responses use the pagination envelope (§12).
 
 ---
 
@@ -424,17 +437,19 @@ Creates a new reusable Quiz configuration.
 
 Required fields:
 
-- subjectId
-- title
-- mode
-- questionCount
+- subjectId — the subject must exist and not be soft-deleted, otherwise `404 Not Found`;
+- title (1–100 characters);
+- mode (SUBJECT_QUIZ or RANDOM_QUIZ) — persisted exactly as provided, never derived from topicId;
+- questionCount (integer 1–50).
 
 Optional fields:
 
-- topicId
-- description
-- timerEnabled
-- isPublished
+- topicId — when provided, the topic must exist and not be soft-deleted, otherwise `404 Not Found`;
+- description (up to 500 characters);
+- timerEnabled (boolean, defaults to false);
+- isPublished (boolean, defaults to false).
+
+The parent subject and topic need only exist; they are not required to be published. Question availability is **not** checked here — a Quiz is a template, and availability is enforced only when a session is generated from it. Responds `201 Created` with the created quiz.
 
 ---
 
@@ -444,9 +459,9 @@ Optional fields:
 PUT /api/v1/admin/quizzes/{id}
 ```
 
-Updates an existing Quiz configuration.
+Updates an existing Quiz configuration using **merge semantics**: only supplied fields change. `subjectId` is immutable and not accepted. `topicId` may change, including to `null` to detach the topic (the topic must exist and not be deleted when set). An explicit `null` clears `description`. Publication state is changed through `isPublished` here — there is no dedicated publish endpoint for quizzes.
 
-Existing Quiz Sessions generated from this Quiz are unaffected — they preserve the configuration used at the time they were created.
+Existing Quiz Sessions generated from this Quiz are unaffected — they preserve the configuration used at the time they were created. Responds `200` with the updated quiz; an unknown or deleted id returns `404 Not Found`.
 
 ---
 
@@ -456,9 +471,9 @@ Existing Quiz Sessions generated from this Quiz are unaffected — they preserve
 DELETE /api/v1/admin/quizzes/{id}
 ```
 
-Performs a soft delete.
+Performs a soft delete: the quiz disappears from every listing. Historical Quiz Sessions that reference this Quiz remain valid.
 
-Historical Quiz Sessions that reference this Quiz remain valid.
+Responds `204 No Content`; an unknown or already-deleted id returns `404 Not Found`.
 
 ---
 
