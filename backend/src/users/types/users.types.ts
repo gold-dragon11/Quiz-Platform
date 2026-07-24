@@ -1,9 +1,21 @@
-import { AvatarType } from '@prisma/client';
+import { AccountStatus, AvatarType } from '@prisma/client';
 
 /** Avatar view shared by profile and avatar responses. */
 export interface AvatarView {
   type: AvatarType;
   imageUrl: string;
+}
+
+/**
+ * The authenticated user's account information (docs/04-api/users.md §4,
+ * decision A1) — account fields only, no profile or statistics.
+ */
+export interface MyAccount {
+  id: string;
+  email: string;
+  accountStatus: AccountStatus;
+  emailVerified: boolean;
+  createdAt: string;
 }
 
 /**

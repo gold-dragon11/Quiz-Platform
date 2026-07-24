@@ -234,6 +234,63 @@ export class AuthRepository {
     return result.count === 1;
   }
 
+  /**
+   * Self-service password change (docs/04-api/users.md §6). One transaction:
+   * atomically replaces the password only while the account is still Active
+   * and still holds the expected hash (the concurrency/TOCTOU backstop), and —
+   * only when that change lands — revokes every refresh session so other
+   * devices are logged out (decisions A2/A10). Returns whether the change was
+   * performed.
+   */
+  async changePasswordAndRevokeSessions(
+    userId: string,
+    expectedCurrentHash: string,
+    newPasswordHash: string,
+  ): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
+        where: {
+          id: userId,
+          passwordHash: expectedCurrentHash,
+          accountStatus: AccountStatus.ACTIVE,
+        },
+        data: { passwordHash: newPasswordHash },
+      });
+      if (result.count !== 1) {
+        return false;
+      }
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return true;
+    });
+  }
+
+  /**
+   * Self-service account deletion (docs/04-api/users.md §7). One transaction:
+   * flips an Active account to Deleted and revokes every refresh session so no
+   * refresh can revive it (decisions A5/A6/A10). Historical records are left
+   * untouched. Returns whether the deletion was performed (false if the
+   * account was not Active).
+   */
+  async softDeleteAccountAndRevokeSessions(userId: string): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
+        where: { id: userId, accountStatus: AccountStatus.ACTIVE },
+        data: { accountStatus: AccountStatus.DELETED },
+      });
+      if (result.count !== 1) {
+        return false;
+      }
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      return true;
+    });
+  }
+
   /** Records the moment of a successful login (docs/02-domain/user.md §4). */
   async recordSuccessfulLogin(userId: string): Promise<void> {
     await this.prisma.user.update({

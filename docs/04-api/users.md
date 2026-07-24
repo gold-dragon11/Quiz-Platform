@@ -56,17 +56,17 @@ Unauthorized requests to protected endpoints return:
 GET /api/v1/users/me
 ```
 
-Returns the authenticated user's account information.
+Returns the authenticated user's account information. Authenticated, self-only.
 
-Typical response includes:
+Response fields:
 
-- user ID;
+- id;
 - email;
-- account status;
-- email verification status;
-- creation date.
+- accountStatus;
+- emailVerified;
+- createdAt.
 
-This endpoint does not return profile or statistics data.
+This endpoint does not return profile, avatar, settings, or statistics data. It is distinct from `GET /api/v1/auth/me`, which returns the fuller session summary (account + profile + avatar + settings).
 
 ---
 
@@ -96,14 +96,16 @@ Profile, Avatar, and Settings fields are managed by the dedicated sections of th
 PATCH /api/v1/users/me/password
 ```
 
-Allows the authenticated user to change their password.
+Allows the authenticated user to change their password. Authenticated, self-only.
 
-Requirements:
+Request body:
 
-- current password;
-- new password.
+- currentPassword;
+- newPassword.
 
-The new password must satisfy the platform's password policy.
+The current password re-authenticates the request and is verified against the stored hash — a wrong value returns `400 Bad Request` with a generic message. The new password must satisfy the platform's password policy (the same rules as registration and reset) and must differ from the current password, otherwise `400`.
+
+On success the endpoint responds `204 No Content` and revokes every refresh-token session, so all other devices are logged out; the change and the revocation commit in a single transaction. Previously issued access tokens expire naturally.
 
 ---
 
@@ -115,11 +117,11 @@ The new password must satisfy the platform's password policy.
 DELETE /api/v1/users/me
 ```
 
-Performs a soft delete.
+Performs a soft delete. Authenticated, self-only; the JWT is sufficient — no password is required.
 
-The account becomes inactive.
+The account status becomes Deleted (a soft delete — no row is removed). In a single transaction the account is marked Deleted and every refresh-token session is revoked, so it can neither refresh nor sign in again; previously issued access tokens stop working on their next request. Responds `204 No Content`.
 
-Historical learning data remains in the database.
+All historical learning data — Quiz Sessions, Results, Question Attempts, XP Transactions, Statistics — and the Profile, Avatar, and Settings records remain in the database. The account's email and username stay permanently reserved and cannot be reused. The public profile of a deleted account returns `404`.
 
 ---
 

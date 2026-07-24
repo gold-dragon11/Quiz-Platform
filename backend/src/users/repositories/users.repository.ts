@@ -14,6 +14,15 @@ export interface MyProfileRecord {
   };
 }
 
+/** The authenticated user's account fields (docs/04-api/users.md §4). */
+export interface AccountRecord {
+  id: string;
+  email: string;
+  accountStatus: AccountStatus;
+  emailVerified: boolean;
+  createdAt: Date;
+}
+
 /** A public profile lookup joined with account status and privacy. */
 export interface PublicProfileRecord {
   userId: string;
@@ -36,6 +45,30 @@ export interface PublicProfileRecord {
 @Injectable()
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  /** The user's account fields (docs/04-api/users.md §4). */
+  async findAccount(userId: string): Promise<AccountRecord | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        accountStatus: true,
+        emailVerified: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  /** The user's active avatar (docs/04-api/users.md §10). */
+  async findAvatar(
+    userId: string,
+  ): Promise<{ type: AvatarType; imageUrl: string } | null> {
+    return this.prisma.avatar.findUnique({
+      where: { userId },
+      select: { type: true, imageUrl: true },
+    });
+  }
 
   /** The user's own profile plus email and avatar — one query, no N+1. */
   async findMyProfile(userId: string): Promise<MyProfileRecord | null> {

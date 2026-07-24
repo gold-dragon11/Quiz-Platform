@@ -16,9 +16,15 @@ import {
   MyProfileRecord,
   UsersRepository,
 } from '../repositories/users.repository';
-import { AvatarView, MyProfile, PublicProfile } from '../types/users.types';
+import {
+  AvatarView,
+  MyAccount,
+  MyProfile,
+  PublicProfile,
+} from '../types/users.types';
 
 const PROFILE_NOT_FOUND_MESSAGE = 'Profile not found.';
+const ACCOUNT_NOT_FOUND_MESSAGE = 'Account not found.';
 const USERNAME_TAKEN_MESSAGE = 'This username is already taken.';
 const UNKNOWN_AVATAR_MESSAGE = 'Unknown predefined avatar.';
 const AVATAR_NOT_FOUND_MESSAGE = 'Avatar not found.';
@@ -34,6 +40,35 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
     private readonly statisticsService: StatisticsService,
   ) {}
+
+  /**
+   * The authenticated user's account information (docs/04-api/users.md §4,
+   * decision A1) — account fields only, distinct from the session summary at
+   * GET /auth/me. The row always exists for an authenticated user.
+   */
+  async getMyAccount(userId: string): Promise<MyAccount> {
+    const account = await this.usersRepository.findAccount(userId);
+    if (!account) {
+      throw new NotFoundException(ACCOUNT_NOT_FOUND_MESSAGE);
+    }
+    return {
+      id: account.id,
+      email: account.email,
+      accountStatus: account.accountStatus,
+      emailVerified: account.emailVerified,
+      createdAt: account.createdAt.toISOString(),
+    };
+  }
+
+  /**
+   * The authenticated user's active avatar (docs/04-api/users.md §10,
+   * decision A7). Falls back to the default catalog entry if the row is
+   * somehow absent, mirroring the profile read.
+   */
+  async getMyAvatar(userId: string): Promise<AvatarView> {
+    const avatar = await this.usersRepository.findAvatar(userId);
+    return this.avatarView(avatar);
+  }
 
   /**
    * The authenticated user's own profile (docs/04-api/users.md §9,

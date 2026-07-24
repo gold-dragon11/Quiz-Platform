@@ -23,6 +23,7 @@ import {
   EMAIL_VERIFICATION_PURPOSE,
   PASSWORD_RESET_PURPOSE,
 } from '../constants/auth.constants';
+import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
 import { RefreshTokenDto } from '../dto/refresh-token.dto';
@@ -66,6 +67,9 @@ const INVALID_VERIFICATION_TOKEN_MESSAGE =
  * inactive account (docs/04-api/authentication.md §10).
  */
 const INVALID_RESET_TOKEN_MESSAGE = 'Invalid or expired reset token.';
+const INCORRECT_CURRENT_PASSWORD_MESSAGE = 'Current password is incorrect.';
+const PASSWORD_MUST_DIFFER_MESSAGE =
+  'New password must be different from the current password.';
 
 /**
  * Authentication use cases (docs/06-backend/authentication.md §2).
@@ -323,6 +327,64 @@ export class AuthService implements OnModuleInit {
     }
 
     return user;
+  }
+
+  /**
+   * Self-service password change (docs/04-api/users.md §6). The current
+   * password re-authenticates the request (decision A9); it must verify
+   * against the stored hash and the new password must differ (decisions A3a/
+   * A3b). On success the change and the revocation of every refresh session
+   * commit in one transaction (decisions A2/A10), so other devices are logged
+   * out; the caller's access token expires naturally. Reached only for an
+   * Active account (JwtAuthGuard's strategy re-checks status every request).
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.authRepository.findUserCredentialsById(userId);
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+      throw new UnauthorizedException();
+    }
+
+    const currentValid = await this.passwordUtil.verifyPassword(
+      user.passwordHash,
+      dto.currentPassword,
+    );
+    if (!currentValid) {
+      throw new BadRequestException(INCORRECT_CURRENT_PASSWORD_MESSAGE);
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(PASSWORD_MUST_DIFFER_MESSAGE);
+    }
+
+    const newPasswordHash = await this.passwordUtil.hashPassword(
+      dto.newPassword,
+    );
+    const changed = await this.authRepository.changePasswordAndRevokeSessions(
+      userId,
+      user.passwordHash,
+      newPasswordHash,
+    );
+    // The compare-and-swap only fails if the account left Active or its hash
+    // changed concurrently — both are answered as unauthorized.
+    if (!changed) {
+      throw new UnauthorizedException();
+    }
+  }
+
+  /**
+   * Self-service account deletion (docs/04-api/users.md §7). Soft delete: the
+   * account becomes Deleted and every refresh session is revoked, in one
+   * transaction (decisions A5/A6/A10). All historical learning data is
+   * preserved; email and username stay reserved. The caller's access token
+   * stops working on its next request (the strategy rejects non-Active
+   * accounts). Reached only for an Active account.
+   */
+  async deleteAccount(userId: string): Promise<void> {
+    const deleted =
+      await this.authRepository.softDeleteAccountAndRevokeSessions(userId);
+    if (!deleted) {
+      throw new UnauthorizedException();
+    }
   }
 
   /**
