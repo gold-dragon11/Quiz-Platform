@@ -144,14 +144,18 @@ Inactive accounts cannot access protected resources.
 GET /api/v1/users/me/profile
 ```
 
-Returns the authenticated user's Profile.
+Returns the authenticated user's Profile. Authenticated, self-only.
 
 Response includes:
 
-- displayName;
 - username;
+- displayName;
+- email;
 - bio;
-- registrationDate.
+- avatar (type, imageUrl);
+- registrationDate (the profile's creation timestamp).
+
+Settings are not included here — they have their own endpoint (§11).
 
 ---
 
@@ -161,13 +165,15 @@ Response includes:
 PATCH /api/v1/users/me/profile
 ```
 
-Allows partial updates to Profile fields.
+Allows partial updates to Profile fields (merge semantics — only supplied fields change).
 
 Supported fields:
 
-- displayName (max 50 characters);
-- username (unique, 3–30 characters, letters, numbers, and underscores only);
-- bio (optional, max 250 characters).
+- displayName (required if present, max 50 characters);
+- username (required if present, unique, 3–30 characters, letters, numbers, and underscores only);
+- bio (optional, max 250 characters; an explicit `null` clears it).
+
+Username uniqueness is case-sensitive; a duplicate returns `409 Conflict`. Changing to the current username succeeds (no-op). Responds `200` with the updated profile.
 
 ---
 
@@ -194,11 +200,13 @@ Response includes:
 PUT /api/v1/users/me/avatar
 ```
 
-Sets the active avatar to one of the platform's predefined options.
+Sets the active avatar to one of the platform's predefined options (docs/02-domain/avatar.md §5). Authenticated, self-only.
 
 Required fields:
 
-- predefinedAvatarId
+- predefinedAvatarId — a stable key from the application's predefined avatar catalog.
+
+An unknown id returns `400 Bad Request`. On success the avatar's `imageUrl` is set to the catalog asset and `type` becomes Predefined; responds `200` with the updated avatar (type, imageUrl).
 
 ---
 
@@ -208,19 +216,7 @@ Required fields:
 POST /api/v1/users/me/avatar/upload
 ```
 
-Uploads a custom avatar image, replacing the current avatar.
-
-Request:
-
-- multipart/form-data image file.
-
-Supported formats:
-
-- PNG
-- JPG
-- WEBP
-
-The uploaded image is validated for format, file size, and dimensions before becoming active.
+**Deferred.** Custom avatar upload (multipart image, format/size/dimension validation, resizing, file storage) requires media-storage infrastructure that is not part of the MVP profile phase; it is deferred to a dedicated media/upload phase. This endpoint is not implemented. The `CUSTOM_UPLOAD` avatar type remains reserved for it.
 
 ---
 
@@ -272,21 +268,19 @@ Public endpoint. Does not require authentication.
 
 Returns the public subset of a user's identity and progress:
 
-- avatar;
-- displayName;
 - username;
+- displayName;
+- bio;
+- avatar (type, imageUrl);
+- registrationDate;
 - currentLevel;
 - totalXP;
 - completedQuizzes;
 - averageAccuracy.
 
-If the target user has disabled their public profile (§11), or the username does not exist, the endpoint returns:
+The progress fields reuse the Statistics/Level definitions; no private data (email, settings, role, statistics internals, internal ids) is exposed.
 
-```http
-404 Not Found
-```
-
-This avoids revealing whether a given username is registered.
+The endpoint returns the same `404 Not Found` — indistinguishably — when the username does not exist, the target user has disabled their public profile (§11), or the account is not active (suspended or soft-deleted). This avoids revealing whether a given username is registered or why it is hidden.
 
 ---
 

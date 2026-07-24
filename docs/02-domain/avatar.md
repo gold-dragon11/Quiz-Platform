@@ -75,7 +75,7 @@ Future versions may support:
 - Animated Avatar
 - Seasonal Avatar
 
-Predefined avatars are a fixed, application-defined set of static image assets, each identified by a stable key. They are not stored as a separate database-backed catalog; the Avatar entity only records which option is currently active for a User.
+Predefined avatars are a fixed, application-defined set of static image assets, each identified by a stable key. They are not stored as a separate database-backed catalog; the Avatar entity only records which option is currently active for a User. The catalog is defined once as an application constant (`PREDEFINED_AVATARS`, alongside `DEFAULT_AVATAR_URL`); selecting an avatar validates the id against it.
 
 ---
 

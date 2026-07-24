@@ -17,6 +17,14 @@ export interface OverallStatistics {
   completionPercent: number;
 }
 
+/** The public subset of a user's progress (docs/04-api/users.md §12, D5). */
+export interface PublicProgress {
+  currentLevel: number;
+  totalXP: number;
+  completedQuizzes: number;
+  averageAccuracy: string;
+}
+
 /** High-level progress (docs/04-api/statistics.md §7, decision S1). */
 export interface ProgressSummary {
   currentLevel: number;

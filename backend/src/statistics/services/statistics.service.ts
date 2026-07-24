@@ -16,6 +16,7 @@ import {
   OverallStatistics,
   PaginatedRecentActivity,
   ProgressSummary,
+  PublicProgress,
   SubjectStatistics,
   TopicStatistics,
 } from '../types/statistics.types';
@@ -70,6 +71,26 @@ export class StatisticsService {
       xpForNextLevel: level.xpForNextLevel,
       xpIntoLevel: level.xpIntoLevel,
       completionPercent: level.completionPercent,
+    };
+  }
+
+  /**
+   * The public subset of a user's progress for their public profile
+   * (docs/04-api/users.md §12, Phase 5.3 decision D5): level, total XP,
+   * completed quizzes, and average accuracy — nothing internal. Reuses the
+   * same level and accuracy definitions as every other statistics view.
+   */
+  async getPublicProgress(userId: string): Promise<PublicProgress> {
+    const stats =
+      (await this.statisticsQueryRepository.findOverall(userId)) ??
+      EMPTY_OVERALL;
+    const level = this.levelService.progressFor(stats.totalXP);
+
+    return {
+      currentLevel: level.currentLevel,
+      totalXP: stats.totalXP,
+      completedQuizzes: stats.totalQuizzes,
+      averageAccuracy: formatDecimal(stats.averageAccuracy),
     };
   }
 
