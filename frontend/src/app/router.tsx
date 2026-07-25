@@ -17,6 +17,7 @@ import {
   ResetPasswordPage,
   VerifyEmailPage,
 } from '@/features/auth';
+import { ProfilePage, SettingsPage } from '@/features/user';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -112,8 +113,8 @@ export const router = createBrowserRouter([
                 element: withTransition('Quiz Results'),
               },
               { path: ROUTES.statistics, element: withTransition('Statistics') },
-              { path: ROUTES.profile, element: withTransition('Profile') },
-              { path: ROUTES.settings, element: withTransition('Settings') },
+              { path: ROUTES.profile, element: page(<ProfilePage />) },
+              { path: ROUTES.settings, element: page(<SettingsPage />) },
             ],
           },
         ],

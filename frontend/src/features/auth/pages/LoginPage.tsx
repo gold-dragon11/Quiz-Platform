@@ -10,7 +10,7 @@ import { PasswordInput } from '@/shared/ui/PasswordInput';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useLogin } from '@/features/auth/hooks/use-auth-mutations';
 import { loginSchema, type LoginFormValues } from '@/features/auth/validation/auth.schemas';
-import { applyApiErrorToForm } from '@/features/auth/lib/apply-api-error';
+import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 interface FromState {
   from?: { pathname?: string };

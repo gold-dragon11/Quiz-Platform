@@ -8,7 +8,7 @@ import { PasswordInput } from '@/shared/ui/PasswordInput';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useResetPassword } from '@/features/auth/hooks/use-auth-mutations';
 import { resetPasswordSchema, type ResetPasswordFormValues } from '@/features/auth/validation/auth.schemas';
-import { applyApiErrorToForm } from '@/features/auth/lib/apply-api-error';
+import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 /**
  * `/reset-password?token=…` (guest-only). Sets a new password with the token

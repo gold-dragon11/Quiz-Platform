@@ -7,7 +7,7 @@ import { AuthCard } from '@/features/auth/components/AuthCard';
 import { ResendVerificationForm } from '@/features/auth/components/ResendVerificationForm';
 import { ResendVerificationPage } from '@/features/auth/pages/ResendVerificationPage';
 import { useVerifyEmail } from '@/features/auth/hooks/use-auth-mutations';
-import { isApiError } from '@/features/auth/lib/apply-api-error';
+import { isApiError } from '@/shared/utils/apply-api-error';
 
 const GENERIC_VERIFY_ERROR = 'Invalid or expired verification token.';
 

@@ -9,7 +9,7 @@ import { Input } from '@/shared/ui/Input';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useForgotPassword } from '@/features/auth/hooks/use-auth-mutations';
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from '@/features/auth/validation/auth.schemas';
-import { applyApiErrorToForm } from '@/features/auth/lib/apply-api-error';
+import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 /**
  * `/forgot-password` (guest-only). Requests a reset email

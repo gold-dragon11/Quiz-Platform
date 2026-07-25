@@ -9,7 +9,7 @@ import {
   resendVerificationSchema,
   type ResendVerificationFormValues,
 } from '@/features/auth/validation/auth.schemas';
-import { applyApiErrorToForm } from '@/features/auth/lib/apply-api-error';
+import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 interface ResendVerificationFormProps {
   submitLabel?: string;

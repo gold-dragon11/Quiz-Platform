@@ -9,7 +9,7 @@ import { Language } from '@/shared/types/enums';
  * byte-for-byte, using the same error copy so the client and server never
  * disagree. The backend remains the source of truth: it re-validates every
  * request, and any error it returns is surfaced verbatim (see
- * lib/apply-api-error.ts). These schemas exist only to give immediate feedback
+ * shared/utils/apply-api-error.ts). These schemas exist only to give immediate feedback
  * and avoid obviously-invalid round trips.
  */
 

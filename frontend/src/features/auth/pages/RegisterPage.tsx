@@ -13,7 +13,7 @@ import { Select } from '@/shared/ui/Select';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useRegister, useResendVerification } from '@/features/auth/hooks/use-auth-mutations';
 import { registerSchema, type RegisterFormValues } from '@/features/auth/validation/auth.schemas';
-import { applyApiErrorToForm } from '@/features/auth/lib/apply-api-error';
+import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 const LANGUAGE_OPTIONS = [
   { value: Language.ENGLISH, label: 'English' },

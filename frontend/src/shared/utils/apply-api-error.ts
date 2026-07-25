@@ -9,17 +9,17 @@ export function isApiError(error: unknown): error is ApiError {
 
 /**
  * Surfaces a backend error on a React Hook Form exactly as the server returned
- * it (Phase 6.2 requirement: "handle backend validation/errors exactly as
- * returned").
+ * it (Phase 6.2/6.3: "handle backend validation/errors exactly as returned").
+ * Shared across features — the auth and user forms both use it.
  *
  * - Validation errors (NestJS ValidationPipe) arrive as a message array under
- *   `fields._errors`; single-message errors (401/403/409) arrive as `message`.
- *   Both are handled uniformly.
+ *   `fields._errors`; single-message errors (400/401/403/409) arrive as
+ *   `message`. Both are handled uniformly.
  * - Each message is routed to a form field when it starts with a mapped
  *   keyword (e.g. "email ..." → the email field), so the error appears inline
  *   on the offending input.
- * - Anything left unmapped becomes a form-level (`root`) error and a toast,
- *   so no failure is ever swallowed.
+ * - Anything left unmapped becomes a form-level (`root`) error and a toast, so
+ *   no failure is ever swallowed.
  */
 export function applyApiErrorToForm<T extends FieldValues>(
   error: unknown,
