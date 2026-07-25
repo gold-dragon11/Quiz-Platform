@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { generatePath, useNavigate } from 'react-router-dom';
+import { generatePath, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
@@ -27,9 +27,16 @@ const QUESTION_COUNT_OPTIONS: SelectOption[] = [5, 10, 15, 20, 25].map((n) => ({
  * subject-wide), question count, and timer. Start is disabled until valid;
  * backend rules (one active session → 409, too few questions → 409) surface
  * inline. On success it navigates to the new session.
+ *
+ * The subjects browser deep-links here with `?subjectId=…&topicId=…` to
+ * prefill the form (Phase 6.7) — the user still reviews question count / timer
+ * and presses Start, so the Quiz Start flow is never bypassed.
  */
 export function QuizStartPage(): React.JSX.Element {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const prefillSubjectId = searchParams.get('subjectId') ?? '';
+  const prefillTopicId = searchParams.get('topicId') ?? '';
   const subjects = useSubjects();
   const startQuiz = useStartQuiz();
 
@@ -44,7 +51,7 @@ export function QuizStartPage(): React.JSX.Element {
     resolver: zodResolver(startQuizSchema),
     mode: 'onChange',
     defaultValues: {
-      subjectId: '',
+      subjectId: prefillSubjectId,
       topicId: '',
       questionCount: 10,
       timerEnabled: false,
@@ -54,10 +61,29 @@ export function QuizStartPage(): React.JSX.Element {
   const subjectId = watch('subjectId');
   const topics = useTopics(subjectId || undefined);
 
-  // Reset the chosen topic whenever the subject changes.
+  // Reset the chosen topic when the subject actually changes (not on the
+  // initial mount, so a prefilled topic survives).
+  const prevSubjectRef = useRef(prefillSubjectId);
+  const prefillAppliedRef = useRef(false);
   useEffect(() => {
-    setValue('topicId', '');
+    if (prevSubjectRef.current !== subjectId) {
+      prevSubjectRef.current = subjectId;
+      setValue('topicId', '');
+      prefillAppliedRef.current = true; // user-driven change: skip prefill
+    }
   }, [subjectId, setValue]);
+
+  // Apply the prefilled topic once its subject's topics have loaded.
+  useEffect(() => {
+    if (
+      !prefillAppliedRef.current &&
+      prefillTopicId &&
+      topics.data?.some((topic) => topic.id === prefillTopicId)
+    ) {
+      prefillAppliedRef.current = true;
+      setValue('topicId', prefillTopicId, { shouldValidate: true });
+    }
+  }, [topics.data, prefillTopicId, setValue]);
 
   const onSubmit = handleSubmit((values) => {
     startQuiz.mutate(

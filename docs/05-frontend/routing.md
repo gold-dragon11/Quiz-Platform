@@ -66,6 +66,7 @@ Authenticated routes require a valid access token.
 | Route | Purpose |
 |---------|---------|
 | `/dashboard` | User dashboard |
+| `/subjects` | Subjects & topics browser (learning hub) |
 | `/quiz` | Quiz selection |
 | `/quiz/:sessionId` | Active quiz session |
 | `/quiz/:sessionId/result` | Quiz results |

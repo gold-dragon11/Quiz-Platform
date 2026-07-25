@@ -14,6 +14,7 @@ export const ROUTES = {
 
   // Authenticated
   dashboard: '/dashboard',
+  subjects: '/subjects',
   quiz: '/quiz',
   quizSession: '/quiz/:sessionId',
   quizResult: '/quiz/:sessionId/result',
