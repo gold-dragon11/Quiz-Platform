@@ -10,6 +10,13 @@ import { RequireAdmin } from '@/shared/guards/RequireAdmin';
 import { PageTransition } from '@/shared/components/PageTransition';
 import { RouteError } from '@/shared/components/RouteError';
 import { ROUTES } from '@/shared/constants/routes';
+import {
+  ForgotPasswordPage,
+  LoginPage,
+  RegisterPage,
+  ResetPasswordPage,
+  VerifyEmailPage,
+} from '@/features/auth';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -40,6 +47,11 @@ function withTransition(title: string): React.JSX.Element {
   );
 }
 
+/** Wraps an implemented feature page in the shared route transition. */
+function page(node: React.ReactNode): React.JSX.Element {
+  return <PageTransition>{node}</PageTransition>;
+}
+
 const notFoundElement = (
   <PageTransition>
     <NotFoundPage />
@@ -56,22 +68,22 @@ export const router = createBrowserRouter([
         element: <PublicLayout />,
         children: [
           { path: ROUTES.home, element: withTransition('Home') },
-          { path: ROUTES.verifyEmail, element: withTransition('Verify Email') },
+          { path: ROUTES.verifyEmail, element: page(<VerifyEmailPage />) },
           { path: ROUTES.publicProfile, element: withTransition('Public Profile') },
 
           // Guest-only routes (redirect authenticated users away)
           {
             element: <RequireGuest />,
             children: [
-              { path: ROUTES.login, element: withTransition('Login') },
-              { path: ROUTES.register, element: withTransition('Register') },
+              { path: ROUTES.login, element: page(<LoginPage />) },
+              { path: ROUTES.register, element: page(<RegisterPage />) },
               {
                 path: ROUTES.forgotPassword,
-                element: withTransition('Forgot Password'),
+                element: page(<ForgotPasswordPage />),
               },
               {
                 path: ROUTES.resetPassword,
-                element: withTransition('Reset Password'),
+                element: page(<ResetPasswordPage />),
               },
             ],
           },
