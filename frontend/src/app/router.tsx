@@ -19,6 +19,7 @@ import {
 } from '@/features/auth';
 import { ProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
+import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -104,14 +105,14 @@ export const router = createBrowserRouter([
             element: <MainLayout />,
             children: [
               { path: ROUTES.dashboard, element: page(<DashboardPage />) },
-              { path: ROUTES.quiz, element: withTransition('Quiz Selection') },
+              { path: ROUTES.quiz, element: page(<QuizStartPage />) },
               {
                 path: ROUTES.quizSession,
-                element: withTransition('Active Quiz Session'),
+                element: page(<QuizSessionPage />),
               },
               {
                 path: ROUTES.quizResult,
-                element: withTransition('Quiz Results'),
+                element: page(<QuizResultPage />),
               },
               { path: ROUTES.statistics, element: withTransition('Statistics') },
               { path: ROUTES.profile, element: page(<ProfilePage />) },
