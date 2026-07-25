@@ -13,5 +13,13 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Optional local-dev proxy (Phase 6.1 decision F13): same-origin `/api`
+    // calls avoid CORS in development. Production uses VITE_API_URL directly.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
 });

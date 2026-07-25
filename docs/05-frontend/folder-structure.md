@@ -1,8 +1,16 @@
 # Frontend Folder Structure
 
-**Document Version:** 1.0  
+**Document Version:** 1.1  
 **Status:** Draft  
 **Last Updated:** July 2026
+
+> **Phase 6.1 update (folder ownership, decision F1):** the top-level `hooks/`,
+> `types/`, and `constants/` folders were removed to avoid duplicating
+> `shared/`. Those concerns now live exclusively under `shared/hooks/`,
+> `shared/types/`, and `shared/constants/` (route constants are
+> `shared/constants/routes.ts`). A top-level `stores/` folder was added for
+> Zustand client-state stores. Sections 8, 12, 13, and the tree in section 2
+> reflect this.
 
 ---
 
@@ -26,12 +34,10 @@ src/
 ├── features/
 ├── shared/
 ├── pages/
-├── hooks/
 ├── lib/
 ├── services/
+├── stores/
 ├── styles/
-├── types/
-├── constants/
 ├── config/
 └── main.tsx
 ```
@@ -168,15 +174,17 @@ Pages should contain minimal logic.
 
 ---
 
-# 8. hooks/
+# 8. shared/hooks/ (formerly top-level hooks/)
 
-Contains reusable application hooks.
+Reusable application hooks. As of Phase 6.1 (decision F1) these live under
+`shared/hooks/` — there is no top-level `hooks/` folder.
 
 Examples:
 
 - useDebounce
 - useLocalStorage
 - useMediaQuery
+- useCurrentUser (the authenticated session summary from `/auth/me`)
 
 Business-specific hooks belong inside Features.
 
@@ -227,32 +235,49 @@ Component styles should remain local whenever possible.
 
 ---
 
-# 12. types/
+# 12. shared/types/ (formerly top-level types/)
 
-Contains shared TypeScript types.
+Shared TypeScript types. As of Phase 6.1 (decision F1) these live under
+`shared/types/` — there is no top-level `types/` folder.
 
 Examples:
 
-- API models
-- shared interfaces
-- utility types
+- API models (`ApiError`, `Paginated<T>`, `TokenPair`)
+- backend-mirrored enums (const-object + string-literal unions)
+- shared interfaces and utility types
 
 Feature-specific types belong inside Features.
 
 ---
 
-# 13. constants/
+# 13. shared/constants/ (formerly top-level constants/)
 
-Contains application constants.
+Application constants. As of Phase 6.1 (decision F1) these live under
+`shared/constants/` — there is no top-level `constants/` folder.
 
 Examples:
 
-- routes
-- themes
-- animation durations
+- routes (`shared/constants/routes.ts`)
+- motion presets — durations, easings, variants (`shared/constants/motion.ts`)
 - application limits
 
 Business constants should live inside Features.
+
+---
+
+# 13a. stores/
+
+Global Zustand client-state stores (Phase 6.1, decision F9). Server state is
+never duplicated here — it belongs to TanStack Query.
+
+Examples:
+
+- `auth-store` — auth status + in-memory access token only (never the user)
+- `theme-store` — theme preference (dark-only MVP, future-proofed)
+- `toast-store` — the in-house toast channel
+- `ui-store` — transient UI state (e.g. mobile-nav open)
+
+Feature-specific stores belong inside Features.
 
 ---
 
