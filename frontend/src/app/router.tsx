@@ -20,6 +20,7 @@ import {
 import { ProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
+import { StatisticsPage } from '@/features/statistics';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -114,7 +115,7 @@ export const router = createBrowserRouter([
                 path: ROUTES.quizResult,
                 element: page(<QuizResultPage />),
               },
-              { path: ROUTES.statistics, element: withTransition('Statistics') },
+              { path: ROUTES.statistics, element: page(<StatisticsPage />) },
               { path: ROUTES.profile, element: page(<ProfilePage />) },
               { path: ROUTES.settings, element: page(<SettingsPage />) },
             ],
