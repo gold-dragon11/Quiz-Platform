@@ -55,6 +55,18 @@ export class QuizConfigService {
     };
   }
 
+  /**
+   * A published, non-deleted quiz configuration by id, or null. Public
+   * interface for the Quiz engine's stored-Quiz start path
+   * (docs/04-api/quiz.md §4, Phase 5.6 decision B7) — an unknown, unpublished,
+   * or soft-deleted quiz is indistinguishably null so the caller answers 404
+   * without revealing which condition failed (decision B2).
+   */
+  async findPublishedById(id: string): Promise<QuizRecord | null> {
+    const quiz = await this.quizConfigRepository.findActiveById(id);
+    return quiz && quiz.isPublished ? quiz : null;
+  }
+
   async create(dto: CreateQuizDto): Promise<QuizRecord> {
     if (!(await this.subjectsService.subjectExists(dto.subjectId))) {
       throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);

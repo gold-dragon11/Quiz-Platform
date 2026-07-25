@@ -16,5 +16,8 @@ import { QuizConfigService } from './services/quiz-config.service';
   imports: [SubjectsModule, TopicsModule],
   controllers: [AdminQuizzesController],
   providers: [QuizConfigService, QuizConfigRepository],
+  // The Quiz engine consumes this to start a session from a stored Quiz
+  // (Phase 5.6). One-way edge — Quizzes never imports the engine.
+  exports: [QuizConfigService],
 })
 export class QuizzesModule {}

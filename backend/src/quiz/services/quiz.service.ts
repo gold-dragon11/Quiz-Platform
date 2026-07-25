@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -11,6 +12,7 @@ import {
   XPSource,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { QuizConfigService } from '../../quizzes/services/quiz-config.service';
 import { SettingsService } from '../../settings/services/settings.service';
 import { StatisticsService } from '../../statistics/services/statistics.service';
 import { XpAward } from '../../statistics/repositories/statistics.repository';
@@ -48,6 +50,21 @@ const SESSION_NOT_ACTIVE_MESSAGE = 'This quiz session is not active.';
 const SESSION_NOT_COMPLETED_MESSAGE = 'This quiz session is not completed yet.';
 const QUESTION_NOT_IN_SESSION_MESSAGE =
   'This question does not belong to the session.';
+const QUIZ_NOT_FOUND_MESSAGE = 'Quiz not found.';
+const QUIZ_ID_XOR_MESSAGE =
+  'Provide either quizId or the ad-hoc fields (subjectId, topicId, questionCount, timerEnabled), not both.';
+const MISSING_START_FIELDS_MESSAGE =
+  'subjectId, questionCount, and timerEnabled are required when quizId is not provided.';
+
+/** The resolved generation config for a start request (Phase 5.6). */
+interface StartConfig {
+  quizId: string | null;
+  subjectId: string;
+  topicId: string | null;
+  questionCount: number;
+  timerEnabled: boolean;
+  mode: QuizType;
+}
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
 interface Tally {
@@ -75,44 +92,50 @@ export class QuizService {
     private readonly resultRepository: ResultRepository,
     private readonly settingsService: SettingsService,
     private readonly statisticsService: StatisticsService,
+    private readonly quizConfigService: QuizConfigService,
   ) {}
 
   /**
-   * Starts a new quiz (docs/04-api/quiz.md §4). One transaction: enforces the
-   * single-active-session rule (decision D4), selects the random published
-   * question set (decisions D21/D23), and creates the ACTIVE session with its
-   * snapshot and timer deadline (decisions D1/D3/D5).
+   * Starts a new quiz (docs/04-api/quiz.md §4). Resolves the generation
+   * configuration from either a stored Quiz or the ad-hoc request (Phase 5.6),
+   * then, in one transaction: enforces the single-active-session rule
+   * (decision D4), selects the random published question set (decisions
+   * D21/D23), and creates the ACTIVE session with its snapshot and timer
+   * deadline (decisions D1/D3/D5).
    */
   async start(userId: string, dto: StartQuizDto): Promise<QuizSessionMetadata> {
+    const config = await this.resolveStartConfig(dto);
+
     if (await this.quizSessionRepository.findActiveByUser(userId)) {
       throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
     }
 
     const questionIds =
       await this.quizSessionRepository.selectRandomQuestionIds({
-        subjectId: dto.subjectId,
-        topicId: dto.topicId,
-        count: dto.questionCount,
+        subjectId: config.subjectId,
+        topicId: config.topicId ?? undefined,
+        count: config.questionCount,
       });
-    if (questionIds.length < dto.questionCount) {
+    if (questionIds.length < config.questionCount) {
       throw new ConflictException(INSUFFICIENT_QUESTIONS_MESSAGE);
     }
 
-    const mode =
-      dto.topicId === undefined ? QuizType.RANDOM_QUIZ : QuizType.SUBJECT_QUIZ;
-    const expiresAt = dto.timerEnabled
-      ? new Date(Date.now() + SECONDS_PER_QUESTION * dto.questionCount * 1000)
+    const expiresAt = config.timerEnabled
+      ? new Date(
+          Date.now() + SECONDS_PER_QUESTION * config.questionCount * 1000,
+        )
       : null;
 
     try {
       const session = await this.prisma.$transaction((tx) =>
         this.quizSessionRepository.createSessionWithQuestions(tx, {
           userId,
-          subjectId: dto.subjectId,
-          topicId: dto.topicId ?? null,
-          mode,
-          timerEnabled: dto.timerEnabled,
-          questionCount: dto.questionCount,
+          quizId: config.quizId,
+          subjectId: config.subjectId,
+          topicId: config.topicId,
+          mode: config.mode,
+          timerEnabled: config.timerEnabled,
+          questionCount: config.questionCount,
           expiresAt,
           questionIds,
         }),
@@ -129,6 +152,59 @@ export class QuizService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Resolves the generation configuration for a start request (Phase 5.6,
+   * decision B1 — XOR). A `quizId` loads everything from the published Quiz
+   * (its stored `mode` is copied verbatim, decision B3); otherwise the ad-hoc
+   * fields are required and the mode is derived from the topic (decision D2).
+   * The two inputs are mutually exclusive.
+   */
+  private async resolveStartConfig(dto: StartQuizDto): Promise<StartConfig> {
+    if (dto.quizId !== undefined) {
+      if (
+        dto.subjectId !== undefined ||
+        dto.topicId !== undefined ||
+        dto.questionCount !== undefined ||
+        dto.timerEnabled !== undefined
+      ) {
+        throw new BadRequestException(QUIZ_ID_XOR_MESSAGE);
+      }
+      const quiz = await this.quizConfigService.findPublishedById(dto.quizId);
+      if (!quiz) {
+        // Unknown, unpublished, or soft-deleted are indistinguishable
+        // (decision B2).
+        throw new NotFoundException(QUIZ_NOT_FOUND_MESSAGE);
+      }
+      return {
+        quizId: quiz.id,
+        subjectId: quiz.subjectId,
+        topicId: quiz.topicId,
+        questionCount: quiz.questionCount,
+        timerEnabled: quiz.timerEnabled,
+        mode: quiz.mode,
+      };
+    }
+
+    if (
+      dto.subjectId === undefined ||
+      dto.questionCount === undefined ||
+      dto.timerEnabled === undefined
+    ) {
+      throw new BadRequestException(MISSING_START_FIELDS_MESSAGE);
+    }
+    return {
+      quizId: null,
+      subjectId: dto.subjectId,
+      topicId: dto.topicId ?? null,
+      questionCount: dto.questionCount,
+      timerEnabled: dto.timerEnabled,
+      mode:
+        dto.topicId === undefined
+          ? QuizType.RANDOM_QUIZ
+          : QuizType.SUBJECT_QUIZ,
+    };
   }
 
   /**

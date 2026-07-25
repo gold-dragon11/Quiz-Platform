@@ -130,6 +130,7 @@ export class QuizSessionRepository {
     tx: PrismaTransactionClient,
     params: {
       userId: string;
+      quizId: string | null;
       subjectId: string;
       topicId: string | null;
       mode: QuizType;
@@ -142,6 +143,7 @@ export class QuizSessionRepository {
     return tx.quizSession.create({
       data: {
         userId: params.userId,
+        quizId: params.quizId,
         subjectId: params.subjectId,
         topicId: params.topicId,
         mode: params.mode,

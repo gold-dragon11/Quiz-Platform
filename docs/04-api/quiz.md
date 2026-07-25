@@ -54,16 +54,14 @@ Unauthorized requests return:
 POST /api/v1/quiz/start
 ```
 
-Creates a new Quiz Session, generated ad hoc. (`quizId` templates are reserved for a later phase and not accepted yet.)
+Creates a new Quiz Session in one of two mutually exclusive ways.
 
-Request body:
+Request body — **exactly one** of:
 
-- subjectId (required)
-- topicId (optional)
-- questionCount (required, 1–50)
-- timerEnabled (required)
+- **Stored Quiz:** `quizId` only. The Subject, Topic, question count, timer, and mode are loaded from the referenced published Quiz; the ad-hoc fields must not be provided. Supplying `quizId` together with any ad-hoc field returns `400`.
+- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
 
-The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+When a `quizId` is used, the referenced Quiz must exist, not be soft-deleted, and be published; otherwise the request returns `404 Not Found` — the three conditions are indistinguishable so the endpoint reveals nothing. The session records the Quiz's stored `mode` verbatim and links the Quiz through `quizId`. Question selection, the insufficient-questions `409`, the timer, the one-active-session rule, and every downstream step (answers, completion, scoring, XP, statistics, result) are identical for both paths.
 
 The backend, in a single transaction:
 
@@ -214,7 +212,7 @@ The client displays the countdown.
 The API validates:
 
 - authenticated user;
-- if quizId is provided, that the Quiz exists, is published, and its Subject/Topic match the request;
+- if quizId is provided, that the Quiz exists, is not soft-deleted, and is published (its Subject, Topic, question count, timer, and mode are then loaded from it, and no ad-hoc fields may accompany it); any failure returns the same generic 404;
 - active Quiz Session;
 - session ownership;
 - valid answers;

@@ -15,24 +15,37 @@ export const MAX_QUESTION_COUNT = 50;
 /**
  * Body of POST /api/v1/quiz/start (docs/04-api/quiz.md §4).
  *
- * Ad-hoc generation only in this phase — `quizId` templates are deferred
- * (decision D26). The mode is derived from `topicId`: present → SUBJECT_QUIZ,
- * absent → RANDOM_QUIZ (decision D2).
+ * Two mutually exclusive generation modes (Phase 5.6 decision B1 — XOR):
+ * - **stored Quiz**: supply only `quizId`; all configuration is loaded from
+ *   the published Quiz and the ad-hoc fields must not be present;
+ * - **ad hoc**: supply `subjectId`, `questionCount`, and `timerEnabled`
+ *   (optional `topicId`); no `quizId`. The mode is derived from `topicId`
+ *   (present → SUBJECT_QUIZ, absent → RANDOM_QUIZ, decision D2).
+ *
+ * Every field is format-validated only when present; required-ness and the
+ * XOR rule are enforced in the service so the two paths give precise errors.
  */
 export class StartQuizDto {
+  @ValidateIf((dto: StartQuizDto) => dto.quizId !== undefined)
   @IsUUID()
-  subjectId!: string;
+  quizId?: string;
+
+  @ValidateIf((dto: StartQuizDto) => dto.subjectId !== undefined)
+  @IsUUID()
+  subjectId?: string;
 
   @ValidateIf((dto: StartQuizDto) => dto.topicId !== undefined)
   @IsUUID()
   topicId?: string;
 
+  @ValidateIf((dto: StartQuizDto) => dto.questionCount !== undefined)
   @Type(() => Number)
   @IsInt()
   @Min(MIN_QUESTION_COUNT)
   @Max(MAX_QUESTION_COUNT)
-  questionCount!: number;
+  questionCount?: number;
 
+  @ValidateIf((dto: StartQuizDto) => dto.timerEnabled !== undefined)
   @IsBoolean()
-  timerEnabled!: boolean;
+  timerEnabled?: boolean;
 }
