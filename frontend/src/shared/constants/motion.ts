@@ -35,3 +35,16 @@ export const fade: Variants = {
   animate: { opacity: 1 },
   exit: { opacity: 0 },
 };
+
+/**
+ * Container that reveals its children in sequence (docs/07-design/motion.md
+ * §13 "List Animations"). Pair with `fadeInUp` on each child so sections and
+ * cards enter with a subtle, staggered rise. Honors reduced-motion via the
+ * app-level MotionConfig.
+ */
+export const staggerContainer: Variants = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.06, delayChildren: 0.04 },
+  },
+};

@@ -18,6 +18,7 @@ import {
   VerifyEmailPage,
 } from '@/features/auth';
 import { ProfilePage, SettingsPage } from '@/features/user';
+import { DashboardPage } from '@/features/dashboard';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -102,7 +103,7 @@ export const router = createBrowserRouter([
           {
             element: <MainLayout />,
             children: [
-              { path: ROUTES.dashboard, element: withTransition('Dashboard') },
+              { path: ROUTES.dashboard, element: page(<DashboardPage />) },
               { path: ROUTES.quiz, element: withTransition('Quiz Selection') },
               {
                 path: ROUTES.quizSession,
