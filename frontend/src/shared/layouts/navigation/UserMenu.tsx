@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { TRANSITION } from '@/shared/constants/motion';
+import { dropdownMenu, TRANSITION } from '@/shared/constants/motion';
 import { Avatar } from '@/shared/ui/Avatar';
 import { useLogout } from '@/shared/hooks/use-logout';
 
@@ -58,9 +58,10 @@ export function UserMenu({ isAdmin, displayName, username, avatarUrl }: UserMenu
         {open && (
           <motion.div
             role="menu"
-            initial={{ opacity: 0, scale: 0.96, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: -4 }}
+            variants={dropdownMenu}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
             className="bg-surface border-border absolute right-0 z-50 mt-2 w-56 origin-top-right overflow-hidden rounded-xl border shadow-xl"
           >

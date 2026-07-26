@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ROUTES } from '@/shared/constants/routes';
-import { DURATION, EASE } from '@/shared/constants/motion';
+import { DURATION, EASE, HOVER_LIFT } from '@/shared/constants/motion';
 
 interface QuickAction {
   to: string;
@@ -78,7 +78,7 @@ export function QuickActions(): React.JSX.Element {
       {ACTIONS.map((action) => (
         <motion.div
           key={action.to}
-          whileHover={{ y: -3 }}
+          whileHover={HOVER_LIFT}
           transition={{ duration: DURATION.fast, ease: EASE.out }}
         >
           <Link

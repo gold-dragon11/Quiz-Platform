@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { DURATION, EASE } from '@/shared/constants/motion';
+import { DURATION, EASE, pop } from '@/shared/constants/motion';
 import { formatNumber } from '@/shared/utils/format';
 
 function prefersReducedMotion(): boolean {
@@ -38,8 +38,9 @@ export function XpReward({ xp }: { xp: number }): React.JSX.Element {
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
+      variants={pop}
+      initial="initial"
+      animate="animate"
       transition={{ duration: DURATION.base, ease: EASE.out }}
       className="bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full px-5 py-2 text-lg font-semibold"
     >

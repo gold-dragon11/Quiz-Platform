@@ -48,3 +48,47 @@ export const staggerContainer: Variants = {
     transition: { staggerChildren: 0.06, delayChildren: 0.04 },
   },
 };
+
+/** Modal/dialog panel: fade + gentle scale/rise. Pair with a `fade` backdrop. */
+export const overlayPanel: Variants = {
+  initial: { opacity: 0, scale: 0.96, y: 8 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.96, y: 8 },
+};
+
+/** Dropdown menu: fade + scale from its top edge. */
+export const dropdownMenu: Variants = {
+  initial: { opacity: 0, scale: 0.96, y: -4 },
+  animate: { opacity: 1, scale: 1, y: 0 },
+  exit: { opacity: 0, scale: 0.96, y: -4 },
+};
+
+/** Slide-in drawer from the left (mobile navigation). */
+export const drawerLeft: Variants = {
+  initial: { x: '-100%' },
+  animate: { x: 0 },
+  exit: { x: '-100%' },
+};
+
+/** Toast entrance/exit — rise + subtle scale. */
+export const toastItem: Variants = {
+  initial: { opacity: 0, y: 12, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: 8, scale: 0.98 },
+};
+
+/** Horizontal swap for sequential content (e.g. quiz questions). */
+export const slideSwap: Variants = {
+  initial: { opacity: 0, x: 16 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -16 },
+};
+
+/** Celebratory pop-in (e.g. the XP reward). */
+export const pop: Variants = {
+  initial: { opacity: 0, scale: 0.9 },
+  animate: { opacity: 1, scale: 1 },
+};
+
+/** Subtle hover lift for interactive cards. Pair with `TRANSITION.fade`. */
+export const HOVER_LIFT = { y: -3 } as const;

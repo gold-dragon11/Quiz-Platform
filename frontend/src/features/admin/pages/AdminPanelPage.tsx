@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TRANSITION } from '@/shared/constants/motion';
+import { fadeInUp, TRANSITION } from '@/shared/constants/motion';
 import { AdminTabs, type AdminTabId } from '@/features/admin/components/AdminTabs';
 import { SubjectsSection } from '@/features/admin/components/subjects/SubjectsSection';
 import { TopicsSection } from '@/features/admin/components/topics/TopicsSection';
@@ -30,9 +30,10 @@ export function AdminPanelPage(): React.JSX.Element {
       <AnimatePresence mode="wait">
         <motion.div
           key={tab}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
+          variants={fadeInUp}
+          initial="initial"
+          animate="animate"
+          exit="exit"
           transition={TRANSITION.fade}
         >
           {tab === 'subjects' && <SubjectsSection />}

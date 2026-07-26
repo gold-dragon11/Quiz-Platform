@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { DURATION, EASE } from '@/shared/constants/motion';
+import { DURATION, EASE, HOVER_LIFT } from '@/shared/constants/motion';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import type { PublicSubject } from '@/features/subjects/types/subjects.types';
 
@@ -30,7 +30,7 @@ export function SubjectCard({
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      whileHover={{ y: -3 }}
+      whileHover={HOVER_LIFT}
       transition={{ duration: DURATION.fast, ease: EASE.out }}
       className={`flex h-full flex-col gap-3 rounded-xl border p-5 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
         selected ? 'border-primary bg-primary/5' : 'border-border bg-surface hover:border-border-subtle'

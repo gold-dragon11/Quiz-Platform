@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { generatePath, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { TRANSITION } from '@/shared/constants/motion';
+import { slideSwap, TRANSITION } from '@/shared/constants/motion';
 import { toast } from '@/stores/toast-store';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
@@ -197,9 +197,10 @@ export function QuizSessionPage(): React.JSX.Element {
       <AnimatePresence mode="wait">
         <motion.div
           key={current.id}
-          initial={{ opacity: 0, x: 16 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -16 }}
+          variants={slideSwap}
+          initial="initial"
+          animate="animate"
+          exit="exit"
           transition={TRANSITION.fade}
         >
           <QuestionCard

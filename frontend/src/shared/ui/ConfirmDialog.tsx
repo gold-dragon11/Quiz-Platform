@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TRANSITION } from '@/shared/constants/motion';
+import { fade, overlayPanel, TRANSITION } from '@/shared/constants/motion';
 import { Button, type ButtonVariant } from '@/shared/ui/Button';
 
 interface ConfirmDialogProps {
@@ -60,9 +60,10 @@ export function ConfirmDialog({
             className="absolute inset-0 bg-black/60"
             aria-hidden="true"
             onClick={() => !isLoading && onCancel()}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
           />
           <motion.div
@@ -72,9 +73,10 @@ export function ConfirmDialog({
             aria-labelledby={titleId}
             tabIndex={-1}
             className="bg-surface border-border relative w-full max-w-md rounded-xl border p-6 shadow-xl outline-none"
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            variants={overlayPanel}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
           >
             <h2 id={titleId} className="text-text-primary text-lg font-semibold">

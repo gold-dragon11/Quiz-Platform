@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TRANSITION } from '@/shared/constants/motion';
+import { fade, overlayPanel, TRANSITION } from '@/shared/constants/motion';
 
 interface ModalProps {
   open: boolean;
@@ -54,9 +54,10 @@ export function Modal({
             className="fixed inset-0 bg-black/60"
             aria-hidden="true"
             onClick={() => !busy && onClose()}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
           />
           <motion.div
@@ -65,9 +66,10 @@ export function Modal({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            initial={{ opacity: 0, scale: 0.97, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            variants={overlayPanel}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
             className="bg-surface border-border relative my-4 flex w-full max-w-2xl flex-col rounded-xl border shadow-xl outline-none"
           >

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { TRANSITION } from '@/shared/constants/motion';
+import { drawerLeft, fade, TRANSITION } from '@/shared/constants/motion';
 import { Logo } from '@/shared/ui/Logo';
 import { Avatar } from '@/shared/ui/Avatar';
 import { Button } from '@/shared/ui/Button';
@@ -50,16 +50,18 @@ export function MobileMenu({
             className="fixed inset-0 z-40 bg-black/60"
             aria-hidden="true"
             onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            variants={fade}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.fade}
           />
           <motion.aside
             className="bg-surface border-border fixed inset-y-0 left-0 z-50 flex w-72 flex-col gap-6 border-r p-4"
-            initial={{ x: '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
+            variants={drawerLeft}
+            initial="initial"
+            animate="animate"
+            exit="exit"
             transition={TRANSITION.page}
           >
             <div className="flex items-center justify-between">
