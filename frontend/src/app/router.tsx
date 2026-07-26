@@ -23,6 +23,7 @@ import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz'
 import { StatisticsPage } from '@/features/statistics';
 import { SubjectsBrowserPage } from '@/features/subjects';
 import { AdminPanelPage } from '@/features/admin';
+import { LandingPage } from '@/features/landing';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -69,11 +70,13 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <RouteError />,
     children: [
+      // Public landing page — full-bleed, outside PublicLayout's centered chrome.
+      { path: ROUTES.home, element: page(<LandingPage />) },
+
       // Public routes
       {
         element: <PublicLayout />,
         children: [
-          { path: ROUTES.home, element: withTransition('Home') },
           { path: ROUTES.verifyEmail, element: page(<VerifyEmailPage />) },
           { path: ROUTES.publicProfile, element: withTransition('Public Profile') },
 
