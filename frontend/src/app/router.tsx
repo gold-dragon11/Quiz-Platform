@@ -3,7 +3,6 @@ import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/shared/layouts/RootLayout';
 import { PublicLayout } from '@/shared/layouts/PublicLayout';
 import { MainLayout } from '@/shared/layouts/MainLayout';
-import { AdminLayout } from '@/shared/layouts/AdminLayout';
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
 import { RequireAdmin } from '@/shared/guards/RequireAdmin';
@@ -129,12 +128,12 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // Administrator routes
+      // Administrator routes — share the same authenticated shell (MainLayout).
       {
         element: <RequireAdmin />,
         children: [
           {
-            element: <AdminLayout />,
+            element: <MainLayout />,
             children: [
               { path: ROUTES.admin, element: page(<AdminPanelPage />) },
               {
