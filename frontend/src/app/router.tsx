@@ -22,6 +22,7 @@ import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 import { StatisticsPage } from '@/features/statistics';
 import { SubjectsBrowserPage } from '@/features/subjects';
+import { AdminPanelPage } from '@/features/admin';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -132,7 +133,7 @@ export const router = createBrowserRouter([
           {
             element: <AdminLayout />,
             children: [
-              { path: ROUTES.admin, element: withTransition('Admin Dashboard') },
+              { path: ROUTES.admin, element: page(<AdminPanelPage />) },
               {
                 path: ROUTES.adminSubjects,
                 element: withTransition('Subject Management'),
