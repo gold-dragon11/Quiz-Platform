@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  ValidateIf,
   validateSync,
 } from 'class-validator';
 
@@ -68,6 +69,20 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   FRONTEND_URL?: string;
+
+  // Email delivery (Resend). Both are optional together — when RESEND_API_KEY
+  // is unset, EmailModule falls back to logging emails instead of sending
+  // them. Setting RESEND_API_KEY without EMAIL_FROM is a configuration
+  // mistake, not a valid "half enabled" state, so it fails fast at boot
+  // rather than silently misdirecting mail.
+  @IsOptional()
+  @IsString()
+  RESEND_API_KEY?: string;
+
+  @ValidateIf((env: EnvironmentVariables) => Boolean(env.RESEND_API_KEY))
+  @IsNotEmpty()
+  @IsString()
+  EMAIL_FROM?: string;
 }
 
 export function validateEnv(

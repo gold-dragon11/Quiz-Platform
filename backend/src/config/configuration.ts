@@ -30,6 +30,17 @@ export interface PasswordResetConfig {
   expiresIn: string;
 }
 
+/**
+ * Email delivery provider configuration. When `resendApiKey` is unset,
+ * EmailModule binds the development logger instead of Resend — this is what
+ * lets local development work with no email provider configured at all.
+ */
+export interface EmailProviderConfig {
+  resendApiKey?: string;
+  /** The verified Resend sender, e.g. `"Quiz Platform <no-reply@example.com>"`. */
+  from?: string;
+}
+
 export interface AppConfig {
   nodeEnv: string;
   port: number;
@@ -40,6 +51,7 @@ export interface AppConfig {
   jwt: JwtConfig;
   emailVerification: EmailVerificationConfig;
   passwordReset: PasswordResetConfig;
+  email: EmailProviderConfig;
 }
 
 export default (): AppConfig => ({
@@ -61,5 +73,9 @@ export default (): AppConfig => ({
   passwordReset: {
     secret: process.env.PASSWORD_RESET_SECRET ?? '',
     expiresIn: process.env.PASSWORD_RESET_EXPIRES_IN ?? '1h',
+  },
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY || undefined,
+    from: process.env.EMAIL_FROM || undefined,
   },
 });
