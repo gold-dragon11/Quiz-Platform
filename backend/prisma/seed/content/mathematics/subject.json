@@ -1,0 +1,29 @@
+{
+  "slug": "mathematics",
+  "name": "Математика",
+  "description": "Підготовка до НМТ та ЗНО з математики: алгебра і початки аналізу, геометрія, ймовірність і статистика за програмою 10–11 класів.",
+  "icon": "∑",
+  "color": "#7C3AED",
+  "topics": [
+    "numbers",
+    "algebraic-expressions",
+    "equations",
+    "systems-of-equations",
+    "inequalities",
+    "functions",
+    "quadratic-functions",
+    "exponential-functions",
+    "logarithms",
+    "progressions",
+    "trigonometry",
+    "planimetry",
+    "stereometry",
+    "coordinate-geometry",
+    "vectors",
+    "derivatives",
+    "integrals",
+    "probability",
+    "statistics",
+    "combinatorics"
+  ]
+}
