@@ -21,6 +21,7 @@ const SUBJECT_PACKS = [
   'mathematics',
   'history-of-ukraine',
   'ukrainian-language',
+  'english-language',
 ];
 
 interface Counters {

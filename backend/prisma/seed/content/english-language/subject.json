@@ -1,0 +1,29 @@
+{
+  "slug": "english-language",
+  "name": "Англійська мова",
+  "description": "Підготовка до НМТ та ЗНО з англійської мови (рівень B1–B2): граматика, лексика, фразові дієслова, сталі словосполучення, ідіоми, читання та практичне вживання мови.",
+  "icon": "Ab",
+  "color": "#3B82F6",
+  "topics": [
+    "present-tenses",
+    "past-tenses",
+    "future-forms",
+    "modal-verbs",
+    "articles",
+    "pronouns",
+    "prepositions",
+    "adjectives-adverbs",
+    "gerunds-infinitives",
+    "passive-voice",
+    "conditionals",
+    "reported-speech",
+    "word-formation",
+    "phrasal-verbs",
+    "vocabulary",
+    "collocations",
+    "idioms",
+    "reading-comprehension",
+    "use-of-english",
+    "grammar-review"
+  ]
+}

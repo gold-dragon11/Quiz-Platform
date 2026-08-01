@@ -32,6 +32,7 @@ async function main(): Promise<void> {
     'mathematics',
     'history-of-ukraine',
     'ukrainian-language',
+    'english-language',
   ]) {
     await checkSubject(slug, problems);
   }
