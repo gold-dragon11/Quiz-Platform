@@ -28,7 +28,11 @@ function readPairs(configuration: unknown): Pair[] {
 async function main(): Promise<void> {
   const problems: string[] = [];
 
-  for (const slug of ['mathematics', 'history-of-ukraine']) {
+  for (const slug of [
+    'mathematics',
+    'history-of-ukraine',
+    'ukrainian-language',
+  ]) {
     await checkSubject(slug, problems);
   }
 

@@ -1,0 +1,31 @@
+{
+  "slug": "ukrainian-language",
+  "name": "Українська мова",
+  "description": "Підготовка до НМТ та ЗНО з української мови: фонетика, лексика, будова слова, морфологія, синтаксис, пунктуація, стилістика та культура мовлення.",
+  "icon": "Аа",
+  "color": "#22C55E",
+  "topics": [
+    "phonetics",
+    "orthoepy",
+    "orthography",
+    "lexicology",
+    "phraseology",
+    "word-structure",
+    "word-formation",
+    "morphology",
+    "noun",
+    "adjective",
+    "numeral",
+    "pronoun",
+    "verb",
+    "adverb",
+    "function-words",
+    "syntax",
+    "simple-sentence",
+    "complex-sentence",
+    "punctuation",
+    "stylistics",
+    "speech-culture",
+    "essay-writing"
+  ]
+}

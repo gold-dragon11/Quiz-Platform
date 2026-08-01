@@ -17,7 +17,11 @@ import { isMatching, questionType, type QuestionContent } from './seed/types';
 const prisma = new PrismaClient();
 
 /** Subject content packs to seed, in order. */
-const SUBJECT_PACKS = ['mathematics', 'history-of-ukraine'];
+const SUBJECT_PACKS = [
+  'mathematics',
+  'history-of-ukraine',
+  'ukrainian-language',
+];
 
 interface Counters {
   topicsCreated: number;
