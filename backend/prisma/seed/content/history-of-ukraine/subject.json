@@ -1,0 +1,23 @@
+{
+  "slug": "history-of-ukraine",
+  "name": "Історія України",
+  "description": "Підготовка до НМТ та ЗНО з історії України: від найдавніших часів до сьогодення — хронологія, історичні постаті, державотворення, культура.",
+  "icon": "⚔",
+  "color": "#F59E0B",
+  "topics": [
+    "ancient-history",
+    "kyivan-rus",
+    "galicia-volhynia",
+    "lithuanian-polish-period",
+    "ukrainian-cossacks",
+    "hetmanate",
+    "eighteenth-century",
+    "nineteenth-century",
+    "ukrainian-revolution",
+    "interwar-period",
+    "world-war-ii",
+    "soviet-ukraine",
+    "independence",
+    "modern-ukraine"
+  ]
+}

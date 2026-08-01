@@ -28,14 +28,28 @@ function readPairs(configuration: unknown): Pair[] {
 async function main(): Promise<void> {
   const problems: string[] = [];
 
+  for (const slug of ['mathematics', 'history-of-ukraine']) {
+    await checkSubject(slug, problems);
+  }
+
+  console.log(
+    problems.length === 0
+      ? '\n✅ All integrity checks passed.'
+      : `\n❌ ${problems.length} problem(s):\n  - ${problems.join('\n  - ')}`,
+  );
+  process.exitCode = problems.length === 0 ? 0 : 1;
+}
+
+async function checkSubject(slug: string, problems: string[]): Promise<void> {
   const subject = await prisma.subject.findUnique({
-    where: { slug: 'mathematics' },
+    where: { slug },
     include: {
       topics: { where: { deletedAt: null }, orderBy: { displayOrder: 'asc' } },
     },
   });
 
-  if (!subject) throw new Error('Mathematics subject not found');
+  if (!subject) throw new Error(`Subject "${slug}" not found`);
+  console.log(`\n=============== ${slug} ===============`);
 
   console.log(`Subject : ${subject.name} (published=${subject.isPublished})`);
   if (!subject.isPublished) problems.push('subject is not published');
@@ -157,6 +171,7 @@ async function main(): Promise<void> {
       deletedAt: null,
       isPublished: true,
       topic: {
+        subjectId: subject.id,
         deletedAt: null,
         isPublished: true,
         subject: { deletedAt: null, isPublished: true },
@@ -166,13 +181,6 @@ async function main(): Promise<void> {
   console.log(`\nQuestions passing the full publication chain: ${quizzable}`);
   if (quizzable < total)
     problems.push('some questions fail the publication chain');
-
-  console.log(
-    problems.length === 0
-      ? '\n✅ All integrity checks passed.'
-      : `\n❌ ${problems.length} problem(s):\n  - ${problems.join('\n  - ')}`,
-  );
-  process.exitCode = problems.length === 0 ? 0 : 1;
 }
 
 main()

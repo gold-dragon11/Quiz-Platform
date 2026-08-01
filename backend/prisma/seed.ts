@@ -17,7 +17,7 @@ import { isMatching, questionType, type QuestionContent } from './seed/types';
 const prisma = new PrismaClient();
 
 /** Subject content packs to seed, in order. */
-const SUBJECT_PACKS = ['mathematics'];
+const SUBJECT_PACKS = ['mathematics', 'history-of-ukraine'];
 
 interface Counters {
   topicsCreated: number;
@@ -27,7 +27,11 @@ interface Counters {
   questionsUnchanged: number;
 }
 
-async function seedSubject(dir: string, counters: Counters): Promise<void> {
+async function seedSubject(
+  dir: string,
+  order: number,
+  counters: Counters,
+): Promise<void> {
   const { subject, topics } = loadSubject(dir);
 
   const subjectRow = await prisma.subject.upsert({
@@ -38,6 +42,8 @@ async function seedSubject(dir: string, counters: Counters): Promise<void> {
       icon: subject.icon ?? null,
       color: subject.color ?? null,
       isPublished: true,
+      // Keep catalog order deterministic as more packs are added.
+      displayOrder: order,
       deletedAt: null,
     },
     create: {
@@ -47,7 +53,7 @@ async function seedSubject(dir: string, counters: Counters): Promise<void> {
       icon: subject.icon ?? null,
       color: subject.color ?? null,
       isPublished: true,
-      displayOrder: 0,
+      displayOrder: order,
     },
   });
 
@@ -247,9 +253,9 @@ async function main(): Promise<void> {
     questionsUnchanged: 0,
   };
 
-  for (const pack of SUBJECT_PACKS) {
+  for (const [index, pack] of SUBJECT_PACKS.entries()) {
     console.log(`Seeding subject pack: ${pack}`);
-    await seedSubject(pack, counters);
+    await seedSubject(pack, index, counters);
   }
 
   const totals = await prisma.question.groupBy({
