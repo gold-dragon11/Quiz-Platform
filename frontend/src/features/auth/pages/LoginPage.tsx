@@ -3,6 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
+import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -27,6 +28,7 @@ export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
+  const { t } = useTranslation();
 
   const {
     register,
@@ -43,7 +45,7 @@ export function LoginPage(): React.JSX.Element {
   const onSubmit = handleSubmit((values) => {
     login.mutate(values, {
       onSuccess: () => {
-        toast.success('Welcome back!');
+        toast.success(t('auth.login.welcomeToast'));
         navigate(redirectTo, { replace: true });
       },
       onError: (error) => applyApiErrorToForm(error, setError),
@@ -52,20 +54,20 @@ export function LoginPage(): React.JSX.Element {
 
   return (
     <AuthCard
-      title="Sign in"
-      subtitle="Welcome back to Quiz Platform"
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
       footer={
         <div className="flex flex-col gap-2">
           <p>
-            Don&apos;t have an account?{' '}
+            {t('auth.login.noAccount')}{' '}
             <Link to={ROUTES.register} className="text-primary hover:text-primary-hover">
-              Create one
+              {t('auth.login.createOne')}
             </Link>
           </p>
           <p>
-            Haven&apos;t verified your email?{' '}
+            {t('auth.login.notVerified')}{' '}
             <Link to={ROUTES.verifyEmail} className="text-primary hover:text-primary-hover">
-              Resend verification
+              {t('auth.login.resend')}
             </Link>
           </p>
         </div>
@@ -74,26 +76,26 @@ export function LoginPage(): React.JSX.Element {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
-          label="Email"
+          label={t('auth.field.email')}
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('auth.field.emailPlaceholder')}
           error={errors.email?.message}
           {...register('email')}
         />
         <PasswordInput
-          label="Password"
+          label={t('auth.field.password')}
           autoComplete="current-password"
           error={errors.password?.message}
           {...register('password')}
         />
         <div className="flex justify-end">
           <Link to={ROUTES.forgotPassword} className="text-text-muted hover:text-text-secondary text-sm">
-            Forgot password?
+            {t('auth.login.forgot')}
           </Link>
         </div>
         <Button type="submit" fullWidth isLoading={login.isPending}>
-          Sign in
+          {t('auth.login.submit')}
         </Button>
       </form>
     </AuthCard>

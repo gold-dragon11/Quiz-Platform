@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
 import { Language } from '@/shared/types/enums';
+import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -14,11 +15,6 @@ import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useRegister, useResendVerification } from '@/features/auth/hooks/use-auth-mutations';
 import { registerSchema, type RegisterFormValues } from '@/features/auth/validation/auth.schemas';
 import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
-
-const LANGUAGE_OPTIONS = [
-  { value: Language.ENGLISH, label: 'English' },
-  { value: Language.UKRAINIAN, label: 'Ukrainian' },
-];
 
 /**
  * `/register` (guest-only). Creates an account (docs/04-api/authentication.md
@@ -31,6 +27,14 @@ export function RegisterPage(): React.JSX.Element {
   const registerMutation = useRegister();
   const resend = useResendVerification();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const { t } = useTranslation();
+
+  // The account's preferred language is a backend field (ENGLISH/UKRAINIAN),
+  // separate from the interface language chosen with the switcher.
+  const languageOptions = [
+    { value: Language.ENGLISH, label: t('auth.language.english') },
+    { value: Language.UKRAINIAN, label: t('auth.language.ukrainian') },
+  ];
 
   const {
     register,
@@ -71,21 +75,19 @@ export function RegisterPage(): React.JSX.Element {
   if (registeredEmail) {
     return (
       <AuthCard
-        title="Check your email"
-        subtitle={`We've sent a verification link to ${registeredEmail}.`}
+        title={t('auth.register.checkEmail.title')}
+        subtitle={t('auth.register.checkEmail.subtitle', { email: registeredEmail })}
         footer={
           <p>
-            Ready to sign in?{' '}
+            {t('auth.register.checkEmail.ready')}{' '}
             <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-              Go to sign in
+              {t('auth.register.checkEmail.goToLogin')}
             </Link>
           </p>
         }
       >
         <div className="flex flex-col gap-4">
-          <Alert variant="success">
-            Your account has been created. Click the link in the email to verify your address, then sign in.
-          </Alert>
+          <Alert variant="success">{t('auth.register.checkEmail.alert')}</Alert>
           <Button
             variant="secondary"
             fullWidth
@@ -94,14 +96,13 @@ export function RegisterPage(): React.JSX.Element {
               resend.mutate(
                 { email: registeredEmail },
                 {
-                  onSuccess: () =>
-                    toast.success('If the address still needs verifying, a new link is on its way.'),
-                  onError: () => toast.error('Could not resend right now. Please try again.'),
+                  onSuccess: () => toast.success(t('auth.register.resendSuccess')),
+                  onError: () => toast.error(t('auth.register.resendError')),
                 },
               )
             }
           >
-            Resend verification email
+            {t('auth.register.checkEmail.resend')}
           </Button>
         </div>
       </AuthCard>
@@ -110,13 +111,13 @@ export function RegisterPage(): React.JSX.Element {
 
   return (
     <AuthCard
-      title="Create your account"
-      subtitle="Start learning with Quiz Platform"
+      title={t('auth.register.title')}
+      subtitle={t('auth.register.subtitle')}
       footer={
         <p>
-          Already have an account?{' '}
+          {t('auth.register.hasAccount')}{' '}
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Sign in
+            {t('auth.register.signIn')}
           </Link>
         </p>
       }
@@ -124,42 +125,42 @@ export function RegisterPage(): React.JSX.Element {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
-          label="Email"
+          label={t('auth.field.email')}
           type="email"
           autoComplete="email"
-          placeholder="you@example.com"
+          placeholder={t('auth.field.emailPlaceholder')}
           error={errors.email?.message}
           {...register('email')}
         />
         <Input
-          label="Username"
+          label={t('auth.field.username')}
           autoComplete="username"
-          placeholder="your_username"
-          helperText="3–30 characters: letters, numbers, and underscores."
+          placeholder={t('auth.field.usernamePlaceholder')}
+          helperText={t('auth.field.usernameHint')}
           error={errors.username?.message}
           {...register('username')}
         />
         <PasswordInput
-          label="Password"
+          label={t('auth.field.password')}
           autoComplete="new-password"
-          helperText="At least 8 characters with upper, lower, a number, and a symbol."
+          helperText={t('auth.field.passwordHint')}
           error={errors.password?.message}
           {...register('password')}
         />
         <PasswordInput
-          label="Confirm password"
+          label={t('auth.field.confirmPassword')}
           autoComplete="new-password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <Select
-          label="Preferred language"
-          options={LANGUAGE_OPTIONS}
+          label={t('auth.field.preferredLanguage')}
+          options={languageOptions}
           error={errors.preferredLanguage?.message}
           {...register('preferredLanguage')}
         />
         <Button type="submit" fullWidth isLoading={registerMutation.isPending}>
-          Create account
+          {t('auth.register.submit')}
         </Button>
       </form>
     </AuthCard>

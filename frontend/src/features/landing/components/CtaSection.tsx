@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp } from '@/shared/constants/motion';
+import { useTranslation } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { REVEAL_VIEWPORT } from '@/features/landing/constants';
@@ -9,6 +10,7 @@ import { REVEAL_VIEWPORT } from '@/features/landing/constants';
 /** CTA (§6): a large centered card inviting sign-up. */
 export function CtaSection(): React.JSX.Element {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
@@ -20,13 +22,11 @@ export function CtaSection(): React.JSX.Element {
           />
           <div className="relative flex flex-col items-center gap-5 px-4 py-12 text-center">
             <h2 className="text-text-primary max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl text-balance">
-              Start learning in the next minute
+              {t('landing.cta.title')}
             </h2>
-            <p className="text-text-secondary max-w-lg">
-              Create a free account and take your first quiz today.
-            </p>
+            <p className="text-text-secondary max-w-lg">{t('landing.cta.description')}</p>
             <Button size="lg" onClick={() => navigate(ROUTES.register)}>
-              Create Account
+              {t('landing.cta.button')}
             </Button>
           </div>
         </Card>

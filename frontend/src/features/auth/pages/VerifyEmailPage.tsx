@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { AuthCard } from '@/features/auth/components/AuthCard';
@@ -9,6 +10,11 @@ import { ResendVerificationPage } from '@/features/auth/pages/ResendVerification
 import { useVerifyEmail } from '@/features/auth/hooks/use-auth-mutations';
 import { isApiError } from '@/shared/utils/apply-api-error';
 
+/**
+ * Fallback shown only if the request fails without an API error body. Backend
+ * messages are surfaced verbatim and are not translated here — they are the
+ * server's wording, not interface copy.
+ */
 const GENERIC_VERIFY_ERROR = 'Invalid or expired verification token.';
 
 /**
@@ -23,6 +29,7 @@ export function VerifyEmailPage(): React.JSX.Element {
   const token = searchParams.get('token');
   const verify = useVerifyEmail();
   const attempted = useRef(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (token && !attempted.current) {
@@ -38,7 +45,7 @@ export function VerifyEmailPage(): React.JSX.Element {
 
   if (verify.isIdle || verify.isPending) {
     return (
-      <AuthCard title="Verifying your email" subtitle="This will only take a moment.">
+      <AuthCard title={t('auth.verify.pending.title')} subtitle={t('auth.verify.pending.subtitle')}>
         <div className="flex flex-col gap-3">
           <Skeleton className="h-4 w-3/4" />
           <Skeleton className="h-4 w-full" />
@@ -51,16 +58,14 @@ export function VerifyEmailPage(): React.JSX.Element {
   if (verify.isSuccess) {
     return (
       <AuthCard
-        title="Email verified"
+        title={t('auth.verify.success.title')}
         footer={
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Continue to sign in
+            {t('auth.verify.success.continue')}
           </Link>
         }
       >
-        <Alert variant="success">
-          Your email address has been verified. You can now sign in to your account.
-        </Alert>
+        <Alert variant="success">{t('auth.verify.success.alert')}</Alert>
       </AuthCard>
     );
   }
@@ -69,20 +74,20 @@ export function VerifyEmailPage(): React.JSX.Element {
 
   return (
     <AuthCard
-      title="Verification failed"
+      title={t('auth.verify.failed.title')}
       footer={
         <p>
-          Already verified?{' '}
+          {t('auth.verify.alreadyVerified')}{' '}
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Sign in
+            {t('auth.verify.signIn')}
           </Link>
         </p>
       }
     >
       <div className="flex flex-col gap-4">
         <Alert variant="error">{message}</Alert>
-        <p className="text-text-secondary text-sm">Request a fresh verification link:</p>
-        <ResendVerificationForm submitLabel="Send new link" />
+        <p className="text-text-secondary text-sm">{t('auth.verify.failed.hint')}</p>
+        <ResendVerificationForm submitLabel={t('auth.verify.failed.submit')} />
       </div>
     </AuthCard>
   );

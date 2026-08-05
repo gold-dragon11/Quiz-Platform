@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import { useTranslation } from '@/shared/i18n';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { ResendVerificationForm } from '@/features/auth/components/ResendVerificationForm';
 
@@ -11,15 +12,17 @@ import { ResendVerificationForm } from '@/features/auth/components/ResendVerific
  * `/verify-email`.
  */
 export function ResendVerificationPage(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <AuthCard
-      title="Verify your email"
-      subtitle="Enter your email to receive a new verification link."
+      title={t('auth.resend.title')}
+      subtitle={t('auth.resend.subtitle')}
       footer={
         <p>
-          Already verified?{' '}
+          {t('auth.verify.alreadyVerified')}{' '}
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Sign in
+            {t('auth.verify.signIn')}
           </Link>
         </p>
       }

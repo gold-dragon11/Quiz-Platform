@@ -90,7 +90,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/profile')) return 'Profile';
   if (pathname.startsWith('/settings')) return 'Settings';
   if (pathname.startsWith('/admin')) return 'Admin';
-  return 'Quix';
+  return 'L&S';
 }
 
 /** Filters the admin-only items out for non-admins. */

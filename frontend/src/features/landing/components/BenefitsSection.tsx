@@ -1,14 +1,18 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
+import { useTranslation, type TranslationKey } from '@/shared/i18n';
 import { REVEAL_VIEWPORT } from '@/features/landing/constants';
 
-const BENEFITS = [
-  { title: 'Fast', description: 'Snappy, lazy-loaded pages that never get in your way.' },
-  { title: 'Modern', description: 'A clean, current interface inspired by Apple and Linear.' },
-  { title: 'Minimal', description: 'Only what matters — no clutter, no noise.' },
-  { title: 'Free', description: 'Everything you need to learn, at no cost.' },
-  { title: 'Responsive', description: 'Looks and works great on desktop, tablet, and mobile.' },
-  { title: 'Built for students', description: 'Designed around real study habits and focus.' },
+const BENEFITS: { titleKey: TranslationKey; descriptionKey: TranslationKey }[] = [
+  { titleKey: 'landing.benefits.fast.title', descriptionKey: 'landing.benefits.fast.description' },
+  { titleKey: 'landing.benefits.modern.title', descriptionKey: 'landing.benefits.modern.description' },
+  { titleKey: 'landing.benefits.minimal.title', descriptionKey: 'landing.benefits.minimal.description' },
+  { titleKey: 'landing.benefits.free.title', descriptionKey: 'landing.benefits.free.description' },
+  {
+    titleKey: 'landing.benefits.responsive.title',
+    descriptionKey: 'landing.benefits.responsive.description',
+  },
+  { titleKey: 'landing.benefits.students.title', descriptionKey: 'landing.benefits.students.description' },
 ];
 
 function CheckIcon(): React.JSX.Element {
@@ -31,11 +35,15 @@ function CheckIcon(): React.JSX.Element {
 
 /** Why this platform (§4): a grid of benefits. */
 export function BenefitsSection(): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
       <div className="mb-10 flex flex-col gap-2 text-center">
-        <h2 className="text-text-primary text-2xl font-semibold sm:text-3xl">Why this platform</h2>
-        <p className="text-text-muted">Built to help you focus and improve.</p>
+        <h2 className="text-text-primary text-2xl font-semibold sm:text-3xl">
+          {t('landing.benefits.title')}
+        </h2>
+        <p className="text-text-muted">{t('landing.benefits.description')}</p>
       </div>
 
       <motion.div
@@ -47,7 +55,7 @@ export function BenefitsSection(): React.JSX.Element {
       >
         {BENEFITS.map((benefit) => (
           <motion.div
-            key={benefit.title}
+            key={benefit.titleKey}
             variants={fadeInUp}
             className="border-border bg-surface flex items-start gap-3 rounded-xl border p-5"
           >
@@ -55,8 +63,8 @@ export function BenefitsSection(): React.JSX.Element {
               <CheckIcon />
             </span>
             <div className="flex flex-col gap-1">
-              <h3 className="text-text-primary font-medium">{benefit.title}</h3>
-              <p className="text-text-muted text-sm">{benefit.description}</p>
+              <h3 className="text-text-primary font-medium">{t(benefit.titleKey)}</h3>
+              <p className="text-text-muted text-sm">{t(benefit.descriptionKey)}</p>
             </div>
           </motion.div>
         ))}

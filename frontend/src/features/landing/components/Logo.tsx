@@ -3,16 +3,16 @@ interface LogoProps {
 }
 
 /**
- * Wordmark for the landing page — a small primary mark plus the product name.
+ * Wordmark for the landing page — the "L&S" name set inside the primary tile.
+ * Slightly larger than the shared app-shell logo, since it anchors the hero.
  * Pure presentation, no asset dependency.
  */
 export function Logo({ className = '' }: LogoProps): React.JSX.Element {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="bg-primary flex size-8 items-center justify-center rounded-lg text-sm font-bold text-white">
-        Q
+    <span className={`inline-flex items-center ${className}`}>
+      <span className="bg-primary flex h-10 items-center justify-center rounded-xl px-3 text-lg font-bold tracking-tight text-white">
+        L&amp;S
       </span>
-      <span className="text-text-primary text-lg font-semibold tracking-tight">Quix</span>
     </span>
   );
 }

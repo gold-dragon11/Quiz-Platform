@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from '@/shared/ui/LanguageSwitcher';
 import { HeroSection } from '@/features/landing/components/HeroSection';
 import { FeaturesSection } from '@/features/landing/components/FeaturesSection';
 import { HowItWorksSection } from '@/features/landing/components/HowItWorksSection';
@@ -11,10 +12,16 @@ import { FooterSection } from '@/features/landing/components/FooterSection';
  * page: hero, features, how-it-works, benefits, a preview built from the real
  * shared UI, a CTA, and the footer. Rendered outside PublicLayout so it can go
  * full-bleed; the CTAs route to /register and /login.
+ *
+ * The language switcher floats over the top-right corner rather than sitting
+ * in a header bar — the page deliberately has no chrome above the hero.
  */
 export function LandingPage(): React.JSX.Element {
   return (
-    <div className="bg-background text-text-primary min-h-screen">
+    <div className="bg-background text-text-primary relative min-h-screen">
+      <div className="absolute top-5 right-5 z-20 sm:top-6 sm:right-8">
+        <LanguageSwitcher />
+      </div>
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />

@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { PasswordInput } from '@/shared/ui/PasswordInput';
@@ -22,6 +23,7 @@ export function ResetPasswordPage(): React.JSX.Element {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const resetPassword = useResetPassword();
+  const { t } = useTranslation();
 
   const {
     register,
@@ -50,16 +52,14 @@ export function ResetPasswordPage(): React.JSX.Element {
   if (!token) {
     return (
       <AuthCard
-        title="Invalid reset link"
+        title={t('auth.reset.invalid.title')}
         footer={
           <Link to={ROUTES.forgotPassword} className="text-primary hover:text-primary-hover">
-            Request a new reset link
+            {t('auth.reset.invalid.request')}
           </Link>
         }
       >
-        <Alert variant="error">
-          This password reset link is missing its token or is malformed. Please request a new one.
-        </Alert>
+        <Alert variant="error">{t('auth.reset.invalid.alert')}</Alert>
       </AuthCard>
     );
   }
@@ -67,48 +67,45 @@ export function ResetPasswordPage(): React.JSX.Element {
   if (resetPassword.isSuccess && isSubmitSuccessful) {
     return (
       <AuthCard
-        title="Password updated"
+        title={t('auth.reset.done.title')}
         footer={
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Back to sign in
+            {t('auth.forgot.backToLogin')}
           </Link>
         }
       >
-        <Alert variant="success">
-          Your password has been changed and all existing sessions were signed out. Sign in with your new
-          password.
-        </Alert>
+        <Alert variant="success">{t('auth.reset.done.alert')}</Alert>
       </AuthCard>
     );
   }
 
   return (
     <AuthCard
-      title="Set a new password"
-      subtitle="Choose a strong password you don't use elsewhere."
+      title={t('auth.reset.title')}
+      subtitle={t('auth.reset.subtitle')}
       footer={
         <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-          Back to sign in
+          {t('auth.forgot.backToLogin')}
         </Link>
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <PasswordInput
-          label="New password"
+          label={t('auth.reset.newPassword')}
           autoComplete="new-password"
-          helperText="At least 8 characters with upper, lower, a number, and a symbol."
+          helperText={t('auth.field.passwordHint')}
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <PasswordInput
-          label="Confirm new password"
+          label={t('auth.reset.confirmPassword')}
           autoComplete="new-password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <Button type="submit" fullWidth isLoading={resetPassword.isPending}>
-          Update password
+          {t('auth.reset.submit')}
         </Button>
       </form>
     </AuthCard>

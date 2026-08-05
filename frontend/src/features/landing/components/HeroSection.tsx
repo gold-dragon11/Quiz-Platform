@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp, staggerContainer, TRANSITION } from '@/shared/constants/motion';
+import { useTranslation } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Logo } from '@/features/landing/components/Logo';
 import { FLOAT_MEDIUM, FLOAT_SLOW } from '@/features/landing/constants';
@@ -13,6 +14,7 @@ import { FLOAT_MEDIUM, FLOAT_SLOW } from '@/features/landing/constants';
  */
 export function HeroSection(): React.JSX.Element {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <section className="relative overflow-hidden">
@@ -49,29 +51,28 @@ export function HeroSection(): React.JSX.Element {
           variants={fadeInUp}
           className="text-text-primary text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl"
         >
-          Learn.
+          {t('landing.hero.headline.1')}
           <br />
-          Progress.
+          {t('landing.hero.headline.2')}
           <br />
-          Repeat.
+          {t('landing.hero.headline.3')}
         </motion.h1>
 
         <motion.p variants={fadeInUp} className="text-text-secondary max-w-xl text-lg text-balance">
-          A calm, focused way to master any subject — practice with quizzes, track your progress, and level up
-          as you go.
+          {t('landing.hero.subheadline')}
         </motion.p>
 
         <motion.div variants={fadeInUp} className="flex flex-col gap-3 sm:flex-row">
           <Button size="lg" onClick={() => navigate(ROUTES.register)}>
-            Get Started
+            {t('landing.hero.cta.primary')}
           </Button>
           <Button size="lg" variant="secondary" onClick={() => navigate(ROUTES.login)}>
-            Login
+            {t('landing.hero.cta.secondary')}
           </Button>
         </motion.div>
 
         <motion.div variants={fadeInUp} transition={TRANSITION.fade} className="text-text-muted text-sm">
-          Free to use · Dark, distraction-free · Built for students
+          {t('landing.hero.note')}
         </motion.div>
       </motion.div>
     </section>
