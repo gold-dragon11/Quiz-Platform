@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes } from 'react';
 import { Spinner } from '@/shared/ui/Spinner';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'danger';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'xl';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -25,6 +25,9 @@ const SIZE_CLASS: Record<ButtonSize, string> = {
   sm: 'h-9 px-3 text-sm',
   md: 'h-11 px-4 text-sm',
   lg: 'h-12 px-6 text-base',
+  // Marketing scale — large enough to hold its own against a display-size
+  // headline. Added rather than growing `lg`, which the auth forms rely on.
+  xl: 'h-14 px-8 text-lg',
 };
 
 /**

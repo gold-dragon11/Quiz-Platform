@@ -1,79 +1,63 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { fadeInUp, staggerContainer, TRANSITION } from '@/shared/constants/motion';
+import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { useTranslation } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Logo } from '@/features/landing/components/Logo';
-import { FLOAT_MEDIUM, FLOAT_SLOW } from '@/features/landing/constants';
+import { HeroBackdrop } from '@/features/landing/components/HeroBackdrop';
 
 /**
- * Landing hero (§1): logo, headline, subheadline, and the two primary CTAs,
- * over a calm animated backdrop — soft gradient blobs and floating shapes that
- * drift very slowly. Entrance uses the shared stagger/fade presets.
+ * Landing hero (§1): the logo anchored at the top centre, then the headline,
+ * subheadline and the two primary CTAs centred in the remaining space.
+ *
+ * The headline is set on one line from `sm` up. Its size is driven by a
+ * viewport-relative clamp rather than fixed breakpoints, so the line grows
+ * with the screen and can never overflow; below `sm` it wraps instead of
+ * shrinking to an unreadable size.
  */
 export function HeroSection(): React.JSX.Element {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
   return (
-    <section className="relative overflow-hidden">
-      {/* Animated backdrop */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <motion.div
-          className="bg-primary/20 absolute -top-40 -left-24 size-[28rem] rounded-full blur-3xl"
-          animate={{ y: [0, 40, 0], x: [0, 24, 0] }}
-          transition={FLOAT_SLOW}
-        />
-        <motion.div
-          className="bg-info/20 absolute top-10 -right-20 size-[24rem] rounded-full blur-3xl"
-          animate={{ y: [0, -32, 0], x: [0, -16, 0] }}
-          transition={FLOAT_MEDIUM}
-        />
-        <motion.div
-          className="bg-primary/10 absolute bottom-0 left-1/3 size-72 rounded-full blur-3xl"
-          animate={{ y: [0, -24, 0] }}
-          transition={FLOAT_SLOW}
-        />
-      </div>
+    <section className="relative flex min-h-screen flex-col overflow-hidden">
+      <HeroBackdrop />
 
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="relative mx-auto flex min-h-[88vh] max-w-4xl flex-col items-center justify-center gap-8 px-6 py-24 text-center"
+        className="relative flex flex-1 flex-col"
       >
-        <motion.div variants={fadeInUp}>
-          <Logo />
+        <motion.div variants={fadeInUp} className="flex justify-center pt-8 sm:pt-10">
+          <Logo size="lg" />
         </motion.div>
 
-        <motion.h1
-          variants={fadeInUp}
-          className="text-text-primary text-5xl font-semibold tracking-tight sm:text-6xl md:text-7xl"
-        >
-          {t('landing.hero.headline.1')}
-          <br />
-          {t('landing.hero.headline.2')}
-          <br />
-          {t('landing.hero.headline.3')}
-        </motion.h1>
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 sm:gap-7 text-center">
+          <motion.h1
+            variants={fadeInUp}
+            className="text-text-primary text-[clamp(2.5rem,5.8vw,5.5rem)] leading-[1.06] font-extrabold tracking-[-0.03em] [word-spacing:0.28em] sm:whitespace-nowrap"
+          >
+            {t('landing.hero.headline')}
+          </motion.h1>
 
-        <motion.p variants={fadeInUp} className="text-text-secondary max-w-xl text-lg text-balance">
-          {t('landing.hero.subheadline')}
-        </motion.p>
+          <motion.p
+            variants={fadeInUp}
+            className="text-text-secondary max-w-4xl text-lg leading-relaxed text-balance sm:text-xl md:text-2xl lg:text-[1.75rem]"
+          >
+            {t('landing.hero.subheadline')}
+          </motion.p>
 
-        <motion.div variants={fadeInUp} className="flex flex-col gap-3 sm:flex-row">
-          <Button size="lg" onClick={() => navigate(ROUTES.register)}>
-            {t('landing.hero.cta.primary')}
-          </Button>
-          <Button size="lg" variant="secondary" onClick={() => navigate(ROUTES.login)}>
-            {t('landing.hero.cta.secondary')}
-          </Button>
-        </motion.div>
-
-        <motion.div variants={fadeInUp} transition={TRANSITION.fade} className="text-text-muted text-sm">
-          {t('landing.hero.note')}
-        </motion.div>
+          <motion.div variants={fadeInUp} className="mt-3 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+            <Button size="xl" onClick={() => navigate(ROUTES.register)}>
+              {t('landing.hero.cta.primary')}
+            </Button>
+            <Button size="xl" variant="secondary" onClick={() => navigate(ROUTES.login)}>
+              {t('landing.hero.cta.secondary')}
+            </Button>
+          </motion.div>
+        </div>
       </motion.div>
     </section>
   );

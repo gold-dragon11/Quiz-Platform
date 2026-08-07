@@ -13,14 +13,11 @@ export const en: Record<TranslationKey, string> = {
   'lang.en.full': 'English',
 
   // ---- Landing: hero ------------------------------------------------------
-  'landing.hero.headline.1': 'Learn.',
-  'landing.hero.headline.2': 'Progress.',
-  'landing.hero.headline.3': 'Repeat.',
+  'landing.hero.headline': 'Learn Progress Repeat',
   'landing.hero.subheadline':
-    'A calm, focused way to master any subject — practice with quizzes, track your progress, and level up as you go.',
-  'landing.hero.cta.primary': 'Get Started',
+    'A calm, focused way to master any subject — practice with quizzes, track your progress, and level up as you go.',
+  'landing.hero.cta.primary': 'Sign up',
   'landing.hero.cta.secondary': 'Login',
-  'landing.hero.note': 'Free to use · Dark, distraction-free · Built for students',
 
   // ---- Landing: features --------------------------------------------------
   'landing.features.title': 'Everything you need to learn well',
@@ -45,22 +42,6 @@ export const en: Record<TranslationKey, string> = {
   'landing.how.step2.description': 'Answer focused questions at your own pace, with an optional timer.',
   'landing.how.step3.title': 'Improve Results',
   'landing.how.step3.description': 'Review your answers, earn XP, and track progress over time.',
-
-  // ---- Landing: benefits --------------------------------------------------
-  'landing.benefits.title': 'Why this platform',
-  'landing.benefits.description': 'Built to help you focus and improve.',
-  'landing.benefits.fast.title': 'Fast',
-  'landing.benefits.fast.description': 'Snappy, lazy-loaded pages that never get in your way.',
-  'landing.benefits.modern.title': 'Modern',
-  'landing.benefits.modern.description': 'A clean, current interface inspired by Apple and Linear.',
-  'landing.benefits.minimal.title': 'Minimal',
-  'landing.benefits.minimal.description': 'Only what matters — no clutter, no noise.',
-  'landing.benefits.free.title': 'Free',
-  'landing.benefits.free.description': 'Everything you need to learn, at no cost.',
-  'landing.benefits.responsive.title': 'Responsive',
-  'landing.benefits.responsive.description': 'Looks and works great on desktop, tablet, and mobile.',
-  'landing.benefits.students.title': 'Built for students',
-  'landing.benefits.students.description': 'Designed around real study habits and focus.',
 
   // ---- Landing: preview ---------------------------------------------------
   'landing.preview.title': 'A calm interface, end to end',
@@ -96,7 +77,7 @@ export const en: Record<TranslationKey, string> = {
   'landing.cta.title': 'Start learning in the next minute',
   'landing.cta.description': 'Create a free account and take your first quiz today.',
   'landing.cta.button': 'Create Account',
-  'landing.footer.tagline': 'Learn. Progress. Repeat.',
+  'landing.footer.tagline': 'Learn Progress Repeat',
   'landing.footer.login': 'Login',
   'landing.footer.register': 'Register',
   'landing.footer.rights': '© {year} L&S. All rights reserved.',

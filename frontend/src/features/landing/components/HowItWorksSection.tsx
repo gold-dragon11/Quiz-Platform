@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { useTranslation, type TranslationKey } from '@/shared/i18n';
-import { REVEAL_VIEWPORT } from '@/features/landing/constants';
+import { SectionHeading } from '@/features/landing/components/SectionHeading';
+import { REVEAL_VIEWPORT, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
 const STEPS: { titleKey: TranslationKey; descriptionKey: TranslationKey }[] = [
   { titleKey: 'landing.how.step1.title', descriptionKey: 'landing.how.step1.description' },
@@ -15,30 +16,27 @@ export function HowItWorksSection(): React.JSX.Element {
 
   return (
     <section className="bg-surface/40 border-border border-y">
-      <div className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-        <div className="mb-10 flex flex-col gap-2 text-center">
-          <h2 className="text-text-primary text-2xl font-semibold sm:text-3xl">{t('landing.how.title')}</h2>
-          <p className="text-text-muted">{t('landing.how.description')}</p>
-        </div>
+      <div className={`${SECTION_CONTAINER} ${SECTION_SPACING}`}>
+        <SectionHeading title={t('landing.how.title')} description={t('landing.how.description')} />
 
         <motion.ol
           variants={staggerContainer}
           initial="initial"
           whileInView="animate"
           viewport={REVEAL_VIEWPORT}
-          className="grid grid-cols-1 gap-8 md:grid-cols-3"
+          className="grid grid-cols-1 gap-12 md:grid-cols-3"
         >
           {STEPS.map((step, index) => (
             <motion.li
               key={step.titleKey}
               variants={fadeInUp}
-              className="flex flex-col items-center gap-3 text-center"
+              className="flex flex-col items-center gap-5 text-center"
             >
-              <span className="bg-primary/10 text-primary flex size-12 items-center justify-center rounded-full text-lg font-semibold">
+              <span className="bg-primary/10 text-primary flex size-16 items-center justify-center rounded-full text-2xl font-bold">
                 {index + 1}
               </span>
-              <h3 className="text-text-primary font-medium">{t(step.titleKey)}</h3>
-              <p className="text-text-muted max-w-xs text-sm">{t(step.descriptionKey)}</p>
+              <h3 className="text-text-primary text-2xl font-semibold">{t(step.titleKey)}</h3>
+              <p className="text-text-muted max-w-md text-lg leading-relaxed">{t(step.descriptionKey)}</p>
             </motion.li>
           ))}
         </motion.ol>

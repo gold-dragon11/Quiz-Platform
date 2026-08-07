@@ -1,22 +1,37 @@
+/*
+ * Manrope (variable, self-hosted). Self-hosted rather than loaded from a CDN
+ * so the app makes no third-party request and works offline. The package ships
+ * per-script subsets with `unicode-range`, so a Ukrainian page downloads the
+ * Cyrillic file and nothing else.
+ *
+ * Must precede the Tailwind import: CSS requires @import rules to come first.
+ */
+@import '@fontsource-variable/manrope';
 @import 'tailwindcss';
 
 /*
  * Design tokens from docs/07-design/colors.md and typography.md.
  * The MVP ships a single dark theme — see docs/07-design/design-system.md §11.
+ *
+ * The neutral scale carries a slight violet cast rather than the blue-slate it
+ * had before, so the greys sit under the purple accent instead of competing
+ * with it. Steps are spaced evenly enough that adjacent surfaces stay
+ * distinguishable; every text token clears WCAG AA on `--color-background`
+ * (muted ≈ 5.6:1, secondary ≈ 11:1, primary ≈ 18:1).
  */
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'Manrope Variable', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 
-  --color-background: #0f1117;
-  --color-surface: #181c24;
-  --color-surface-elevated: #20242d;
+  --color-background: #0b0a0f;
+  --color-surface: #131219;
+  --color-surface-elevated: #1b1a23;
 
-  --color-border: #2a2f3a;
-  --color-border-subtle: #323847;
+  --color-border: #272631;
+  --color-border-subtle: #34333f;
 
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5e1;
-  --color-text-muted: #94a3b8;
+  --color-text-primary: #f7f7fa;
+  --color-text-secondary: #c3c2cf;
+  --color-text-muted: #8b8a9b;
 
   --color-primary: #7c3aed;
   --color-primary-hover: #8b5cf6;

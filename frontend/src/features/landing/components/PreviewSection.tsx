@@ -6,9 +6,9 @@ import { Avatar } from '@/shared/ui/Avatar';
 import { Badge } from '@/shared/ui/Badge';
 import { Card } from '@/shared/ui/Card';
 import { ProgressBar } from '@/shared/ui/ProgressBar';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
 import { StatCard } from '@/shared/ui/StatCard';
-import { REVEAL_VIEWPORT } from '@/features/landing/constants';
+import { SectionHeading } from '@/features/landing/components/SectionHeading';
+import { REVEAL_VIEWPORT, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
 /**
  * Preview (§5): static mockups composed from the real shared UI primitives —
@@ -27,15 +27,15 @@ export function PreviewSection(): React.JSX.Element {
   const y = useTransform(scrollYProgress, [0, 1], [28, -28]);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <SectionHeader title={t('landing.preview.title')} description={t('landing.preview.description')} />
+    <section className={`${SECTION_CONTAINER} ${SECTION_SPACING}`}>
+      <SectionHeading title={t('landing.preview.title')} description={t('landing.preview.description')} />
       <motion.div ref={ref} style={{ y }}>
         <motion.div
           variants={staggerContainer}
           initial="initial"
           whileInView="animate"
           viewport={REVEAL_VIEWPORT}
-          className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-6 lg:grid-cols-3"
         >
           <motion.div variants={fadeInUp}>
             <PreviewFrame label={t('landing.preview.frame.dashboard')}>
@@ -60,8 +60,8 @@ export function PreviewSection(): React.JSX.Element {
 
 function PreviewFrame({ label, children }: { label: string; children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="flex h-full flex-col gap-3">
-      <span className="text-text-muted text-xs font-medium tracking-wide uppercase">{label}</span>
+    <div className="flex h-full flex-col gap-4">
+      <span className="text-text-muted text-sm font-medium tracking-wide uppercase">{label}</span>
       <div className="h-full">{children}</div>
     </div>
   );
@@ -70,22 +70,22 @@ function PreviewFrame({ label, children }: { label: string; children: React.Reac
 function DashboardPreview(): React.JSX.Element {
   const { t } = useTranslation();
   return (
-    <Card className="flex h-full flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Avatar size="sm" fallback="A" />
+    <Card className="flex h-full flex-col gap-5 p-7">
+      <div className="flex items-center gap-4">
+        <Avatar size="md" fallback="A" />
         <div className="flex flex-col">
-          <span className="text-text-primary text-sm font-medium">
+          <span className="text-text-primary text-base font-medium">
             {t('landing.preview.dashboard.welcome')}
           </span>
-          <span className="text-text-muted text-xs">@alex</span>
+          <span className="text-text-muted text-sm">@alex</span>
         </div>
       </div>
       <div className="flex items-center justify-between">
         <Badge tone="info">{t('landing.preview.dashboard.level')}</Badge>
-        <span className="text-text-secondary text-sm font-medium">{t('landing.preview.dashboard.xp')}</span>
+        <span className="text-text-secondary text-base font-medium">{t('landing.preview.dashboard.xp')}</span>
       </div>
       <ProgressBar value={30} label={t('landing.preview.dashboard.progress')} />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard
           label={t('landing.preview.dashboard.quizzes')}
           value="24"
@@ -110,17 +110,19 @@ function QuizPreview(): React.JSX.Element {
   ];
 
   return (
-    <Card className="flex h-full flex-col gap-4">
+    <Card className="flex h-full flex-col gap-5 p-7">
       <div className="flex items-center justify-between">
-        <span className="text-text-muted text-xs">{t('landing.preview.quiz.counter')}</span>
+        <span className="text-text-muted text-sm">{t('landing.preview.quiz.counter')}</span>
         <Badge tone="warning">{t('landing.preview.quiz.difficulty')}</Badge>
       </div>
-      <p className="text-text-primary text-sm font-medium">{t('landing.preview.quiz.question')}</p>
-      <div className="flex flex-col gap-2">
+      <p className="text-text-primary text-lg leading-snug font-medium">
+        {t('landing.preview.quiz.question')}
+      </p>
+      <div className="flex flex-col gap-3">
         {options.map((option) => (
           <div
             key={option.key}
-            className={`rounded-lg border px-3 py-2 text-sm ${
+            className={`rounded-lg border px-4 py-3 text-base ${
               option.selected
                 ? 'border-primary bg-primary/10 text-text-primary'
                 : 'border-border text-text-secondary'
@@ -137,8 +139,8 @@ function QuizPreview(): React.JSX.Element {
 function StatisticsPreview(): React.JSX.Element {
   const { t } = useTranslation();
   return (
-    <Card className="flex h-full flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3">
+    <Card className="flex h-full flex-col gap-5 p-7">
+      <div className="grid grid-cols-2 gap-4">
         <StatCard
           label={t('landing.preview.stats.time')}
           value="7h 20m"
@@ -150,13 +152,13 @@ function StatisticsPreview(): React.JSX.Element {
           hint={t('landing.preview.stats.correctHint')}
         />
       </div>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between text-sm">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between text-base">
           <span className="text-text-secondary">{t('landing.preview.stats.mathematics')}</span>
           <span className="text-text-muted">92%</span>
         </div>
         <ProgressBar value={92} label={t('landing.preview.stats.mathematicsAccuracy')} />
-        <div className="mt-2 flex items-center justify-between text-sm">
+        <div className="mt-3 flex items-center justify-between text-base">
           <span className="text-text-secondary">{t('landing.preview.stats.history')}</span>
           <span className="text-text-muted">74%</span>
         </div>

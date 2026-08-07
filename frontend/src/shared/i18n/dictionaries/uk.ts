@@ -15,14 +15,14 @@ export const uk = {
   'lang.en.full': 'English',
 
   // ---- Landing: hero ------------------------------------------------------
-  'landing.hero.headline.1': 'Вчись.',
-  'landing.hero.headline.2': 'Прогресуй.',
-  'landing.hero.headline.3': 'Повторюй.',
+  'landing.hero.headline': 'Вчись Прогресуй Повторюй',
+  // The space before the em dash is non-breaking (U+00A0): Ukrainian
+  // typography never starts a line with a dash, and the balanced wrap would
+  // otherwise push it to the front of the second line.
   'landing.hero.subheadline':
-    'Спокійний і зосереджений спосіб опанувати будь-який предмет — тренуйся на тестах, стеж за прогресом і підвищуй рівень.',
-  'landing.hero.cta.primary': 'Почати',
+    'Спокійний і зосереджений спосіб опанувати будь-який предмет — тренуйся на тестах, стеж за прогресом і підвищуй рівень.',
+  'landing.hero.cta.primary': 'Зареєструватись',
   'landing.hero.cta.secondary': 'Увійти',
-  'landing.hero.note': 'Безкоштовно · Темна тема без відволікань · Створено для учнів',
 
   // ---- Landing: features --------------------------------------------------
   'landing.features.title': 'Усе потрібне для якісного навчання',
@@ -49,22 +49,6 @@ export const uk = {
   'landing.how.step2.description': 'Відповідай на питання у власному темпі, за бажанням — із таймером.',
   'landing.how.step3.title': 'Покращуй результат',
   'landing.how.step3.description': 'Переглядай свої відповіді, заробляй досвід і стеж за прогресом у часі.',
-
-  // ---- Landing: benefits --------------------------------------------------
-  'landing.benefits.title': 'Чому саме ця платформа',
-  'landing.benefits.description': 'Створена, щоб допомогти зосередитись і зростати.',
-  'landing.benefits.fast.title': 'Швидка',
-  'landing.benefits.fast.description': 'Миттєві сторінки, які нічим тебе не затримують.',
-  'landing.benefits.modern.title': 'Сучасна',
-  'landing.benefits.modern.description': 'Чистий актуальний інтерфейс у дусі Apple та Linear.',
-  'landing.benefits.minimal.title': 'Мінімалістична',
-  'landing.benefits.minimal.description': 'Лише те, що важливо — без хаосу й зайвого шуму.',
-  'landing.benefits.free.title': 'Безкоштовна',
-  'landing.benefits.free.description': 'Усе необхідне для навчання — без жодної оплати.',
-  'landing.benefits.responsive.title': 'Адаптивна',
-  'landing.benefits.responsive.description': "Чудово виглядає й працює на комп'ютері, планшеті та телефоні.",
-  'landing.benefits.students.title': 'Для учнів',
-  'landing.benefits.students.description': 'Продумана під реальні звички навчання й концентрацію.',
 
   // ---- Landing: preview ---------------------------------------------------
   'landing.preview.title': 'Спокійний інтерфейс від початку до кінця',
@@ -102,7 +86,7 @@ export const uk = {
   'landing.cta.title': 'Почни навчатися вже за хвилину',
   'landing.cta.description': 'Створи безкоштовний акаунт і пройди свій перший тест сьогодні.',
   'landing.cta.button': 'Створити акаунт',
-  'landing.footer.tagline': 'Вчись. Прогресуй. Повторюй.',
+  'landing.footer.tagline': 'Вчись Прогресуй Повторюй',
   'landing.footer.login': 'Вхід',
   'landing.footer.register': 'Реєстрація',
   'landing.footer.rights': '© {year} L&S. Усі права захищено.',

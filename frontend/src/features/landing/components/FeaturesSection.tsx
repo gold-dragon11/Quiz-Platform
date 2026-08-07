@@ -3,12 +3,12 @@ import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { useTranslation, type TranslationKey } from '@/shared/i18n';
 import { Card } from '@/shared/ui/Card';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
-import { REVEAL_VIEWPORT } from '@/features/landing/constants';
+import { SectionHeading } from '@/features/landing/components/SectionHeading';
+import { REVEAL_VIEWPORT, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
 const ICON = {
-  width: 22,
-  height: 22,
+  width: 28,
+  height: 28,
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
@@ -69,23 +69,23 @@ export function FeaturesSection(): React.JSX.Element {
   const { t } = useTranslation();
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <SectionHeader title={t('landing.features.title')} description={t('landing.features.description')} />
+    <section className={`${SECTION_CONTAINER} ${SECTION_SPACING}`}>
+      <SectionHeading title={t('landing.features.title')} description={t('landing.features.description')} />
       <motion.div
         variants={staggerContainer}
         initial="initial"
         whileInView="animate"
         viewport={REVEAL_VIEWPORT}
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
       >
         {FEATURES.map((feature) => (
           <motion.div key={feature.titleKey} variants={fadeInUp}>
-            <Card className="flex h-full flex-col gap-3">
-              <span className="bg-surface-elevated text-primary flex size-11 items-center justify-center rounded-lg">
+            <Card className="flex h-full flex-col gap-5 p-8">
+              <span className="bg-surface-elevated text-primary flex size-14 items-center justify-center rounded-xl">
                 {feature.icon}
               </span>
-              <h3 className="text-text-primary font-medium">{t(feature.titleKey)}</h3>
-              <p className="text-text-muted text-sm">{t(feature.descriptionKey)}</p>
+              <h3 className="text-text-primary text-xl font-semibold">{t(feature.titleKey)}</h3>
+              <p className="text-text-muted text-base leading-relaxed">{t(feature.descriptionKey)}</p>
             </Card>
           </motion.div>
         ))}
