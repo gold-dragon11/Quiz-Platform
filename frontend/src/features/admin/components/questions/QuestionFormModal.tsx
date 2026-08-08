@@ -33,13 +33,13 @@ const FIELD_MAP = { title: 'title', imageurl: 'imageUrl' } as const;
 
 const TYPE_OPTIONS: SelectOption[] = [
   { value: QuestionType.SINGLE_CHOICE, label: 'Одна відповідь' },
-  { value: QuestionType.MATCHING, label: 'Matching' },
+  { value: QuestionType.MATCHING, label: 'Відповідності' },
 ];
 const DIFFICULTY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Без рівня' },
-  { value: Difficulty.BEGINNER, label: 'Beginner' },
-  { value: Difficulty.INTERMEDIATE, label: 'Intermediate' },
-  { value: Difficulty.ADVANCED, label: 'Advanced' },
+  { value: Difficulty.BEGINNER, label: 'Початковий' },
+  { value: Difficulty.INTERMEDIATE, label: 'Середній' },
+  { value: Difficulty.ADVANCED, label: 'Високий' },
 ];
 
 interface OptionRow {

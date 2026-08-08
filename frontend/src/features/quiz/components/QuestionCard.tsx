@@ -9,7 +9,6 @@ import {
   getSelectedOptionId,
   pairsToAssignments,
 } from '@/features/quiz/lib/quiz-answers';
-import { DifficultyBadge } from '@/features/quiz/components/DifficultyBadge';
 import { SingleChoiceAnswer } from '@/features/quiz/components/SingleChoiceAnswer';
 import { MatchingAnswer } from '@/features/quiz/components/MatchingAnswer';
 
@@ -34,12 +33,9 @@ export function QuestionCard({
 }: QuestionCardProps): React.JSX.Element {
   return (
     <Card className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-4">
-        <h2 className="text-text-primary text-lg leading-relaxed font-medium whitespace-pre-wrap">
-          {question.title}
-        </h2>
-        <DifficultyBadge difficulty={question.difficulty} />
-      </div>
+      <h2 className="text-text-primary text-lg leading-relaxed font-medium whitespace-pre-wrap">
+        {question.title}
+      </h2>
 
       {question.imageUrl && (
         <img src={question.imageUrl} alt="" className="max-h-64 w-full rounded-lg object-contain" />

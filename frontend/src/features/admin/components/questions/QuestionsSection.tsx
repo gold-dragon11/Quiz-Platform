@@ -25,12 +25,12 @@ const PAGE_SIZE = 10;
 
 const TYPE_LABEL: Record<QuestionType, string> = {
   [QuestionType.SINGLE_CHOICE]: 'Одна відповідь',
-  [QuestionType.MATCHING]: 'Matching',
+  [QuestionType.MATCHING]: 'Відповідності',
 };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  [Difficulty.BEGINNER]: 'Beginner',
-  [Difficulty.INTERMEDIATE]: 'Intermediate',
-  [Difficulty.ADVANCED]: 'Advanced',
+  [Difficulty.BEGINNER]: 'Початковий',
+  [Difficulty.INTERMEDIATE]: 'Середній',
+  [Difficulty.ADVANCED]: 'Високий',
 };
 
 /** Questions admin: list, filter by subject/topic, create, edit, publish, delete (§6-7, §10). */

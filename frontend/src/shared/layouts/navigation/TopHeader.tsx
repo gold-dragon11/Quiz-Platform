@@ -10,9 +10,14 @@ interface TopHeaderProps {
 }
 
 /**
- * Top header: page title, a visual-only search placeholder, a visual-only
- * notification icon, and the user menu. On mobile it also holds the hamburger
- * that opens the slide-out menu. Sticky so it stays while the content scrolls.
+ * Top header: the page title and the user menu. On mobile it also holds the
+ * hamburger that opens the slide-out menu. Sticky so it stays while the
+ * content scrolls.
+ *
+ * It previously also carried a search field and a notification bell. Both were
+ * decoration — the input was `readOnly`/`aria-hidden` and the bell had no
+ * handler, yet the bell showed an unread dot. Neither has a feature behind it,
+ * so they were removed rather than left promising something.
  */
 export function TopHeader({
   title,
@@ -29,7 +34,7 @@ export function TopHeader({
           type="button"
           onClick={onOpenMenu}
           aria-label="Відкрити меню"
-          className="text-text-secondary hover:text-text-primary rounded-lg p-1 outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
+          className="text-text-secondary hover:text-text-primary focus-visible:ring-primary rounded-lg p-1 outline-none focus-visible:ring-2 lg:hidden"
         >
           <svg
             width="22"
@@ -47,40 +52,7 @@ export function TopHeader({
 
         <h1 className="text-text-primary truncate text-lg font-semibold">{title}</h1>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          {/* Visual-only search */}
-          <input
-            type="text"
-            readOnly
-            tabIndex={-1}
-            aria-hidden="true"
-            placeholder="Пошук…"
-            className="bg-surface border-border text-text-muted placeholder:text-text-muted hidden h-9 w-48 cursor-default rounded-lg border px-3 text-sm outline-none md:block"
-          />
-
-          {/* Visual-only notifications */}
-          <button
-            type="button"
-            aria-label="Сповіщення"
-            className="text-text-secondary hover:text-text-primary relative rounded-lg p-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-            </svg>
-            <span className="bg-primary absolute top-1.5 right-1.5 size-2 rounded-full" />
-          </button>
-
+        <div className="ml-auto">
           <UserMenu isAdmin={isAdmin} displayName={displayName} username={username} avatarUrl={avatarUrl} />
         </div>
       </div>

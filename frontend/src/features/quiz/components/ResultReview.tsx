@@ -4,7 +4,6 @@ import { Card } from '@/shared/ui/Card';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
 import { getCorrectOptionId, getMatchingPairs, getSelectedOptionId } from '@/features/quiz/lib/quiz-answers';
-import { DifficultyBadge } from '@/features/quiz/components/DifficultyBadge';
 
 /**
  * Post-completion review (docs/04-api/quiz.md §8): every question with the
@@ -23,12 +22,9 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
                 <span className="text-text-muted mr-2">{i + 1}.</span>
                 {question.title}
               </h3>
-              <div className="flex shrink-0 items-center gap-2">
-                <DifficultyBadge difficulty={question.difficulty} />
-                <Badge tone={question.isCorrect ? 'success' : 'error'}>
-                  {question.isCorrect ? 'Правильно' : 'Неправильно'}
-                </Badge>
-              </div>
+              <Badge tone={question.isCorrect ? 'success' : 'error'} className="shrink-0">
+                {question.isCorrect ? 'Правильно' : 'Неправильно'}
+              </Badge>
             </div>
             {question.type === QuestionType.SINGLE_CHOICE ? (
               <SingleChoiceReview question={question} />

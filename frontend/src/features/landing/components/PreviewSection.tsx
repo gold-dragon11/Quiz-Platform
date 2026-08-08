@@ -100,10 +100,7 @@ function QuizPreview(): React.JSX.Element {
 
   return (
     <Card className="flex h-full flex-col gap-5 p-7">
-      <div className="flex items-center justify-between">
-        <span className="text-text-muted text-sm">Питання 3 з 10</span>
-        <Badge tone="warning">Середній</Badge>
-      </div>
+      <span className="text-text-muted text-sm">Питання 3 з 10</span>
       <p className="text-text-primary text-lg leading-snug font-medium">
         У якому році розпочалася Національно-визвольна війна під проводом Богдана Хмельницького?
       </p>
