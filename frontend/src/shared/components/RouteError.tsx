@@ -13,7 +13,9 @@ export function RouteError(): React.JSX.Element {
 
   const message = isRouteErrorResponse(error)
     ? `${error.status} — ${error.statusText}`
-    : 'An unexpected error occurred while loading this page.';
+    : 'Під час завантаження сторінки сталася несподівана помилка.';
 
-  return <ServerErrorPage message={message} actionLabel="Go home" onAction={() => navigate(ROUTES.home)} />;
+  return (
+    <ServerErrorPage message={message} actionLabel="На головну" onAction={() => navigate(ROUTES.home)} />
+  );
 }

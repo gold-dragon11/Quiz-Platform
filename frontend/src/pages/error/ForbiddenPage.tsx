@@ -10,9 +10,9 @@ export function ForbiddenPage(): React.JSX.Element {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
       <h1 className="text-text-primary text-3xl font-semibold">403</h1>
-      <p className="text-text-muted">You don&apos;t have permission to access this page.</p>
+      <p className="text-text-muted">У вас немає доступу до цієї сторінки.</p>
       <Link to={ROUTES.dashboard} className="text-primary hover:text-primary-hover">
-        Back to dashboard
+        На головну
       </Link>
     </div>
   );

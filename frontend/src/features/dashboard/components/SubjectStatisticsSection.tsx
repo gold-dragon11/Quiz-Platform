@@ -22,7 +22,7 @@ export function SubjectStatisticsSection(): React.JSX.Element {
 
   return (
     <section>
-      <SectionHeader title="Subjects" description="Where you're making progress." />
+      <SectionHeader title="Предмети" description="Де ви робите поступ." />
       {subjects.isPending ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
@@ -36,11 +36,11 @@ export function SubjectStatisticsSection(): React.JSX.Element {
       ) : subjects.data.length === 0 ? (
         <Card>
           <EmptyState
-            title="No subject progress yet"
-            description="Complete a quiz in any subject and your progress will appear here."
+            title="Прогресу за предметами поки немає"
+            description="Пройдіть тест з будь-якого предмета — і прогрес зʼявиться тут."
             action={
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Start a quiz
+                Почати тест
               </Button>
             }
           />
@@ -62,19 +62,19 @@ function SubjectCard({ subject }: { subject: SubjectStatistics }): React.JSX.Ele
       <h3 className="text-text-primary truncate font-medium">{subject.subjectName}</h3>
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Quizzes</dt>
+          <dt className="text-text-muted text-xs">Тести</dt>
           <dd className="text-text-secondary">{formatNumber(subject.completedQuizzes)}</dd>
         </div>
         <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Questions</dt>
+          <dt className="text-text-muted text-xs">Питання</dt>
           <dd className="text-text-secondary">{formatNumber(subject.totalQuestions)}</dd>
         </div>
         <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Accuracy</dt>
+          <dt className="text-text-muted text-xs">Точність</dt>
           <dd className="text-text-secondary">{formatPercent(subject.averageAccuracy)}</dd>
         </div>
         <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">XP earned</dt>
+          <dt className="text-text-muted text-xs">Отримано XP</dt>
           <dd className="text-text-secondary">{formatNumber(subject.earnedXP)}</dd>
         </div>
       </dl>

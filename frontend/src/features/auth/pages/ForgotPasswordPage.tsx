@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -21,7 +20,6 @@ import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 export function ForgotPasswordPage(): React.JSX.Element {
   const forgotPassword = useForgotPassword();
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-  const { t } = useTranslation();
 
   const {
     register,
@@ -42,35 +40,42 @@ export function ForgotPasswordPage(): React.JSX.Element {
 
   const footer = (
     <p>
-      {t('auth.forgot.remembered')}{' '}
+      Згадали пароль?{' '}
       <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-        {t('auth.forgot.backToLogin')}
+        Повернутися до входу
       </Link>
     </p>
   );
 
   if (submittedEmail) {
     return (
-      <AuthCard title={t('auth.forgot.sent.title')} footer={footer}>
-        <Alert variant="success">{t('auth.forgot.sent.alert', { email: submittedEmail })}</Alert>
+      <AuthCard title="Перевірте пошту" footer={footer}>
+        <Alert variant="success">
+          Якщо акаунт для {submittedEmail} існує, ми надіслали посилання для зміни пароля. Скористайтеся ним
+          найближчим часом, бо воно діє обмежений час.
+        </Alert>
       </AuthCard>
     );
   }
 
   return (
-    <AuthCard title={t('auth.forgot.title')} subtitle={t('auth.forgot.subtitle')} footer={footer}>
+    <AuthCard
+      title="Забули пароль?"
+      subtitle="Ми надішлемо на пошту посилання для відновлення."
+      footer={footer}
+    >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
-          label={t('auth.field.email')}
+          label="Електронна пошта"
           type="email"
           autoComplete="email"
-          placeholder={t('auth.field.emailPlaceholder')}
+          placeholder="you@example.com"
           error={errors.email?.message}
           {...register('email')}
         />
         <Button type="submit" fullWidth isLoading={forgotPassword.isPending}>
-          {t('auth.forgot.submit')}
+          Надіслати посилання
         </Button>
       </form>
     </AuthCard>

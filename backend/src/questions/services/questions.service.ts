@@ -31,8 +31,8 @@ const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
 const MIN_MATCHING_PAIRS = 2;
 
-const QUESTION_NOT_FOUND_MESSAGE = 'Question not found.';
-const TOPIC_NOT_FOUND_MESSAGE = 'Topic not found.';
+const QUESTION_NOT_FOUND_MESSAGE = 'Питання не знайдено.';
+const TOPIC_NOT_FOUND_MESSAGE = 'Тему не знайдено.';
 const OPTION_COUNT_MESSAGE = `A question requires between ${MIN_OPTIONS} and ${MAX_OPTIONS} answer options.`;
 const OPTION_IDS_AT_CREATION_MESSAGE =
   'options cannot reference ids at creation.';
@@ -58,9 +58,9 @@ const CONFIGURATION_MIN_PAIRS_MESSAGE = `MATCHING questions require at least ${M
 const DEFAULT_LOCALE_MESSAGE =
   'locale must be a non-default locale; update the question itself for English content.';
 const LOCALIZED_FIELDS_MESSAGE =
-  'Only title and options can be provided together with locale.';
+  'Разом із locale можна передавати лише title та options.';
 const LOCALIZED_OPTION_SHAPE_MESSAGE =
-  'Localized options accept only id and content.';
+  'Локалізовані варіанти приймають лише id та content.';
 const TRANSLATION_TITLE_REQUIRED_MESSAGE =
   'title is required when creating a new translation.';
 

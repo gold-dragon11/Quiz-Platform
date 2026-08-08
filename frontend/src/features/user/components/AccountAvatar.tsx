@@ -14,7 +14,7 @@ interface AccountAvatarProps {
  */
 export function AccountAvatar({
   imageUrl,
-  alt = 'Your avatar',
+  alt = 'Ваш аватар',
   fallback = '?',
   className = '',
 }: AccountAvatarProps): React.JSX.Element {

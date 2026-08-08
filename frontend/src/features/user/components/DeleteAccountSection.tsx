@@ -33,12 +33,12 @@ export function DeleteAccountSection(): React.JSX.Element {
         clearSession();
         queryClient.clear();
         setDialogOpen(false);
-        toast.success('Your account has been deleted.');
+        toast.success('Ваш акаунт видалено.');
         navigate(ROUTES.login, { replace: true });
       },
       onError: (error) => {
         setDialogOpen(false);
-        toast.error(isApiError(error) ? error.message : 'Could not delete your account. Please try again.');
+        toast.error(isApiError(error) ? error.message : 'Не вдалося видалити акаунт. Спробуйте ще раз.');
       },
     });
   };
@@ -46,32 +46,33 @@ export function DeleteAccountSection(): React.JSX.Element {
   return (
     <Card className="border-error/40">
       <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-error text-lg font-semibold">Danger zone</h2>
+        <h2 className="text-error text-lg font-semibold">Небезпечна зона</h2>
         <p className="text-text-secondary text-sm">
-          Deleting your account is permanent and cannot be undone. Your email and username stay permanently
-          reserved and cannot be reused. Your learning history is retained but you will lose access to it.
+          Видалення акаунта є остаточним і не підлягає скасуванню. Ваша електронна адреса та ім'я користувача
+          залишаються назавжди зарезервованими й не можуть бути використані знову. Історія навчання
+          зберігається, але доступ до неї ви втратите.
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         <Checkbox
-          label="I understand this action is permanent and cannot be undone."
+          label="Я розумію, що цю дію не можна скасувати."
           checked={acknowledged}
           onChange={(event) => setAcknowledged(event.target.checked)}
         />
         <div className="flex justify-end">
           <Button variant="danger" disabled={!acknowledged} onClick={() => setDialogOpen(true)}>
-            Delete my account
+            Видалити мій акаунт
           </Button>
         </div>
       </div>
 
       <ConfirmDialog
         open={dialogOpen}
-        title="Delete your account?"
-        description="This permanently deactivates your account and signs you out on every device. This cannot be undone."
-        confirmLabel="Delete account"
-        cancelLabel="Cancel"
+        title="Видалити акаунт?"
+        description="Акаунт буде остаточно деактивовано, а сеанси на всіх пристроях завершено. Скасувати це неможливо."
+        confirmLabel="Видалити акаунт"
+        cancelLabel="Скасувати"
         confirmVariant="danger"
         isLoading={deleteAccount.isPending}
         onConfirm={handleConfirm}

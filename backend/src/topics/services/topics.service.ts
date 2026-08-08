@@ -21,8 +21,8 @@ import { PublicTopic } from '../types/public-topic.type';
 /** The default locale lives on the Topic row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
 
-const TOPIC_NOT_FOUND_MESSAGE = 'Topic not found.';
-const SUBJECT_NOT_FOUND_MESSAGE = 'Subject not found.';
+const TOPIC_NOT_FOUND_MESSAGE = 'Тему не знайдено.';
+const SUBJECT_NOT_FOUND_MESSAGE = 'Предмет не знайдено.';
 const NAME_CONFLICT_MESSAGE =
   'A topic with this name already exists in this subject.';
 const SLUG_CONFLICT_MESSAGE =
@@ -32,7 +32,7 @@ const DISPLAY_ORDER_CONFLICT_MESSAGE =
 const DEFAULT_LOCALE_MESSAGE =
   'locale must be a non-default locale; update the topic itself for English content.';
 const LOCALIZED_FIELDS_MESSAGE =
-  'Only name and description can be provided together with locale.';
+  'Разом із locale можна передавати лише name та description.';
 const TRANSLATION_NAME_REQUIRED_MESSAGE =
   'name is required when creating a new translation.';
 

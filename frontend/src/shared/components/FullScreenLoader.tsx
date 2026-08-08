@@ -8,7 +8,7 @@ export function FullScreenLoader(): React.JSX.Element {
   return (
     <div
       role="status"
-      aria-label="Loading"
+      aria-label="Завантаження"
       className="flex min-h-screen items-center justify-center bg-background"
     >
       <div className="border-border border-t-primary size-8 animate-spin rounded-full border-2" />

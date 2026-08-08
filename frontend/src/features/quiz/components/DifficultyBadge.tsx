@@ -8,9 +8,9 @@ const TONE: Record<Difficulty, BadgeTone> = {
 };
 
 const LABEL: Record<Difficulty, string> = {
-  [Difficulty.BEGINNER]: 'Beginner',
-  [Difficulty.INTERMEDIATE]: 'Intermediate',
-  [Difficulty.ADVANCED]: 'Advanced',
+  [Difficulty.BEGINNER]: 'Початковий',
+  [Difficulty.INTERMEDIATE]: 'Середній',
+  [Difficulty.ADVANCED]: 'Високий',
 };
 
 /** Small difficulty pill; renders nothing when the question has no difficulty. */

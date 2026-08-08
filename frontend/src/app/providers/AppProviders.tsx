@@ -4,7 +4,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/lib/query-client';
 import { AppErrorBoundary } from '@/shared/components/AppErrorBoundary';
 import { ThemeProvider } from './ThemeProvider';
-import { LanguageProvider } from './LanguageProvider';
 import { ToastProvider } from './ToastProvider';
 import { AuthBootstrap } from './AuthBootstrap';
 
@@ -12,15 +11,14 @@ import { AuthBootstrap } from './AuthBootstrap';
  * Composes every global provider in the exact order fixed by Phase 6.1
  * decision F6:
  *
- *   AppErrorBoundary → QueryClientProvider → ThemeProvider → LanguageProvider
- *     → MotionConfig → ToastProvider → AuthBootstrap → (children = RouterProvider)
+ *   AppErrorBoundary → QueryClientProvider → ThemeProvider → MotionConfig
+ *     → ToastProvider → AuthBootstrap → (children = RouterProvider)
  *
  * Rationale for the order:
  * - the error boundary is outermost so it can catch failures from any provider;
  * - Query sits above the app so hooks (incl. AuthBootstrap's session refresh)
  *   have a client;
  * - Theme applies `data-theme` before anything paints;
- * - Language applies `<html lang>` alongside it, for the same reason;
  * - MotionConfig(`reducedMotion="user"`) makes every animation honor the OS
  *   reduced-motion setting;
  * - ToastProvider mounts the toast channel above the app;
@@ -34,13 +32,11 @@ export function AppProviders({ children }: PropsWithChildren): React.JSX.Element
     <AppErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <LanguageProvider>
-            <MotionConfig reducedMotion="user">
-              <ToastProvider>
-                <AuthBootstrap>{children}</AuthBootstrap>
-              </ToastProvider>
-            </MotionConfig>
-          </LanguageProvider>
+          <MotionConfig reducedMotion="user">
+            <ToastProvider>
+              <AuthBootstrap>{children}</AuthBootstrap>
+            </ToastProvider>
+          </MotionConfig>
         </ThemeProvider>
       </QueryClientProvider>
     </AppErrorBoundary>

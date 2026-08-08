@@ -16,7 +16,7 @@ import { changePasswordSchema, type ChangePasswordFormValues } from '@/features/
  * expires, and any later refresh failure is handled by the shared Axios layer.
  *
  * Backend errors are shown exactly as returned: policy messages map to the new
- * password field, "Current password is incorrect." to the current field, and
+ * password field, "Поточний пароль неправильний." to the current field, and
  * anything else surfaces as a form-level error.
  */
 export function ChangePasswordForm(): React.JSX.Element {
@@ -45,7 +45,7 @@ export function ChangePasswordForm(): React.JSX.Element {
       },
       {
         onSuccess: () => {
-          toast.success('Your password has been changed.');
+          toast.success('Ваш пароль змінено.');
           reset();
         },
         onError: (error) =>
@@ -61,35 +61,35 @@ export function ChangePasswordForm(): React.JSX.Element {
   return (
     <Card>
       <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-text-primary text-lg font-semibold">Change password</h2>
+        <h2 className="text-text-primary text-lg font-semibold">Зміна пароля</h2>
         <p className="text-text-muted text-sm">
-          Signing you in on other devices will be required after this change.
+          Після цієї зміни на інших пристроях доведеться увійти заново.
         </p>
       </div>
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <PasswordInput
-          label="Current password"
+          label="Поточний пароль"
           autoComplete="current-password"
           error={errors.currentPassword?.message}
           {...register('currentPassword')}
         />
         <PasswordInput
-          label="New password"
+          label="Новий пароль"
           autoComplete="new-password"
-          helperText="At least 8 characters with upper, lower, a number, and a symbol."
+          helperText="Щонайменше 8 символів: велика й мала літери, цифра та спеціальний символ."
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <PasswordInput
-          label="Confirm new password"
+          label="Підтвердіть новий пароль"
           autoComplete="new-password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <div className="flex justify-end">
           <Button type="submit" isLoading={changePassword.isPending}>
-            Update password
+            Змінити пароль
           </Button>
         </div>
       </form>

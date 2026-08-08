@@ -23,11 +23,11 @@ import {
   PublicProfile,
 } from '../types/users.types';
 
-const PROFILE_NOT_FOUND_MESSAGE = 'Profile not found.';
-const ACCOUNT_NOT_FOUND_MESSAGE = 'Account not found.';
-const USERNAME_TAKEN_MESSAGE = 'This username is already taken.';
-const UNKNOWN_AVATAR_MESSAGE = 'Unknown predefined avatar.';
-const AVATAR_NOT_FOUND_MESSAGE = 'Avatar not found.';
+const PROFILE_NOT_FOUND_MESSAGE = 'Профіль не знайдено.';
+const ACCOUNT_NOT_FOUND_MESSAGE = 'Акаунт не знайдено.';
+const USERNAME_TAKEN_MESSAGE = "Це ім'я користувача вже зайняте.";
+const UNKNOWN_AVATAR_MESSAGE = 'Невідомий стандартний аватар.';
+const AVATAR_NOT_FOUND_MESSAGE = 'Аватар не знайдено.';
 
 /**
  * User profile and avatar use cases (docs/04-api/users.md §9-10, §12). The
@@ -172,7 +172,7 @@ export class UsersService {
       record.user.accountStatus === AccountStatus.ACTIVE &&
       record.user.settings?.publicProfileEnabled === true;
     if (!record || !isVisible) {
-      throw new NotFoundException('User not found.');
+      throw new NotFoundException('Користувача не знайдено.');
     }
 
     const progress = await this.statisticsService.getPublicProgress(

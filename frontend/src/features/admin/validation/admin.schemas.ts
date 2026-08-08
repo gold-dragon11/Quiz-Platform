@@ -14,7 +14,7 @@ export const COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
 
 const slug = z
   .string()
-  .min(1, 'Slug is required')
+  .min(1, 'Вкажіть slug')
   .max(100)
   .regex(SLUG_PATTERN, 'slug must contain only lowercase letters, numbers, and single hyphens');
 
@@ -23,7 +23,7 @@ const optionalColor = z.string().refine((v) => v === '' || COLOR_PATTERN.test(v)
 });
 
 export const subjectFormSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
+  name: z.string().min(1, 'Вкажіть назву').max(100),
   slug,
   description: z.string().max(500),
   icon: z.string().max(100),
@@ -33,8 +33,8 @@ export const subjectFormSchema = z.object({
 export type SubjectFormValues = z.infer<typeof subjectFormSchema>;
 
 export const topicFormSchema = z.object({
-  subjectId: z.string().min(1, 'Please choose a subject'),
-  name: z.string().min(1, 'Name is required').max(100),
+  subjectId: z.string().min(1, 'Оберіть предмет'),
+  name: z.string().min(1, 'Вкажіть назву').max(100),
   slug,
   description: z.string().max(500),
   isPublished: z.boolean(),
@@ -44,18 +44,18 @@ export type TopicFormValues = z.infer<typeof topicFormSchema>;
 export const questionScalarSchema = z.object({
   // subjectId narrows the topic list on create; it is never sent to the API.
   subjectId: z.string(),
-  topicId: z.string().min(1, 'Please choose a topic'),
+  topicId: z.string().min(1, 'Оберіть тему'),
   type: z.nativeEnum(QuestionType),
-  title: z.string().min(1, 'Title is required').max(2000),
+  title: z.string().min(1, 'Вкажіть заголовок').max(2000),
   imageUrl: z.string().max(500),
   difficulty: z.union([z.nativeEnum(Difficulty), z.literal('')]),
 });
 export type QuestionScalarValues = z.infer<typeof questionScalarSchema>;
 
 export const quizFormSchema = z.object({
-  subjectId: z.string().min(1, 'Please choose a subject'),
+  subjectId: z.string().min(1, 'Оберіть предмет'),
   topicId: z.string(),
-  title: z.string().min(1, 'Title is required').max(100),
+  title: z.string().min(1, 'Вкажіть заголовок').max(100),
   description: z.string().max(500),
   mode: z.nativeEnum(QuizType),
   questionCount: z.coerce.number().int().min(1, 'At least 1 question').max(50, 'At most 50 questions'),

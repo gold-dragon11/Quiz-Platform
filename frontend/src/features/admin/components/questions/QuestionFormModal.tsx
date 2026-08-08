@@ -32,11 +32,11 @@ const FORM_ID = 'question-form';
 const FIELD_MAP = { title: 'title', imageurl: 'imageUrl' } as const;
 
 const TYPE_OPTIONS: SelectOption[] = [
-  { value: QuestionType.SINGLE_CHOICE, label: 'Single choice' },
+  { value: QuestionType.SINGLE_CHOICE, label: 'Одна відповідь' },
   { value: QuestionType.MATCHING, label: 'Matching' },
 ];
 const DIFFICULTY_OPTIONS: SelectOption[] = [
-  { value: '', label: 'No difficulty' },
+  { value: '', label: 'Без рівня' },
   { value: Difficulty.BEGINNER, label: 'Beginner' },
   { value: Difficulty.INTERMEDIATE, label: 'Intermediate' },
   { value: Difficulty.ADVANCED, label: 'Advanced' },
@@ -200,13 +200,13 @@ export function QuestionFormModal({
   }, [subjectId, setValue, isEdit]);
 
   const subjectOptions: SelectOption[] = [
-    { value: '', label: 'Select a subject…' },
+    { value: '', label: 'Оберіть предмет…' },
     ...subjects.map((s) => ({ value: s.id, label: s.name })),
   ];
   const topicOptions: SelectOption[] = topics.isPending
-    ? [{ value: '', label: 'Loading topics…' }]
+    ? [{ value: '', label: 'Завантаження тем…' }]
     : [
-        { value: '', label: 'Select a topic…' },
+        { value: '', label: 'Оберіть тему…' },
         ...(topics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
       ];
 
@@ -220,11 +220,11 @@ export function QuestionFormModal({
         content: o.content.trim(),
       }));
       if (cleaned.length < 2 || cleaned.some((o) => !o.content)) {
-        setAnswersError('Add at least two options, each with content.');
+        setAnswersError('Додайте щонайменше два варіанти, кожен із текстом.');
         return;
       }
       if (correctIndex < 0 || correctIndex >= cleaned.length) {
-        setAnswersError('Select the correct answer.');
+        setAnswersError('Позначте правильну відповідь.');
         return;
       }
       const built: AnswerOptionInput[] = cleaned.map((o, i) => ({
@@ -245,7 +245,7 @@ export function QuestionFormModal({
       rightContent: p.rightContent.trim(),
     }));
     if (cleanedPairs.length < 2 || cleanedPairs.some((p) => !p.leftContent || !p.rightContent)) {
-      setAnswersError('Add at least two pairs, each with both sides filled in.');
+      setAnswersError('Додайте щонайменше дві пари, заповнивши обидві частини.');
       return;
     }
     const built: AnswerOptionInput[] = [];
@@ -287,7 +287,7 @@ export function QuestionFormModal({
         { id: question.id, payload },
         {
           onSuccess: () => {
-            toast.success('Question updated.');
+            toast.success('Питання оновлено.');
             onClose();
           },
           onError: (error) => handleError(error),
@@ -305,7 +305,7 @@ export function QuestionFormModal({
       };
       createQuestion.mutate(payload, {
         onSuccess: () => {
-          toast.success('Question created.');
+          toast.success('Питання створено.');
           onClose();
         },
         onError: (error) => handleError(error),
@@ -320,16 +320,16 @@ export function QuestionFormModal({
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Edit question' : 'New question'}
+      title={isEdit ? 'Редагування питання' : 'Нове питання'}
       onClose={onClose}
       busy={pending}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={pending}>
-            Cancel
+            Скасувати
           </Button>
           <Button type="submit" form={FORM_ID} isLoading={pending}>
-            {isEdit ? 'Save changes' : 'Create question'}
+            {isEdit ? 'Зберегти зміни' : 'Створити питання'}
           </Button>
         </>
       }
@@ -339,9 +339,9 @@ export function QuestionFormModal({
 
         {!isEdit && (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Select label="Subject" options={subjectOptions} {...register('subjectId')} />
+            <Select label="Предмет" options={subjectOptions} {...register('subjectId')} />
             <Select
-              label="Topic"
+              label="Тема"
               options={topicOptions}
               disabled={!subjectId || topics.isPending}
               error={errors.topicId?.message}
@@ -352,19 +352,19 @@ export function QuestionFormModal({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
-            label="Type"
+            label="Тип"
             options={TYPE_OPTIONS}
             disabled={isEdit}
             helperText={isEdit ? "A question's type cannot be changed." : undefined}
             {...register('type')}
           />
-          <Select label="Difficulty" options={DIFFICULTY_OPTIONS} {...register('difficulty')} />
+          <Select label="Рівень" options={DIFFICULTY_OPTIONS} {...register('difficulty')} />
         </div>
 
-        <Textarea label="Title" error={errors.title?.message} {...register('title')} />
+        <Textarea label="Заголовок" error={errors.title?.message} {...register('title')} />
         <Input
-          label="Image URL"
-          placeholder="Optional"
+          label="Посилання на зображення"
+          placeholder="Необовʼязково"
           error={errors.imageUrl?.message}
           {...register('imageUrl')}
         />
@@ -410,14 +410,14 @@ function SingleChoiceEditor({
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="text-text-secondary text-sm font-medium">Answers — select the correct one</legend>
+      <legend className="text-text-secondary text-sm font-medium">Відповіді — позначте правильну</legend>
       {options.map((option, i) => (
         <div key={i} className="border-border flex flex-col gap-2 rounded-lg border p-3">
           <div className="flex items-center gap-3">
             <input
               type="radio"
               name="correct-option"
-              aria-label={`Mark option ${i + 1} correct`}
+              aria-label={`Позначити варіант ${i + 1} правильним`}
               checked={correctIndex === i}
               onChange={() => onCorrectChange(i)}
               className="accent-primary size-4 shrink-0"
@@ -425,19 +425,19 @@ function SingleChoiceEditor({
             <input
               value={option.content}
               onChange={(e) => update(i, { content: e.target.value })}
-              placeholder={`Option ${i + 1}`}
+              placeholder={`Варіант ${i + 1}`}
               className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
             />
             {options.length > 2 && (
               <Button variant="ghost" size="sm" onClick={() => remove(i)}>
-                Remove
+                Прибрати
               </Button>
             )}
           </div>
           <input
             value={option.imageUrl}
             onChange={(e) => update(i, { imageUrl: e.target.value })}
-            placeholder="Image URL (optional)"
+            placeholder="Посилання на зображення (необовʼязково)"
             className="bg-surface text-text-muted border-border focus:border-primary focus:ring-primary h-9 w-full rounded-lg border px-3 text-xs outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
         </div>
@@ -445,7 +445,7 @@ function SingleChoiceEditor({
       {options.length < 20 && (
         <div>
           <Button variant="secondary" size="sm" onClick={() => onChange([...options, emptyOption()])}>
-            Add option
+            Додати варіант
           </Button>
         </div>
       )}
@@ -467,26 +467,26 @@ function MatchingEditor({
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-text-secondary text-sm font-medium">
-        Matching pairs — each left item matches the right item on its row
+        Пари відповідностей — елемент ліворуч відповідає елементу праворуч у тому ж рядку
       </legend>
       {pairs.map((pair, i) => (
         <div key={i} className="border-border flex items-center gap-2 rounded-lg border p-3">
           <input
             value={pair.leftContent}
             onChange={(e) => update(i, { leftContent: e.target.value })}
-            placeholder={`Left ${i + 1}`}
+            placeholder={`Ліворуч ${i + 1}`}
             className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           <span className="text-text-muted shrink-0">→</span>
           <input
             value={pair.rightContent}
             onChange={(e) => update(i, { rightContent: e.target.value })}
-            placeholder={`Right ${i + 1}`}
+            placeholder={`Праворуч ${i + 1}`}
             className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           {pairs.length > 2 && (
             <Button variant="ghost" size="sm" onClick={() => remove(i)}>
-              Remove
+              Прибрати
             </Button>
           )}
         </div>
@@ -494,7 +494,7 @@ function MatchingEditor({
       {pairs.length < 10 && (
         <div>
           <Button variant="secondary" size="sm" onClick={() => onChange([...pairs, emptyPair()])}>
-            Add pair
+            Додати пару
           </Button>
         </div>
       )}

@@ -24,7 +24,7 @@ import { QuestionFormModal } from '@/features/admin/components/questions/Questio
 const PAGE_SIZE = 10;
 
 const TYPE_LABEL: Record<QuestionType, string> = {
-  [QuestionType.SINGLE_CHOICE]: 'Single choice',
+  [QuestionType.SINGLE_CHOICE]: 'Одна відповідь',
   [QuestionType.MATCHING]: 'Matching',
 };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
@@ -64,11 +64,11 @@ export function QuestionsSection(): React.JSX.Element {
   const publishQuestion = usePublishQuestion();
 
   const subjectFilterOptions: SelectOption[] = [
-    { value: '', label: 'All subjects' },
+    { value: '', label: 'Усі предмети' },
     ...(subjects.data ?? []).map((s) => ({ value: s.id, label: s.name })),
   ];
   const topicFilterOptions: SelectOption[] = [
-    { value: '', label: 'All topics' },
+    { value: '', label: 'Усі теми' },
     ...(filterTopics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
   ];
 
@@ -77,8 +77,9 @@ export function QuestionsSection(): React.JSX.Element {
       { id: question.id, isPublished: !question.isPublished },
       {
         onSuccess: () =>
-          toast.success(question.isPublished ? 'Question unpublished.' : 'Question published.'),
-        onError: (error) => toast.error(isApiError(error) ? error.message : 'Could not update publication.'),
+          toast.success(question.isPublished ? 'Питання знято з публікації.' : 'Питання опубліковано.'),
+        onError: (error) =>
+          toast.error(isApiError(error) ? error.message : 'Не вдалося змінити статус публікації.'),
       },
     );
   };
@@ -89,12 +90,12 @@ export function QuestionsSection(): React.JSX.Element {
     }
     deleteQuestion.mutate(deleting.id, {
       onSuccess: () => {
-        toast.success('Question deleted.');
+        toast.success('Питання видалено.');
         setDeleting(null);
       },
       onError: (error) => {
         setDeleting(null);
-        toast.error(isApiError(error) ? error.message : 'Could not delete the question.');
+        toast.error(isApiError(error) ? error.message : 'Не вдалося видалити питання.');
       },
     });
   };
@@ -105,7 +106,7 @@ export function QuestionsSection(): React.JSX.Element {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="sm:w-44">
             <Select
-              aria-label="Filter by subject"
+              aria-label="Фільтр за предметом"
               options={subjectFilterOptions}
               value={subjectId}
               onChange={(e) => {
@@ -117,7 +118,7 @@ export function QuestionsSection(): React.JSX.Element {
           </div>
           <div className="sm:w-44">
             <Select
-              aria-label="Filter by topic"
+              aria-label="Фільтр за темою"
               options={topicFilterOptions}
               value={topicId}
               disabled={!subjectId || filterTopics.isPending}
@@ -130,8 +131,8 @@ export function QuestionsSection(): React.JSX.Element {
           <div className="sm:w-52">
             <Input
               type="search"
-              aria-label="Search questions"
-              placeholder="Search questions…"
+              aria-label="Пошук питань"
+              placeholder="Пошук питань…"
               value={searchInput}
               onChange={(e) => {
                 setSearchInput(e.target.value);
@@ -146,7 +147,7 @@ export function QuestionsSection(): React.JSX.Element {
             setFormOpen(true);
           }}
         >
-          New question
+          Нове питання
         </Button>
       </div>
 
@@ -156,11 +157,11 @@ export function QuestionsSection(): React.JSX.Element {
         <SectionError onRetry={() => void list.refetch()} />
       ) : list.data.items.length === 0 ? (
         <EmptyState
-          title={search || subjectId ? 'No matches' : 'No questions yet'}
+          title={search || subjectId ? 'Нічого не знайдено' : 'Питань поки немає'}
           description={
             search || subjectId
-              ? 'No questions match your filters.'
-              : 'Create your first question to get started.'
+              ? 'Жодне питання не відповідає фільтрам.'
+              : 'Створіть перше питання, щоб почати.'
           }
           action={
             !search &&
@@ -172,7 +173,7 @@ export function QuestionsSection(): React.JSX.Element {
                   setFormOpen(true);
                 }}
               >
-                New question
+                Нове питання
               </Button>
             )
           }
@@ -183,12 +184,12 @@ export function QuestionsSection(): React.JSX.Element {
             <table className="w-full min-w-[52rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Title</th>
-                  <th className="px-4 py-3 font-medium">Topic</th>
-                  <th className="px-4 py-3 font-medium">Type</th>
-                  <th className="px-4 py-3 font-medium">Difficulty</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <th className="px-4 py-3 font-medium">Заголовок</th>
+                  <th className="px-4 py-3 font-medium">Тема</th>
+                  <th className="px-4 py-3 font-medium">Тип</th>
+                  <th className="px-4 py-3 font-medium">Рівень</th>
+                  <th className="px-4 py-3 font-medium">Статус</th>
+                  <th className="px-4 py-3 text-right font-medium">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y">
@@ -206,13 +207,13 @@ export function QuestionsSection(): React.JSX.Element {
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={question.isPublished ? 'success' : 'neutral'}>
-                        {question.isPublished ? 'Published' : 'Draft'}
+                        {question.isPublished ? 'Опубліковано' : 'Чернетка'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => togglePublish(question)}>
-                          {question.isPublished ? 'Unpublish' : 'Publish'}
+                          {question.isPublished ? 'Зняти з публікації' : 'Опублікувати'}
                         </Button>
                         <Button
                           variant="ghost"
@@ -222,10 +223,10 @@ export function QuestionsSection(): React.JSX.Element {
                             setFormOpen(true);
                           }}
                         >
-                          Edit
+                          Редагувати
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeleting(question)}>
-                          Delete
+                          Видалити
                         </Button>
                       </div>
                     </td>
@@ -247,13 +248,11 @@ export function QuestionsSection(): React.JSX.Element {
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete question?"
+        title="Видалити питання?"
         description={
-          deleting
-            ? `This question will be removed. This is a soft delete; historical results stay intact.`
-            : ''
+          deleting ? `Питання буде прибрано. Це мʼяке видалення — історичні результати лишаються цілими.` : ''
         }
-        confirmLabel="Delete"
+        confirmLabel="Видалити"
         confirmVariant="danger"
         isLoading={deleteQuestion.isPending}
         onConfirm={confirmDelete}

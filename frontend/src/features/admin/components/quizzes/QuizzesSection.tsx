@@ -54,12 +54,12 @@ export function QuizzesSection(): React.JSX.Element {
     }
     deleteQuiz.mutate(deleting.id, {
       onSuccess: () => {
-        toast.success('Quiz deleted.');
+        toast.success('Тест видалено.');
         setDeleting(null);
       },
       onError: (error) => {
         setDeleting(null);
-        toast.error(isApiError(error) ? error.message : 'Could not delete the quiz.');
+        toast.error(isApiError(error) ? error.message : 'Не вдалося видалити тест.');
       },
     });
   };
@@ -70,8 +70,8 @@ export function QuizzesSection(): React.JSX.Element {
         <div className="sm:max-w-xs sm:flex-1">
           <Input
             type="search"
-            aria-label="Search quizzes"
-            placeholder="Search quizzes…"
+            aria-label="Пошук тестів"
+            placeholder="Пошук тестів…"
             value={searchInput}
             onChange={(e) => {
               setSearchInput(e.target.value);
@@ -85,7 +85,7 @@ export function QuizzesSection(): React.JSX.Element {
             setFormOpen(true);
           }}
         >
-          New quiz
+          Новий тест
         </Button>
       </div>
 
@@ -95,9 +95,11 @@ export function QuizzesSection(): React.JSX.Element {
         <SectionError onRetry={() => void list.refetch()} />
       ) : list.data.items.length === 0 ? (
         <EmptyState
-          title={search ? 'No matches' : 'No quizzes yet'}
+          title={search ? 'Нічого не знайдено' : 'Тестів поки немає'}
           description={
-            search ? 'No quizzes match your search.' : 'Create a reusable quiz configuration to get started.'
+            search
+              ? 'Жоден тест не відповідає запиту.'
+              : 'Створіть багаторазову конфігурацію тесту, щоб почати.'
           }
           action={
             !search && (
@@ -108,7 +110,7 @@ export function QuizzesSection(): React.JSX.Element {
                   setFormOpen(true);
                 }}
               >
-                New quiz
+                Новий тест
               </Button>
             )
           }
@@ -119,13 +121,13 @@ export function QuizzesSection(): React.JSX.Element {
             <table className="w-full min-w-[48rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Title</th>
-                  <th className="px-4 py-3 font-medium">Subject</th>
-                  <th className="px-4 py-3 font-medium">Topic</th>
-                  <th className="px-4 py-3 font-medium">Questions</th>
-                  <th className="px-4 py-3 font-medium">Mode</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <th className="px-4 py-3 font-medium">Заголовок</th>
+                  <th className="px-4 py-3 font-medium">Предмет</th>
+                  <th className="px-4 py-3 font-medium">Тема</th>
+                  <th className="px-4 py-3 font-medium">Питань</th>
+                  <th className="px-4 py-3 font-medium">Режим</th>
+                  <th className="px-4 py-3 font-medium">Статус</th>
+                  <th className="px-4 py-3 text-right font-medium">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y">
@@ -142,7 +144,7 @@ export function QuizzesSection(): React.JSX.Element {
                     <td className="text-text-secondary px-4 py-3">{MODE_LABEL[quiz.mode]}</td>
                     <td className="px-4 py-3">
                       <Badge tone={quiz.isPublished ? 'success' : 'neutral'}>
-                        {quiz.isPublished ? 'Published' : 'Draft'}
+                        {quiz.isPublished ? 'Опубліковано' : 'Чернетка'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
@@ -155,10 +157,10 @@ export function QuizzesSection(): React.JSX.Element {
                             setFormOpen(true);
                           }}
                         >
-                          Edit
+                          Редагувати
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeleting(quiz)}>
-                          Delete
+                          Видалити
                         </Button>
                       </div>
                     </td>
@@ -180,9 +182,9 @@ export function QuizzesSection(): React.JSX.Element {
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete quiz?"
-        description={deleting ? `“${deleting.title}” will be removed. This is a soft delete.` : ''}
-        confirmLabel="Delete"
+        title="Видалити тест?"
+        description={deleting ? `«${deleting.title}» буде прибрано. Це мʼяке видалення.` : ''}
+        confirmLabel="Видалити"
         confirmVariant="danger"
         isLoading={deleteQuiz.isPending}
         onConfirm={confirmDelete}

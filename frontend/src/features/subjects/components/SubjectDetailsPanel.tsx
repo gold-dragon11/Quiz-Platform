@@ -14,7 +14,7 @@ interface SubjectDetailsPanelProps {
 
 /**
  * Details panel for the selected subject (Phase 6.7 §3-4): a subject-wide
- * "Start a quiz" plus every topic with a per-topic Start Quiz. Topics come from
+ * "Почати тест" plus every topic with a per-topic Start Quiz. Topics come from
  * the cached per-subject query (§9 caching). Estimated question count and
  * difficulty are not exposed by the content API, so they are omitted. On
  * desktop this is a sticky side panel; on mobile the page renders it below the
@@ -28,7 +28,7 @@ export function SubjectDetailsPanel({
   if (!subject) {
     return (
       <Card className="text-text-muted text-center text-sm lg:sticky lg:top-6">
-        Select a subject to see its topics.
+        Оберіть предмет, щоб побачити його теми.
       </Card>
     );
   }
@@ -41,11 +41,11 @@ export function SubjectDetailsPanel({
       </div>
 
       <Button variant="secondary" onClick={() => onStartQuiz(subject.id)}>
-        Start a subject quiz
+        Почати тест з предмета
       </Button>
 
       <div className="border-border flex flex-col gap-3 border-t pt-4">
-        <h3 className="text-text-muted text-xs font-medium tracking-wide uppercase">Topics</h3>
+        <h3 className="text-text-muted text-xs font-medium tracking-wide uppercase">Теми</h3>
 
         {!topics || topics.isPending ? (
           <div className="flex flex-col gap-3">
@@ -54,12 +54,9 @@ export function SubjectDetailsPanel({
             ))}
           </div>
         ) : topics.isError ? (
-          <SectionError message="We couldn't load the topics." onRetry={() => void topics.refetch()} />
+          <SectionError message="Не вдалося завантажити теми." onRetry={() => void topics.refetch()} />
         ) : topics.data.length === 0 ? (
-          <EmptyState
-            title="No topics yet"
-            description="This subject doesn't have any topics to quiz on yet."
-          />
+          <EmptyState title="Тем поки немає" description="У цьому предметі поки немає тем для тестування." />
         ) : (
           <div className="flex flex-col gap-3">
             {topics.data.map((topic) => (
@@ -70,7 +67,7 @@ export function SubjectDetailsPanel({
                 </div>
                 <div>
                   <Button size="sm" onClick={() => onStartQuiz(subject.id, topic.id)}>
-                    Start quiz
+                    Почати тест
                   </Button>
                 </div>
               </div>

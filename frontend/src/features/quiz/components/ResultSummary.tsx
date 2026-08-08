@@ -13,19 +13,19 @@ export function ResultSummary({ result }: { result: QuizResultSummary }): React.
   return (
     <div className="flex flex-col gap-6">
       <Card className="flex flex-col items-center gap-4 text-center">
-        <p className="text-text-muted text-sm font-medium tracking-wide uppercase">Quiz complete</p>
+        <p className="text-text-muted text-sm font-medium tracking-wide uppercase">Тест пройдено</p>
         <p className="text-text-primary text-5xl font-semibold">{formatPercent(result.accuracy)}</p>
         <p className="text-text-muted text-sm">
-          {formatNumber(result.correctAnswers)} of {formatNumber(result.totalQuestions)} correct
+          правильних: {formatNumber(result.correctAnswers)} з {formatNumber(result.totalQuestions)}
         </p>
         <XpReward xp={result.xpEarned} />
       </Card>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Correct" value={formatNumber(result.correctAnswers)} />
-        <StatCard label="Incorrect" value={formatNumber(result.incorrectAnswers)} />
-        <StatCard label="Unanswered" value={formatNumber(result.unansweredQuestions)} />
-        <StatCard label="Score" value={formatPercent(result.score)} />
+        <StatCard label="Правильних" value={formatNumber(result.correctAnswers)} />
+        <StatCard label="Неправильних" value={formatNumber(result.incorrectAnswers)} />
+        <StatCard label="Без відповіді" value={formatNumber(result.unansweredQuestions)} />
+        <StatCard label="Результат" value={formatPercent(result.score)} />
       </div>
     </div>
   );

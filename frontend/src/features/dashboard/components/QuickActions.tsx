@@ -25,8 +25,8 @@ const ICON_PROPS = {
 const ACTIONS: QuickAction[] = [
   {
     to: ROUTES.quiz,
-    title: 'Start a quiz',
-    description: 'Begin a new learning session',
+    title: 'Почати тест',
+    description: 'Розпочати нову сесію навчання',
     icon: (
       <svg {...ICON_PROPS} aria-hidden="true">
         <polygon points="6 4 20 12 6 20 6 4" />
@@ -35,8 +35,8 @@ const ACTIONS: QuickAction[] = [
   },
   {
     to: ROUTES.statistics,
-    title: 'View statistics',
-    description: 'Track your progress in detail',
+    title: 'Переглянути статистику',
+    description: 'Детально стежити за прогресом',
     icon: (
       <svg {...ICON_PROPS} aria-hidden="true">
         <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
@@ -45,8 +45,8 @@ const ACTIONS: QuickAction[] = [
   },
   {
     to: ROUTES.profile,
-    title: 'Your profile',
-    description: 'Avatar and account details',
+    title: 'Ваш профіль',
+    description: 'Аватар і дані акаунта',
     icon: (
       <svg {...ICON_PROPS} aria-hidden="true">
         <circle cx="12" cy="8" r="4" />
@@ -56,8 +56,8 @@ const ACTIONS: QuickAction[] = [
   },
   {
     to: ROUTES.settings,
-    title: 'Settings',
-    description: 'Password and account safety',
+    title: 'Налаштування',
+    description: 'Пароль і безпека акаунта',
     icon: (
       <svg {...ICON_PROPS} aria-hidden="true">
         <circle cx="12" cy="12" r="3" />

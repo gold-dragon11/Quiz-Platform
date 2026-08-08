@@ -50,7 +50,7 @@ const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
  * wrong password, or a soft-deleted account — so none of them can be told
  * apart (docs/04-api/authentication.md §6).
  */
-const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
+const INVALID_CREDENTIALS_MESSAGE = 'Неправильна електронна адреса або пароль.';
 
 /**
  * The single response for every failed verification attempt — invalid,
@@ -59,17 +59,18 @@ const INVALID_CREDENTIALS_MESSAGE = 'Invalid email or password.';
  * (docs/04-api/authentication.md §5).
  */
 const INVALID_VERIFICATION_TOKEN_MESSAGE =
-  'Invalid or expired verification token.';
+  'Недійсний або протермінований токен підтвердження.';
 
 /**
  * The single response for every failed password reset — invalid, expired,
  * malformed, wrong-purpose, fingerprint-mismatched, replayed, unknown user, or
  * inactive account (docs/04-api/authentication.md §10).
  */
-const INVALID_RESET_TOKEN_MESSAGE = 'Invalid or expired reset token.';
-const INCORRECT_CURRENT_PASSWORD_MESSAGE = 'Current password is incorrect.';
+const INVALID_RESET_TOKEN_MESSAGE =
+  'Недійсний або протермінований токен відновлення.';
+const INCORRECT_CURRENT_PASSWORD_MESSAGE = 'Поточний пароль неправильний.';
 const PASSWORD_MUST_DIFFER_MESSAGE =
-  'New password must be different from the current password.';
+  'Новий пароль має відрізнятися від поточного.';
 
 /**
  * Authentication use cases (docs/06-backend/authentication.md §2).
@@ -125,7 +126,9 @@ export class AuthService implements OnModuleInit {
         // Registration does not collect a display name, so it starts as the
         // username (docs/02-domain/profile.md §5).
         displayName: dto.username,
-        language: dto.preferredLanguage ?? Language.ENGLISH,
+        // The interface is Ukrainian-only, so an omitted preference defaults
+        // to Ukrainian rather than English.
+        language: dto.preferredLanguage ?? Language.UKRAINIAN,
       });
     } catch (error) {
       // Two concurrent registrations can both pass the checks above and race to
@@ -396,9 +399,9 @@ export class AuthService implements OnModuleInit {
       case AccountStatus.ACTIVE:
         return;
       case AccountStatus.PENDING_VERIFICATION:
-        throw new ForbiddenException('Email not verified.');
+        throw new ForbiddenException('Електронну адресу не підтверджено.');
       case AccountStatus.SUSPENDED:
-        throw new ForbiddenException('Account suspended.');
+        throw new ForbiddenException('Акаунт призупинено.');
       case AccountStatus.DELETED:
         // Already discarded in login(); kept so the switch stays exhaustive.
         throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
@@ -726,11 +729,11 @@ export class AuthService implements OnModuleInit {
     ]);
 
     if (existingUser) {
-      throw new ConflictException('Email already exists.');
+      throw new ConflictException('Ця електронна адреса вже зареєстрована.');
     }
 
     if (existingProfile) {
-      throw new ConflictException('Username already exists.');
+      throw new ConflictException("Таке ім'я користувача вже існує.");
     }
   }
 
@@ -746,7 +749,9 @@ export class AuthService implements OnModuleInit {
       !(error instanceof Prisma.PrismaClientKnownRequestError) ||
       error.code !== UNIQUE_CONSTRAINT_VIOLATION
     ) {
-      return error instanceof Error ? error : new Error('Registration failed.');
+      return error instanceof Error
+        ? error
+        : new Error('Не вдалося зареєструватися.');
     }
 
     const target = Array.isArray(error.meta?.target)
@@ -754,13 +759,13 @@ export class AuthService implements OnModuleInit {
       : [];
 
     if (target.includes('username')) {
-      return new ConflictException('Username already exists.');
+      return new ConflictException("Таке ім'я користувача вже існує.");
     }
 
     if (target.includes('email')) {
-      return new ConflictException('Email already exists.');
+      return new ConflictException('Ця електронна адреса вже зареєстрована.');
     }
 
-    return new ConflictException('Account already exists.');
+    return new ConflictException('Такий акаунт уже існує.');
   }
 }

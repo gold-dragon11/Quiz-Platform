@@ -22,7 +22,7 @@ export function OverallStatisticsSection(): React.JSX.Element {
 
   return (
     <section>
-      <SectionHeader title="Overall" description="Your learning at a glance." />
+      <SectionHeader title="Загалом" description="Ваше навчання одним поглядом." />
       {overall.isPending ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, index) => (
@@ -36,22 +36,26 @@ export function OverallStatisticsSection(): React.JSX.Element {
       ) : overall.data.completedQuizzes === 0 ? (
         <Card>
           <EmptyState
-            title="No statistics yet"
-            description="Complete your first quiz to start tracking your progress."
+            title="Статистики поки немає"
+            description="Пройдіть перший тест, щоб почати стежити за прогресом."
             action={
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Start a quiz
+                Почати тест
               </Button>
             }
           />
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <StatCard label="Quizzes" value={formatNumber(overall.data.completedQuizzes)} hint="Completed" />
-          <StatCard label="Questions" value={formatNumber(overall.data.totalQuestions)} hint="Answered" />
-          <StatCard label="Correct" value={formatNumber(overall.data.correctAnswers)} hint="Answers" />
-          <StatCard label="Accuracy" value={formatPercent(overall.data.averageAccuracy)} hint="Average" />
-          <StatCard label="Study time" value={formatDuration(overall.data.totalStudyTime)} hint="Total" />
+          <StatCard label="Тести" value={formatNumber(overall.data.completedQuizzes)} hint="Пройдено" />
+          <StatCard
+            label="Питання"
+            value={formatNumber(overall.data.totalQuestions)}
+            hint="Отримано відповідей"
+          />
+          <StatCard label="Правильних" value={formatNumber(overall.data.correctAnswers)} hint="Відповідей" />
+          <StatCard label="Точність" value={formatPercent(overall.data.averageAccuracy)} hint="Середня" />
+          <StatCard label="Час навчання" value={formatDuration(overall.data.totalStudyTime)} hint="Усього" />
         </div>
       )}
     </section>

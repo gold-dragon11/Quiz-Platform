@@ -77,7 +77,7 @@ export function TopicFormModal({ open, topic, subjects, onClose }: TopicFormModa
         },
         {
           onSuccess: () => {
-            toast.success('Topic updated.');
+            toast.success('Тему оновлено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -93,7 +93,7 @@ export function TopicFormModal({ open, topic, subjects, onClose }: TopicFormModa
         },
         {
           onSuccess: () => {
-            toast.success('Topic created.');
+            toast.success('Тему створено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -105,16 +105,16 @@ export function TopicFormModal({ open, topic, subjects, onClose }: TopicFormModa
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Edit topic' : 'New topic'}
+      title={isEdit ? 'Редагування теми' : 'Нова тема'}
       onClose={onClose}
       busy={pending}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={pending}>
-            Cancel
+            Скасувати
           </Button>
           <Button type="submit" form={FORM_ID} isLoading={pending}>
-            {isEdit ? 'Save changes' : 'Create topic'}
+            {isEdit ? 'Зберегти зміни' : 'Створити тему'}
           </Button>
         </>
       }
@@ -122,22 +122,22 @@ export function TopicFormModal({ open, topic, subjects, onClose }: TopicFormModa
       <form id={FORM_ID} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Select
-          label="Subject"
+          label="Предмет"
           options={subjectOptions}
           disabled={isEdit}
           helperText={isEdit ? 'A topic cannot be moved to another subject.' : undefined}
           error={errors.subjectId?.message}
           {...register('subjectId')}
         />
-        <Input label="Name" error={errors.name?.message} {...register('name')} />
+        <Input label="Назва" error={errors.name?.message} {...register('name')} />
         <Input
           label="Slug"
-          helperText="Lowercase letters, numbers, and single hyphens."
+          helperText="Малі латинські літери, цифри та одиничні дефіси."
           error={errors.slug?.message}
           {...register('slug')}
         />
-        <Textarea label="Description" error={errors.description?.message} {...register('description')} />
-        {isEdit && <Checkbox label="Published" {...register('isPublished')} />}
+        <Textarea label="Опис" error={errors.description?.message} {...register('description')} />
+        {isEdit && <Checkbox label="Опубліковано" {...register('isPublished')} />}
       </form>
     </Modal>
   );

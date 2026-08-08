@@ -31,7 +31,7 @@ export function StatisticsHero(): React.JSX.Element {
   if (overall.isError) {
     return (
       <Card>
-        <SectionError message="We couldn't load your progress." onRetry={() => void overall.refetch()} />
+        <SectionError message="Не вдалося завантажити ваш прогрес." onRetry={() => void overall.refetch()} />
       </Card>
     );
   }
@@ -57,22 +57,22 @@ function HeroContent({
     <Card className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Badge tone="info">Level {data.currentLevel}</Badge>
+          <Badge tone="info">Рівень {data.currentLevel}</Badge>
           <span className="text-text-primary text-3xl font-semibold">
             {formatNumber(xp)} <span className="text-text-muted text-lg font-medium">XP</span>
           </span>
         </div>
         <span className="text-text-secondary text-sm font-medium">
-          {completion}% to Level {data.currentLevel + 1}
+          {completion}% до рівня {data.currentLevel + 1}
         </span>
       </div>
 
-      <ProgressBar value={data.completionPercent} label={`Progress to level ${data.currentLevel + 1}`} />
+      <ProgressBar value={data.completionPercent} label={`Прогрес до рівня ${data.currentLevel + 1}`} />
 
       <p className="text-text-muted text-sm">
         {xpToNext > 0
           ? `${formatNumber(xpToNext)} XP until Level ${data.currentLevel + 1}`
-          : `You're ready for Level ${data.currentLevel + 1}!`}
+          : `Ви готові до рівня ${data.currentLevel + 1}!`}
       </p>
     </Card>
   );

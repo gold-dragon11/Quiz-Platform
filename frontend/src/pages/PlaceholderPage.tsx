@@ -11,7 +11,7 @@ export function PlaceholderPage({ title }: PlaceholderPageProps): React.JSX.Elem
   return (
     <div className="flex flex-col gap-2">
       <h1 className="text-2xl font-semibold">{title}</h1>
-      <p className="text-text-muted">This page has not been implemented yet.</p>
+      <p className="text-text-muted">Цю сторінку ще не реалізовано.</p>
     </div>
   );
 }

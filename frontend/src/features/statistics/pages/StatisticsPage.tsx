@@ -21,7 +21,7 @@ export function StatisticsPage(): React.JSX.Element {
       className="mx-auto flex max-w-6xl flex-col gap-8"
     >
       <motion.div variants={fadeInUp}>
-        <h1 className="text-text-primary text-2xl font-semibold">Statistics</h1>
+        <h1 className="text-text-primary text-2xl font-semibold">Статистика</h1>
       </motion.div>
       <motion.div variants={fadeInUp}>
         <StatisticsHero />

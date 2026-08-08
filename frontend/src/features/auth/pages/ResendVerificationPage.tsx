@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { useTranslation } from '@/shared/i18n';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { ResendVerificationForm } from '@/features/auth/components/ResendVerificationForm';
 
@@ -12,17 +11,15 @@ import { ResendVerificationForm } from '@/features/auth/components/ResendVerific
  * `/verify-email`.
  */
 export function ResendVerificationPage(): React.JSX.Element {
-  const { t } = useTranslation();
-
   return (
     <AuthCard
-      title={t('auth.resend.title')}
-      subtitle={t('auth.resend.subtitle')}
+      title="Підтвердження пошти"
+      subtitle="Введіть свою адресу, щоб отримати нове посилання для підтвердження."
       footer={
         <p>
-          {t('auth.verify.alreadyVerified')}{' '}
+          Уже підтвердили?{' '}
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            {t('auth.verify.signIn')}
+            Увійти
           </Link>
         </p>
       }

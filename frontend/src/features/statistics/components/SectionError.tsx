@@ -11,14 +11,14 @@ interface SectionErrorProps {
  * (F7 error handling, section isolation).
  */
 export function SectionError({
-  message = "We couldn't load this section.",
+  message = 'Не вдалося завантажити цей блок.',
   onRetry,
 }: SectionErrorProps): React.JSX.Element {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
       <p className="text-text-muted text-sm">{message}</p>
       <Button variant="secondary" size="sm" onClick={onRetry}>
-        Try again
+        Спробувати ще раз
       </Button>
     </div>
   );

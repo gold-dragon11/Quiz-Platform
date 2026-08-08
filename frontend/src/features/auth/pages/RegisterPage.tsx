@@ -5,12 +5,10 @@ import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
 import { Language } from '@/shared/types/enums';
-import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
 import { PasswordInput } from '@/shared/ui/PasswordInput';
-import { Select } from '@/shared/ui/Select';
 import { AuthCard } from '@/features/auth/components/AuthCard';
 import { useRegister, useResendVerification } from '@/features/auth/hooks/use-auth-mutations';
 import { registerSchema, type RegisterFormValues } from '@/features/auth/validation/auth.schemas';
@@ -22,19 +20,15 @@ import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
  * establish a session; the account is Pending Verification until the emailed
  * link is used. 409 conflicts (email/username taken) and 400 validation errors
  * are surfaced inline on the offending field.
+ *
+ * The interface is Ukrainian-only, so the account's `preferredLanguage` is no
+ * longer asked for: it is sent as UKRAINIAN. The field is optional on the
+ * backend but defaults to ENGLISH there, so it has to be sent explicitly.
  */
 export function RegisterPage(): React.JSX.Element {
   const registerMutation = useRegister();
   const resend = useResendVerification();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
-  const { t } = useTranslation();
-
-  // The account's preferred language is a backend field (ENGLISH/UKRAINIAN),
-  // separate from the interface language chosen with the switcher.
-  const languageOptions = [
-    { value: Language.ENGLISH, label: t('auth.language.english') },
-    { value: Language.UKRAINIAN, label: t('auth.language.ukrainian') },
-  ];
 
   const {
     register,
@@ -48,7 +42,6 @@ export function RegisterPage(): React.JSX.Element {
       username: '',
       password: '',
       confirmPassword: '',
-      preferredLanguage: Language.ENGLISH,
     },
   });
 
@@ -58,7 +51,7 @@ export function RegisterPage(): React.JSX.Element {
         email: values.email,
         username: values.username,
         password: values.password,
-        preferredLanguage: values.preferredLanguage,
+        preferredLanguage: Language.UKRAINIAN,
       },
       {
         onSuccess: () => setRegisteredEmail(values.email),
@@ -75,19 +68,21 @@ export function RegisterPage(): React.JSX.Element {
   if (registeredEmail) {
     return (
       <AuthCard
-        title={t('auth.register.checkEmail.title')}
-        subtitle={t('auth.register.checkEmail.subtitle', { email: registeredEmail })}
+        title="Перевірте пошту"
+        subtitle={`Ми надіслали посилання для підтвердження на ${registeredEmail}.`}
         footer={
           <p>
-            {t('auth.register.checkEmail.ready')}{' '}
+            Готові увійти?{' '}
             <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-              {t('auth.register.checkEmail.goToLogin')}
+              Перейти до входу
             </Link>
           </p>
         }
       >
         <div className="flex flex-col gap-4">
-          <Alert variant="success">{t('auth.register.checkEmail.alert')}</Alert>
+          <Alert variant="success">
+            Ваш акаунт створено. Перейдіть за посиланням у листі, щоб підтвердити адресу, а потім увійдіть.
+          </Alert>
           <Button
             variant="secondary"
             fullWidth
@@ -96,13 +91,14 @@ export function RegisterPage(): React.JSX.Element {
               resend.mutate(
                 { email: registeredEmail },
                 {
-                  onSuccess: () => toast.success(t('auth.register.resendSuccess')),
-                  onError: () => toast.error(t('auth.register.resendError')),
+                  onSuccess: () =>
+                    toast.success('Якщо адресу ще потрібно підтвердити, нове посилання вже в дорозі.'),
+                  onError: () => toast.error('Зараз не вдалося надіслати. Спробуйте ще раз.'),
                 },
               )
             }
           >
-            {t('auth.register.checkEmail.resend')}
+            Надіслати лист повторно
           </Button>
         </div>
       </AuthCard>
@@ -111,13 +107,13 @@ export function RegisterPage(): React.JSX.Element {
 
   return (
     <AuthCard
-      title={t('auth.register.title')}
-      subtitle={t('auth.register.subtitle')}
+      title="Створення акаунта"
+      subtitle="Почни навчатися з L&S"
       footer={
         <p>
-          {t('auth.register.hasAccount')}{' '}
+          Уже маєте акаунт?{' '}
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            {t('auth.register.signIn')}
+            Увійти
           </Link>
         </p>
       }
@@ -125,42 +121,36 @@ export function RegisterPage(): React.JSX.Element {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
-          label={t('auth.field.email')}
+          label="Електронна пошта"
           type="email"
           autoComplete="email"
-          placeholder={t('auth.field.emailPlaceholder')}
+          placeholder="you@example.com"
           error={errors.email?.message}
           {...register('email')}
         />
         <Input
-          label={t('auth.field.username')}
+          label="Ім'я користувача"
           autoComplete="username"
-          placeholder={t('auth.field.usernamePlaceholder')}
-          helperText={t('auth.field.usernameHint')}
+          placeholder="your_username"
+          helperText="Від 3 до 30 символів: латинські літери, цифри та підкреслення."
           error={errors.username?.message}
           {...register('username')}
         />
         <PasswordInput
-          label={t('auth.field.password')}
+          label="Пароль"
           autoComplete="new-password"
-          helperText={t('auth.field.passwordHint')}
+          helperText="Щонайменше 8 символів: велика й мала літери, цифра та спеціальний символ."
           error={errors.password?.message}
           {...register('password')}
         />
         <PasswordInput
-          label={t('auth.field.confirmPassword')}
+          label="Підтвердіть пароль"
           autoComplete="new-password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
-        <Select
-          label={t('auth.field.preferredLanguage')}
-          options={languageOptions}
-          error={errors.preferredLanguage?.message}
-          {...register('preferredLanguage')}
-        />
         <Button type="submit" fullWidth isLoading={registerMutation.isPending}>
-          {t('auth.register.submit')}
+          Створити акаунт
         </Button>
       </form>
     </AuthCard>

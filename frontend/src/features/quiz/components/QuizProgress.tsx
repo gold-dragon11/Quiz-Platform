@@ -18,13 +18,13 @@ export function QuizProgress({ index, total, answeredCount }: QuizProgressProps)
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between text-sm">
         <span className="text-text-primary font-medium">
-          Question {index + 1} of {total}
+          Питання {index + 1} з {total}
         </span>
         <span className="text-text-muted">
-          {answeredCount} of {total} answered
+          Відповіли на {answeredCount} з {total}
         </span>
       </div>
-      <ProgressBar value={percent} label="Quiz progress" />
+      <ProgressBar value={percent} label="Прогрес тесту" />
     </div>
   );
 }

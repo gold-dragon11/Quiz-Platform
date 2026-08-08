@@ -38,8 +38,8 @@ export class AppErrorBoundary extends Component<PropsWithChildren, State> {
     if (this.state.hasError) {
       return (
         <ServerErrorPage
-          message="The application ran into an unexpected error."
-          actionLabel="Reload app"
+          message="Застосунок несподівано завершив роботу."
+          actionLabel="Перезавантажити"
           onAction={this.handleReload}
         />
       );

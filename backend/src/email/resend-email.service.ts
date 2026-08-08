@@ -37,11 +37,11 @@ export class ResendEmailService extends EmailService {
   ): Promise<void> {
     await this.send(
       recipient,
-      'Verify your email',
-      `<p>Welcome! Confirm your email address to activate your account.</p>
-       <p><a href="${verificationUrl}">Verify your email</a></p>
-       <p>Or paste this link into your browser: ${verificationUrl}</p>`,
-      `Welcome! Confirm your email address to activate your account: ${verificationUrl}`,
+      'Підтвердження електронної пошти — L&S',
+      `<p>Вітаємо в L&amp;S! Підтвердьте свою електронну адресу, щоб активувати акаунт.</p>
+       <p><a href="${verificationUrl}">Підтвердити пошту</a></p>
+       <p>Або скопіюйте це посилання у браузер: ${verificationUrl}</p>`,
+      `Вітаємо в L&S! Підтвердьте свою електронну адресу, щоб активувати акаунт: ${verificationUrl}`,
     );
   }
 
@@ -51,12 +51,12 @@ export class ResendEmailService extends EmailService {
   ): Promise<void> {
     await this.send(
       recipient,
-      'Reset your password',
-      `<p>We received a request to reset your password.</p>
-       <p><a href="${resetUrl}">Reset your password</a></p>
-       <p>Or paste this link into your browser: ${resetUrl}</p>
-       <p>If you didn't request this, you can safely ignore this email.</p>`,
-      `Reset your password: ${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
+      'Відновлення пароля — L&S',
+      `<p>Ми отримали запит на зміну вашого пароля.</p>
+       <p><a href="${resetUrl}">Змінити пароль</a></p>
+       <p>Або скопіюйте це посилання у браузер: ${resetUrl}</p>
+       <p>Якщо ви цього не робили, просто проігноруйте цей лист.</p>`,
+      `Зміна пароля: ${resetUrl}\n\nЯкщо ви цього не робили, просто проігноруйте цей лист.`,
     );
   }
 

@@ -78,7 +78,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (!(exception instanceof HttpException)) {
       // Internal failures never describe themselves to the caller
       // (docs/06-backend/security.md §15).
-      return { ...envelope, message: 'Internal server error', statusCode };
+      return { ...envelope, message: 'Внутрішня помилка сервера', statusCode };
     }
 
     const exceptionResponse = exception.getResponse();

@@ -12,8 +12,8 @@ interface ServerErrorPageProps {
  * so it can render even when app providers have failed.
  */
 export function ServerErrorPage({
-  title = 'Something went wrong',
-  message = 'An unexpected error occurred. Please try again.',
+  title = 'Щось пішло не так',
+  message = 'Сталася несподівана помилка. Спробуйте ще раз.',
   actionLabel = 'Try again',
   onAction,
 }: ServerErrorPageProps): React.JSX.Element {

@@ -44,7 +44,7 @@ export function TopicsSection(): React.JSX.Element {
   const deleteTopic = useDeleteTopic();
 
   const subjectFilterOptions: SelectOption[] = [
-    { value: '', label: 'All subjects' },
+    { value: '', label: 'Усі предмети' },
     ...(subjects.data ?? []).map((s) => ({ value: s.id, label: s.name })),
   ];
 
@@ -59,12 +59,12 @@ export function TopicsSection(): React.JSX.Element {
     }
     deleteTopic.mutate(deleting.id, {
       onSuccess: () => {
-        toast.success('Topic deleted.');
+        toast.success('Тему видалено.');
         setDeleting(null);
       },
       onError: (error) => {
         setDeleting(null);
-        toast.error(isApiError(error) ? error.message : 'Could not delete the topic.');
+        toast.error(isApiError(error) ? error.message : 'Не вдалося видалити тему.');
       },
     });
   };
@@ -75,7 +75,7 @@ export function TopicsSection(): React.JSX.Element {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="sm:w-48">
             <Select
-              aria-label="Filter by subject"
+              aria-label="Фільтр за предметом"
               options={subjectFilterOptions}
               value={subjectId}
               onChange={(e) => {
@@ -87,8 +87,8 @@ export function TopicsSection(): React.JSX.Element {
           <div className="sm:w-56">
             <Input
               type="search"
-              aria-label="Search topics"
-              placeholder="Search topics…"
+              aria-label="Пошук тем"
+              placeholder="Пошук тем…"
               value={searchInput}
               onChange={(e) => {
                 setSearchInput(e.target.value);
@@ -97,7 +97,7 @@ export function TopicsSection(): React.JSX.Element {
             />
           </div>
         </div>
-        <Button onClick={openCreate}>New topic</Button>
+        <Button onClick={openCreate}>Нова тема</Button>
       </div>
 
       {list.isPending ? (
@@ -106,15 +106,15 @@ export function TopicsSection(): React.JSX.Element {
         <SectionError onRetry={() => void list.refetch()} />
       ) : list.data.items.length === 0 ? (
         <EmptyState
-          title={search || subjectId ? 'No matches' : 'No topics yet'}
+          title={search || subjectId ? 'Нічого не знайдено' : 'Тем поки немає'}
           description={
-            search || subjectId ? 'No topics match your filters.' : 'Create your first topic to get started.'
+            search || subjectId ? 'Жодна тема не відповідає фільтрам.' : 'Створіть першу тему, щоб почати.'
           }
           action={
             !search &&
             !subjectId && (
               <Button size="sm" onClick={openCreate}>
-                New topic
+                Нова тема
               </Button>
             )
           }
@@ -125,11 +125,11 @@ export function TopicsSection(): React.JSX.Element {
             <table className="w-full min-w-[40rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Subject</th>
+                  <th className="px-4 py-3 font-medium">Назва</th>
+                  <th className="px-4 py-3 font-medium">Предмет</th>
                   <th className="px-4 py-3 font-medium">Slug</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <th className="px-4 py-3 font-medium">Статус</th>
+                  <th className="px-4 py-3 text-right font-medium">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y">
@@ -142,7 +142,7 @@ export function TopicsSection(): React.JSX.Element {
                     <td className="text-text-muted px-4 py-3">{topic.slug}</td>
                     <td className="px-4 py-3">
                       <Badge tone={topic.isPublished ? 'success' : 'neutral'}>
-                        {topic.isPublished ? 'Published' : 'Draft'}
+                        {topic.isPublished ? 'Опубліковано' : 'Чернетка'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
@@ -155,10 +155,10 @@ export function TopicsSection(): React.JSX.Element {
                             setFormOpen(true);
                           }}
                         >
-                          Edit
+                          Редагувати
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeleting(topic)}>
-                          Delete
+                          Видалити
                         </Button>
                       </div>
                     </td>
@@ -180,9 +180,9 @@ export function TopicsSection(): React.JSX.Element {
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete topic?"
-        description={deleting ? `“${deleting.name}” will be removed. This is a soft delete.` : ''}
-        confirmLabel="Delete"
+        title="Видалити тему?"
+        description={deleting ? `«${deleting.name}» буде прибрано. Це мʼяке видалення.` : ''}
+        confirmLabel="Видалити"
         confirmVariant="danger"
         isLoading={deleteTopic.isPending}
         onConfirm={confirmDelete}

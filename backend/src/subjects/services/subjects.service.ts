@@ -20,7 +20,7 @@ import { PublicSubject } from '../types/public-subject.type';
 /** The default locale lives on the Subject row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
 
-const SUBJECT_NOT_FOUND_MESSAGE = 'Subject not found.';
+const SUBJECT_NOT_FOUND_MESSAGE = 'Предмет не знайдено.';
 const NAME_CONFLICT_MESSAGE = 'A subject with this name already exists.';
 const SLUG_CONFLICT_MESSAGE = 'A subject with this slug already exists.';
 const DISPLAY_ORDER_CONFLICT_MESSAGE =
@@ -28,7 +28,7 @@ const DISPLAY_ORDER_CONFLICT_MESSAGE =
 const DEFAULT_LOCALE_MESSAGE =
   'locale must be a non-default locale; update the subject itself for English content.';
 const LOCALIZED_FIELDS_MESSAGE =
-  'Only name and description can be provided together with locale.';
+  'Разом із locale можна передавати лише name та description.';
 const TRANSLATION_NAME_REQUIRED_MESSAGE =
   'name is required when creating a new translation.';
 

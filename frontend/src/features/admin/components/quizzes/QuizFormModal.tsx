@@ -26,8 +26,8 @@ interface QuizFormModalProps {
 const FORM_ID = 'quiz-form';
 const FIELD_MAP = { title: 'title', questioncount: 'questionCount' } as const;
 const MODE_OPTIONS: SelectOption[] = [
-  { value: QuizType.SUBJECT_QUIZ, label: 'Subject quiz' },
-  { value: QuizType.RANDOM_QUIZ, label: 'Random quiz' },
+  { value: QuizType.SUBJECT_QUIZ, label: 'Тест з предмета' },
+  { value: QuizType.RANDOM_QUIZ, label: 'Випадковий тест' },
 ];
 
 function toDefaults(quiz: QuizRecord | undefined): QuizFormValues {
@@ -82,11 +82,11 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
   }, [subjectId, setValue]);
 
   const subjectOptions: SelectOption[] = [
-    { value: '', label: 'Select a subject…' },
+    { value: '', label: 'Оберіть предмет…' },
     ...subjects.map((s) => ({ value: s.id, label: s.name })),
   ];
   const topicOptions: SelectOption[] = topics.isPending
-    ? [{ value: '', label: 'Loading topics…' }]
+    ? [{ value: '', label: 'Завантаження тем…' }]
     : [
         { value: '', label: 'No topic (whole subject)' },
         ...(topics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
@@ -109,7 +109,7 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
         },
         {
           onSuccess: () => {
-            toast.success('Quiz updated.');
+            toast.success('Тест оновлено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -129,7 +129,7 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
         },
         {
           onSuccess: () => {
-            toast.success('Quiz created.');
+            toast.success('Тест створено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -141,16 +141,16 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Edit quiz' : 'New quiz'}
+      title={isEdit ? 'Редагування тесту' : 'Новий тест'}
       onClose={onClose}
       busy={pending}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={pending}>
-            Cancel
+            Скасувати
           </Button>
           <Button type="submit" form={FORM_ID} isLoading={pending}>
-            {isEdit ? 'Save changes' : 'Create quiz'}
+            {isEdit ? 'Зберегти зміни' : 'Створити тест'}
           </Button>
         </>
       }
@@ -158,7 +158,7 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
       <form id={FORM_ID} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Select
-          label="Subject"
+          label="Предмет"
           options={subjectOptions}
           disabled={isEdit}
           helperText={isEdit ? "A quiz's subject cannot be changed." : undefined}
@@ -166,17 +166,17 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
           {...register('subjectId')}
         />
         <Select
-          label="Topic (optional)"
+          label="Тема (необовʼязково)"
           options={topicOptions}
           disabled={!subjectId || topics.isPending}
           {...register('topicId')}
         />
-        <Input label="Title" error={errors.title?.message} {...register('title')} />
-        <Textarea label="Description" error={errors.description?.message} {...register('description')} />
+        <Input label="Назва" error={errors.title?.message} {...register('title')} />
+        <Textarea label="Опис" error={errors.description?.message} {...register('description')} />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select label="Mode" options={MODE_OPTIONS} error={errors.mode?.message} {...register('mode')} />
+          <Select label="Режим" options={MODE_OPTIONS} error={errors.mode?.message} {...register('mode')} />
           <Input
-            label="Question count"
+            label="Кількість питань"
             type="number"
             min={1}
             max={50}
@@ -184,8 +184,8 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
             {...register('questionCount')}
           />
         </div>
-        <Checkbox label="Enable timer" {...register('timerEnabled')} />
-        <Checkbox label="Published" {...register('isPublished')} />
+        <Checkbox label="Увімкнути таймер" {...register('timerEnabled')} />
+        <Checkbox label="Опубліковано" {...register('isPublished')} />
       </form>
     </Modal>
   );

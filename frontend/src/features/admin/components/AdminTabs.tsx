@@ -6,10 +6,10 @@ interface AdminTabsProps {
 }
 
 const TABS: { id: AdminTabId; label: string }[] = [
-  { id: 'subjects', label: 'Subjects' },
-  { id: 'topics', label: 'Topics' },
-  { id: 'questions', label: 'Questions' },
-  { id: 'quizzes', label: 'Quizzes' },
+  { id: 'subjects', label: 'Предмети' },
+  { id: 'topics', label: 'Теми' },
+  { id: 'questions', label: 'Питання' },
+  { id: 'quizzes', label: 'Тести' },
 ];
 
 /** In-page tab navigation for the admin panel (no route changes — local state). */
@@ -17,7 +17,7 @@ export function AdminTabs({ active, onChange }: AdminTabsProps): React.JSX.Eleme
   return (
     <div
       role="tablist"
-      aria-label="Admin sections"
+      aria-label="Розділи адміністрування"
       className="border-border flex gap-1 overflow-x-auto border-b"
     >
       {TABS.map((tab) => {

@@ -32,11 +32,11 @@ export function QuizResultPage(): React.JSX.Element {
       <div className="mx-auto max-w-2xl">
         <Card>
           <EmptyState
-            title="Result unavailable"
+            title="Результат недоступний"
             description={
               notCompleted
-                ? "This quiz hasn't been completed yet, so there's no result to show."
-                : "We couldn't find a result for this quiz."
+                ? 'Цей тест ще не завершено, тож результату немає.'
+                : 'Не вдалося знайти результат цього тесту.'
             }
             action={
               notCompleted ? (
@@ -45,11 +45,11 @@ export function QuizResultPage(): React.JSX.Element {
                   size="sm"
                   onClick={() => navigate(generatePath(ROUTES.quizSession, { sessionId }))}
                 >
-                  Resume quiz
+                  Продовжити тест
                 </Button>
               ) : (
                 <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                  Back to quizzes
+                  До тестів
                 </Button>
               )
             }
@@ -71,12 +71,12 @@ export function QuizResultPage(): React.JSX.Element {
       </motion.div>
 
       <motion.div variants={fadeInUp} className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Button onClick={() => navigate(ROUTES.quiz)}>Try again</Button>
+        <Button onClick={() => navigate(ROUTES.quiz)}>Спробувати ще раз</Button>
         <Button variant="secondary" onClick={() => navigate(ROUTES.dashboard)}>
-          Back to dashboard
+          На головну
         </Button>
         <Button variant="ghost" onClick={() => navigate(ROUTES.statistics)}>
-          Statistics
+          Статистика
         </Button>
       </motion.div>
 

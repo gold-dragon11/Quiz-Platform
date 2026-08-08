@@ -76,8 +76,8 @@ export function SubjectsBrowserPage(): React.JSX.Element {
       <motion.div variants={fadeInUp}>
         <Input
           type="search"
-          aria-label="Search subjects and topics"
-          placeholder="Search subjects and topics…"
+          aria-label="Пошук предметів і тем"
+          placeholder="Пошук предметів і тем…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -93,8 +93,8 @@ export function SubjectsBrowserPage(): React.JSX.Element {
         ) : subjectList.length === 0 ? (
           <Card>
             <EmptyState
-              title="No subjects yet"
-              description="There are no published subjects to explore yet. Please check back later."
+              title="Предметів поки немає"
+              description="Опублікованих предметів поки немає. Зазирніть трохи згодом."
             />
           </Card>
         ) : (
@@ -103,11 +103,11 @@ export function SubjectsBrowserPage(): React.JSX.Element {
               {filtered.length === 0 ? (
                 <Card>
                   <EmptyState
-                    title="No results"
-                    description={`Nothing matches “${query.trim()}”. Try a different search.`}
+                    title="Нічого не знайдено"
+                    description={`За запитом «${query.trim()}» нічого не знайдено. Спробуйте інший.`}
                     action={
                       <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
-                        Clear search
+                        Очистити пошук
                       </Button>
                     }
                   />

@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
-import { useTranslation } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Logo } from '@/features/landing/components/Logo';
 import { HeroBackdrop } from '@/features/landing/components/HeroBackdrop';
@@ -18,7 +17,6 @@ import { HeroBackdrop } from '@/features/landing/components/HeroBackdrop';
  */
 export function HeroSection(): React.JSX.Element {
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   return (
     <section className="relative flex min-h-screen flex-col overflow-hidden">
@@ -34,27 +32,30 @@ export function HeroSection(): React.JSX.Element {
           <Logo size="lg" />
         </motion.div>
 
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 sm:gap-7 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center sm:gap-7">
           <motion.h1
             variants={fadeInUp}
             className="text-text-primary text-[clamp(2.5rem,5.8vw,5.5rem)] leading-[1.06] font-extrabold tracking-[-0.03em] [word-spacing:0.28em] sm:whitespace-nowrap"
           >
-            {t('landing.hero.headline')}
+            Вчись Прогресуй Повторюй
           </motion.h1>
 
           <motion.p
             variants={fadeInUp}
             className="text-text-secondary max-w-4xl text-lg leading-relaxed text-balance sm:text-xl md:text-2xl lg:text-[1.75rem]"
           >
-            {t('landing.hero.subheadline')}
+            {/* The space before the em dash is non-breaking (U+00A0): Ukrainian
+                typography never starts a line with a dash. */}
+            Спокійний і зосереджений спосіб опанувати будь-який предмет — тренуйся на тестах, стеж за
+            прогресом і підвищуй рівень.
           </motion.p>
 
           <motion.div variants={fadeInUp} className="mt-3 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Button size="xl" onClick={() => navigate(ROUTES.register)}>
-              {t('landing.hero.cta.primary')}
+              Зареєструватись
             </Button>
             <Button size="xl" variant="secondary" onClick={() => navigate(ROUTES.login)}>
-              {t('landing.hero.cta.secondary')}
+              Увійти
             </Button>
           </motion.div>
         </div>

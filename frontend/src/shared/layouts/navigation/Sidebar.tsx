@@ -65,7 +65,7 @@ export function Sidebar({
             onClick={() => void logout()}
             className="justify-start"
           >
-            Log out
+            Вийти
           </Button>
         </div>
       </div>

@@ -18,7 +18,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps):
       </span>
       <div className="flex gap-2">
         <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
-          Previous
+          Назад
         </Button>
         <Button
           variant="secondary"
@@ -26,7 +26,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps):
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
         >
-          Next
+          Далі
         </Button>
       </div>
     </div>

@@ -6,10 +6,10 @@
 export function SubjectsHero(): React.JSX.Element {
   return (
     <header className="flex flex-col gap-2">
-      <h1 className="text-text-primary text-3xl font-semibold">Subjects</h1>
+      <h1 className="text-text-primary text-3xl font-semibold">Предмети</h1>
       <p className="text-text-muted max-w-2xl">
-        Browse everything there is to learn. Pick a subject to see its topics, then start a quiz on the whole
-        subject or a single topic.
+        Перегляньте все, що можна вивчати. Оберіть предмет, щоб побачити його теми, а тоді почніть тест з
+        усього предмета або з окремої теми.
       </p>
     </header>
   );

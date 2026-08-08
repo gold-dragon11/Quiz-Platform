@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 interface SectionHeaderProps {
   title: string;
   description?: string;
-  /** Optional trailing control, e.g. a "View all" link. */
+  /** Optional trailing control, e.g. a "Переглянути всі" link. */
   action?: ReactNode;
   className?: string;
 }

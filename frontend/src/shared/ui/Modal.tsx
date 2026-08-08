@@ -80,7 +80,7 @@ export function Modal({
               <button
                 type="button"
                 onClick={() => !busy && onClose()}
-                aria-label="Close"
+                aria-label="Закрити"
                 className="text-text-muted hover:text-text-primary rounded p-1 outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 ✕

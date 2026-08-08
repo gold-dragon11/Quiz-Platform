@@ -20,11 +20,11 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>((p
     <button
       type="button"
       onClick={() => setVisible((v) => !v)}
-      aria-label={visible ? 'Hide password' : 'Show password'}
+      aria-label={visible ? 'Сховати пароль' : 'Показати пароль'}
       aria-pressed={visible}
       className="text-text-muted hover:text-text-secondary rounded px-2 py-1 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      {visible ? 'Hide' : 'Show'}
+      {visible ? 'Сховати' : 'Показати'}
     </button>
   );
 

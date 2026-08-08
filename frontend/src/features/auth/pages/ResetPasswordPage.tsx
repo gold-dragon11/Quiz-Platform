@@ -2,7 +2,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { PasswordInput } from '@/shared/ui/PasswordInput';
@@ -15,15 +14,14 @@ import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
  * `/reset-password?token=…` (guest-only). Sets a new password with the token
  * from the emailed link (docs/04-api/authentication.md §10). A missing token
  * short-circuits to an invalid-link state. Every token failure returns the
- * same generic 400 ("Invalid or expired reset token."), which we surface as a
- * form-level error with a path back to requesting a fresh link. The new
- * password must satisfy the registration policy (§12).
+ * same generic 400, which we surface as a form-level error with a path back to
+ * requesting a fresh link. The new password must satisfy the registration
+ * policy (§12).
  */
 export function ResetPasswordPage(): React.JSX.Element {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const resetPassword = useResetPassword();
-  const { t } = useTranslation();
 
   const {
     register,
@@ -52,14 +50,16 @@ export function ResetPasswordPage(): React.JSX.Element {
   if (!token) {
     return (
       <AuthCard
-        title={t('auth.reset.invalid.title')}
+        title="Недійсне посилання"
         footer={
           <Link to={ROUTES.forgotPassword} className="text-primary hover:text-primary-hover">
-            {t('auth.reset.invalid.request')}
+            Запросити нове посилання
           </Link>
         }
       >
-        <Alert variant="error">{t('auth.reset.invalid.alert')}</Alert>
+        <Alert variant="error">
+          У цьому посиланні для зміни пароля бракує токена або воно пошкоджене. Будь ласка, запросіть нове.
+        </Alert>
       </AuthCard>
     );
   }
@@ -67,45 +67,47 @@ export function ResetPasswordPage(): React.JSX.Element {
   if (resetPassword.isSuccess && isSubmitSuccessful) {
     return (
       <AuthCard
-        title={t('auth.reset.done.title')}
+        title="Пароль змінено"
         footer={
           <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            {t('auth.forgot.backToLogin')}
+            Повернутися до входу
           </Link>
         }
       >
-        <Alert variant="success">{t('auth.reset.done.alert')}</Alert>
+        <Alert variant="success">
+          Ваш пароль змінено, а всі активні сеанси завершено. Увійдіть з новим паролем.
+        </Alert>
       </AuthCard>
     );
   }
 
   return (
     <AuthCard
-      title={t('auth.reset.title')}
-      subtitle={t('auth.reset.subtitle')}
+      title="Новий пароль"
+      subtitle="Оберіть надійний пароль, який не використовуєте деінде."
       footer={
         <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-          {t('auth.forgot.backToLogin')}
+          Повернутися до входу
         </Link>
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <PasswordInput
-          label={t('auth.reset.newPassword')}
+          label="Новий пароль"
           autoComplete="new-password"
-          helperText={t('auth.field.passwordHint')}
+          helperText="Щонайменше 8 символів: велика й мала літери, цифра та спеціальний символ."
           error={errors.newPassword?.message}
           {...register('newPassword')}
         />
         <PasswordInput
-          label={t('auth.reset.confirmPassword')}
+          label="Підтвердіть новий пароль"
           autoComplete="new-password"
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
         <Button type="submit" fullWidth isLoading={resetPassword.isPending}>
-          {t('auth.reset.submit')}
+          Змінити пароль
         </Button>
       </form>
     </AuthCard>

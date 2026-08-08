@@ -63,33 +63,33 @@ const icons = {
 
 /** Full navigation (sidebar + slide-out menu). Admin is filtered by role. */
 export const NAV_ITEMS: NavItem[] = [
-  { to: ROUTES.dashboard, label: 'Dashboard', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Quiz', icon: icons.quiz },
-  { to: ROUTES.subjects, label: 'Subjects', icon: icons.subjects },
-  { to: ROUTES.statistics, label: 'Statistics', icon: icons.statistics },
-  { to: ROUTES.profile, label: 'Profile', icon: icons.profile },
-  { to: ROUTES.settings, label: 'Settings', icon: icons.settings },
-  { to: ROUTES.admin, label: 'Admin', icon: icons.admin, adminOnly: true },
+  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
+  { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
+  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
+  { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
+  { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
+  { to: ROUTES.admin, label: 'Адміністрування', icon: icons.admin, adminOnly: true },
 ];
 
 /** Condensed navigation for the mobile bottom bar (no admin/settings). */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { to: ROUTES.dashboard, label: 'Dashboard', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Quiz', icon: icons.quiz },
-  { to: ROUTES.subjects, label: 'Subjects', icon: icons.subjects },
-  { to: ROUTES.statistics, label: 'Statistics', icon: icons.statistics },
-  { to: ROUTES.profile, label: 'Profile', icon: icons.profile },
+  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
+  { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
+  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
+  { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
 ];
 
 /** Resolves the current page title from a pathname (for the header). */
 export function getPageTitle(pathname: string): string {
-  if (pathname.startsWith('/dashboard')) return 'Dashboard';
-  if (pathname.startsWith('/subjects')) return 'Subjects';
-  if (pathname.startsWith('/quiz')) return 'Quiz';
-  if (pathname.startsWith('/statistics')) return 'Statistics';
-  if (pathname.startsWith('/profile')) return 'Profile';
-  if (pathname.startsWith('/settings')) return 'Settings';
-  if (pathname.startsWith('/admin')) return 'Admin';
+  if (pathname.startsWith('/dashboard')) return 'Головна';
+  if (pathname.startsWith('/subjects')) return 'Предмети';
+  if (pathname.startsWith('/quiz')) return 'Тест';
+  if (pathname.startsWith('/statistics')) return 'Статистика';
+  if (pathname.startsWith('/profile')) return 'Профіль';
+  if (pathname.startsWith('/settings')) return 'Налаштування';
+  if (pathname.startsWith('/admin')) return 'Адміністрування';
   return 'L&S';
 }
 

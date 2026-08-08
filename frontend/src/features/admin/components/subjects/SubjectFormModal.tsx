@@ -73,7 +73,7 @@ export function SubjectFormModal({ open, subject, onClose }: SubjectFormModalPro
         },
         {
           onSuccess: () => {
-            toast.success('Subject updated.');
+            toast.success('Предмет оновлено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -90,7 +90,7 @@ export function SubjectFormModal({ open, subject, onClose }: SubjectFormModalPro
         },
         {
           onSuccess: () => {
-            toast.success('Subject created.');
+            toast.success('Предмет створено.');
             onClose();
           },
           onError: (error) => applyApiErrorToForm(error, setError, FIELD_MAP),
@@ -102,38 +102,38 @@ export function SubjectFormModal({ open, subject, onClose }: SubjectFormModalPro
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Edit subject' : 'New subject'}
+      title={isEdit ? 'Редагування предмета' : 'Новий предмет'}
       onClose={onClose}
       busy={pending}
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={pending}>
-            Cancel
+            Скасувати
           </Button>
           <Button type="submit" form={FORM_ID} isLoading={pending}>
-            {isEdit ? 'Save changes' : 'Create subject'}
+            {isEdit ? 'Зберегти зміни' : 'Створити предмет'}
           </Button>
         </>
       }
     >
       <form id={FORM_ID} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
-        <Input label="Name" error={errors.name?.message} {...register('name')} />
+        <Input label="Назва" error={errors.name?.message} {...register('name')} />
         <Input
           label="Slug"
-          helperText="Lowercase letters, numbers, and single hyphens."
+          helperText="Малі латинські літери, цифри та одиничні дефіси."
           error={errors.slug?.message}
           {...register('slug')}
         />
-        <Textarea label="Description" error={errors.description?.message} {...register('description')} />
+        <Textarea label="Опис" error={errors.description?.message} {...register('description')} />
         <Input
-          label="Icon"
-          helperText="Optional — an emoji or icon name."
+          label="Іконка"
+          helperText="Необовʼязково — емодзі або назва іконки."
           error={errors.icon?.message}
           {...register('icon')}
         />
-        <Input label="Color" placeholder="#RRGGBB" error={errors.color?.message} {...register('color')} />
-        {isEdit && <Checkbox label="Published" {...register('isPublished')} />}
+        <Input label="Колір" placeholder="#RRGGBB" error={errors.color?.message} {...register('color')} />
+        {isEdit && <Checkbox label="Опубліковано" {...register('isPublished')} />}
       </form>
     </Modal>
   );

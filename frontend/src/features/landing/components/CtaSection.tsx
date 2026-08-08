@@ -2,7 +2,6 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp } from '@/shared/constants/motion';
-import { useTranslation } from '@/shared/i18n';
 import { Button } from '@/shared/ui/Button';
 import { Card } from '@/shared/ui/Card';
 import { REVEAL_VIEWPORT, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
@@ -10,7 +9,6 @@ import { REVEAL_VIEWPORT, SECTION_CONTAINER, SECTION_SPACING } from '@/features/
 /** CTA (§6): a large centered card inviting sign-up. */
 export function CtaSection(): React.JSX.Element {
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   return (
     <section className={`${SECTION_CONTAINER} ${SECTION_SPACING}`}>
@@ -22,13 +20,13 @@ export function CtaSection(): React.JSX.Element {
           />
           <div className="relative flex flex-col items-center gap-6 px-4 py-20 text-center">
             <h2 className="text-text-primary max-w-3xl text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-              {t('landing.cta.title')}
+              Почни навчатися вже за хвилину
             </h2>
             <p className="text-text-secondary max-w-2xl text-lg text-balance sm:text-xl">
-              {t('landing.cta.description')}
+              Створи безкоштовний акаунт і пройди свій перший тест сьогодні.
             </p>
             <Button size="xl" className="mt-2" onClick={() => navigate(ROUTES.register)}>
-              {t('landing.cta.button')}
+              Створити акаунт
             </Button>
           </div>
         </Card>

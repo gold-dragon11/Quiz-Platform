@@ -25,9 +25,9 @@ export function WelcomeHero(): React.JSX.Element {
   return (
     <Card className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
-        <Avatar size="lg" imageUrl={user?.avatar?.imageUrl} fallback={initial} alt="Your avatar" />
+        <Avatar size="lg" imageUrl={user?.avatar?.imageUrl} fallback={initial} alt="Ваш аватар" />
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-text-primary truncate text-2xl font-semibold">Welcome back, {displayName}.</h1>
+          <h1 className="text-text-primary truncate text-2xl font-semibold">З поверненням, {displayName}.</h1>
           {username && <p className="text-text-muted truncate text-sm">@{username}</p>}
         </div>
       </div>
@@ -42,7 +42,7 @@ export function WelcomeHero(): React.JSX.Element {
           <Skeleton className="h-4 w-40" />
         </div>
       ) : overall.isError ? (
-        <SectionError message="We couldn't load your progress." onRetry={() => void overall.refetch()} />
+        <SectionError message="Не вдалося завантажити ваш прогрес." onRetry={() => void overall.refetch()} />
       ) : (
         <ProgressBlock
           currentLevel={overall.data.currentLevel}
@@ -73,14 +73,14 @@ function ProgressBlock({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-4">
-        <Badge tone="info">Level {currentLevel}</Badge>
+        <Badge tone="info">Рівень {currentLevel}</Badge>
         <span className="text-text-secondary text-sm font-medium">{formatNumber(totalXP)} XP</span>
       </div>
-      <ProgressBar value={completionPercent} label={`Progress to level ${currentLevel + 1}`} />
+      <ProgressBar value={completionPercent} label={`Прогрес до рівня ${currentLevel + 1}`} />
       <p className="text-text-muted text-sm">
         {xpToNext > 0
-          ? `${formatNumber(xpToNext)} XP to Level ${currentLevel + 1}`
-          : `You're ready for Level ${currentLevel + 1}!`}
+          ? `${formatNumber(xpToNext)} XP до рівня ${currentLevel + 1}`
+          : `Ви готові до рівня ${currentLevel + 1}!`}
       </p>
     </div>
   );

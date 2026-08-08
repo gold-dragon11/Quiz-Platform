@@ -28,7 +28,7 @@ export function TopHeader({
         <button
           type="button"
           onClick={onOpenMenu}
-          aria-label="Open menu"
+          aria-label="Відкрити меню"
           className="text-text-secondary hover:text-text-primary rounded-lg p-1 outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
         >
           <svg
@@ -54,14 +54,14 @@ export function TopHeader({
             readOnly
             tabIndex={-1}
             aria-hidden="true"
-            placeholder="Search…"
+            placeholder="Пошук…"
             className="bg-surface border-border text-text-muted placeholder:text-text-muted hidden h-9 w-48 cursor-default rounded-lg border px-3 text-sm outline-none md:block"
           />
 
           {/* Visual-only notifications */}
           <button
             type="button"
-            aria-label="Notifications"
+            aria-label="Сповіщення"
             className="text-text-secondary hover:text-text-primary relative rounded-lg p-2 outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <svg

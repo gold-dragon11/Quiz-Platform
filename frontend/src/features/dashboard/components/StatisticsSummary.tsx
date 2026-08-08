@@ -16,7 +16,7 @@ export function StatisticsSummary(): React.JSX.Element {
 
   return (
     <section>
-      <SectionHeader title="Your stats" description="A snapshot of your learning so far." />
+      <SectionHeader title="Ваша статистика" description="Короткий зріз вашого навчання." />
       {overall.isPending ? (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -29,10 +29,14 @@ export function StatisticsSummary(): React.JSX.Element {
         </Card>
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Quizzes" value={formatNumber(overall.data.completedQuizzes)} hint="Completed" />
-          <StatCard label="Questions" value={formatNumber(overall.data.totalQuestions)} hint="Answered" />
-          <StatCard label="Accuracy" value={formatPercent(overall.data.averageAccuracy)} hint="Average" />
-          <StatCard label="Study time" value={formatDuration(overall.data.totalStudyTime)} hint="Total" />
+          <StatCard label="Тести" value={formatNumber(overall.data.completedQuizzes)} hint="Пройдено" />
+          <StatCard
+            label="Питання"
+            value={formatNumber(overall.data.totalQuestions)}
+            hint="Отримано відповідей"
+          />
+          <StatCard label="Точність" value={formatPercent(overall.data.averageAccuracy)} hint="Середня" />
+          <StatCard label="Час навчання" value={formatDuration(overall.data.totalStudyTime)} hint="Усього" />
         </div>
       )}
     </section>

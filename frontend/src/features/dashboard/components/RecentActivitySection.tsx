@@ -21,7 +21,7 @@ export function RecentActivitySection(): React.JSX.Element {
 
   return (
     <section>
-      <SectionHeader title="Recent activity" description="Your latest completed quizzes." />
+      <SectionHeader title="Остання активність" description="Ваші останні пройдені тести." />
       <div className="bg-surface border-border overflow-hidden rounded-xl border shadow-lg">
         {recent.isPending ? (
           <ul className="divide-border divide-y">
@@ -39,11 +39,11 @@ export function RecentActivitySection(): React.JSX.Element {
           <SectionError onRetry={() => void recent.refetch()} />
         ) : recent.data.items.length === 0 ? (
           <EmptyState
-            title="No completed quizzes yet"
-            description="Complete your first quiz to begin tracking your progress."
+            title="Пройдених тестів поки немає"
+            description="Пройдіть перший тест, щоб почати стежити за прогресом."
             action={
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Start a quiz
+                Почати тест
               </Button>
             }
           />

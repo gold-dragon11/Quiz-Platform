@@ -8,10 +8,10 @@ import { z } from 'zod';
  * one-active-session and sufficient-questions rules, surfaced verbatim.
  */
 export const startQuizSchema = z.object({
-  subjectId: z.string().min(1, 'Please choose a subject'),
+  subjectId: z.string().min(1, 'Оберіть предмет'),
   // Empty string means "all topics" — normalized away before submit.
   topicId: z.string(),
-  questionCount: z.coerce.number().int().min(1, 'Choose a question count').max(50, 'At most 50 questions'),
+  questionCount: z.coerce.number().int().min(1, 'Оберіть кількість питань').max(50, 'At most 50 questions'),
   timerEnabled: z.boolean(),
 });
 

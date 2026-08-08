@@ -19,10 +19,8 @@ export function AdminPanelPage(): React.JSX.Element {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8">
       <header className="flex flex-col gap-2">
-        <h1 className="text-text-primary text-3xl font-semibold">Admin panel</h1>
-        <p className="text-text-muted">
-          Manage the content catalog — subjects, topics, questions, and quizzes.
-        </p>
+        <h1 className="text-text-primary text-3xl font-semibold">Адміністрування</h1>
+        <p className="text-text-muted">Керування каталогом контенту — предмети, теми, питання та тести.</p>
       </header>
 
       <AdminTabs active={tab} onChange={setTab} />

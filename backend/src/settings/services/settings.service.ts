@@ -9,7 +9,7 @@ import {
 /** Fallback when no preference exists (docs/04-api/questions.md §4). */
 const DEFAULT_LANGUAGE = Language.ENGLISH;
 
-const SETTINGS_NOT_FOUND_MESSAGE = 'Settings not found.';
+const SETTINGS_NOT_FOUND_MESSAGE = 'Налаштування не знайдено.';
 
 /**
  * Settings module service (docs/06-backend/architecture.md §6). Owns locale

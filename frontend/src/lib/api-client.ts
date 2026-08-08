@@ -138,13 +138,13 @@ export function normalizeApiError(error: unknown): ApiError {
     const status = error.response?.status ?? 0;
     const data = error.response?.data as { message?: string | string[] } | undefined;
 
-    let message = 'Something went wrong. Please try again.';
+    let message = 'Щось пішло не так. Спробуйте ще раз.';
     if (typeof data?.message === 'string') {
       message = data.message;
     } else if (Array.isArray(data?.message) && data.message.length > 0) {
       message = data.message[0];
     } else if (status === 0) {
-      message = 'Network error. Please check your connection.';
+      message = 'Помилка мережі. Перевірте зʼєднання.';
     }
 
     return {
@@ -154,7 +154,7 @@ export function normalizeApiError(error: unknown): ApiError {
     };
   }
 
-  return { status: 0, message: 'An unexpected error occurred.' };
+  return { status: 0, message: 'Сталася несподівана помилка.' };
 }
 
 /**

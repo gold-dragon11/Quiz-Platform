@@ -55,7 +55,7 @@ export function SubjectCard({
         ) : topicCount !== null ? (
           `${topicCount} ${topicCount === 1 ? 'topic' : 'topics'}`
         ) : (
-          'Topics unavailable'
+          'Теми недоступні'
         )}
       </div>
     </motion.button>

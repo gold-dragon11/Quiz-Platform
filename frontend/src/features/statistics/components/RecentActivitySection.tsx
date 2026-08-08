@@ -8,7 +8,7 @@ import { SectionError } from '@/features/statistics/components/SectionError';
 import type { RecentActivityItem } from '@/features/statistics/types/statistics.types';
 
 /**
- * Recent activity (docs/01-prd/dashboard.md §8, docs/04-api/statistics.md §8):
+ * Остання активність (docs/01-prd/dashboard.md §8, docs/04-api/statistics.md §8):
  * the newest completed sessions, already newest-first from the backend. Shows
  * an encouraging empty state for users with no completed quizzes yet.
  */
@@ -17,7 +17,7 @@ export function RecentActivitySection(): React.JSX.Element {
 
   return (
     <section>
-      <SectionHeader title="Recent activity" description="Your latest completed quizzes." />
+      <SectionHeader title="Остання активність" description="Ваші останні пройдені тести." />
       <div className="bg-surface border-border overflow-hidden rounded-xl border shadow-lg">
         {recent.isPending ? (
           <ul className="divide-border divide-y">
@@ -35,8 +35,8 @@ export function RecentActivitySection(): React.JSX.Element {
           <SectionError onRetry={() => void recent.refetch()} />
         ) : recent.data.items.length === 0 ? (
           <EmptyState
-            title="No activity yet"
-            description="Completed quizzes will show up here, newest first."
+            title="Активності поки немає"
+            description="Пройдені тести зʼявляться тут, найновіші згори."
           />
         ) : (
           <ul className="divide-border divide-y">

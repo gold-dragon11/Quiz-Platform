@@ -48,12 +48,12 @@ export function SubjectsSection(): React.JSX.Element {
     }
     deleteSubject.mutate(deleting.id, {
       onSuccess: () => {
-        toast.success('Subject deleted.');
+        toast.success('Предмет видалено.');
         setDeleting(null);
       },
       onError: (error) => {
         setDeleting(null);
-        toast.error(isApiError(error) ? error.message : 'Could not delete the subject.');
+        toast.error(isApiError(error) ? error.message : 'Не вдалося видалити предмет.');
       },
     });
   };
@@ -64,8 +64,8 @@ export function SubjectsSection(): React.JSX.Element {
         <div className="sm:max-w-xs sm:flex-1">
           <Input
             type="search"
-            aria-label="Search subjects"
-            placeholder="Search subjects…"
+            aria-label="Пошук предметів"
+            placeholder="Пошук предметів…"
             value={searchInput}
             onChange={(e) => {
               setSearchInput(e.target.value);
@@ -73,7 +73,7 @@ export function SubjectsSection(): React.JSX.Element {
             }}
           />
         </div>
-        <Button onClick={openCreate}>New subject</Button>
+        <Button onClick={openCreate}>Новий предмет</Button>
       </div>
 
       {list.isPending ? (
@@ -82,14 +82,14 @@ export function SubjectsSection(): React.JSX.Element {
         <SectionError onRetry={() => void list.refetch()} />
       ) : list.data.items.length === 0 ? (
         <EmptyState
-          title={search ? 'No matches' : 'No subjects yet'}
+          title={search ? 'Нічого не знайдено' : 'Предметів поки немає'}
           description={
-            search ? 'No subjects match your search.' : 'Create your first subject to get started.'
+            search ? 'Жоден предмет не відповідає запиту.' : 'Створіть перший предмет, щоб почати.'
           }
           action={
             !search && (
               <Button size="sm" onClick={openCreate}>
-                New subject
+                Новий предмет
               </Button>
             )
           }
@@ -100,10 +100,10 @@ export function SubjectsSection(): React.JSX.Element {
             <table className="w-full min-w-[36rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Name</th>
+                  <th className="px-4 py-3 font-medium">Назва</th>
                   <th className="px-4 py-3 font-medium">Slug</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Actions</th>
+                  <th className="px-4 py-3 font-medium">Статус</th>
+                  <th className="px-4 py-3 text-right font-medium">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-border divide-y">
@@ -113,16 +113,16 @@ export function SubjectsSection(): React.JSX.Element {
                     <td className="text-text-muted px-4 py-3">{subject.slug}</td>
                     <td className="px-4 py-3">
                       <Badge tone={subject.isPublished ? 'success' : 'neutral'}>
-                        {subject.isPublished ? 'Published' : 'Draft'}
+                        {subject.isPublished ? 'Опубліковано' : 'Чернетка'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(subject)}>
-                          Edit
+                          Редагувати
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setDeleting(subject)}>
-                          Delete
+                          Видалити
                         </Button>
                       </div>
                     </td>
@@ -139,13 +139,13 @@ export function SubjectsSection(): React.JSX.Element {
 
       <ConfirmDialog
         open={Boolean(deleting)}
-        title="Delete subject?"
+        title="Видалити предмет?"
         description={
           deleting
-            ? `“${deleting.name}” will be removed. This is a soft delete; its slug stays reserved.`
+            ? `«${deleting.name}» буде прибрано. Це мʼяке видалення — slug лишається зарезервованим.`
             : ''
         }
-        confirmLabel="Delete"
+        confirmLabel="Видалити"
         confirmVariant="danger"
         isLoading={deleteSubject.isPending}
         onConfirm={confirmDelete}

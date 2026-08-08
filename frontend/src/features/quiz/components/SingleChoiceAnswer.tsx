@@ -21,7 +21,7 @@ export function SingleChoiceAnswer({
   const ordered = [...options].sort((a, b) => a.order - b.order);
 
   return (
-    <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-3">
+    <div role="radiogroup" aria-label="Варіанти відповіді" className="flex flex-col gap-3">
       {ordered.map((option) => {
         const selected = option.id === selectedId;
         return (

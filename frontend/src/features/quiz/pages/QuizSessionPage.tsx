@@ -72,12 +72,12 @@ export function QuizSessionPage(): React.JSX.Element {
   const handleInactive = useCallback(
     (error: unknown) => {
       if (isApiError(error) && error.status === 404) {
-        toast.error('This quiz session could not be found.');
+        toast.error('Цю сесію тесту не знайдено.');
         navigate(ROUTES.quiz, { replace: true });
         return;
       }
       // 409 → the session is no longer active (completed or timed out).
-      toast.info('This quiz is no longer active.');
+      toast.info('Цей тест уже неактивний.');
       goToResult();
     },
     [navigate, goToResult],
@@ -131,19 +131,19 @@ export function QuizSessionPage(): React.JSX.Element {
         <Card>
           {notFound ? (
             <EmptyState
-              title="Quiz unavailable"
-              description="This quiz session doesn't exist or is no longer available."
+              title="Тест недоступний"
+              description="Такої сесії тесту не існує або вона більше недоступна."
               action={
                 <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                  Back to quizzes
+                  До тестів
                 </Button>
               }
             />
           ) : (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <p className="text-text-muted text-sm">We couldn&apos;t load this quiz session.</p>
+              <p className="text-text-muted text-sm">Не вдалося завантажити цю сесію тесту.</p>
               <Button variant="secondary" size="sm" onClick={() => void session.refetch()}>
-                Try again
+                Спробувати ще раз
               </Button>
             </div>
           )}
@@ -164,11 +164,11 @@ export function QuizSessionPage(): React.JSX.Element {
       <div className="mx-auto max-w-2xl">
         <Card>
           <EmptyState
-            title="No questions"
-            description="This quiz has no questions to show."
+            title="Питань немає"
+            description="У цьому тесті немає питань для показу."
             action={
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Back to quizzes
+                До тестів
               </Button>
             }
           />
@@ -214,30 +214,30 @@ export function QuizSessionPage(): React.JSX.Element {
 
       <div className="flex items-center justify-between gap-4">
         <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
-          Previous
+          Назад
         </Button>
 
         <SaveIndicator status={saveStatus} />
 
         {isLast ? (
           <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
-            Submit quiz
+            Завершити тест
           </Button>
         ) : (
-          <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Next</Button>
+          <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Далі</Button>
         )}
       </div>
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Submit your quiz?"
+        title="Завершити тест?"
         description={
           unanswered > 0
-            ? `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. Unanswered questions are marked incorrect. Submit anyway?`
-            : 'Your answers will be scored and cannot be changed afterwards.'
+            ? `Без відповіді лишилось питань: ${unanswered}. Вони будуть зараховані як неправильні. Все одно завершити?`
+            : 'Відповіді буде оцінено, і змінити їх уже не вийде.'
         }
-        confirmLabel="Submit quiz"
-        cancelLabel="Keep going"
+        confirmLabel="Завершити тест"
+        cancelLabel="Продовжити"
         isLoading={complete.isPending}
         onConfirm={handleComplete}
         onCancel={() => setConfirmOpen(false)}
@@ -253,14 +253,14 @@ function SaveIndicator({ status }: { status: SaveStatus }): React.JSX.Element | 
   if (status === 'saving') {
     return (
       <span className="text-text-muted flex items-center gap-2 text-xs">
-        <Spinner className="size-3" /> Saving…
+        <Spinner className="size-3" /> Збереження…
       </span>
     );
   }
   if (status === 'saved') {
-    return <span className="text-text-muted text-xs">Saved</span>;
+    return <span className="text-text-muted text-xs">Збережено</span>;
   }
-  return <span className="text-error text-xs">Save failed</span>;
+  return <span className="text-error text-xs">Не збережено</span>;
 }
 
 function SessionSkeleton(): React.JSX.Element {

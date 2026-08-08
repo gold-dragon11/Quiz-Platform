@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -13,7 +12,7 @@ import {
 import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 
 interface ResendVerificationFormProps {
-  /** Overrides the submit label; defaults to the translated resend wording. */
+  /** Overrides the submit label; defaults to the standard resend wording. */
   submitLabel?: string;
 }
 
@@ -27,7 +26,6 @@ interface ResendVerificationFormProps {
 export function ResendVerificationForm({ submitLabel }: ResendVerificationFormProps): React.JSX.Element {
   const resend = useResendVerification();
   const [submittedEmail, setSubmittedEmail] = useState<string | null>(null);
-  const { t } = useTranslation();
 
   const {
     register,
@@ -47,22 +45,26 @@ export function ResendVerificationForm({ submitLabel }: ResendVerificationFormPr
   });
 
   if (submittedEmail) {
-    return <Alert variant="success">{t('auth.resend.sent', { email: submittedEmail })}</Alert>;
+    return (
+      <Alert variant="success">
+        Якщо {submittedEmail} зареєстровано й адресу ще потрібно підтвердити, нове посилання вже в дорозі.
+      </Alert>
+    );
   }
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
       <Input
-        label={t('auth.field.email')}
+        label="Електронна пошта"
         type="email"
         autoComplete="email"
-        placeholder={t('auth.field.emailPlaceholder')}
+        placeholder="you@example.com"
         error={errors.email?.message}
         {...register('email')}
       />
       <Button type="submit" fullWidth isLoading={resend.isPending}>
-        {submitLabel ?? t('auth.resend.submit')}
+        {submitLabel ?? 'Надіслати лист повторно'}
       </Button>
     </form>
   );

@@ -14,11 +14,16 @@ const STATUS_TONE: Record<AccountStatus, BadgeTone> = {
   [AccountStatus.DELETED]: 'error',
 };
 
+/** Account statuses as the user sees them (docs/02-domain/user.md §4). */
+const STATUS_LABEL: Record<string, string> = {
+  ACTIVE: 'Активний',
+  PENDING_VERIFICATION: 'Очікує підтвердження',
+  SUSPENDED: 'Призупинений',
+  DELETED: 'Видалений',
+};
+
 function humanizeStatus(status: string): string {
-  return status
-    .split('_')
-    .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
-    .join(' ');
+  return STATUS_LABEL[status] ?? status;
 }
 
 function formatDate(iso: string): string {
@@ -26,7 +31,7 @@ function formatDate(iso: string): string {
   if (Number.isNaN(date.getTime())) {
     return iso;
   }
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString('uk-UA', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -49,12 +54,12 @@ export function ProfilePage(): React.JSX.Element {
   if (account.isError) {
     return (
       <div className="mx-auto flex max-w-2xl flex-col gap-4">
-        <Alert variant="error" title="Couldn't load your profile">
-          Something went wrong while loading your account. Please try again.
+        <Alert variant="error" title="Не вдалося завантажити профіль">
+          Під час завантаження акаунта сталася помилка. Спробуйте ще раз.
         </Alert>
         <div>
           <Button variant="secondary" onClick={() => void account.refetch()}>
-            Retry
+            Спробувати ще раз
           </Button>
         </div>
       </div>
@@ -65,7 +70,7 @@ export function ProfilePage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-text-primary mb-6 text-2xl font-semibold">Profile</h1>
+      <h1 className="text-text-primary mb-6 text-2xl font-semibold">Профіль</h1>
       <Card>
         <div className="flex items-center gap-4">
           <AccountAvatar imageUrl={avatar.data?.imageUrl} fallback={email.charAt(0)} />
@@ -77,27 +82,27 @@ export function ProfilePage(): React.JSX.Element {
 
         <dl className="border-border mt-6 flex flex-col gap-4 border-t pt-6">
           <div className="flex items-center justify-between gap-4">
-            <dt className="text-text-muted text-sm">Email</dt>
+            <dt className="text-text-muted text-sm">Електронна пошта</dt>
             <dd className="text-text-secondary text-sm">{email}</dd>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <dt className="text-text-muted text-sm">Account status</dt>
+            <dt className="text-text-muted text-sm">Статус акаунта</dt>
             <dd>
               <Badge tone={STATUS_TONE[accountStatus]}>{humanizeStatus(accountStatus)}</Badge>
             </dd>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <dt className="text-text-muted text-sm">Email verified</dt>
+            <dt className="text-text-muted text-sm">Пошту підтверджено</dt>
             <dd>
               {emailVerified ? (
-                <Badge tone="success">Verified</Badge>
+                <Badge tone="success">Підтверджено</Badge>
               ) : (
-                <Badge tone="warning">Not verified</Badge>
+                <Badge tone="warning">Не підтверджено</Badge>
               )}
             </dd>
           </div>
           <div className="flex items-center justify-between gap-4">
-            <dt className="text-text-muted text-sm">Member since</dt>
+            <dt className="text-text-muted text-sm">З нами з</dt>
             <dd className="text-text-secondary text-sm">{formatDate(createdAt)}</dd>
           </div>
         </dl>

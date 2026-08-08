@@ -106,7 +106,7 @@ export function QuizStartPage(): React.JSX.Element {
   });
 
   const subjectOptions: SelectOption[] = [
-    { value: '', label: 'Select a subject…' },
+    { value: '', label: 'Оберіть предмет…' },
     ...(subjects.data ?? []).map((subject) => ({
       value: subject.id,
       label: subject.name,
@@ -114,9 +114,9 @@ export function QuizStartPage(): React.JSX.Element {
   ];
 
   const topicOptions: SelectOption[] = topics.isPending
-    ? [{ value: '', label: 'Loading topics…' }]
+    ? [{ value: '', label: 'Завантаження тем…' }]
     : [
-        { value: '', label: 'All topics (random)' },
+        { value: '', label: 'Усі теми (випадково)' },
         ...(topics.data ?? []).map((topic) => ({
           value: topic.id,
           label: topic.name,
@@ -125,7 +125,7 @@ export function QuizStartPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-xl">
-      <SectionHeader title="Start a quiz" description="Pick what to practice and how long to spend." />
+      <SectionHeader title="Почати тест" description="Оберіть, що тренувати й скільки це триватиме." />
       <Card>
         {subjects.isPending ? (
           <div className="flex flex-col gap-4">
@@ -136,46 +136,46 @@ export function QuizStartPage(): React.JSX.Element {
           </div>
         ) : subjects.isError ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <p className="text-text-muted text-sm">We couldn&apos;t load the subjects.</p>
+            <p className="text-text-muted text-sm">Не вдалося завантажити предмети.</p>
             <Button variant="secondary" size="sm" onClick={() => void subjects.refetch()}>
-              Try again
+              Спробувати ще раз
             </Button>
           </div>
         ) : subjects.data.length === 0 ? (
           <EmptyState
-            title="Quiz unavailable"
-            description="There are no published subjects to quiz on yet. Please check back later."
+            title="Тест недоступний"
+            description="Опублікованих предметів для тестування поки немає. Зазирніть трохи згодом."
           />
         ) : (
           <form onSubmit={onSubmit} noValidate className="flex flex-col gap-5">
             {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
 
             <Select
-              label="Subject"
+              label="Предмет"
               options={subjectOptions}
               error={errors.subjectId?.message}
               {...register('subjectId')}
             />
 
             <Select
-              label="Topic (optional)"
-              helperText="Leave on “All topics” for a random subject-wide quiz."
+              label="Тема (необовʼязково)"
+              helperText="Залиште «Усі теми», щоб отримати випадковий тест з усього предмета."
               options={topicOptions}
               disabled={!subjectId || topics.isPending}
               {...register('topicId')}
             />
 
             <Select
-              label="Number of questions"
+              label="Кількість питань"
               options={QUESTION_COUNT_OPTIONS}
               error={errors.questionCount?.message}
               {...register('questionCount')}
             />
 
-            <Checkbox label="Enable timer (60 seconds per question)" {...register('timerEnabled')} />
+            <Checkbox label="Увімкнути таймер (60 секунд на питання)" {...register('timerEnabled')} />
 
             <Button type="submit" fullWidth isLoading={startQuiz.isPending} disabled={!isValid}>
-              Start quiz
+              Почати тест
             </Button>
           </form>
         )}

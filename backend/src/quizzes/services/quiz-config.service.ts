@@ -11,9 +11,9 @@ import {
 } from '../repositories/quiz-config.repository';
 import { PaginatedQuizzes } from '../types/paginated-quizzes.type';
 
-const QUIZ_NOT_FOUND_MESSAGE = 'Quiz not found.';
-const SUBJECT_NOT_FOUND_MESSAGE = 'Subject not found.';
-const TOPIC_NOT_FOUND_MESSAGE = 'Topic not found.';
+const QUIZ_NOT_FOUND_MESSAGE = 'Тест не знайдено.';
+const SUBJECT_NOT_FOUND_MESSAGE = 'Предмет не знайдено.';
+const TOPIC_NOT_FOUND_MESSAGE = 'Тему не знайдено.';
 
 /**
  * Administrative quiz-configuration use cases (docs/04-api/admin.md §8,

@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
-import { useTranslation } from '@/shared/i18n';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -28,7 +27,6 @@ export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const login = useLogin();
-  const { t } = useTranslation();
 
   const {
     register,
@@ -45,7 +43,7 @@ export function LoginPage(): React.JSX.Element {
   const onSubmit = handleSubmit((values) => {
     login.mutate(values, {
       onSuccess: () => {
-        toast.success(t('auth.login.welcomeToast'));
+        toast.success('З поверненням!');
         navigate(redirectTo, { replace: true });
       },
       onError: (error) => applyApiErrorToForm(error, setError),
@@ -54,20 +52,20 @@ export function LoginPage(): React.JSX.Element {
 
   return (
     <AuthCard
-      title={t('auth.login.title')}
-      subtitle={t('auth.login.subtitle')}
+      title="Вхід"
+      subtitle="З поверненням до L&S"
       footer={
         <div className="flex flex-col gap-2">
           <p>
-            {t('auth.login.noAccount')}{' '}
+            Ще не маєте акаунта?{' '}
             <Link to={ROUTES.register} className="text-primary hover:text-primary-hover">
-              {t('auth.login.createOne')}
+              Створити
             </Link>
           </p>
           <p>
-            {t('auth.login.notVerified')}{' '}
+            Не підтвердили пошту?{' '}
             <Link to={ROUTES.verifyEmail} className="text-primary hover:text-primary-hover">
-              {t('auth.login.resend')}
+              Надіслати лист повторно
             </Link>
           </p>
         </div>
@@ -76,26 +74,26 @@ export function LoginPage(): React.JSX.Element {
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
-          label={t('auth.field.email')}
+          label="Електронна пошта"
           type="email"
           autoComplete="email"
-          placeholder={t('auth.field.emailPlaceholder')}
+          placeholder="you@example.com"
           error={errors.email?.message}
           {...register('email')}
         />
         <PasswordInput
-          label={t('auth.field.password')}
+          label="Пароль"
           autoComplete="current-password"
           error={errors.password?.message}
           {...register('password')}
         />
         <div className="flex justify-end">
           <Link to={ROUTES.forgotPassword} className="text-text-muted hover:text-text-secondary text-sm">
-            {t('auth.login.forgot')}
+            Забули пароль?
           </Link>
         </div>
         <Button type="submit" fullWidth isLoading={login.isPending}>
-          {t('auth.login.submit')}
+          Увійти
         </Button>
       </form>
     </AuthCard>

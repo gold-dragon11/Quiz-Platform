@@ -71,7 +71,7 @@ export function MobileMenu({
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close menu"
+                aria-label="Закрити меню"
                 className="text-text-muted hover:text-text-primary rounded p-1"
               >
                 ✕
@@ -101,7 +101,7 @@ export function MobileMenu({
                 onClick={() => void logout()}
                 className="justify-start"
               >
-                Log out
+                Вийти
               </Button>
             </div>
           </motion.aside>

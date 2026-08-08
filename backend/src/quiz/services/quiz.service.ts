@@ -41,16 +41,15 @@ const SECONDS_PER_QUESTION = 60;
 const HIGH_ACCURACY_THRESHOLD = 90;
 const HIGH_ACCURACY_BONUS_XP = 25;
 
-const SESSION_NOT_FOUND_MESSAGE = 'Quiz session not found.';
+const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
 const ACTIVE_SESSION_EXISTS_MESSAGE =
-  'An active quiz session already exists. Complete it before starting another.';
+  'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
 const INSUFFICIENT_QUESTIONS_MESSAGE =
-  'Not enough published questions are available for this quiz.';
-const SESSION_NOT_ACTIVE_MESSAGE = 'This quiz session is not active.';
-const SESSION_NOT_COMPLETED_MESSAGE = 'This quiz session is not completed yet.';
-const QUESTION_NOT_IN_SESSION_MESSAGE =
-  'This question does not belong to the session.';
-const QUIZ_NOT_FOUND_MESSAGE = 'Quiz not found.';
+  'Для цього тесту бракує опублікованих питань.';
+const SESSION_NOT_ACTIVE_MESSAGE = 'Ця сесія тесту неактивна.';
+const SESSION_NOT_COMPLETED_MESSAGE = 'Ця сесія тесту ще не завершена.';
+const QUESTION_NOT_IN_SESSION_MESSAGE = 'Це питання не належить до цієї сесії.';
+const QUIZ_NOT_FOUND_MESSAGE = 'Тест не знайдено.';
 const QUIZ_ID_XOR_MESSAGE =
   'Provide either quizId or the ad-hoc fields (subjectId, topicId, questionCount, timerEnabled), not both.';
 const MISSING_START_FIELDS_MESSAGE =

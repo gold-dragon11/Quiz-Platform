@@ -14,7 +14,7 @@ import { DifficultyBadge } from '@/features/quiz/components/DifficultyBadge';
 export function ResultReview({ questions }: { questions: QuizReviewQuestion[] }): React.JSX.Element {
   return (
     <section>
-      <SectionHeader title="Review" description="See what you got right and where to improve." />
+      <SectionHeader title="Розбір" description="Подивіться, що вдалося, а що варто підтягнути." />
       <div className="flex flex-col gap-4">
         {questions.map((question, i) => (
           <Card key={question.id} className="flex flex-col gap-4">
@@ -26,7 +26,7 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
               <div className="flex shrink-0 items-center gap-2">
                 <DifficultyBadge difficulty={question.difficulty} />
                 <Badge tone={question.isCorrect ? 'success' : 'error'}>
-                  {question.isCorrect ? 'Correct' : 'Incorrect'}
+                  {question.isCorrect ? 'Правильно' : 'Неправильно'}
                 </Badge>
               </div>
             </div>
@@ -77,12 +77,12 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
               }`}
             >
               <span>{option.content}</span>
-              {isCorrect && <Badge tone="success">Correct answer</Badge>}
-              {wrongPick && <Badge tone="error">Your answer</Badge>}
+              {isCorrect && <Badge tone="success">Правильна відповідь</Badge>}
+              {wrongPick && <Badge tone="error">Ваша відповідь</Badge>}
             </div>
           );
         })}
-      {!submittedId && <p className="text-text-muted text-xs">You didn&apos;t answer this question.</p>}
+      {!submittedId && <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>}
     </div>
   );
 }
@@ -95,7 +95,7 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Correct matches</p>
+        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Правильні відповідності</p>
         {correctPairs.map((pair, i) => (
           <div
             key={`${pair.left}-${i}`}
@@ -108,9 +108,9 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
         ))}
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Your answer</p>
+        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Ваша відповідь</p>
         {submittedPairs.length === 0 ? (
-          <p className="text-text-muted text-xs">You didn&apos;t answer this question.</p>
+          <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>
         ) : (
           submittedPairs.map((pair, i) => (
             <div

@@ -71,14 +71,14 @@ export function UserMenu({ isAdmin, displayName, username, avatarUrl }: UserMenu
             </div>
             <div className="flex flex-col py-1">
               <MenuLink to={ROUTES.profile} onClick={close}>
-                Profile
+                Профіль
               </MenuLink>
               <MenuLink to={ROUTES.settings} onClick={close}>
-                Settings
+                Налаштування
               </MenuLink>
               {isAdmin && (
                 <MenuLink to={ROUTES.admin} onClick={close}>
-                  Admin
+                  Адміністрування
                 </MenuLink>
               )}
             </div>
@@ -92,7 +92,7 @@ export function UserMenu({ isAdmin, displayName, username, avatarUrl }: UserMenu
                 }}
                 className="text-text-secondary hover:bg-surface-elevated hover:text-text-primary w-full px-4 py-2 text-left text-sm"
               >
-                Log out
+                Вийти
               </button>
             </div>
           </motion.div>

@@ -19,17 +19,17 @@ const passwordPolicy = z
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Current password is required'),
+    currentPassword: z.string().min(1, 'Вкажіть поточний пароль'),
     newPassword: passwordPolicy,
-    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+    confirmPassword: z.string().min(1, 'Підтвердіть новий пароль'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
+    message: 'Паролі не збігаються',
     path: ['confirmPassword'],
   })
   // The backend also rejects an unchanged password; check early for feedback.
   .refine((data) => data.newPassword !== data.currentPassword, {
-    message: 'New password must be different from your current password',
+    message: 'Новий пароль має відрізнятися від поточного',
     path: ['newPassword'],
   });
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
