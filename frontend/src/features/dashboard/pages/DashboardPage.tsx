@@ -1,8 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { WelcomeHero } from '@/features/dashboard/components/WelcomeHero';
-import { QuickActions } from '@/features/dashboard/components/QuickActions';
-import { StatisticsSummary } from '@/features/dashboard/components/StatisticsSummary';
 import { SubjectStatisticsSection } from '@/features/dashboard/components/SubjectStatisticsSection';
 import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection';
 
@@ -13,6 +11,10 @@ import { RecentActivitySection } from '@/features/dashboard/components/RecentAct
  * Query requests) and its own loading / empty / error state; the page only
  * lays them out and orchestrates a staggered entrance (decision F12 motion).
  * Responsive by construction — single column on mobile, grids expand up.
+ *
+ * The quick-actions row and the overall-statistics tiles were removed: the
+ * first repeated the sidebar link for link, and the second repeated the four
+ * tiles already shown on /statistics.
  */
 export function DashboardPage(): React.JSX.Element {
   return (
@@ -24,12 +26,6 @@ export function DashboardPage(): React.JSX.Element {
     >
       <motion.div variants={fadeInUp}>
         <WelcomeHero />
-      </motion.div>
-      <motion.div variants={fadeInUp}>
-        <QuickActions />
-      </motion.div>
-      <motion.div variants={fadeInUp}>
-        <StatisticsSummary />
       </motion.div>
       <motion.div variants={fadeInUp}>
         <SubjectStatisticsSection />

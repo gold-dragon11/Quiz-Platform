@@ -42,12 +42,9 @@ export function HeroSection(): React.JSX.Element {
 
           <motion.p
             variants={fadeInUp}
-            className="text-text-secondary max-w-4xl text-lg leading-relaxed text-balance sm:text-xl md:text-2xl lg:text-[1.75rem]"
+            className="text-text-secondary max-w-5xl text-lg leading-relaxed text-balance sm:text-xl md:text-2xl lg:text-[1.75rem]"
           >
-            {/* The space before the em dash is non-breaking (U+00A0): Ukrainian
-                typography never starts a line with a dash. */}
-            Спокійний і зосереджений спосіб опанувати будь-який предмет — тренуйся на тестах, стеж за
-            прогресом і підвищуй рівень.
+            Проходь тести з улюблених предметів, стеж за тим, як стаєш кращим
           </motion.p>
 
           <motion.div variants={fadeInUp} className="mt-3 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">

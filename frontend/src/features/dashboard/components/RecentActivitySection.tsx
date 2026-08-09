@@ -67,7 +67,8 @@ function ActivityRow({ item }: { item: RecentActivityItem }): React.JSX.Element 
       <div className="flex min-w-0 flex-col gap-1">
         <p className="text-text-primary truncate text-sm font-medium">{label}</p>
         <p className="text-text-muted text-xs">
-          {formatShortDate(item.completedAt)} · {formatPercent(item.accuracy)} accuracy · Score {item.score}
+          {formatShortDate(item.completedAt)} · точність {formatPercent(item.accuracy)} · результат{' '}
+          {item.score}
         </p>
       </div>
       <Badge tone="success">+{item.xpEarned} XP</Badge>

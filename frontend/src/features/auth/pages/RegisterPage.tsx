@@ -57,6 +57,11 @@ export function RegisterPage(): React.JSX.Element {
         onSuccess: () => setRegisteredEmail(values.email),
         onError: (error) =>
           applyApiErrorToForm(error, setError, {
+            // Conflict errors come back in Ukrainian…
+            'Ця електронна адреса': 'email',
+            "Таке ім'я користувача": 'username',
+            "Це ім'я користувача": 'username',
+            // …validation messages still lead with the English field name.
             email: 'email',
             username: 'username',
             password: 'password',

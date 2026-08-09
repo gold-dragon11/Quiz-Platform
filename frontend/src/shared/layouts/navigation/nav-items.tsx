@@ -72,13 +72,20 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.admin, label: 'Адміністрування', icon: icons.admin, adminOnly: true },
 ];
 
-/** Condensed navigation for the mobile bottom bar (no admin/settings). */
+/**
+ * Condensed navigation for the mobile bottom bar (no admin).
+ *
+ * Settings is here because the sidebar is desktop-only and the dashboard quick
+ * action that used to reach it has been removed. Profile is not: the avatar in
+ * the top-right already opens a menu with Profile as its first entry, and six
+ * slots would leave each label ~65px — too narrow for "Налаштування".
+ */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
   { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
   { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
-  { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
+  { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
 ];
 
 /** Resolves the current page title from a pathname (for the header). */

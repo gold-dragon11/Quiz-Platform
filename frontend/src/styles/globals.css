@@ -7,6 +7,9 @@
  * Must precede the Tailwind import: CSS requires @import rules to come first.
  */
 @import '@fontsource-variable/manrope';
+/* Lora is loaded for one thing only: the landing pull quote. A serif at that
+   size reads as a voice rather than as interface copy. */
+@import '@fontsource-variable/lora';
 @import 'tailwindcss';
 
 /*
@@ -21,6 +24,7 @@
  */
 @theme {
   --font-sans: 'Manrope Variable', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Lora Variable', 'Lora', Georgia, 'Times New Roman', serif;
 
   --color-background: #0b0a0f;
   --color-surface: #131219;

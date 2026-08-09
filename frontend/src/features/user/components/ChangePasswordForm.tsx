@@ -50,6 +50,10 @@ export function ChangePasswordForm(): React.JSX.Element {
         },
         onError: (error) =>
           applyApiErrorToForm(error, setError, {
+            // Business errors from the backend are Ukrainian…
+            'Поточний пароль': 'currentPassword',
+            'Новий пароль': 'newPassword',
+            // …its class-validator messages still lead with the English field.
             'current password': 'currentPassword',
             'new password': 'newPassword',
             password: 'newPassword',

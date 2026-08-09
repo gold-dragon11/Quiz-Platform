@@ -22,9 +22,6 @@ export function CtaSection(): React.JSX.Element {
             <h2 className="text-text-primary max-w-3xl text-4xl font-bold tracking-tight text-balance sm:text-5xl">
               Почни навчатися вже за хвилину
             </h2>
-            <p className="text-text-secondary max-w-2xl text-lg text-balance sm:text-xl">
-              Створи безкоштовний акаунт і пройди свій перший тест сьогодні.
-            </p>
             <Button size="xl" className="mt-2" onClick={() => navigate(ROUTES.register)}>
               Створити акаунт
             </Button>

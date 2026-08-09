@@ -17,7 +17,10 @@ export function isApiError(error: unknown): error is ApiError {
  *   `message`. Both are handled uniformly.
  * - Each message is routed to a form field when it starts with a mapped
  *   keyword (e.g. "email ..." → the email field), so the error appears inline
- *   on the offending input.
+ *   on the offending input. Callers list keywords in both languages: the
+ *   backend's own business errors are Ukrainian ("Поточний пароль …"), while
+ *   its class-validator messages still start with the English field name
+ *   ("password must be …").
  * - Anything left unmapped becomes a form-level (`root`) error and a toast, so
  *   no failure is ever swallowed.
  */
@@ -28,7 +31,7 @@ export function applyApiErrorToForm<T extends FieldValues>(
 ): void {
   const apiError: ApiError = isApiError(error)
     ? error
-    : { status: 0, message: 'Something went wrong. Please try again.' };
+    : { status: 0, message: 'Щось пішло не так. Спробуйте ще раз.' };
 
   const messages =
     apiError.fields?._errors && apiError.fields._errors.length > 0
