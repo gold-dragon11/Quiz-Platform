@@ -234,7 +234,7 @@ describe('Admin Topics (e2e)', () => {
       );
       expect(body).toMatchObject({
         statusCode: 404,
-        message: 'Subject not found.',
+        message: 'Предмет не знайдено.',
       });
     });
 
@@ -317,7 +317,7 @@ describe('Admin Topics (e2e)', () => {
 
     // 'PARENT' is replaced with the real subject id at run time — it cannot
     // be referenced here because it is created in beforeAll.
-    it.each([
+    it.each<[string, Record<string, unknown>]>([
       ['missing subjectId', { name: 'P42 X', slug: 'p42-x-valid' }],
       [
         'non-uuid subjectId',

@@ -477,9 +477,13 @@ describe('Statistics (e2e)', () => {
       ).body as SubjectStat[];
       expect(uk[0].subjectName).toBe('Фаза52 Предмет');
 
+      // The locale is requested explicitly rather than left to the account's
+      // stored preference: the subject has no English translation, so this
+      // asserts the fallback to the base row. Omitting `locale` would assert
+      // the registration default instead, which is a different behaviour.
       const en = (
         await request(app.getHttpServer())
-          .get('/api/v1/statistics/subjects')
+          .get('/api/v1/statistics/subjects?locale=ENGLISH')
           .set('Authorization', `Bearer ${token}`)
           .expect(200)
       ).body as SubjectStat[];

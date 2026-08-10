@@ -54,7 +54,8 @@ Deliver a polished, production-quality quiz platform focused on learning progres
 - Username support
 - Avatar selection and upload
 - Dark theme
-- English and Ukrainian localization
+- Ukrainian interface (the bilingual switcher was removed — see
+  `docs/01-prd/localization.md`)
 - Subject selection
 - Topic selection
 - Random quiz mode

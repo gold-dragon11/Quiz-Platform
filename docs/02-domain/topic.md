@@ -135,7 +135,7 @@ Localized fields include:
 - name;
 - description.
 
-Translated values are stored in a dedicated TopicTranslation record per Topic per locale (see the Database documentation). The `name` and `description` fields on the Topic itself hold the default-locale (English) values, used as a fallback whenever a translation is missing.
+Translated values are stored in a dedicated TopicTranslation record per Topic per locale (see the Database documentation). The `name` and `description` fields on the Topic itself hold the base values, used as a fallback whenever a translation is missing. In the current data that base value is Ukrainian and every translation table is empty, so all locales resolve to it — see `docs/01-prd/localization.md`.
 
 The slug remains language-independent.
 

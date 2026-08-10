@@ -83,6 +83,27 @@ class EnvironmentVariables {
   @IsNotEmpty()
   @IsString()
   EMAIL_FROM?: string;
+
+  // Rate limiting and proxy awareness. TRUST_PROXY is the number of reverse
+  // proxies in front of the app — 0 when it faces clients directly, 1 behind
+  // a single platform router such as Render's.
+  @IsOptional()
+  @IsNumberString()
+  TRUST_PROXY?: string;
+
+  // Blank counts as unset — see the note in configuration.ts. Validation has
+  // to allow it too, or a key left empty by a copied .env stops the app.
+  @IsOptional()
+  @IsIn(['true', 'false', ''])
+  THROTTLE_ENABLED?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  THROTTLE_TTL?: string;
+
+  @IsOptional()
+  @IsNumberString()
+  THROTTLE_LIMIT?: string;
 }
 
 export function validateEnv(

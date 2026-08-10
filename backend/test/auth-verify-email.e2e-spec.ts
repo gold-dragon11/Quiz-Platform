@@ -59,7 +59,7 @@ describe('Email Verification (e2e)', () => {
   const LOGIN_URL = '/api/v1/auth/login';
   const VERIFY_URL = '/api/v1/auth/verify-email';
   const RESEND_URL = '/api/v1/auth/resend-verification';
-  const GENERIC_ERROR = 'Invalid or expired verification token.';
+  const GENERIC_ERROR = 'Недійсний або протермінований токен підтвердження.';
 
   let app: INestApplication;
   let prisma: PrismaService;
@@ -215,7 +215,7 @@ describe('Email Verification (e2e)', () => {
         .send({ email: account.email, password: PASSWORD })
         .expect(403);
       expect((blocked.body as { message: string }).message).toBe(
-        'Email not verified.',
+        'Електронну адресу не підтверджено.',
       );
 
       const token = tokenFromUrl(

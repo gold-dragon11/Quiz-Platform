@@ -180,7 +180,7 @@ describe('Account Management (e2e)', () => {
         .send({ currentPassword: 'WrongPass9!', newPassword: NEW_PASSWORD })
         .expect(400);
       expect((res.body as { message: string }).message).toBe(
-        'Current password is incorrect.',
+        'Поточний пароль неправильний.',
       );
     });
 
@@ -192,7 +192,7 @@ describe('Account Management (e2e)', () => {
         .send({ currentPassword: PASSWORD, newPassword: PASSWORD })
         .expect(400);
       expect((res.body as { message: string }).message).toBe(
-        'New password must be different from the current password.',
+        'Новий пароль має відрізнятися від поточного.',
       );
     });
 

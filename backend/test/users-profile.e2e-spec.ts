@@ -291,7 +291,7 @@ describe('User Profile & Settings (e2e)', () => {
         ['language', 'publicProfileEnabled', 'theme'].sort(),
       );
       expect(body).toEqual({
-        language: 'ENGLISH',
+        language: 'UKRAINIAN',
         theme: 'DARK',
         publicProfileEnabled: true,
       });

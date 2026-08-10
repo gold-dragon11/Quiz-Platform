@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
@@ -19,6 +20,25 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
 import { CurrentUserResponse } from '../types/current-user-response.type';
 import { TokenPair } from '../types/token-pair.type';
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+
+/**
+ * Per-route rate limits, tighter than the global default. Two kinds of route
+ * need them: those that guard a credential, where an unlimited request rate
+ * is an offline password guess made online, and those that send email, where
+ * each request spends provider quota and a burst of mail to addresses that
+ * never asked for it damages the sending domain's reputation.
+ *
+ * The limits are counted per client address, so users behind one NAT — a
+ * school, a mobile carrier — share an allowance. They are set loosely enough
+ * that a shared address doing legitimate work will not reach them.
+ */
+const LOGIN_LIMIT = { default: { limit: 10, ttl: MINUTE } };
+const REGISTER_LIMIT = { default: { limit: 10, ttl: HOUR } };
+const EMAIL_SEND_LIMIT = { default: { limit: 5, ttl: HOUR } };
+const TOKEN_SUBMIT_LIMIT = { default: { limit: 20, ttl: HOUR } };
 
 /**
  * Authentication endpoints (docs/04-api/authentication.md).
@@ -37,6 +57,7 @@ export class AuthController {
    * (docs/04-api/authentication.md §4).
    */
   @Post('register')
+  @Throttle(REGISTER_LIMIT)
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerDto: RegisterDto): Promise<void> {
     await this.authService.register(registerDto);
@@ -47,6 +68,7 @@ export class AuthController {
    * refresh token pair (docs/04-api/authentication.md §6).
    */
   @Post('login')
+  @Throttle(LOGIN_LIMIT)
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
     return this.authService.login(loginDto);
@@ -58,6 +80,7 @@ export class AuthController {
    * with an empty body; every failure is the same generic 400.
    */
   @Post('verify-email')
+  @Throttle(TOKEN_SUBMIT_LIMIT)
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<void> {
     await this.authService.verifyEmail(verifyEmailDto);
@@ -69,6 +92,7 @@ export class AuthController {
    * body so the endpoint cannot reveal which addresses are registered.
    */
   @Post('resend-verification')
+  @Throttle(EMAIL_SEND_LIMIT)
   @HttpCode(HttpStatus.ACCEPTED)
   async resendVerification(
     @Body() resendVerificationDto: ResendVerificationDto,
@@ -82,6 +106,7 @@ export class AuthController {
    * body regardless of whether the email exists or an email was sent.
    */
   @Post('forgot-password')
+  @Throttle(EMAIL_SEND_LIMIT)
   @HttpCode(HttpStatus.ACCEPTED)
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
@@ -95,6 +120,7 @@ export class AuthController {
    * empty body; every token failure is the same generic 400.
    */
   @Post('reset-password')
+  @Throttle(TOKEN_SUBMIT_LIMIT)
   @HttpCode(HttpStatus.OK)
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,

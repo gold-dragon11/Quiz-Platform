@@ -292,7 +292,7 @@ describe('Login (e2e)', () => {
         401,
       );
 
-      expect(body.message).toBe('Invalid email or password.');
+      expect(body.message).toBe('Неправильна електронна адреса або пароль.');
     });
 
     it('rejects an unknown email with the identical 401', async () => {
@@ -301,7 +301,7 @@ describe('Login (e2e)', () => {
         401,
       );
 
-      expect(body.message).toBe('Invalid email or password.');
+      expect(body.message).toBe('Неправильна електронна адреса або пароль.');
     });
 
     it('returns identical bodies for a wrong password and an unknown email', async () => {
@@ -336,7 +336,9 @@ describe('Login (e2e)', () => {
         401,
       );
 
-      expect(deletedLogin.message).toBe('Invalid email or password.');
+      expect(deletedLogin.message).toBe(
+        'Неправильна електронна адреса або пароль.',
+      );
       expect(comparableError(deletedLogin)).toEqual(
         comparableError(unknownEmail),
       );
@@ -362,7 +364,7 @@ describe('Login (e2e)', () => {
         403,
       );
 
-      expect(body.message).toBe('Email not verified.');
+      expect(body.message).toBe('Електронну адресу не підтверджено.');
       expect(body.accessToken).toBeUndefined();
     });
 
@@ -374,7 +376,7 @@ describe('Login (e2e)', () => {
         403,
       );
 
-      expect(body.message).toBe('Account suspended.');
+      expect(body.message).toBe('Акаунт призупинено.');
       expect(body.accessToken).toBeUndefined();
     });
 

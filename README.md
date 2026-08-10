@@ -1,8 +1,9 @@
-# Quiz Platform
+# L&S
 
-*Learn. Progress. Repeat.*
+*Вчись. Прогресуй. Повторюй.*
 
-A modern educational web application focused on measurable learning progress through quizzes.
+An educational web application for Ukrainian НМТ/ЗНО exam preparation, built
+around measurable learning progress. The interface is Ukrainian throughout.
 
 ## Documentation
 
@@ -34,10 +35,40 @@ docker compose up --build
 
 See [`backend/README.md`](backend/README.md) and [`frontend/README.md`](frontend/README.md) for running each app directly against a local PostgreSQL instance.
 
+### Seeding content
+
+```bash
+cd backend && npm run prisma:seed
+```
+
+The seed is idempotent and keyed on natural identifiers, so it can be re-run
+safely; it never deletes a question. It currently loads 4 subjects, 76 topics
+and 3308 questions.
+
+## Testing
+
+```bash
+cd backend && npm run test:e2e   # 518 tests across 20 suites; needs Postgres running
+```
+
+Rate limiting is disabled in the test environment so that the suite is not
+throttled for running quickly; `test/throttling.e2e-spec.ts` switches it back
+on to cover the limiter itself.
+
+## Deployment
+
+The API deploys to Render from [`backend/render.yaml`](backend/render.yaml)
+and the frontend to Vercel from [`frontend/vercel.json`](frontend/vercel.json).
+Read [`docs/08-development/deployment.md`](docs/08-development/deployment.md)
+§17 first — the order of operations matters, and two settings (`TRUST_PROXY`
+and `VITE_API_URL`) fail quietly if they are wrong.
+
 ## Stack
 
 React · TypeScript · Vite · Tailwind CSS · NestJS · PostgreSQL · Prisma ORM · Docker
 
 ## Status
 
-**Phase 1 — Project Foundation.** See [`docs/08-development/roadmap.md`](docs/08-development/roadmap.md) for the full implementation roadmap.
+Content and interface complete for the four launch subjects; preparing for
+first deployment. See [`docs/08-development/roadmap.md`](docs/08-development/roadmap.md)
+for the full implementation roadmap.

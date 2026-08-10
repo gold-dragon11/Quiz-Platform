@@ -168,17 +168,55 @@ The Access Token must not be persisted in a location that would defeat this prot
 
 # 12. Rate Limiting
 
-Sensitive endpoints should be rate-limited.
+Implemented with `@nestjs/throttler`, registered as a global guard so a new
+controller is protected by default rather than by remembering to add one.
 
-Examples:
+A loose global allowance backs everything — `THROTTLE_LIMIT` requests per
+`THROTTLE_TTL` seconds per client address, 120 per minute by default. It
+exists to stop scripted abuse, not to shape normal traffic.
 
-- Login
-- Register
-- Forgot Password
-- Reset Password
-- Refresh Token
+Routes that guard a credential or spend money carry tighter per-route limits,
+declared with `@Throttle` in `auth.controller.ts`:
 
-Rate limiting protects against brute-force attacks.
+| Route | Limit | Why |
+| --- | --- | --- |
+| `POST /auth/login` | 10 / minute | An unlimited rate turns an offline password guess into an online one |
+| `POST /auth/register` | 10 / hour | Bulk account creation |
+| `POST /auth/forgot-password` | 5 / hour | Each request sends email: provider quota, and bounces damage the sending domain's reputation |
+| `POST /auth/resend-verification` | 5 / hour | As above |
+| `POST /auth/verify-email` | 20 / hour | Token guessing |
+| `POST /auth/reset-password` | 20 / hour | Token guessing |
+
+`GET /health` is exempt via `@SkipThrottle`. The hosting platform polls it on
+a fixed schedule, and a 429 would read as an unhealthy instance.
+
+Three properties that are easy to get wrong and are covered by
+`test/throttling.e2e-spec.ts`:
+
+- **The allowance is not spent by the limiter.** The first ten login attempts
+  must reach the handler and fail on credentials, not on 429.
+- **The rejection is Ukrainian and says nothing quantitative.** The library's
+  default message is `ThrottlerException: Too Many Requests`, which the
+  frontend would render verbatim; `LocalizedThrottlerGuard` replaces it.
+  Reporting how many attempts remain would tell an attacker their budget.
+- **The health check is genuinely exempt**, not merely inside the global
+  allowance.
+
+Limits are counted per client address, so users behind one NAT — a school, a
+mobile carrier — share an allowance. They are set loosely enough that a shared
+address doing legitimate work will not reach them.
+
+**`TRUST_PROXY` must match the number of reverse proxies in front of the
+app.** Behind a platform that terminates TLS, the client address arrives in
+`X-Forwarded-For`; left unset, the limiter counts every request against the
+proxy and throttles all users as one. Set higher than the proxies that
+actually exist, it lets a client forge its own address through the header.
+
+Rate limiting is disabled when `NODE_ENV=test`, because 500-odd e2e requests
+from one address would trip it for reasons unrelated to what they assert. The
+throttling spec sets `THROTTLE_ENABLED=true` to switch it back on for itself.
+An empty `THROTTLE_ENABLED` counts as unset rather than as `false`, so a key
+left blank in a copied `.env` cannot silently disable it in production.
 
 ---
 

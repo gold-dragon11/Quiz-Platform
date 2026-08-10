@@ -1,4 +1,25 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "compilerOptions": {
+    // Pins the output layout to `dist/main.js`, which is what `start:prod`
+    // and the Dockerfile's CMD run. Without it TypeScript infers the root
+    // from whatever files are included, so adding a .ts file outside `src`
+    // silently shifts every output path down a level and the entry point
+    // stops existing. With it set, that mistake fails the build instead.
+    "rootDir": "./src",
+
+    // Keeps the incremental cache inside the output directory. Nest is
+    // configured with `deleteOutDir`, so a cache stored anywhere else
+    // survives the wipe, convinces TypeScript every output is still current,
+    // and the build emits nothing — leaving an empty `dist` and no entry
+    // point. Setting `rootDir` above moves the default location out of
+    // `dist`, so this has to be stated explicitly.
+    "tsBuildInfoFile": "./dist/tsconfig.build.tsbuildinfo"
+  },
+  // `./prisma` holds the seed, its validator, and the content linter. They
+  // are run with ts-node from the repository, never imported by the
+  // application, and compiling them both broke the output layout and shipped
+  // authoring tooling into the production image. (`src/prisma`, the Nest
+  // module, is a different directory and stays.)
+  "exclude": ["node_modules", "test", "dist", "./prisma", "**/*spec.ts"]
 }

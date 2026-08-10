@@ -443,6 +443,10 @@ describe('Public Content (e2e)', () => {
         )?.name,
       ).toBe('Математика');
 
+      // An unsupported value is not an error: it falls through to the
+      // account's stored language, which registration sets to Ukrainian. The
+      // fallback to the untranslated base row is covered by the preceding
+      // test, via a subject that has no translation at all.
       const unsupported = await authed(
         'get',
         '/api/v1/subjects?locale=KLINGON',
@@ -452,7 +456,7 @@ describe('Public Content (e2e)', () => {
         myPublicSubjects(unsupported.body as PublicSubjectBody[]).find(
           (s) => s.id === subjPub,
         )?.name,
-      ).toBe('Phase45 Subject pub');
+      ).toBe('Математика');
     });
 
     it('defaults to the user’s stored language when locale is omitted', async () => {

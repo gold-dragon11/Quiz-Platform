@@ -176,7 +176,7 @@ Questions support multiple languages.
 
 Each localized version represents the same logical question.
 
-Translated values are stored in a dedicated QuestionTranslation record per Question per locale (see the Database documentation). The `title` field on the Question itself holds the default-locale (English) value, used as a fallback whenever a translation is missing.
+Translated values are stored in a dedicated QuestionTranslation record per Question per locale (see the Database documentation). The `title` field on the Question itself holds the base value, used as a fallback whenever a translation is missing. In the current data that base value is Ukrainian and every translation table is empty, so all locales resolve to it — see `docs/01-prd/localization.md`.
 
 Translations should remain synchronized.
 

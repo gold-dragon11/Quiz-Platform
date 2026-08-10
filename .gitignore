@@ -47,3 +47,6 @@ docker-compose.override.yml
 
 # Husky (local hook state, not the config itself)
 .husky/_/
+
+# TypeScript incremental build cache
+*.tsbuildinfo

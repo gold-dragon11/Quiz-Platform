@@ -107,8 +107,9 @@ describe('Registration (e2e)', () => {
       expect(user?.avatar?.type).toBe(AvatarType.PREDEFINED);
       expect(user?.avatar?.imageUrl).toBe(DEFAULT_AVATAR_URL);
 
-      // Settings defaults.
-      expect(user?.settings?.language).toBe(Language.ENGLISH);
+      // Settings defaults. The interface is Ukrainian-only, so registration
+      // stores Ukrainian when the request omits a preference.
+      expect(user?.settings?.language).toBe(Language.UKRAINIAN);
       expect(user?.settings?.theme).toBe(Theme.DARK);
       expect(user?.settings?.publicProfileEnabled).toBe(true);
 

@@ -279,6 +279,30 @@ Authenticate API requests exclusively via the Authorization header (`Authorizati
 
 ---
 
+### ADR-014
+
+Ukrainian-Only Interface
+
+Supersedes the interface half of ADR-012; the content translation schema it established is retained.
+
+Decision:
+
+Ship a Ukrainian-only interface. Remove the language switcher, the interface translation layer, and the language control in Settings. Write user-facing strings — in components and in API responses — directly in Ukrainian.
+
+Context:
+
+The audience is Ukrainian students preparing for the НМТ/ЗНО, none of whom needs an English interface. The bilingual build was also incoherent in practice: subject and topic names were only ever Ukrainian, so switching to English produced Ukrainian content inside English chrome. A visible control that changes less than it appears to is worse than no control.
+
+Consequences:
+
+- Every string is written once, in the language it is read in.
+- The four `*_translations` tables, the repository merge, and the `locale` query parameter are kept and remain tested. They are the expensive half of localization, they work, and deleting them would buy nothing.
+- Those tables are empty, so every locale resolves to the base row.
+- ADR-012 describes the base rows as holding English. They hold Ukrainian. Nothing observable depends on the distinction while the tables are empty, but `DEFAULT_LOCALE` in `subjects.service.ts` still names `ENGLISH` and must be corrected before any translation is populated.
+- `UserSettings.language` is retained as the fallback content locale. It defaults to `UKRAINIAN` and is no longer editable through the interface.
+
+---
+
 # 9. Decision Principles
 
 Architecture decisions should prioritize:

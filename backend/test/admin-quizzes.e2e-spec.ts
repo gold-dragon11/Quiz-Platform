@@ -254,7 +254,7 @@ describe('Admin Quizzes (e2e)', () => {
       const body = await createQuiz(basePayload({ subjectId: GHOST_ID }), 404);
       expect(body).toMatchObject({
         statusCode: 404,
-        message: 'Subject not found.',
+        message: 'Предмет не знайдено.',
       });
 
       const doomed = await createSubject('doomed');
@@ -269,7 +269,7 @@ describe('Admin Quizzes (e2e)', () => {
       await createQuiz(basePayload({ topicId: GHOST_ID }), 404);
     });
 
-    it.each([
+    it.each<[string, Record<string, unknown>]>([
       [
         'missing subjectId',
         { title: 'x', mode: QuizType.SUBJECT_QUIZ, questionCount: 5 },

@@ -93,7 +93,7 @@ The first release includes:
 - XP System
 - Statistics
 - Admin Panel
-- Localization
+- Localization (Ukrainian interface only — see `docs/01-prd/localization.md`)
 - Responsive Design
 
 ---
@@ -129,7 +129,7 @@ The application consists of the following functional modules:
 - XP System
 - Admin Panel
 - Settings
-- Localization
+- Localization (Ukrainian interface only — see `docs/01-prd/localization.md`)
 
 Each module has its own specification document.
 

@@ -51,7 +51,7 @@ UserSettings (1)
 |---------|----------|----------|------------------------------|
 | id | UUID | Yes | Unique identifier |
 | userId | UUID | Yes | Owner of the settings |
-| language | Enum | Yes | Preferred application language |
+| language | Enum | Yes | Content locale. Defaults to `UKRAINIAN`; not surfaced in the interface — see §8 |
 | theme | Enum | Yes | Preferred visual theme |
 | publicProfileEnabled | Boolean | Yes | Controls whether the Public Profile is visible to other users |
 | createdAt | DateTime | Yes | Creation timestamp |
@@ -67,8 +67,10 @@ The MVP includes:
 
 Supported values:
 
+- Ukrainian (default)
 - English
-- Ukrainian
+
+Stored but not editable through the interface. See §8.
 
 ### Theme
 
@@ -114,15 +116,23 @@ Invalid settings cannot be saved.
 
 # 8. Localization
 
-The selected language determines:
+**The `language` field does not change what the user sees.** The interface is
+Ukrainian throughout and its text is not translated at runtime; see
+`docs/01-prd/localization.md`.
 
-- interface language;
-- navigation labels;
-- buttons;
-- system messages;
-- future educational content translations.
+What the field still does:
 
-Changing the language should immediately affect the application.
+- it is the fallback locale for content requests that omit a `locale` query
+  parameter, or that send one naming an unsupported language;
+- it is readable and writable through `GET`/`PATCH /users/me/settings`.
+
+Because all four content translation tables are empty, every locale resolves
+to the same base row, so changing this value has no visible effect today. It
+is retained so that content localization can be switched on without a schema
+change.
+
+Registration stores `UKRAINIAN` when the request omits a preference, and the
+column default matches.
 
 ---
 

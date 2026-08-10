@@ -53,7 +53,7 @@ describe('Password Reset (e2e)', () => {
   const FORGOT_URL = '/api/v1/auth/forgot-password';
   const RESET_URL = '/api/v1/auth/reset-password';
   const REFRESH_URL = '/api/v1/auth/refresh';
-  const GENERIC_ERROR = 'Invalid or expired reset token.';
+  const GENERIC_ERROR = 'Недійсний або протермінований токен відновлення.';
 
   let app: INestApplication;
   let prisma: PrismaService;
@@ -275,7 +275,9 @@ describe('Password Reset (e2e)', () => {
 
       await login(account.email, NEW_PASSWORD, 200);
       const rejected = await login(account.email, PASSWORD, 401);
-      expect(rejected.message).toBe('Invalid email or password.');
+      expect(rejected.message).toBe(
+        'Неправильна електронна адреса або пароль.',
+      );
     });
 
     it('stores a fresh Argon2id hash, never the plaintext', async () => {

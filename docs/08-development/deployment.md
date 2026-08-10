@@ -255,7 +255,83 @@ Manual deployments should be minimized.
 
 ---
 
-# 17. Future Improvements
+# 17. Target Deployment (Render + Vercel)
+
+Sections 1–16 describe deployment in principle. This section describes the
+actual target and the configuration committed for it.
+
+| Component | Host | Configuration |
+| --- | --- | --- |
+| API | Render (Docker) | `backend/render.yaml` |
+| Database | Render PostgreSQL | declared in the same blueprint |
+| Frontend | Vercel | `frontend/vercel.json` |
+
+## 17.1 Order of Operations
+
+The order matters, because two steps depend on results from earlier ones.
+
+1. **Register the domain and verify it in Resend.** Resend requires SPF and
+   DKIM records on the domain before it will deliver, so the domain must exist
+   first. Until the domain is verified, Resend rejects delivery to any address
+   outside the account owner's.
+2. **Deploy the API to Render** from the blueprint, and confirm `/health`
+   returns 200.
+3. **Deploy the frontend to Vercel** with `VITE_API_URL` set to the live API.
+   Vite inlines environment variables at build time, so this must be set
+   before the first build and a change to it requires a rebuild, not a
+   restart.
+4. **Set `CORS_ORIGIN` and `FRONTEND_URL` on Render** to the frontend's final
+   domain. These are the two values that cannot be known until step 3.
+5. **Seed the production database once**: `npx prisma db seed`. Migrations run
+   automatically on boot; seeding does not, so without this step the platform
+   deploys with no subjects at all.
+
+## 17.2 Migrations
+
+The container runs `prisma migrate deploy` before starting the server. This
+replays committed migration files only — it never generates a migration and
+never drops data, which is what makes it safe on every boot, and it is a no-op
+once the database is current.
+
+This assumes a single instance. A multi-instance deployment should move
+migrations into a dedicated release step rather than racing them at boot.
+
+## 17.3 Proxy Awareness
+
+`TRUST_PROXY=1` is required on Render. Render terminates TLS one hop in front
+of the container, so the real client address arrives in `X-Forwarded-For`.
+Without this setting the rate limiter counts every request against the proxy's
+address and throttles all users as though they were one client.
+
+Never set it higher than the number of proxies that actually exist: each
+trusted hop is one more header entry a client can forge.
+
+## 17.4 Cold Starts
+
+Render's free tier stops an instance after a period of inactivity, and the
+next request pays roughly 50 seconds of start-up. Two consequences:
+
+- the first visitor after a quiet period sees a long wait, which the frontend
+  presents as a slow load rather than an error;
+- the token refresh flow inherits that delay, so a session resumed after
+  inactivity can appear to hang before it succeeds.
+
+A paid instance removes both. Before a live demonstration, send one request a
+few minutes ahead to wake the service.
+
+## 17.5 Secrets
+
+Signing secrets are declared with `generateValue: true`, so Render generates
+each one and no secret is committed. `CORS_ORIGIN`, `FRONTEND_URL`,
+`RESEND_API_KEY` and `EMAIL_FROM` use `sync: false`, which makes Render prompt
+for them once and store them itself.
+
+Rotate any key that has ever been committed or shared, regardless of whether
+the exposure is believed to be contained.
+
+---
+
+# 18. Future Improvements
 
 Possible future enhancements include:
 
@@ -269,7 +345,7 @@ These features are outside the MVP.
 
 ---
 
-# 18. Success Criteria
+# 19. Success Criteria
 
 The deployment strategy is considered successful if it:
 

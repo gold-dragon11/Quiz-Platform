@@ -171,7 +171,7 @@ model Avatar {
 model UserSettings {
   id                   String   @id @default(uuid()) @db.Uuid
   userId               String   @unique @db.Uuid
-  language             Language @default(ENGLISH)
+  language             Language @default(UKRAINIAN)
   theme                Theme    @default(DARK)
   publicProfileEnabled Boolean  @default(true)
   createdAt            DateTime @default(now())

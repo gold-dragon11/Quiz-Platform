@@ -412,7 +412,7 @@ describe('Quiz Engine (e2e)', () => {
       }).expect(409);
     });
 
-    it.each([
+    it.each<[string, Record<string, unknown>]>([
       ['missing subjectId', { questionCount: 3, timerEnabled: false }],
       [
         'non-uuid subjectId',

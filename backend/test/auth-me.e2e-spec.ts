@@ -163,7 +163,7 @@ describe('Current User (e2e)', () => {
         imageUrl: DEFAULT_AVATAR_URL,
       });
       expect(body.settings).toEqual({
-        language: Language.ENGLISH,
+        language: Language.UKRAINIAN,
         theme: Theme.DARK,
         publicProfileEnabled: true,
       });
