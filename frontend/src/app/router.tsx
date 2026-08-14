@@ -77,7 +77,7 @@ export const router = createBrowserRouter([
         element: <PublicLayout />,
         children: [
           { path: ROUTES.verifyEmail, element: page(<VerifyEmailPage />) },
-          { path: ROUTES.publicProfile, element: withTransition('Public Profile') },
+          { path: ROUTES.publicProfile, element: withTransition('Публічний профіль') },
 
           // Guest-only routes (redirect authenticated users away)
           {
@@ -138,27 +138,27 @@ export const router = createBrowserRouter([
               { path: ROUTES.admin, element: page(<AdminPanelPage />) },
               {
                 path: ROUTES.adminSubjects,
-                element: withTransition('Subject Management'),
+                element: withTransition('Керування предметами'),
               },
               {
                 path: ROUTES.adminTopics,
-                element: withTransition('Topic Management'),
+                element: withTransition('Керування темами'),
               },
               {
                 path: ROUTES.adminQuizzes,
-                element: withTransition('Quiz Template Management'),
+                element: withTransition('Керування шаблонами тестів'),
               },
               {
                 path: ROUTES.adminQuestions,
-                element: withTransition('Question Management'),
+                element: withTransition('Керування питаннями'),
               },
               {
                 path: ROUTES.adminQuestionNew,
-                element: withTransition('Create Question'),
+                element: withTransition('Створення питання'),
               },
               {
                 path: ROUTES.adminQuestionEdit,
-                element: withTransition('Edit Question'),
+                element: withTransition('Редагування питання'),
               },
             ],
           },

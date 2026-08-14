@@ -88,7 +88,7 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
   const topicOptions: SelectOption[] = topics.isPending
     ? [{ value: '', label: 'Завантаження тем…' }]
     : [
-        { value: '', label: 'No topic (whole subject)' },
+        { value: '', label: 'Без теми (весь предмет)' },
         ...(topics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
       ];
 

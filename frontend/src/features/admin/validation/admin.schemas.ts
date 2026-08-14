@@ -16,10 +16,10 @@ const slug = z
   .string()
   .min(1, 'Вкажіть slug')
   .max(100)
-  .regex(SLUG_PATTERN, 'slug must contain only lowercase letters, numbers, and single hyphens');
+  .regex(SLUG_PATTERN, 'Slug може містити лише малі латинські літери, цифри та одиночні дефіси');
 
 const optionalColor = z.string().refine((v) => v === '' || COLOR_PATTERN.test(v), {
-  message: 'color must be a hex color in #RRGGBB format',
+  message: 'Колір має бути у форматі #RRGGBB',
 });
 
 export const subjectFormSchema = z.object({
@@ -58,7 +58,7 @@ export const quizFormSchema = z.object({
   title: z.string().min(1, 'Вкажіть заголовок').max(100),
   description: z.string().max(500),
   mode: z.nativeEnum(QuizType),
-  questionCount: z.coerce.number().int().min(1, 'At least 1 question').max(50, 'At most 50 questions'),
+  questionCount: z.coerce.number().int().min(1, 'Щонайменше 1 питання').max(50, 'Не більше ніж 50 питань'),
   timerEnabled: z.boolean(),
   isPublished: z.boolean(),
 });

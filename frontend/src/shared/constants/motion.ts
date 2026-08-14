@@ -57,6 +57,23 @@ export const staggerContainer: Variants = {
   },
 };
 
+/**
+ * The same idea for grids of many cards, where `staggerContainer` does not
+ * scale: its 0.16s step is tuned for the four or five sections of a page, and
+ * across a list of twenty-odd items it turns into a four-second trickle with
+ * the reader watching an empty column. The step here is short enough that a
+ * long grid still settles in about a second, and the cascade reads as one
+ * movement rather than as items arriving one at a time.
+ *
+ * Use it for card grids; keep `staggerContainer` for page sections.
+ */
+export const staggerDense: Variants = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.03, delayChildren: 0.08 },
+  },
+};
+
 /** Modal/dialog panel: fade + gentle scale/rise. Pair with a `fade` backdrop. */
 export const overlayPanel: Variants = {
   initial: { opacity: 0, scale: 0.96, y: 8 },

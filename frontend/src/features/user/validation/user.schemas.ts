@@ -9,13 +9,16 @@ import { z } from 'zod';
  */
 
 // The shared platform password policy (docs/04-api/authentication.md §12).
+// Worded identically to the register form's copy in
+// features/auth/validation/auth.schemas.ts — the same rule must not be
+// explained two different ways depending on which screen the reader is on.
 const passwordPolicy = z
   .string()
-  .min(8, 'password must be at least 8 characters long')
-  .regex(/[A-Z]/, 'password must contain at least one uppercase letter')
-  .regex(/[a-z]/, 'password must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'password must contain at least one number')
-  .regex(/[^A-Za-z0-9]/, 'password must contain at least one special character');
+  .min(8, 'Пароль має містити щонайменше 8 символів')
+  .regex(/[A-Z]/, 'Пароль має містити щонайменше одну велику літеру')
+  .regex(/[a-z]/, 'Пароль має містити щонайменше одну малу літеру')
+  .regex(/[0-9]/, 'Пароль має містити щонайменше одну цифру')
+  .regex(/[^A-Za-z0-9]/, 'Пароль має містити щонайменше один спеціальний символ');
 
 export const changePasswordSchema = z
   .object({

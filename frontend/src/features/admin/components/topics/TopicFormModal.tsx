@@ -59,7 +59,7 @@ export function TopicFormModal({ open, topic, subjects, onClose }: TopicFormModa
   }, [open, topic, reset]);
 
   const subjectOptions: SelectOption[] = [
-    { value: '', label: 'Select a subject…' },
+    { value: '', label: 'Оберіть предмет…' },
     ...subjects.map((s) => ({ value: s.id, label: s.name })),
   ];
 

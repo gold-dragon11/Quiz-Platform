@@ -14,7 +14,7 @@ interface ServerErrorPageProps {
 export function ServerErrorPage({
   title = 'Щось пішло не так',
   message = 'Сталася несподівана помилка. Спробуйте ще раз.',
-  actionLabel = 'Try again',
+  actionLabel = 'Спробувати ще раз',
   onAction,
 }: ServerErrorPageProps): React.JSX.Element {
   return (

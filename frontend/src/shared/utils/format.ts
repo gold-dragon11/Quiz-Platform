@@ -2,11 +2,20 @@
  * Small, dependency-free formatting helpers shared across features. The
  * backend returns accuracy/score as pre-formatted strings and study time in
  * seconds; these normalize them for display without altering the values.
+ *
+ * Every helper here names `uk-UA` explicitly rather than letting `Intl` pick
+ * up the browser's locale. The interface is Ukrainian for everyone, so a
+ * reader whose browser is set to English would otherwise see "2,430" and
+ * "Jul 20, 2026" sitting inside Ukrainian sentences — and the developer,
+ * whose browser is likely set the same way, would never see it go wrong.
  */
 
-/** Formats an integer with locale grouping (e.g. 2430 → "2,430"). */
+/** The interface locale — see the note above; never the browser's. */
+const LOCALE = 'uk-UA';
+
+/** Formats an integer with locale grouping (e.g. 2430 → "2 430"). */
 export function formatNumber(value: number): string {
-  return value.toLocaleString();
+  return value.toLocaleString(LOCALE);
 }
 
 /**
@@ -23,33 +32,57 @@ export function formatPercent(value: string | number): string {
 }
 
 /**
- * Humanizes a duration in seconds: "0m", "45s", "12m", "1h 23m". Study time is
- * coarse, so seconds are only shown under a minute.
+ * Humanizes a duration in seconds: "0 хв", "45 с", "12 хв", "1 год 23 хв".
+ * Study time is coarse, so seconds are only shown under a minute.
+ *
+ * The unit abbreviations are the Ukrainian ones and take no full stop. They
+ * are invariant, so no plural agreement is needed — unlike a spelled-out unit,
+ * which would need `pluralUk`.
  */
 export function formatDuration(totalSeconds: number): string {
   if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
-    return '0m';
+    return '0 хв';
   }
   const seconds = Math.floor(totalSeconds);
   if (seconds < 60) {
-    return `${seconds}s`;
+    return `${seconds} с`;
   }
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) {
-    return `${minutes}m`;
+    return `${minutes} хв`;
   }
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
-  return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+  return remainingMinutes > 0 ? `${hours} год ${remainingMinutes} хв` : `${hours} год`;
 }
 
-/** Short absolute date (e.g. "Jul 20, 2026"); echoes the input if unparseable. */
+/**
+ * Picks the Ukrainian plural form for a count: 1 тема, 2 теми, 5 тем.
+ *
+ * Ukrainian has three forms rather than English's two, so a count cannot be
+ * rendered by appending an "s". The form follows the last digit, except in the
+ * teens (11–14), which always take the `many` form despite ending in 1–4.
+ */
+export function pluralUk(count: number, one: string, few: string, many: string): string {
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+
+  if (lastDigit === 1 && lastTwoDigits !== 11) {
+    return one;
+  }
+  if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) {
+    return few;
+  }
+  return many;
+}
+
+/** Short absolute date (e.g. "20 лип. 2026 р."); echoes the input if unparseable. */
 export function formatShortDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return iso;
   }
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString(LOCALE, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

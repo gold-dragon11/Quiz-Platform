@@ -71,7 +71,7 @@ function HeroContent({
 
       <p className="text-text-muted text-sm">
         {xpToNext > 0
-          ? `${formatNumber(xpToNext)} XP until Level ${data.currentLevel + 1}`
+          ? `Ще ${formatNumber(xpToNext)} XP до рівня ${data.currentLevel + 1}`
           : `Ви готові до рівня ${data.currentLevel + 1}!`}
       </p>
     </Card>
