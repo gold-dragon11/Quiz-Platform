@@ -76,14 +76,17 @@ export class AuthController {
 
   /**
    * POST /api/v1/auth/verify-email — activates the account identified by a
-   * valid verification token (docs/04-api/authentication.md §5). Responds 200
-   * with an empty body; every failure is the same generic 400.
+   * valid verification token and signs the reader straight into it
+   * (docs/04-api/authentication.md §5). Responds 200 with a token pair, the
+   * same shape as login; every failure is the same generic 400.
    */
   @Post('verify-email')
   @Throttle(TOKEN_SUBMIT_LIMIT)
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<void> {
-    await this.authService.verifyEmail(verifyEmailDto);
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+  ): Promise<TokenPair> {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 
   /**

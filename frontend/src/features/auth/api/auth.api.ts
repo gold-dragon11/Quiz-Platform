@@ -4,9 +4,9 @@ import type { Language } from '@/shared/types/enums';
 /**
  * Auth feature API layer — thin, typed wrappers over the shared apiClient for
  * the auth endpoints that do NOT establish a session (docs/04-api/
- * authentication.md §4/§5/§9/§10). Session-establishing calls (login, logout,
- * refresh, /auth/me) live in the app-wide services/auth-service per Phase 6.1
- * decision F5. No feature ever touches Axios directly.
+ * authentication.md §4/§9/§10). Session-establishing calls (login, verify
+ * email, logout, refresh, /auth/me) live in the app-wide services/auth-service
+ * per Phase 6.1 decision F5. No feature ever touches Axios directly.
  *
  * Every endpoint below returns an empty body on success, by design, so these
  * resolve to `void`.
@@ -17,10 +17,6 @@ export interface RegisterPayload {
   password: string;
   username: string;
   preferredLanguage?: Language;
-}
-
-export interface VerifyEmailPayload {
-  token: string;
 }
 
 export interface ResendVerificationPayload {
@@ -40,11 +36,6 @@ export const authApi = {
   /** POST /auth/register — 201, empty body (docs §4). */
   async register(payload: RegisterPayload): Promise<void> {
     await apiClient.post('/auth/register', payload);
-  },
-
-  /** POST /auth/verify-email — 200, empty body; generic 400 on any failure (docs §5). */
-  async verifyEmail(payload: VerifyEmailPayload): Promise<void> {
-    await apiClient.post('/auth/verify-email', payload);
   },
 
   /** POST /auth/resend-verification — always 202, empty body (docs §5). */

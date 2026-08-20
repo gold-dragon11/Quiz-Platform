@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import { toast } from '@/stores/toast-store';
 import { Alert } from '@/shared/ui/Alert';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { AuthCard } from '@/features/auth/components/AuthCard';
@@ -14,30 +15,52 @@ const GENERIC_VERIFY_ERROR = 'Недійсний або протермінова
 
 /**
  * `/verify-email?token=…` (public). Submits the token from the emailed link on
- * mount and reports the outcome (docs/04-api/authentication.md §5). Every
- * failure returns the same generic 400, which we show verbatim alongside a
- * resend form. With no token in the URL, the route doubles as the
+ * mount (docs/04-api/authentication.md §5). Success signs the reader in and
+ * sends them straight to the dashboard — there is no separate "now log in"
+ * step, since the token was already the proof of identity. Every failure
+ * returns the same generic 400, which we show verbatim alongside a resend
+ * form. With no token in the URL, the route doubles as the
  * resend-verification screen.
  */
 export function VerifyEmailPage(): React.JSX.Element {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const navigate = useNavigate();
   const verify = useVerifyEmail();
   const attempted = useRef(false);
 
+  // Fires the verification exactly once per token, guarded against React 18
+  // Strict Mode's dev-only double-invoke.
   useEffect(() => {
     if (token && !attempted.current) {
       attempted.current = true;
-      verify.mutate({ token });
+      verify.mutate(token);
     }
   }, [token, verify]);
+
+  // Reacts to the mutation's settled state rather than a callback passed to
+  // `.mutate()` at the call site: a callback tied to that specific call can
+  // be dropped if the component re-renders before the request settles (the
+  // very re-render Strict Mode's double-invoke deliberately forces in dev),
+  // whereas `isSuccess` is state on the observer TanStack Query keeps
+  // watching regardless of how many times this component re-rendered.
+  useEffect(() => {
+    if (verify.isSuccess) {
+      toast.success('Пошту підтверджено. Ласкаво просимо!');
+      navigate(ROUTES.dashboard, { replace: true });
+    }
+  }, [verify.isSuccess, navigate]);
 
   // No token → this route is the resend-verification screen.
   if (!token) {
     return <ResendVerificationPage />;
   }
 
-  if (verify.isIdle || verify.isPending) {
+  // Success has no render branch of its own: the redirect above fires as
+  // soon as the mutation settles, so the reader never sees a distinct
+  // "verified" screen — the skeleton simply bridges the instant until the
+  // route changes underneath it.
+  if (verify.isIdle || verify.isPending || verify.isSuccess) {
     return (
       <AuthCard title="Підтверджуємо пошту" subtitle="Це займе лише мить.">
         <div className="flex flex-col gap-3">
@@ -45,21 +68,6 @@ export function VerifyEmailPage(): React.JSX.Element {
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-2/3" />
         </div>
-      </AuthCard>
-    );
-  }
-
-  if (verify.isSuccess) {
-    return (
-      <AuthCard
-        title="Пошту підтверджено"
-        footer={
-          <Link to={ROUTES.login} className="text-primary hover:text-primary-hover">
-            Перейти до входу
-          </Link>
-        }
-      >
-        <Alert variant="success">Вашу електронну адресу підтверджено. Тепер ви можете увійти в акаунт.</Alert>
       </AuthCard>
     );
   }

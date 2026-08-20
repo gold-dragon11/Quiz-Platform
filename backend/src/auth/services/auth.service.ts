@@ -145,10 +145,18 @@ export class AuthService implements OnModuleInit {
 
   /**
    * Activates the account identified by a valid verification token
-   * (docs/04-api/authentication.md §5). Every failure returns the same
-   * generic 400 so no failure mode is distinguishable from another.
+   * (docs/04-api/authentication.md §5) and signs the reader straight into it.
+   * Every failure returns the same generic 400 so no failure mode is
+   * distinguishable from another.
+   *
+   * Issuing a session here is not a new trust decision: the verification
+   * token is already a single-use, short-lived proof of control over the
+   * mailbox — the same standard the password-reset flow relies on to let a
+   * reader set a new password without re-entering the old one. Skipping the
+   * extra login step just acts on that proof immediately instead of asking
+   * for it twice.
    */
-  async verifyEmail(dto: VerifyEmailDto): Promise<void> {
+  async verifyEmail(dto: VerifyEmailDto): Promise<TokenPair> {
     const payload = await this.verifyEmailVerificationToken(dto.token);
 
     if (!payload) {
@@ -162,6 +170,27 @@ export class AuthService implements OnModuleInit {
     if (!activated) {
       throw new BadRequestException(INVALID_VERIFICATION_TOKEN_MESSAGE);
     }
+
+    // Re-fetched rather than carried on the token: EmailVerificationPayload
+    // deliberately omits email and role (see the interface's docstring), so
+    // issuing a session needs a fresh read of the row it just activated.
+    const account = await this.authRepository.findAccountForAuthorization(
+      payload.sub,
+    );
+
+    if (!account) {
+      throw new BadRequestException(INVALID_VERIFICATION_TOKEN_MESSAGE);
+    }
+
+    const tokens = await this.issueTokens({
+      id: account.id,
+      email: account.email,
+      role: account.role,
+    });
+
+    await this.authRepository.recordSuccessfulLogin(account.id);
+
+    return tokens;
   }
 
   /**

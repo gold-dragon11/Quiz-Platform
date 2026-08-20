@@ -8,7 +8,6 @@ import {
   type RegisterPayload,
   type ResendVerificationPayload,
   type ResetPasswordPayload,
-  type VerifyEmailPayload,
 } from '@/features/auth/api/auth.api';
 
 /**
@@ -37,9 +36,14 @@ export function useRegister() {
   });
 }
 
+/** Confirms the emailed token and, on success, signs the reader in. */
 export function useVerifyEmail() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: VerifyEmailPayload) => authApi.verifyEmail(payload),
+    mutationFn: (token: string) => authService.verifyEmail(token),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
+    },
   });
 }
 

@@ -17,6 +17,18 @@ export const authService = {
     applyTokens(data);
   },
 
+  /**
+   * Submits an emailed verification token and applies the returned token
+   * pair (docs/04-api/authentication.md §5). Confirming the token is already
+   * a single-use, short-lived proof of control over the mailbox — the same
+   * standard the login form itself relies on — so the response signs the
+   * reader straight in rather than sending them to it.
+   */
+  async verifyEmail(token: string): Promise<void> {
+    const { data } = await apiClient.post<TokenPair>('/auth/verify-email', { token });
+    applyTokens(data);
+  },
+
   /** The authenticated session summary (server state — GET /auth/me). */
   async getCurrentUser(): Promise<CurrentUser> {
     const { data } = await apiClient.get<CurrentUser>('/auth/me');

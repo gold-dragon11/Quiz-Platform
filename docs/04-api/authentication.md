@@ -115,7 +115,7 @@ Request body:
 
 The token is delivered to the user as a verification link pointing at the frontend's `/verify-email` route; the frontend submits it to this endpoint.
 
-Successful verification activates the account: `emailVerified` becomes true and the account status changes from Pending Verification to Active. Responds `200` with an empty body.
+Successful verification activates the account: `emailVerified` becomes true and the account status changes from Pending Verification to Active. The reader is signed in as part of the same request — the response has the same shape as Sign In (Access Token, Refresh Token) rather than an empty body, so the frontend can apply the session immediately instead of sending the reader to the login form. This is not a new trust boundary: the verification token is already a single-use, short-lived proof of control over the mailbox, the same standard the password reset flow relies on.
 
 Every failure — an invalid, expired, malformed, or wrong-purpose token, or an account that is not awaiting verification — returns the same generic response:
 

@@ -186,7 +186,7 @@ describe('Email Verification (e2e)', () => {
   });
 
   describe('successful verification', () => {
-    it('activates the account: 200 empty body, emailVerified true, status ACTIVE', async () => {
+    it('activates the account: 200 with a token pair, emailVerified true, status ACTIVE', async () => {
       const account = await registerAccount();
 
       expect(await accountState(account.userId)).toEqual({
@@ -199,11 +199,31 @@ describe('Email Verification (e2e)', () => {
       );
       const body = await verify(token, 200);
 
-      expect(body).toEqual({});
+      // Same shape as login (docs/04-api/authentication.md §5) — the reader
+      // is signed in as part of this same request, not sent to log in again.
+      expect(Object.keys(body).sort()).toEqual(['accessToken', 'refreshToken']);
+      expect(typeof body.accessToken).toBe('string');
+      expect(typeof body.refreshToken).toBe('string');
+
       expect(await accountState(account.userId)).toEqual({
         emailVerified: true,
         accountStatus: AccountStatus.ACTIVE,
       });
+    });
+
+    it('the issued access token actually authenticates the account', async () => {
+      const account = await registerAccount();
+      const token = tokenFromUrl(
+        emailOutbox.lastFor(account.email)!.verificationUrl,
+      );
+      const body = await verify(token, 200);
+
+      const me = await request(app.getHttpServer())
+        .get('/api/v1/auth/me')
+        .set('Authorization', `Bearer ${body.accessToken as string}`)
+        .expect(200);
+
+      expect((me.body as { email: string }).email).toBe(account.email);
     });
 
     it('login is blocked before verification and works after', async () => {
