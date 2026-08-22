@@ -439,6 +439,77 @@ describe('Quiz Engine (e2e)', () => {
     });
   });
 
+  describe('GET /quiz/active', () => {
+    it('rejects without a token with 401', async () => {
+      await request(app.getHttpServer()).get('/api/v1/quiz/active').expect(401);
+    });
+
+    it('wraps a null session rather than sending an empty body — Nest sends no body at all for a bare null return', async () => {
+      const { token } = await registerUser();
+
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(response.body).toEqual({ session: null });
+    });
+
+    it('finds the session that POST /quiz/start refused to duplicate — the actual point of this endpoint', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      // The scenario this endpoint exists for: the id above is the only place
+      // that session id ever appeared. Nothing else in this test — and, before
+      // this endpoint, nothing in the product — recovers it.
+      const active = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      const session = (active.body as { session: SessionMeta }).session;
+      expect(session.sessionId).toBe(sessionId);
+      expect(session.status).toBe(QuizStatus.ACTIVE);
+    });
+
+    it('reverts to a null session once it is completed', async () => {
+      const { token } = await registerUser();
+      const sessionId = await playSingleChoice(token, topicId, 3, 3);
+      await complete(token, sessionId).expect(200);
+
+      const active = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(active.body).toEqual({ session: null });
+    });
+
+    it("never returns another user's session", async () => {
+      const owner = await registerUser();
+      const bystander = await registerUser();
+      await start(owner.token, {
+        subjectId,
+        topicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+
+      const active = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${bystander.token}`)
+        .expect(200);
+
+      expect(active.body).toEqual({ session: null });
+    });
+  });
+
   describe('answer delivery never leaks the key', () => {
     it('omits isCorrect and configuration from questions and resume', async () => {
       const { token } = await registerUser();

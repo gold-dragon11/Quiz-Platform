@@ -45,6 +45,20 @@ export class QuizController {
     return this.quizService.start(userId, startQuizDto);
   }
 
+  /**
+   * GET /api/v1/quiz/active — the user's in-progress session, wrapped as
+   * `{ session }` (`null` when there is none — see the service docstring for
+   * why it is nested rather than returned bare). Declared before
+   * `:sessionId` so the literal path `active` is never swallowed by that
+   * route's UUID param.
+   */
+  @Get('active')
+  async getActive(
+    @CurrentUser('id') userId: string,
+  ): Promise<{ session: QuizSessionMetadata | null }> {
+    return this.quizService.findActive(userId);
+  }
+
   /** GET /api/v1/quiz/{sessionId} — resume state with saved answers. */
   @Get(':sessionId')
   async resume(

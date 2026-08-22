@@ -27,6 +27,17 @@ export const quizApi = {
   },
 
   /**
+   * GET /quiz/active — the user's in-progress session, or `null` (§9). The
+   * only way back into a session once its URL is left; unwraps the
+   * `{ session }` envelope the backend uses so a real `null` survives the
+   * wire (a bare `null` return sends no body at all).
+   */
+  async getActive(): Promise<QuizSessionMetadata | null> {
+    const { data } = await apiClient.get<{ session: QuizSessionMetadata | null }>('/quiz/active');
+    return data.session;
+  },
+
+  /**
    * POST /quiz/:sessionId/answers — saves/updates an answer (§6). Note the
    * endpoint is `/answers` (plural); the echo carries no correctness.
    */

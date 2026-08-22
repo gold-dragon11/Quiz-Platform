@@ -166,6 +166,14 @@ The correct answer is only ever revealed here, after completion. The historical 
 
 # 9. Resume Quiz
 
+## Find Active Session
+
+```http
+GET /api/v1/quiz/active
+```
+
+Returns `{ "session": ... }`, where `session` is the same session metadata shape as `POST /quiz/start` (§4) for the user's Active session, or `null` if they have none. The response is always this wrapper object, never a bare `null` — a Nest handler that returns `null` sends no body at all (indistinguishable from a broken response), so the nullable value is nested one level to keep the response itself always present. This is how "reopening the application" (below) actually finds a session id to resume — the id lives only in the URL of the quiz-taking screen, so without this endpoint there was no way back into a session once that URL was left, and no way to discover it existed short of the `409` that `POST /quiz/start` returns for the one-active-session rule (§4).
+
 ## Continue Active Session
 
 ```http

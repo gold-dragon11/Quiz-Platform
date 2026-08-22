@@ -154,6 +154,28 @@ export class QuizService {
   }
 
   /**
+   * The user's in-progress session, if any (docs/04-api/quiz.md §4a). Lets
+   * the frontend offer a way back into it — before this existed, leaving the
+   * quiz-taking screen without finishing meant the session id was gone from
+   * everywhere the client could reach, and `start` would keep refusing a new
+   * one with no way to resume the old one either. Reuses the same lookup
+   * `start` already runs to enforce the one-active-session rule.
+   *
+   * Wrapped in `{ session }` rather than returning the metadata (or `null`)
+   * directly: Nest treats a handler returning `null` the same as one
+   * returning `undefined` — no body is sent at all, not the JSON literal
+   * `null` — so a bare nullable return type would make "no active session"
+   * indistinguishable from a broken response on the wire. Nesting it one
+   * level keeps the outer value always a real object.
+   */
+  async findActive(
+    userId: string,
+  ): Promise<{ session: QuizSessionMetadata | null }> {
+    const session = await this.quizSessionRepository.findActiveByUser(userId);
+    return { session: session ? this.toMetadata(session) : null };
+  }
+
+  /**
    * Resolves the generation configuration for a start request (Phase 5.6,
    * decision B1 — XOR). A `quizId` loads everything from the published Quiz
    * (its stored `mode` is copied verbatim, decision B3); otherwise the ad-hoc

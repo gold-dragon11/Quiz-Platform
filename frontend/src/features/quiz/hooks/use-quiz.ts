@@ -11,7 +11,21 @@ import type { SelectedAnswer, StartQuizPayload } from '@/features/quiz/types/qui
 export const QUIZ_QUERY_KEYS = {
   session: (sessionId: string) => ['quiz', 'session', sessionId] as const,
   result: (sessionId: string) => ['quiz', 'result', sessionId] as const,
+  active: ['quiz', 'active'] as const,
 };
+
+/**
+ * The user's in-progress session, if any. Shared by the Quiz Start form
+ * (offers a way back into it instead of a dead-end 409) and the dashboard
+ * (a proactive "continue" card) — one query, one cache entry, so starting or
+ * finishing a quiz in one place updates the other without a refetch.
+ */
+export function useActiveQuiz() {
+  return useQuery({
+    queryKey: QUIZ_QUERY_KEYS.active,
+    queryFn: () => quizApi.getActive(),
+  });
+}
 
 /** Resume/session state; not retried so a 404 surfaces its empty state fast. */
 export function useQuizSession(sessionId: string) {
@@ -34,8 +48,12 @@ export function useQuizResult(sessionId: string) {
 }
 
 export function useStartQuiz() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: StartQuizPayload) => quizApi.start(payload),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUIZ_QUERY_KEYS.active });
+    },
   });
 }
 
@@ -53,6 +71,8 @@ export function useCompleteQuiz(sessionId: string) {
     onSuccess: () => {
       // New XP/level/activity — refresh statistics-backed views (dashboard).
       void queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      // The session just left ACTIVE — drop the stale "continue" card/banner.
+      void queryClient.invalidateQueries({ queryKey: QUIZ_QUERY_KEYS.active });
     },
   });
 }

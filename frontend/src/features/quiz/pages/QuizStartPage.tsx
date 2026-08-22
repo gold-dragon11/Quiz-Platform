@@ -13,6 +13,7 @@ import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 import { pluralUk } from '@/shared/utils/format';
+import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
 import { useSubjects, useTopics } from '@/features/quiz/hooks/use-content';
 import { useStartQuiz } from '@/features/quiz/hooks/use-quiz';
 import { startQuizSchema, type StartQuizFormValues } from '@/features/quiz/validation/quiz.schemas';
@@ -127,6 +128,7 @@ export function QuizStartPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-xl">
       <SectionHeader title="Почати тест" description="Оберіть, що тренувати й скільки це триватиме." />
+      <ActiveQuizBanner className="mb-4" />
       <Card>
         {subjects.isPending ? (
           <div className="flex flex-col gap-4">

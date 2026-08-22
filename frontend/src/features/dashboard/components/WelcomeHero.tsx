@@ -18,16 +18,21 @@ export function WelcomeHero(): React.JSX.Element {
   const { data: user } = useCurrentUser();
   const overall = useOverallStatistics();
 
-  const displayName = user?.profile?.displayName ?? 'there';
+  const displayName = user?.profile?.displayName;
   const username = user?.profile?.username;
-  const initial = displayName.charAt(0) || username?.charAt(0) || '?';
+  // A placeholder default here would mask this exact fallback — a truthy
+  // "there" would win before username ever got a chance.
+  const initial = displayName?.charAt(0) || username?.charAt(0) || '?';
+  const greetingName = displayName ?? username;
 
   return (
     <Card className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
         <Avatar size="lg" imageUrl={user?.avatar?.imageUrl} fallback={initial} alt="Ваш аватар" />
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-text-primary truncate text-2xl font-semibold">З поверненням, {displayName}.</h1>
+          <h1 className="text-text-primary truncate text-2xl font-semibold">
+            З поверненням{greetingName ? `, ${greetingName}` : ''}.
+          </h1>
           {username && <p className="text-text-muted truncate text-sm">@{username}</p>}
         </div>
       </div>

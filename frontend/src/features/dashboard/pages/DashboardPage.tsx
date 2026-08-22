@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
+import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
 import { WelcomeHero } from '@/features/dashboard/components/WelcomeHero';
 import { SubjectStatisticsSection } from '@/features/dashboard/components/SubjectStatisticsSection';
 import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection';
@@ -27,6 +28,10 @@ export function DashboardPage(): React.JSX.Element {
       <motion.div variants={fadeInUp}>
         <WelcomeHero />
       </motion.div>
+      {/* No motion wrapper: a null render must produce zero DOM nodes, or
+          the flex `gap-8` above would leave a phantom gap when there is no
+          active session to show. */}
+      <ActiveQuizBanner />
       <motion.div variants={fadeInUp}>
         <SubjectStatisticsSection />
       </motion.div>
