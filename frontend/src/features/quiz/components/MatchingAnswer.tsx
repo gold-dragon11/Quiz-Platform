@@ -45,7 +45,7 @@ export function MatchingAnswer({
             .map(([, rightId]) => rightId),
         );
         const choiceOptions: SelectOption[] = [
-          { value: '', label: '— choose a match —' },
+          { value: '', label: '— оберіть відповідність —' },
           ...right
             .filter((choice) => choice.id === current || !takenByOthers.has(choice.id))
             .map((choice) => ({ value: choice.id, label: choice.content })),

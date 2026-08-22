@@ -12,13 +12,14 @@ import { SectionHeader } from '@/shared/ui/SectionHeader';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
+import { pluralUk } from '@/shared/utils/format';
 import { useSubjects, useTopics } from '@/features/quiz/hooks/use-content';
 import { useStartQuiz } from '@/features/quiz/hooks/use-quiz';
 import { startQuizSchema, type StartQuizFormValues } from '@/features/quiz/validation/quiz.schemas';
 
 const QUESTION_COUNT_OPTIONS: SelectOption[] = [5, 10, 15, 20, 25].map((n) => ({
   value: String(n),
-  label: `${n} questions`,
+  label: `${n} ${pluralUk(n, 'питання', 'питання', 'питань')}`,
 }));
 
 /**
