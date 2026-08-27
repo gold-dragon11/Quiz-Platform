@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import type { Paginated } from '@/shared/types/api';
 import type {
+  MistakeGroup,
   OverallStatistics,
   RecentActivityItem,
   SubjectStatistics,
@@ -21,6 +22,12 @@ export const statisticsApi = {
   /** GET /statistics/subjects — per-subject statistics; empty until a quiz is done (§5). */
   async getSubjects(): Promise<SubjectStatistics[]> {
     const { data } = await apiClient.get<SubjectStatistics[]>('/statistics/subjects');
+    return data;
+  },
+
+  /** GET /statistics/mistakes — topics still answered wrong (§8a). */
+  async getMistakes(): Promise<MistakeGroup[]> {
+    const { data } = await apiClient.get<MistakeGroup[]>('/statistics/mistakes');
     return data;
   },
 

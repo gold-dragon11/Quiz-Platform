@@ -26,6 +26,7 @@ interface QuestionBody {
   title: string;
   imageUrl: string | null;
   difficulty: string | null;
+  explanation: string | null;
   configuration: Record<string, unknown> | null;
   isPublished: boolean;
   createdAt: string;
@@ -310,7 +311,8 @@ describe('Admin Questions (e2e)', () => {
         isPublished: false,
       });
       expect(body).not.toHaveProperty('deletedAt');
-      expect(body).not.toHaveProperty('explanation');
+      // Present but unset — the admin view carries it so it can be edited.
+      expect(body.explanation).toBeNull();
       expect(body.answerOptions).toHaveLength(3);
       expect(body.answerOptions.map((o) => o.order)).toEqual([0, 1, 2]);
       expect(body.answerOptions.filter((o) => o.isCorrect)).toHaveLength(1);
@@ -393,7 +395,8 @@ describe('Admin Questions (e2e)', () => {
         { options: [{ isCorrect: true }, { content: 'B' }] },
       ],
       ['isPublished at creation', { isPublished: true }],
-      ['explanation field', { explanation: 'Because.' }],
+      ['empty explanation', { explanation: '' }],
+      ['explanation too long', { explanation: 'a'.repeat(2001) }],
       ['locale at creation', { locale: Language.UKRAINIAN }],
       ['empty title', { title: '' }],
       ['title too long', { title: 'a'.repeat(2001) }],
@@ -600,10 +603,29 @@ describe('Admin Questions (e2e)', () => {
       expect(cleared.difficulty).toBeNull();
     });
 
+    it('stores an explanation at creation, edits it, and clears it with null', async () => {
+      const created = await createQuestion({
+        ...singleChoicePayload(),
+        explanation: 'Бо 2 + 2 = 4.',
+      });
+      expect(created.explanation).toBe('Бо 2 + 2 = 4.');
+
+      const edited = await updateQuestion(created.id, {
+        explanation: 'Уточнене пояснення.',
+      });
+      expect(edited.explanation).toBe('Уточнене пояснення.');
+
+      // Untouched by an unrelated edit — merge semantics, not replace.
+      const renamed = await updateQuestion(created.id, { title: 'Змінено?' });
+      expect(renamed.explanation).toBe('Уточнене пояснення.');
+
+      const cleared = await updateQuestion(created.id, { explanation: null });
+      expect(cleared.explanation).toBeNull();
+    });
+
     it.each([
       ['type', { type: QuestionType.MATCHING }],
       ['isPublished', { isPublished: true }],
-      ['explanation', { explanation: 'Because.' }],
     ])('rejects %s in the update body with 400', async (_name, payload) => {
       const created = await createQuestion(singleChoicePayload());
       await updateQuestion(created.id, payload, 400);

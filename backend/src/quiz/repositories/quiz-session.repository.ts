@@ -34,6 +34,8 @@ export interface SessionQuestionRecord {
   title: string;
   imageUrl: string | null;
   difficulty: Difficulty | null;
+  /** Revealed only in the post-completion review, never while ACTIVE. */
+  explanation: string | null;
   configuration: Prisma.JsonValue;
   translations: { title: string }[];
   answerOptions: {
@@ -93,6 +95,55 @@ export class QuizSessionRepository {
       JOIN topics t ON t.id = q."topicId"
       JOIN subjects s ON s.id = t."subjectId"
       WHERE q."deletedAt" IS NULL AND q."isPublished" = true
+        AND t."deletedAt" IS NULL AND t."isPublished" = true
+        AND s."deletedAt" IS NULL AND s."isPublished" = true
+        AND s.id = ${params.subjectId}::uuid
+        ${topicFilter}
+      ORDER BY random()
+      LIMIT ${params.count}
+    `);
+
+    return rows.map((row) => row.id);
+  }
+
+  /**
+   * The same selection as `selectRandomQuestionIds`, narrowed to questions
+   * whose *latest* attempt by this user was wrong (docs/04-api/quiz.md §4).
+   *
+   * The `DISTINCT ON` picks one row per question — the most recent attempt —
+   * before correctness is tested, so answering a question correctly later
+   * takes it out of the pool. Grouping is by the question's own topic rather
+   * than the session's, because a random subject-wide quiz stores no topic on
+   * the session while its questions each belong to one.
+   */
+  async selectMistakeQuestionIds(params: {
+    userId: string;
+    subjectId: string;
+    topicId?: string;
+    count: number;
+  }): Promise<string[]> {
+    const topicFilter =
+      params.topicId === undefined
+        ? Prisma.empty
+        : Prisma.sql`AND t.id = ${params.topicId}::uuid`;
+
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (qa."questionId")
+          qa."questionId",
+          qa."isCorrect"
+        FROM question_attempts qa
+        JOIN quiz_sessions qs ON qs.id = qa."quizSessionId"
+        WHERE qs."userId" = ${params.userId}::uuid
+        ORDER BY qa."questionId", qa."answeredAt" DESC
+      )
+      SELECT q.id
+      FROM latest
+      JOIN questions q ON q.id = latest."questionId"
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      WHERE latest."isCorrect" = false
+        AND q."deletedAt" IS NULL AND q."isPublished" = true
         AND t."deletedAt" IS NULL AND t."isPublished" = true
         AND s."deletedAt" IS NULL AND s."isPublished" = true
         AND s.id = ${params.subjectId}::uuid
@@ -186,6 +237,7 @@ export class QuizSessionRepository {
             title: true,
             imageUrl: true,
             difficulty: true,
+            explanation: true,
             configuration: true,
             translations: { where: translationsWhere, select: { title: true } },
             answerOptions: {

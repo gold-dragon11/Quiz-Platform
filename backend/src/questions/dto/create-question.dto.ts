@@ -21,8 +21,11 @@ import { AnswerOptionInputDto } from './answer-option-input.dto';
  * Creates the default-locale (English) record only — `locale` is not
  * accepted here. `isPublished` is not accepted either: new questions always
  * start unpublished and are published through the dedicated publish endpoint.
- * `explanation` is not part of the MVP contract and is rejected by the
- * whitelist pipe.
+ *
+ * `explanation` is the teaching note shown after a quiz is completed
+ * (docs/04-api/quiz.md §8) — never while the session is active, since it
+ * would give the answer away. It is optional: a question without one simply
+ * shows no explanation in the review.
  *
  * `configuration` carries the MATCHING correct pairs
  * (docs/02-domain/answer-option.md §9) and is forbidden for SINGLE_CHOICE;
@@ -48,6 +51,12 @@ export class CreateQuestionDto {
   @ValidateIf((dto: CreateQuestionDto) => dto.difficulty !== undefined)
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
+
+  @ValidateIf((dto: CreateQuestionDto) => dto.explanation !== undefined)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  explanation?: string;
 
   @IsArray()
   @ArrayMinSize(2)

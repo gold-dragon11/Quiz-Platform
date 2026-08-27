@@ -48,6 +48,7 @@ export interface QuestionRecord {
   title: string;
   imageUrl: string | null;
   difficulty: Difficulty | null;
+  explanation: string | null;
   configuration: unknown;
   isPublished: boolean;
   createdAt: string;
@@ -121,6 +122,7 @@ export interface CreateQuestionPayload {
   title: string;
   imageUrl?: string;
   difficulty?: Difficulty;
+  explanation?: string;
   options: AnswerOptionInput[];
   configuration?: Record<string, unknown>;
 }
@@ -129,6 +131,7 @@ export interface UpdateQuestionPayload {
   title?: string;
   imageUrl?: string | null;
   difficulty?: Difficulty | null;
+  explanation?: string | null;
   options?: AnswerOptionInput[];
   configuration?: Record<string, unknown>;
 }

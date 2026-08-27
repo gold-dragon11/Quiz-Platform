@@ -6,6 +6,7 @@ import { StatisticsLocaleQueryDto } from '../dto/statistics-locale-query.dto';
 import { TopicStatisticsQueryDto } from '../dto/topic-statistics-query.dto';
 import { StatisticsService } from '../services/statistics.service';
 import {
+  MistakeGroup,
   OverallStatistics,
   PaginatedRecentActivity,
   ProgressSummary,
@@ -55,6 +56,15 @@ export class StatisticsController {
     @Query() query: TopicStatisticsQueryDto,
   ): Promise<TopicStatistics[]> {
     return this.statisticsService.getTopicStatistics(userId, query);
+  }
+
+  /** GET /api/v1/statistics/mistakes — topics with unresolved mistakes. */
+  @Get('mistakes')
+  async getMistakes(
+    @CurrentUser('id') userId: string,
+    @Query() query: StatisticsLocaleQueryDto,
+  ): Promise<MistakeGroup[]> {
+    return this.statisticsService.getMistakes(userId, query);
   }
 
   /** GET /api/v1/statistics/recent — paginated recent completed quizzes. */

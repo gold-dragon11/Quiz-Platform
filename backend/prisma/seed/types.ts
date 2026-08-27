@@ -17,6 +17,11 @@ export interface SingleChoiceContent {
   options: string[];
   /** Zero-based index into `options` marking the correct answer. */
   correct: number;
+  /**
+   * Optional teaching note shown in the post-completion review. Omit it and
+   * the review simply shows no explanation for this question.
+   */
+  explanation?: string;
 }
 
 /**
@@ -31,6 +36,8 @@ export interface MatchingContent {
   difficulty: keyof typeof Difficulty;
   /** At least two `[left, right]` pairs. */
   pairs: [string, string][];
+  /** See `SingleChoiceContent.explanation`. */
+  explanation?: string;
 }
 
 export type QuestionContent = SingleChoiceContent | MatchingContent;

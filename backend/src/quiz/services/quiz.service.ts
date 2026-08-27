@@ -46,6 +46,10 @@ const ACTIVE_SESSION_EXISTS_MESSAGE =
   'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
 const INSUFFICIENT_QUESTIONS_MESSAGE =
   'Для цього тесту бракує опублікованих питань.';
+// Distinct from the message above: the pool is empty because the reader has
+// already fixed those mistakes, which is success, not a content gap.
+const INSUFFICIENT_MISTAKES_MESSAGE =
+  'Помилок для повторення вже немає — ви виправили їх усі.';
 const SESSION_NOT_ACTIVE_MESSAGE = 'Ця сесія тесту неактивна.';
 const SESSION_NOT_COMPLETED_MESSAGE = 'Ця сесія тесту ще не завершена.';
 const QUESTION_NOT_IN_SESSION_MESSAGE = 'Це питання не належить до цієї сесії.';
@@ -63,6 +67,8 @@ interface StartConfig {
   questionCount: number;
   timerEnabled: boolean;
   mode: QuizType;
+  /** Ad-hoc only: draw from the reader's unresolved mistakes. */
+  onlyMistakes: boolean;
 }
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
@@ -109,14 +115,26 @@ export class QuizService {
       throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
     }
 
-    const questionIds =
-      await this.quizSessionRepository.selectRandomQuestionIds({
-        subjectId: config.subjectId,
-        topicId: config.topicId ?? undefined,
-        count: config.questionCount,
-      });
+    // Mistake practice narrows the pool; everything downstream — the fixed
+    // snapshot, scoring, XP, statistics — is identical either way.
+    const questionIds = config.onlyMistakes
+      ? await this.quizSessionRepository.selectMistakeQuestionIds({
+          userId,
+          subjectId: config.subjectId,
+          topicId: config.topicId ?? undefined,
+          count: config.questionCount,
+        })
+      : await this.quizSessionRepository.selectRandomQuestionIds({
+          subjectId: config.subjectId,
+          topicId: config.topicId ?? undefined,
+          count: config.questionCount,
+        });
     if (questionIds.length < config.questionCount) {
-      throw new ConflictException(INSUFFICIENT_QUESTIONS_MESSAGE);
+      throw new ConflictException(
+        config.onlyMistakes
+          ? INSUFFICIENT_MISTAKES_MESSAGE
+          : INSUFFICIENT_QUESTIONS_MESSAGE,
+      );
     }
 
     const expiresAt = config.timerEnabled
@@ -188,7 +206,8 @@ export class QuizService {
         dto.subjectId !== undefined ||
         dto.topicId !== undefined ||
         dto.questionCount !== undefined ||
-        dto.timerEnabled !== undefined
+        dto.timerEnabled !== undefined ||
+        dto.onlyMistakes !== undefined
       ) {
         throw new BadRequestException(QUIZ_ID_XOR_MESSAGE);
       }
@@ -205,6 +224,7 @@ export class QuizService {
         questionCount: quiz.questionCount,
         timerEnabled: quiz.timerEnabled,
         mode: quiz.mode,
+        onlyMistakes: false,
       };
     }
 
@@ -225,6 +245,7 @@ export class QuizService {
         dto.topicId === undefined
           ? QuizType.RANDOM_QUIZ
           : QuizType.SUBJECT_QUIZ,
+      onlyMistakes: dto.onlyMistakes ?? false,
     };
   }
 
@@ -394,7 +415,10 @@ export class QuizService {
           question.configuration,
         ),
         isCorrect: attempt?.isCorrect ?? false,
-        explanation: null,
+        // Safe to reveal only here: the review runs after completion, so an
+        // explanation can no longer give away an answer in progress. The
+        // active-session view (`toQuestionView`) never carries this field.
+        explanation: question.explanation,
       };
     });
 

@@ -49,6 +49,9 @@ export const questionScalarSchema = z.object({
   title: z.string().min(1, 'Вкажіть заголовок').max(2000),
   imageUrl: z.string().max(500),
   difficulty: z.union([z.nativeEnum(Difficulty), z.literal('')]),
+  // Empty means "no explanation"; the form maps it to null before sending,
+  // since the API rejects an empty string but accepts null to clear.
+  explanation: z.string().max(2000, 'Не більше ніж 2000 символів'),
 });
 export type QuestionScalarValues = z.infer<typeof questionScalarSchema>;
 

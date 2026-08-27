@@ -26,6 +26,7 @@ export interface QuestionRecord {
   title: string;
   imageUrl: string | null;
   difficulty: Difficulty | null;
+  explanation: string | null;
   configuration: Prisma.JsonValue;
   isPublished: boolean;
   createdAt: Date;
@@ -87,6 +88,7 @@ const QUESTION_SELECT = {
   title: true,
   imageUrl: true,
   difficulty: true,
+  explanation: true,
   configuration: true,
   isPublished: true,
   createdAt: true,
@@ -218,6 +220,7 @@ export class QuestionsRepository {
     title: string;
     imageUrl?: string;
     difficulty?: Difficulty;
+    explanation?: string;
     configuration?: Prisma.InputJsonValue;
     options: OptionWrite[];
   }): Promise<QuestionRecord> {
@@ -228,6 +231,7 @@ export class QuestionsRepository {
         title: data.title,
         imageUrl: data.imageUrl,
         difficulty: data.difficulty,
+        explanation: data.explanation,
         configuration: data.configuration,
         answerOptions: {
           create: data.options.map((option) => ({

@@ -97,6 +97,7 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
     title: question?.title ?? '',
     imageUrl: question?.imageUrl ?? '',
     difficulty: question?.difficulty ?? '',
+    explanation: question?.explanation ?? '',
   };
 }
 
@@ -104,7 +105,8 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
  * Create/edit a question with its answers (docs/04-api/admin.md §6). Supports
  * the two implemented types. `type`, topic, and publication state are immutable
  * on edit (the backend rejects them via PUT); publishing is a separate action.
- * `explanation` is not part of the MVP contract and is not sent.
+ * `explanation` is optional prose shown to the learner in the post-quiz
+ * review; an empty field clears it.
  *
  * Matching authoring uses row-pairs: each row is a left↔right pair. Options are
  * flattened with explicit orders (left = 2i, right = 2i+1) and the configuration
@@ -280,6 +282,7 @@ export function QuestionFormModal({
         title: values.title,
         imageUrl: values.imageUrl.trim() || null,
         difficulty: difficulty ?? null,
+        explanation: values.explanation.trim() || null,
         options: built,
         ...(configuration ? { configuration } : {}),
       };
@@ -300,6 +303,7 @@ export function QuestionFormModal({
         title: values.title,
         imageUrl: values.imageUrl.trim() || undefined,
         difficulty,
+        explanation: values.explanation.trim() || undefined,
         options: built,
         ...(configuration ? { configuration } : {}),
       };
@@ -355,7 +359,7 @@ export function QuestionFormModal({
             label="Тип"
             options={TYPE_OPTIONS}
             disabled={isEdit}
-            helperText={isEdit ? "A question's type cannot be changed." : undefined}
+            helperText={isEdit ? 'Тип питання змінити не можна.' : undefined}
             {...register('type')}
           />
           <Select label="Рівень" options={DIFFICULTY_OPTIONS} {...register('difficulty')} />
@@ -367,6 +371,13 @@ export function QuestionFormModal({
           placeholder="Необовʼязково"
           error={errors.imageUrl?.message}
           {...register('imageUrl')}
+        />
+        <Textarea
+          label="Пояснення"
+          placeholder="Необовʼязково"
+          helperText="Показується учневі в розборі після завершення тесту, ніколи під час нього."
+          error={errors.explanation?.message}
+          {...register('explanation')}
         />
 
         {answersError && <Alert variant="error">{answersError}</Alert>}

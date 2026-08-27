@@ -60,7 +60,7 @@ export interface QuizResultSummary {
 /**
  * One reviewed question after completion (docs/04-api/quiz.md §8, decision
  * D25): the question, the user's submission, the correct answer, correctness,
- * and the reserved (future) explanation.
+ * and the teaching explanation when the question has one.
  */
 export interface QuizReviewQuestion {
   id: string;
@@ -77,7 +77,7 @@ export interface QuizReviewQuestion {
   submittedAnswer: Prisma.JsonValue | null;
   correctAnswer: Record<string, unknown>;
   isCorrect: boolean;
-  explanation: null;
+  explanation: string | null;
 }
 
 /** Full review payload of a completed quiz (decision D25). */

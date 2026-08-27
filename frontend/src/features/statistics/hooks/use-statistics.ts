@@ -15,6 +15,7 @@ export const STATISTICS_QUERY_KEYS = {
   overall: ['statistics', 'overall'] as const,
   subjects: ['statistics', 'subjects'] as const,
   recent: (pageSize: number) => ['statistics', 'recent', { pageSize }] as const,
+  mistakes: ['statistics', 'mistakes'] as const,
 };
 
 export function useOverallStatistics() {
@@ -29,6 +30,19 @@ export function useSubjectStatistics() {
   return useQuery({
     queryKey: STATISTICS_QUERY_KEYS.subjects,
     queryFn: () => statisticsApi.getSubjects(),
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Topics the reader still gets wrong. Kept in the shared `statistics`
+ * namespace so completing a quiz — which already invalidates that namespace —
+ * refreshes this list too, without the section needing its own invalidation.
+ */
+export function useMistakes() {
+  return useQuery({
+    queryKey: STATISTICS_QUERY_KEYS.mistakes,
+    queryFn: () => statisticsApi.getMistakes(),
     staleTime: 30 * 1000,
   });
 }

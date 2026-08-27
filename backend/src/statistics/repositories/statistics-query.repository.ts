@@ -34,6 +34,19 @@ export interface TopicStatisticsRow {
   earnedXP: number;
 }
 
+/**
+ * One topic the user still has unresolved mistakes in
+ * (docs/04-api/statistics.md §8a).
+ */
+export interface MistakeGroupRow {
+  subjectId: string;
+  subjectName: string;
+  topicId: string;
+  topicName: string;
+  mistakeCount: number;
+  lastMistakeAt: Date;
+}
+
 /** One recent completed session (docs/04-api/statistics.md §8). */
 export interface RecentActivityRow {
   sessionId: string;
@@ -160,6 +173,62 @@ export class StatisticsQueryRepository {
         t.id, COALESCE(tt.name, t.name),
         s.id, COALESCE(st.name, s.name), xp.earned
       ORDER BY COALESCE(st.name, s.name) ASC, COALESCE(tt.name, t.name) ASC
+    `);
+  }
+
+  /**
+   * Topics the user still gets wrong, grouped for the mistakes view
+   * (docs/04-api/statistics.md §8a).
+   *
+   * "Still" is the whole point: only the *latest* attempt per question counts,
+   * so answering a question correctly later removes it from the list. That is
+   * what makes the list shrink as the reader improves, rather than
+   * accumulating every mistake they ever made.
+   *
+   * Grouping is by the question's own topic, not the session's — a random
+   * subject-wide quiz stores no topic on the session, yet its questions each
+   * belong to one.
+   */
+  async findMistakeGroups(
+    userId: string,
+    locale: Language,
+  ): Promise<MistakeGroupRow[]> {
+    return this.prisma.$queryRaw<MistakeGroupRow[]>(Prisma.sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (qa."questionId")
+          qa."questionId",
+          qa."isCorrect",
+          qa."answeredAt"
+        FROM question_attempts qa
+        JOIN quiz_sessions qs ON qs.id = qa."quizSessionId"
+        WHERE qs."userId" = ${userId}::uuid
+        ORDER BY qa."questionId", qa."answeredAt" DESC
+      )
+      SELECT
+        s.id AS "subjectId",
+        COALESCE(st.name, s.name) AS "subjectName",
+        t.id AS "topicId",
+        COALESCE(tt.name, t.name) AS "topicName",
+        COUNT(*)::int AS "mistakeCount",
+        MAX(latest."answeredAt") AS "lastMistakeAt"
+      FROM latest
+      JOIN questions q ON q.id = latest."questionId"
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      LEFT JOIN topic_translations tt
+        ON tt."topicId" = t.id AND tt.locale = ${locale}::"Language"
+      LEFT JOIN subject_translations st
+        ON st."subjectId" = s.id AND st.locale = ${locale}::"Language"
+      WHERE latest."isCorrect" = false
+        -- Only questions that could actually be served again: an unpublished
+        -- or deleted one would make a practice quiz impossible to fill.
+        AND q."deletedAt" IS NULL AND q."isPublished" = true
+        AND t."deletedAt" IS NULL AND t."isPublished" = true
+        AND s."deletedAt" IS NULL AND s."isPublished" = true
+      GROUP BY
+        s.id, COALESCE(st.name, s.name),
+        t.id, COALESCE(tt.name, t.name)
+      ORDER BY COUNT(*) DESC, MAX(latest."answeredAt") DESC
     `);
   }
 

@@ -13,6 +13,7 @@ import {
   TopicStatisticsRow,
 } from '../repositories/statistics-query.repository';
 import {
+  MistakeGroup,
   OverallStatistics,
   PaginatedRecentActivity,
   ProgressSummary,
@@ -151,6 +152,33 @@ export class StatisticsService {
       query.subjectId,
     );
     return rows.map((row) => this.toTopicStatistics(row));
+  }
+
+  /**
+   * Topics the reader still gets wrong, most mistakes first
+   * (docs/04-api/statistics.md §8a). Each entry's `mistakeCount` is exactly
+   * how many questions a practice quiz over that topic would draw from.
+   */
+  async getMistakes(
+    userId: string,
+    query: StatisticsLocaleQueryDto,
+  ): Promise<MistakeGroup[]> {
+    const locale = await this.settingsService.resolveLocale(
+      query.locale,
+      userId,
+    );
+    const rows = await this.statisticsQueryRepository.findMistakeGroups(
+      userId,
+      locale,
+    );
+    return rows.map((row) => ({
+      subjectId: row.subjectId,
+      subjectName: row.subjectName,
+      topicId: row.topicId,
+      topicName: row.topicName,
+      mistakeCount: row.mistakeCount,
+      lastMistakeAt: row.lastMistakeAt.toISOString(),
+    }));
   }
 
   /**

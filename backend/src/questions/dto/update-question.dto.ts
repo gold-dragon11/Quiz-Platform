@@ -18,9 +18,9 @@ import { AnswerOptionInputDto } from './answer-option-input.dto';
  * Body of PUT /api/v1/admin/questions/{id} (docs/04-api/admin.md §6).
  *
  * Merge semantics: only supplied fields change; explicit `null` clears the
- * nullable imageUrl and difficulty. `type` is immutable and `isPublished`
- * changes only through the publish endpoint — both are rejected by the
- * whitelist pipe, as is `explanation`.
+ * nullable imageUrl, difficulty, and explanation. `type` is immutable and
+ * `isPublished` changes only through the publish endpoint — both are
+ * rejected by the whitelist pipe.
  *
  * When `options` is supplied it is the complete desired option set,
  * merged by id: entries with an id update that option, entries without an id
@@ -55,6 +55,15 @@ export class UpdateQuestionDto {
   )
   @IsEnum(Difficulty)
   difficulty?: Difficulty | null;
+
+  @ValidateIf(
+    (dto: UpdateQuestionDto) =>
+      dto.explanation !== undefined && dto.explanation !== null,
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  explanation?: string | null;
 
   @ValidateIf((dto: UpdateQuestionDto) => dto.options !== undefined)
   @IsArray()

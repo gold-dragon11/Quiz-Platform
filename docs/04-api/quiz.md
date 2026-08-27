@@ -59,7 +59,9 @@ Creates a new Quiz Session in one of two mutually exclusive ways.
 Request body — **exactly one** of:
 
 - **Stored Quiz:** `quizId` only. The Subject, Topic, question count, timer, and mode are loaded from the referenced published Quiz; the ad-hoc fields must not be provided. Supplying `quizId` together with any ad-hoc field returns `400`.
-- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+
+`onlyMistakes: true` narrows the question pool to those whose *most recent* attempt by this user was wrong — the same definition the mistakes view uses (§8a of the Statistics API), so answering one correctly removes it from both. Everything downstream is unchanged: the same fixed snapshot, scoring, XP and statistics. When the pool is smaller than `questionCount` the request returns `409 Conflict` with a message distinct from the ordinary insufficient-questions one, because an empty pool here means the reader has already fixed those mistakes rather than that content is missing. It is not combinable with `quizId`, whose pool comes from the stored Quiz.
 
 When a `quizId` is used, the referenced Quiz must exist, not be soft-deleted, and be published; otherwise the request returns `404 Not Found` — the three conditions are indistinguishable so the endpoint reveals nothing. The session records the Quiz's stored `mode` verbatim and links the Quiz through `quizId`. Question selection, the insufficient-questions `409`, the timer, the one-active-session rule, and every downstream step (answers, completion, scoring, XP, statistics, result) are identical for both paths.
 
@@ -158,7 +160,7 @@ GET /api/v1/quiz/{sessionId}/result
 Returns the full post-completion **review** — available only after the session is Completed (`409` otherwise):
 
 - `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
-- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and `explanation` (reserved; always null until the Explanation field is introduced).
+- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
 
 The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.
 

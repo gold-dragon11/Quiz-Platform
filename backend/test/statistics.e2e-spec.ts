@@ -561,6 +561,155 @@ describe('Statistics (e2e)', () => {
     });
   });
 
+  describe('mistakes', () => {
+    interface MistakeBody {
+      subjectId: string;
+      subjectName: string;
+      topicId: string;
+      topicName: string;
+      mistakeCount: number;
+      lastMistakeAt: string;
+    }
+
+    const mistakes = async (token: string): Promise<MistakeBody[]> =>
+      (
+        await request(app.getHttpServer())
+          .get('/api/v1/statistics/mistakes')
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as MistakeBody[];
+
+    it('rejects without a token with 401', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/statistics/mistakes')
+        .expect(401);
+    });
+
+    it('is empty for a user who has answered nothing', async () => {
+      const { token } = await registerUser();
+      expect(await mistakes(token)).toEqual([]);
+    });
+
+    it('is empty when every answer was correct', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 5, 5);
+      expect(await mistakes(token)).toEqual([]);
+    });
+
+    it('groups wrong answers by topic and counts them', async () => {
+      const { token } = await registerUser();
+      // 5 questions, 2 right → 3 wrong.
+      await playQuiz(token, topicId, 5, 2);
+
+      const body = await mistakes(token);
+      expect(body).toHaveLength(1);
+      expect(body[0].topicId).toBe(topicId);
+      expect(body[0].subjectId).toBe(subjectId);
+      expect(body[0].mistakeCount).toBe(3);
+      expect(typeof body[0].lastMistakeAt).toBe('string');
+    });
+
+    it('drops a question once it is answered correctly later — the point of the view', async () => {
+      const { token } = await registerUser();
+      // The topic has exactly 10 questions, so a 10-question quiz covers all
+      // of them: first pass gets 4 right and 6 wrong.
+      await playQuiz(token, topicId, 10, 4);
+      expect((await mistakes(token))[0].mistakeCount).toBe(6);
+
+      // Second pass over the same full set, this time all correct. Every
+      // question's latest attempt is now right, so nothing is outstanding.
+      await playQuiz(token, topicId, 10, 10);
+      expect(await mistakes(token)).toEqual([]);
+    });
+
+    it('separates two topics and orders by mistake count descending', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 4, 0); // 4 wrong in the main topic
+      await playQuiz(token, secondTopicId, 3, 1); // 2 wrong in the second
+
+      const body = await mistakes(token);
+      expect(body).toHaveLength(2);
+      expect(body[0].topicId).toBe(topicId);
+      expect(body[0].mistakeCount).toBe(4);
+      expect(body[1].topicId).toBe(secondTopicId);
+      expect(body[1].mistakeCount).toBe(2);
+    });
+
+    it("never reports another user's mistakes", async () => {
+      const a = await registerUser();
+      const b = await registerUser();
+      await playQuiz(a.token, topicId, 5, 0);
+
+      expect(await mistakes(b.token)).toEqual([]);
+      expect((await mistakes(a.token))[0].mistakeCount).toBe(5);
+    });
+
+    it('starts a practice quiz drawn only from those mistakes', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 6, 2); // 4 wrong
+
+      const wrongCount = (await mistakes(token))[0].mistakeCount;
+      expect(wrongCount).toBe(4);
+
+      const started = await request(app.getHttpServer())
+        .post('/api/v1/quiz/start')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          subjectId,
+          topicId,
+          questionCount: wrongCount,
+          timerEnabled: false,
+          onlyMistakes: true,
+        })
+        .expect(201);
+      const sessionId = (started.body as { sessionId: string }).sessionId;
+
+      const questions = (
+        await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}/questions`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as { id: string }[];
+
+      // Exactly the outstanding set, no padding from the topic's other
+      // questions.
+      expect(questions).toHaveLength(wrongCount);
+    });
+
+    it('refuses a practice quiz larger than the outstanding set, with its own message', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 5, 4); // only 1 wrong
+
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/quiz/start')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          subjectId,
+          topicId,
+          questionCount: 5,
+          timerEnabled: false,
+          onlyMistakes: true,
+        })
+        .expect(409);
+
+      expect((response.body as { message: string }).message).toBe(
+        'Помилок для повторення вже немає — ви виправили їх усі.',
+      );
+    });
+
+    it('rejects onlyMistakes combined with quizId as 400', async () => {
+      const { token } = await registerUser();
+      await request(app.getHttpServer())
+        .post('/api/v1/quiz/start')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          quizId: '00000000-0000-0000-0000-000000000000',
+          onlyMistakes: true,
+        })
+        .expect(400);
+    });
+  });
+
   describe('ownership isolation (decision S7)', () => {
     it('never mixes another user’s statistics', async () => {
       const a = await registerUser();

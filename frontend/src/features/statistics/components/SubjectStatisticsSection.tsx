@@ -41,7 +41,7 @@ export function SubjectStatisticsSection(): React.JSX.Element {
             description="Пройдіть тест з будь-якого предмета — і прогрес зʼявиться тут."
             action={
               <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Start a quiz
+                Почати тест
               </Button>
             }
           />

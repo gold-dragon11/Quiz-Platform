@@ -56,6 +56,20 @@ export interface TopicStatistics {
   earnedXP: number;
 }
 
+/**
+ * One topic with unresolved mistakes (docs/04-api/statistics.md §8a).
+ * `mistakeCount` is the number of questions whose most recent answer was
+ * wrong, so it doubles as the size of a practice quiz over exactly those.
+ */
+export interface MistakeGroup {
+  subjectId: string;
+  subjectName: string;
+  topicId: string;
+  topicName: string;
+  mistakeCount: number;
+  lastMistakeAt: string;
+}
+
 /** One recent completed session (docs/04-api/statistics.md §8). */
 export interface RecentActivityItem {
   sessionId: string;

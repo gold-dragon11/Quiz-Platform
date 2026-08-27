@@ -48,4 +48,14 @@ export class StartQuizDto {
   @ValidateIf((dto: StartQuizDto) => dto.timerEnabled !== undefined)
   @IsBoolean()
   timerEnabled?: boolean;
+
+  /**
+   * Draw only from questions the reader most recently answered wrong
+   * (docs/04-api/quiz.md §4). Narrows the ad-hoc question pool; everything
+   * else about the session — mode, timer, scoring, XP — is unchanged. Not
+   * combinable with `quizId`, whose question pool comes from the stored Quiz.
+   */
+  @ValidateIf((dto: StartQuizDto) => dto.onlyMistakes !== undefined)
+  @IsBoolean()
+  onlyMistakes?: boolean;
 }

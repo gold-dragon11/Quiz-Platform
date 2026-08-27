@@ -172,6 +172,28 @@ Names are localized (see §10a). In-progress sessions never appear.
 
 ---
 
+# 8a. Mistakes
+
+## Retrieve Unresolved Mistakes
+
+```http
+GET /api/v1/statistics/mistakes
+```
+
+Returns the topics the user still answers incorrectly, so they can practise exactly those instead of re-drawing random questions.
+
+A question counts as a mistake when its **most recent** attempt by this user was wrong. Answering it correctly later removes it from the list — the list shrinks as the reader improves rather than accumulating every mistake ever made. Only questions that could actually be served again are counted: the full publication chain (question, topic, subject all published and not deleted) must hold.
+
+Grouping is by the question's own topic, not the session's — a random subject-wide quiz stores no topic on the session, yet each of its questions belongs to one.
+
+Each entry carries: `subjectId`, `subjectName`, `topicId`, `topicName`, `mistakeCount`, and `lastMistakeAt`. Entries are ordered by `mistakeCount` descending, then by most recent mistake.
+
+`mistakeCount` is exactly the number of questions a practice quiz over that topic would draw from, so it can be passed straight to `POST /api/v1/quiz/start` as `questionCount` alongside `onlyMistakes: true` (Quiz API §4).
+
+Accepts the optional `locale` query parameter (§9a).
+
+---
+
 # 9. Performance Trends
 
 ## Retrieve Learning Trends

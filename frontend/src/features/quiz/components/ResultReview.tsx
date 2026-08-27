@@ -31,10 +31,26 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
             ) : (
               <MatchingReview question={question} />
             )}
+            {question.explanation && <Explanation text={question.explanation} />}
           </Card>
         ))}
       </div>
     </section>
+  );
+}
+
+/**
+ * The teaching note for one question, shown only in the post-completion
+ * review (the backend withholds it while a session is active). Rendered as
+ * plain text with `whitespace-pre-wrap`, the same treatment question titles
+ * get — explanations are authored as prose, not markup.
+ */
+function Explanation({ text }: { text: string }): React.JSX.Element {
+  return (
+    <div className="border-border bg-surface-elevated flex flex-col gap-1 rounded-lg border p-4">
+      <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Пояснення</p>
+      <p className="text-text-secondary text-sm whitespace-pre-wrap">{text}</p>
+    </div>
   );
 }
 
@@ -87,6 +103,9 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
   const options = optionMap(question.answerOptions);
   const correctPairs = getMatchingPairs(question.correctAnswer);
   const submittedPairs = getMatchingPairs(question.submittedAnswer);
+  // Keyed by the left prompt so a submitted pair can be checked directly,
+  // regardless of the order the reader assigned them in.
+  const correctRightByLeft = new Map(correctPairs.map((pair) => [pair.left, pair.right]));
 
   return (
     <div className="flex flex-col gap-4 text-sm">
@@ -108,16 +127,29 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
         {submittedPairs.length === 0 ? (
           <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>
         ) : (
-          submittedPairs.map((pair, i) => (
-            <div
-              key={`${pair.left}-${i}`}
-              className="border-border text-text-secondary flex items-center gap-2 rounded-lg border px-4 py-2.5"
-            >
-              <span>{contentOf(options, pair.left)}</span>
-              <span className="text-text-muted">→</span>
-              <span>{contentOf(options, pair.right)}</span>
-            </div>
-          ))
+          submittedPairs.map((pair, i) => {
+            // Marked per pair, not per question: a matching answer is scored
+            // as a whole, so without this the reader sees only that they got
+            // it wrong — not which of the four pairings was the mistake.
+            const isPairCorrect = correctRightByLeft.get(pair.left) === pair.right;
+            return (
+              <div
+                key={`${pair.left}-${i}`}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 ${
+                  isPairCorrect
+                    ? 'border-success/40 bg-success/10 text-text-primary'
+                    : 'border-error/40 bg-error/10 text-text-primary'
+                }`}
+              >
+                <span>{contentOf(options, pair.left)}</span>
+                <span className="text-text-muted">→</span>
+                <span>{contentOf(options, pair.right)}</span>
+                <Badge tone={isPairCorrect ? 'success' : 'error'} className="ml-auto shrink-0">
+                  {isPairCorrect ? 'Правильно' : 'Неправильно'}
+                </Badge>
+              </div>
+            );
+          })
         )}
       </div>
     </div>

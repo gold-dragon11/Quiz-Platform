@@ -12,6 +12,7 @@ import { isMatching, type QuestionContent, type TopicContent } from './types';
  */
 
 const MAX_TITLE_LENGTH = 2000;
+const MAX_EXPLANATION_LENGTH = 2000;
 const MAX_OPTION_LENGTH = 500;
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
@@ -53,6 +54,18 @@ export function validateTopic(topic: TopicContent): string[] {
 
     if (!(question.difficulty in Difficulty)) {
       errors.push(`${at}: unknown difficulty "${question.difficulty}"`);
+    }
+
+    // Mirrors the Admin API's own limit, so seeded content can never be
+    // something an administrator could not have typed into the form.
+    if (question.explanation !== undefined) {
+      if (!question.explanation.trim()) {
+        errors.push(`${at}: explanation is present but empty`);
+      } else if (question.explanation.length > MAX_EXPLANATION_LENGTH) {
+        errors.push(
+          `${at}: explanation exceeds ${MAX_EXPLANATION_LENGTH} characters`,
+        );
+      }
     }
 
     errors.push(...validateAnswers(question, at));

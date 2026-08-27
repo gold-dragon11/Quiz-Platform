@@ -121,7 +121,8 @@ export interface QuizReviewQuestion {
   submittedAnswer: SelectedAnswer | null;
   correctAnswer: Record<string, unknown>;
   isCorrect: boolean;
-  explanation: null;
+  /** Teaching note; `null` when the question has none. Review-only. */
+  explanation: string | null;
 }
 
 /** Full review payload of a completed quiz (docs/04-api/quiz.md §8). */
@@ -138,4 +139,6 @@ export interface StartQuizPayload {
   topicId?: string;
   questionCount: number;
   timerEnabled: boolean;
+  /** Draw only from questions last answered wrong (docs/04-api/quiz.md §4). */
+  onlyMistakes?: boolean;
 }

@@ -545,6 +545,64 @@ describe('Quiz Engine (e2e)', () => {
       expect(raw).not.toContain('isCorrect');
       expect(raw).not.toContain('configuration');
     });
+
+    it('withholds the explanation until the quiz is completed', async () => {
+      // An explanation is a teaching note about the answer, so serving it
+      // mid-quiz would hand over the answer itself.
+      const explained = await adminReq('post', '/api/v1/admin/questions', {
+        topicId: secondTopicId,
+        type: QuestionType.SINGLE_CHOICE,
+        title: 'Phase51 explained question?',
+        explanation: 'Правильна відповідь — A, бо так.',
+        options: [
+          { content: 'A', isCorrect: true },
+          { content: 'B' },
+          { content: 'C' },
+        ],
+      }).expect(201);
+      const questionId = (explained.body as { id: string }).id;
+      await adminReq('patch', `/api/v1/admin/questions/${questionId}/publish`, {
+        isPublished: true,
+      }).expect(200);
+
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: secondTopicId,
+        questionCount: 5,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      const questions = await getQuestions(token, sessionId);
+      expect(JSON.stringify(questions)).not.toContain('бо так');
+
+      const resume = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      expect(JSON.stringify(resume.body)).not.toContain('бо так');
+
+      // Only after completion does the review carry it.
+      for (const q of questions) {
+        await submit(token, sessionId, {
+          questionId: q.id,
+          selectedAnswer: { answerOptionId: q.answerOptions[0].id },
+        }).expect(200);
+      }
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (
+        review.body as {
+          questions: { id: string; explanation: string | null }[];
+        }
+      ).questions.find((q) => q.id === questionId);
+      expect(reviewed?.explanation).toBe('Правильна відповідь — A, бо так.');
+    });
   });
 
   describe('POST /quiz/{id}/answers', () => {
@@ -800,7 +858,7 @@ describe('Quiz Engine (e2e)', () => {
           submittedAnswer: unknown;
           correctAnswer: { optionId: string };
           isCorrect: boolean;
-          explanation: null;
+          explanation: string | null;
         }[];
       };
 
@@ -809,6 +867,7 @@ describe('Quiz Engine (e2e)', () => {
       for (const q of body.questions) {
         expect(q.correctAnswer).toHaveProperty('optionId');
         expect(q).toHaveProperty('isCorrect');
+        // These fixtures carry no explanation of their own.
         expect(q.explanation).toBeNull();
       }
       // Exactly two correct as played.

@@ -230,6 +230,7 @@ export class QuestionsService {
       title: dto.title,
       imageUrl: dto.imageUrl,
       difficulty: dto.difficulty,
+      explanation: dto.explanation,
       configuration,
       options,
     });
@@ -252,6 +253,9 @@ export class QuestionsService {
       ...(dto.title === undefined ? {} : { title: dto.title }),
       ...(dto.imageUrl === undefined ? {} : { imageUrl: dto.imageUrl }),
       ...(dto.difficulty === undefined ? {} : { difficulty: dto.difficulty }),
+      ...(dto.explanation === undefined
+        ? {}
+        : { explanation: dto.explanation }),
     };
 
     if (question.type === QuestionType.SINGLE_CHOICE) {

@@ -3,6 +3,7 @@ import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { StatisticsHero } from '@/features/statistics/components/StatisticsHero';
 import { OverallStatisticsSection } from '@/features/statistics/components/OverallStatisticsSection';
 import { SubjectStatisticsSection } from '@/features/statistics/components/SubjectStatisticsSection';
+import { MistakesSection } from '@/features/statistics/components/MistakesSection';
 import { RecentActivitySection } from '@/features/statistics/components/RecentActivitySection';
 
 /**
@@ -31,6 +32,9 @@ export function StatisticsPage(): React.JSX.Element {
       </motion.div>
       <motion.div variants={fadeInUp}>
         <SubjectStatisticsSection />
+      </motion.div>
+      <motion.div variants={fadeInUp}>
+        <MistakesSection />
       </motion.div>
       <motion.div variants={fadeInUp}>
         <RecentActivitySection />
