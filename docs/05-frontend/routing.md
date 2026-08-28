@@ -70,6 +70,7 @@ Authenticated routes require a valid access token.
 | `/quiz` | Quiz selection |
 | `/quiz/:sessionId` | Active quiz session |
 | `/quiz/:sessionId/result` | Quiz results |
+| `/topics/:topicId/material` | Learning material for one topic |
 | `/statistics` | Learning statistics |
 | `/profile` | User profile |
 | `/settings` | User settings |

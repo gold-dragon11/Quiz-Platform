@@ -1,6 +1,8 @@
 import { Difficulty, PrismaClient, QuestionType } from '@prisma/client';
 import { loadSubject } from './seed/load';
+import { loadMaterials, type MaterialContent } from './seed/materials';
 import { isMatching, questionType, type QuestionContent } from './seed/types';
+import { estimateReadingTime } from '../src/learning-materials/learning-material.constants';
 
 /**
  * Learning-content seed (Phase 7.0).
@@ -30,6 +32,65 @@ interface Counters {
   questionsCreated: number;
   questionsUpdated: number;
   questionsUnchanged: number;
+  materialsCreated: number;
+  materialsUpdated: number;
+  materialsSkipped: number;
+}
+
+/**
+ * Upserts one material by its natural key `(subjectId, slug)`, the same
+ * identity the authoring file carries, so re-running the seed edits the
+ * existing row instead of accumulating copies.
+ *
+ * A material whose slug matches no topic is skipped rather than seeded
+ * subject-wide: the file is named after a topic, so an unmatched name is a
+ * typo or a topic yet to be written, and attaching it to nothing would hide
+ * that.
+ */
+async function seedMaterial(
+  subjectId: string,
+  topicIdBySlug: Map<string, string>,
+  displayOrder: number,
+  material: MaterialContent,
+  counters: Counters,
+): Promise<void> {
+  const topicId = topicIdBySlug.get(material.slug);
+  if (!topicId) {
+    console.warn(
+      `  ! material "${material.slug}" matches no topic in this subject — skipped`,
+    );
+    counters.materialsSkipped += 1;
+    return;
+  }
+
+  const existing = await prisma.learningMaterial.findUnique({
+    where: { subjectId_slug: { subjectId, slug: material.slug } },
+    select: { id: true },
+  });
+
+  const fields = {
+    topicId,
+    title: material.title,
+    description: material.description ?? null,
+    content: material.content,
+    // Derived, never authored, so it cannot drift from the text.
+    estimatedReadingTime: estimateReadingTime(material.content),
+    displayOrder,
+    isPublished: true,
+    deletedAt: null,
+  };
+
+  await prisma.learningMaterial.upsert({
+    where: { subjectId_slug: { subjectId, slug: material.slug } },
+    update: fields,
+    create: { subjectId, slug: material.slug, ...fields },
+  });
+
+  if (existing) {
+    counters.materialsUpdated += 1;
+  } else {
+    counters.materialsCreated += 1;
+  }
 }
 
 async function seedSubject(
@@ -38,6 +99,8 @@ async function seedSubject(
   counters: Counters,
 ): Promise<void> {
   const { subject, topics } = loadSubject(dir);
+  const materials = loadMaterials(dir);
+  const topicIdBySlug = new Map<string, string>();
 
   const subjectRow = await prisma.subject.upsert({
     where: { slug: subject.slug },
@@ -86,6 +149,8 @@ async function seedSubject(
       },
     });
 
+    topicIdBySlug.set(topic.slug, topicRow.id);
+
     if (existingTopic) {
       counters.topicsUpdated += 1;
     } else {
@@ -95,6 +160,10 @@ async function seedSubject(
     for (const question of topic.questions) {
       await seedQuestion(topicRow.id, question, counters);
     }
+  }
+
+  for (const [index, material] of materials.entries()) {
+    await seedMaterial(subjectRow.id, topicIdBySlug, index, material, counters);
   }
 }
 
@@ -263,6 +332,9 @@ async function main(): Promise<void> {
     questionsCreated: 0,
     questionsUpdated: 0,
     questionsUnchanged: 0,
+    materialsCreated: 0,
+    materialsUpdated: 0,
+    materialsSkipped: 0,
   };
 
   for (const [index, pack] of SUBJECT_PACKS.entries()) {
@@ -286,6 +358,9 @@ async function main(): Promise<void> {
   for (const row of totals) {
     console.log(`  ${row.difficulty ?? 'UNSET'}: ${row._count._all}`);
   }
+  console.log(
+    `  materials : ${counters.materialsCreated} created, ${counters.materialsUpdated} updated, ${counters.materialsSkipped} skipped`,
+  );
   console.log(
     `  matching  : ${await prisma.question.count({ where: { type: QuestionType.MATCHING, deletedAt: null } })}`,
   );

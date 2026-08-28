@@ -10,6 +10,7 @@ import { isApiError } from '@/shared/utils/apply-api-error';
 import { useQuizResult } from '@/features/quiz/hooks/use-quiz';
 import { ResultSummary } from '@/features/quiz/components/ResultSummary';
 import { ResultReview } from '@/features/quiz/components/ResultReview';
+import { MaterialLink } from '@/features/quiz/components/MaterialLink';
 
 /**
  * `/quiz/:sessionId/result` (RequireAuth). The post-completion result and
@@ -69,6 +70,12 @@ export function QuizResultPage(): React.JSX.Element {
       <motion.div variants={fadeInUp}>
         <ResultSummary result={result.data.result} />
       </motion.div>
+
+      {result.data.session.topicId && (
+        <motion.div variants={fadeInUp}>
+          <MaterialLink topicId={result.data.session.topicId} />
+        </motion.div>
+      )}
 
       <motion.div variants={fadeInUp} className="flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Button onClick={() => navigate(ROUTES.quiz)}>Спробувати ще раз</Button>

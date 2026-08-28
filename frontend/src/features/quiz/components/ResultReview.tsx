@@ -1,3 +1,4 @@
+import { MathText } from '@/shared/ui/MathText';
 import { QuestionType } from '@/shared/types/enums';
 import { Badge } from '@/shared/ui/Badge';
 import { Card } from '@/shared/ui/Card';
@@ -20,7 +21,7 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
             <div className="flex items-start justify-between gap-4">
               <h3 className="text-text-primary font-medium whitespace-pre-wrap">
                 <span className="text-text-muted mr-2">{i + 1}.</span>
-                {question.title}
+                <MathText>{question.title}</MathText>
               </h3>
               <Badge tone={question.isCorrect ? 'success' : 'error'} className="shrink-0">
                 {question.isCorrect ? 'Правильно' : 'Неправильно'}
@@ -41,15 +42,17 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
 
 /**
  * The teaching note for one question, shown only in the post-completion
- * review (the backend withholds it while a session is active). Rendered as
- * plain text with `whitespace-pre-wrap`, the same treatment question titles
- * get — explanations are authored as prose, not markup.
+ * review (the backend withholds it while a session is active). Prose with
+ * `whitespace-pre-wrap`, plus inline LaTeX between `$…$` where a mathematics
+ * explanation needs a formula — the same treatment question titles get.
  */
 function Explanation({ text }: { text: string }): React.JSX.Element {
   return (
     <div className="border-border bg-surface-elevated flex flex-col gap-1 rounded-lg border p-4">
       <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Пояснення</p>
-      <p className="text-text-secondary text-sm whitespace-pre-wrap">{text}</p>
+      <p className="text-text-secondary text-sm whitespace-pre-wrap">
+        <MathText>{text}</MathText>
+      </p>
     </div>
   );
 }
@@ -88,7 +91,9 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
                     : 'border-border text-text-secondary'
               }`}
             >
-              <span>{option.content}</span>
+              <span>
+                <MathText>{option.content}</MathText>
+              </span>
               {isCorrect && <Badge tone="success">Правильна відповідь</Badge>}
               {wrongPick && <Badge tone="error">Ваша відповідь</Badge>}
             </div>
@@ -116,9 +121,9 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
             key={`${pair.left}-${i}`}
             className="border-success/40 bg-success/10 text-text-primary flex items-center gap-2 rounded-lg border px-4 py-2.5"
           >
-            <span>{contentOf(options, pair.left)}</span>
+            <MathText>{contentOf(options, pair.left)}</MathText>
             <span className="text-text-muted">→</span>
-            <span>{contentOf(options, pair.right)}</span>
+            <MathText>{contentOf(options, pair.right)}</MathText>
           </div>
         ))}
       </div>
@@ -141,9 +146,9 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
                     : 'border-error/40 bg-error/10 text-text-primary'
                 }`}
               >
-                <span>{contentOf(options, pair.left)}</span>
+                <MathText>{contentOf(options, pair.left)}</MathText>
                 <span className="text-text-muted">→</span>
-                <span>{contentOf(options, pair.right)}</span>
+                <MathText>{contentOf(options, pair.right)}</MathText>
                 <Badge tone={isPairCorrect ? 'success' : 'error'} className="ml-auto shrink-0">
                   {isPairCorrect ? 'Правильно' : 'Неправильно'}
                 </Badge>

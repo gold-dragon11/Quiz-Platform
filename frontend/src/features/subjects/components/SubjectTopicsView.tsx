@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
+import { generatePath, useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
+import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp, staggerContainer, staggerDense } from '@/shared/constants/motion';
 import { pluralUk } from '@/shared/utils/format';
 import { Button } from '@/shared/ui/Button';
@@ -8,6 +10,7 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import type { PublicSubject, PublicTopic } from '@/features/subjects/types/subjects.types';
 import { SectionError } from '@/features/subjects/components/SectionError';
+import { useSubjectMaterials } from '@/features/learning-materials';
 
 interface SubjectTopicsViewProps {
   subject: PublicSubject;
@@ -31,7 +34,13 @@ export function SubjectTopicsView({
   onBack,
   onStartQuiz,
 }: SubjectTopicsViewProps): React.JSX.Element {
+  const navigate = useNavigate();
   const topicCount = topics?.data?.length ?? null;
+
+  // One request per subject tells us which topics have a material, so each
+  // card can decide whether to offer it without asking per topic. A failure
+  // here simply leaves the buttons out — the topics themselves still work.
+  const materials = useSubjectMaterials(subject.id);
 
   return (
     <motion.div
@@ -117,25 +126,37 @@ export function SubjectTopicsView({
             animate="animate"
             className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
           >
-            {topics.data.map((topic) => (
-              <motion.div
-                key={topic.id}
-                variants={fadeInUp}
-                className="border-border bg-surface flex flex-col gap-3 rounded-xl border p-5"
-              >
-                <div className="flex-1">
-                  <h3 className="text-text-primary font-medium">{topic.name}</h3>
-                  {topic.description && (
-                    <p className="text-text-muted mt-1 line-clamp-3 text-sm">{topic.description}</p>
-                  )}
-                </div>
-                <div>
-                  <Button size="sm" onClick={() => onStartQuiz(subject.id, topic.id)}>
-                    Почати тест
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
+            {topics.data.map((topic) => {
+              const material = materials.data?.get(topic.id);
+              return (
+                <motion.div
+                  key={topic.id}
+                  variants={fadeInUp}
+                  className="border-border bg-surface flex flex-col gap-3 rounded-xl border p-5"
+                >
+                  <div className="flex-1">
+                    <h3 className="text-text-primary font-medium">{topic.name}</h3>
+                    {topic.description && (
+                      <p className="text-text-muted mt-1 line-clamp-3 text-sm">{topic.description}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" onClick={() => onStartQuiz(subject.id, topic.id)}>
+                      Почати тест
+                    </Button>
+                    {material && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => navigate(generatePath(ROUTES.topicMaterial, { topicId: topic.id }))}
+                      >
+                        Матеріал
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
           </motion.div>
         )}
       </motion.section>

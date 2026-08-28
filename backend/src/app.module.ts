@@ -7,6 +7,7 @@ import { LocalizedThrottlerGuard } from './common/guards/localized-throttler.gua
 import { AppConfigModule } from './config/config.module';
 import { AppConfig } from './config/configuration';
 import { HealthModule } from './health/health.module';
+import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionsModule } from './questions/questions.module';
 import { QuizModule } from './quiz/quiz.module';
@@ -45,6 +46,7 @@ import { UsersModule } from './users/users.module';
     SubjectsModule,
     TopicsModule,
     QuestionsModule,
+    LearningMaterialsModule,
     QuizModule,
     QuizzesModule,
     StatisticsModule,

@@ -20,6 +20,7 @@ import { ProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 import { StatisticsPage } from '@/features/statistics';
+import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
 import { AdminPanelPage } from '@/features/admin';
 import { LandingPage } from '@/features/landing';
@@ -119,6 +120,10 @@ export const router = createBrowserRouter([
               {
                 path: ROUTES.quizResult,
                 element: page(<QuizResultPage />),
+              },
+              {
+                path: ROUTES.topicMaterial,
+                element: page(<MaterialPage />),
               },
               { path: ROUTES.statistics, element: page(<StatisticsPage />) },
               { path: ROUTES.profile, element: page(<ProfilePage />) },

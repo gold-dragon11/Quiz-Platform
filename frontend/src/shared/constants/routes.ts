@@ -18,6 +18,7 @@ export const ROUTES = {
   quiz: '/quiz',
   quizSession: '/quiz/:sessionId',
   quizResult: '/quiz/:sessionId/result',
+  topicMaterial: '/topics/:topicId/material',
   statistics: '/statistics',
   profile: '/profile',
   settings: '/settings',

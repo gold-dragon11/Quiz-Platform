@@ -1,0 +1,22 @@
+/*
+ * Overrides for KaTeX output, loaded with the renderer's own chunk so the
+ * rules arrive after katex.min.css and win without !important.
+ */
+
+/*
+ * A displayed formula can be wider than a phone screen. Scroll the formula
+ * itself so the page body never scrolls sideways.
+ */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+/*
+ * Formulas sit inside running prose here, not in a paper's centred display
+ * column, so they align with the paragraph that introduces them.
+ */
+.katex-display > .katex {
+  text-align: left;
+}

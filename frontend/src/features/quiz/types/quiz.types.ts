@@ -129,6 +129,11 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /** Where the quiz came from, so the result can link back to its material. */
+  session: {
+    subjectId: string;
+    topicId: string | null;
+  };
 }
 
 // --- Start request ------------------------------------------------------

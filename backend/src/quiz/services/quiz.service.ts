@@ -470,6 +470,7 @@ export class QuizService {
         completedAt: result.completedAt.toISOString(),
       },
       questions: reviewQuestions,
+      session: { subjectId: session.subjectId, topicId: session.topicId },
     };
   }
 

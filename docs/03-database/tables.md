@@ -331,13 +331,30 @@ User level is derived from these records.
 
 ---
 
-## learning_materials (Post-MVP)
+## learning_materials
 
-Stores educational notes and learning materials.
+Stores the study notes that accompany quizzes.
 
 Each Learning Material belongs to one Subject and, optionally, one Topic.
 
-This table is reserved for future releases.
+| Column | Type | Notes |
+|--------|------|-------|
+| id | UUID | Primary key |
+| subjectId | UUID | Required, `ON DELETE CASCADE` |
+| topicId | UUID | Optional, `ON DELETE SET NULL` |
+| title | Text | |
+| slug | Text | Unique per subject |
+| description | Text | Nullable |
+| content | Text | Markdown, with LaTeX between `$…$` and `$$…$$` |
+| estimatedReadingTime | Integer | Nullable; derived from the word count |
+| displayOrder | Integer | Order within the subject |
+| isPublished | Boolean | Defaults to `false` |
+| createdAt / updatedAt | Timestamp | |
+| deletedAt | Timestamp | Soft delete |
+
+Constraints and indexes: `@@unique([subjectId, slug])`, plus indexes on `subjectId` and `topicId`.
+
+The unique constraint spans deleted rows too, so a slug stays reserved after a material is soft-deleted.
 
 ---
 

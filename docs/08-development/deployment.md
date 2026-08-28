@@ -286,6 +286,29 @@ The order matters, because two steps depend on results from earlier ones.
    automatically on boot; seeding does not, so without this step the platform
    deploys with no subjects at all.
 
+## 17.1a Retitled Questions
+
+The seed identifies a question by `(topicId, title)`. That makes a rewritten
+title a *different* question: the seed creates a new row and leaves the
+original published beside it, so a database seeded before a retitling ends up
+with both.
+
+This happened once, when the mathematics questions were converted from Unicode
+to LaTeX (docs/02-domain/question.md §10). A database seeded before that
+conversion must be repaired **before** it is seeded again:
+
+```bash
+npx ts-node --compiler-options '{"module":"CommonJS"}' \
+  prisma/scripts/rename-latex-questions.ts            # dry run
+npx ts-node --compiler-options '{"module":"CommonJS"}' \
+  prisma/scripts/rename-latex-questions.ts --write
+```
+
+The script moves each question onto its new title and deletes the duplicate the
+seed created, so question ids — and the QuestionAttempts pointing at them —
+survive. It is idempotent, refuses to touch a duplicate that already has
+attempts, and does nothing at all on a database seeded after the conversion.
+
 ## 17.2 Migrations
 
 The container runs `prisma migrate deploy` before starting the server. This

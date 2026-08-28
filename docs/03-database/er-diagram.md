@@ -103,7 +103,7 @@ Responsible for account management, sessions, and personalization.
 - AnswerOption
 - AnswerOptionTranslation
 - Quiz
-- LearningMaterial (Post-MVP)
+- LearningMaterial
 
 Responsible for organizing educational content.
 
@@ -272,8 +272,8 @@ LearningMaterial
 | AnswerOption → AnswerOptionTranslation | 1 : N |
 | Subject → Quiz | 1 : N |
 | Topic → Quiz | 0..1 : N (optional) |
-| Subject → LearningMaterial | 1 : N (Future) |
-| Topic → LearningMaterial | 0..1 : N (Future, optional) |
+| Subject → LearningMaterial | 1 : N |
+| Topic → LearningMaterial | 0..1 : N (optional) |
 
 ---
 

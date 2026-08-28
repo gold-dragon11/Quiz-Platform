@@ -84,4 +84,13 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /**
+   * Where the quiz came from. Carried so the result page can offer the
+   * learning material for the topic just tested, without a second request to
+   * rediscover which topic that was.
+   */
+  session: {
+    subjectId: string;
+    topicId: string | null;
+  };
 }

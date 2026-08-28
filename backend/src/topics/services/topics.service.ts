@@ -106,6 +106,17 @@ export class TopicsService {
     return topic !== null;
   }
 
+  /**
+   * Whether a visible topic with this id sits under this subject. Public
+   * interface for the Learning Materials module, which must not let a
+   * material point at a topic from a different subject
+   * (docs/02-domain/learning-material.md §6).
+   */
+  async topicBelongsToSubject(id: string, subjectId: string): Promise<boolean> {
+    const topic = await this.topicsRepository.findActiveById(id);
+    return topic !== null && topic.subjectId === subjectId;
+  }
+
   async list(query: ListTopicsQueryDto): Promise<PaginatedTopics> {
     const { items, totalItems } = await this.topicsRepository.findPage({
       skip: (query.page - 1) * query.pageSize,

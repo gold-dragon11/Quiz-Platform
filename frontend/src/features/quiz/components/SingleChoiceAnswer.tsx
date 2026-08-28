@@ -1,3 +1,4 @@
+import { MathText } from '@/shared/ui/MathText';
 import type { QuizAnswerOption } from '@/features/quiz/types/quiz.types';
 
 interface SingleChoiceAnswerProps {
@@ -49,7 +50,9 @@ export function SingleChoiceAnswer({
             {option.imageUrl && (
               <img src={option.imageUrl} alt="" className="max-h-16 rounded-md object-contain" />
             )}
-            <span className="text-sm">{option.content}</span>
+            <span className="text-sm">
+              <MathText>{option.content}</MathText>
+            </span>
           </button>
         );
       })}

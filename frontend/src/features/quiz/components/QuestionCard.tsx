@@ -1,5 +1,6 @@
 import { QuestionType } from '@/shared/types/enums';
 import { Card } from '@/shared/ui/Card';
+import { MathText } from '@/shared/ui/MathText';
 import type { QuizQuestionView, SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import {
   assignmentsToPairs,
@@ -21,9 +22,8 @@ interface QuestionCardProps {
 
 /**
  * Renders one active question and the correct answer input for its type
- * (docs/04-api/quiz.md §5-6). Titles may contain raw LaTeX; the API returns it
- * verbatim and full math rendering is deferred (no KaTeX dependency yet), so
- * the title is shown as text with preserved whitespace.
+ * (docs/04-api/quiz.md §5-6). Titles may contain LaTeX between `$…$`, which
+ * MathText renders; a title without any is plain text and costs nothing.
  */
 export function QuestionCard({
   question,
@@ -34,7 +34,7 @@ export function QuestionCard({
   return (
     <Card className="flex flex-col gap-5">
       <h2 className="text-text-primary text-lg leading-relaxed font-medium whitespace-pre-wrap">
-        {question.title}
+        <MathText>{question.title}</MathText>
       </h2>
 
       {question.imageUrl && (

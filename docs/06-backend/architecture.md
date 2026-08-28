@@ -101,6 +101,7 @@ Core modules include:
 - Subjects
 - Topics
 - Questions
+- Learning Materials
 - Admin
 - Settings
 

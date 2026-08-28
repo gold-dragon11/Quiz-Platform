@@ -92,6 +92,8 @@ dashboard/
 
 quiz/
 
+learning-materials/
+
 statistics/
 
 profile/

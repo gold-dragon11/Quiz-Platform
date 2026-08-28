@@ -1,3 +1,5 @@
+import { MathText } from '@/shared/ui/MathText';
+import { mathToPlainText } from '@/shared/utils/math-text';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import type { QuizAnswerOption } from '@/features/quiz/types/quiz.types';
 import { splitMatchingOptions } from '@/features/quiz/lib/quiz-answers';
@@ -48,7 +50,9 @@ export function MatchingAnswer({
           { value: '', label: '— оберіть відповідність —' },
           ...right
             .filter((choice) => choice.id === current || !takenByOthers.has(choice.id))
-            .map((choice) => ({ value: choice.id, label: choice.content })),
+            // A native <select> option cannot hold markup, so a formula is
+            // flattened to readable text here rather than typeset.
+            .map((choice) => ({ value: choice.id, label: mathToPlainText(choice.content) })),
         ];
 
         return (
@@ -57,11 +61,11 @@ export function MatchingAnswer({
               {prompt.imageUrl && (
                 <img src={prompt.imageUrl} alt="" className="mb-2 max-h-16 rounded-md object-contain" />
               )}
-              {prompt.content}
+              <MathText>{prompt.content}</MathText>
             </div>
             <div className="sm:w-1/2">
               <Select
-                aria-label={`Match for ${prompt.content}`}
+                aria-label={`Відповідність для: ${mathToPlainText(prompt.content)}`}
                 options={choiceOptions}
                 value={current}
                 disabled={disabled}

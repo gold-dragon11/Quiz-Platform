@@ -17,6 +17,57 @@ const MAX_OPTION_LENGTH = 500;
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
 
+/**
+ * Inline formulas are written between `$…$` and rendered with KaTeX
+ * (docs/02-domain/question.md §8). These checks catch the ways a formula gets
+ * broken while editing content by hand: a delimiter left unclosed, a formula
+ * cut in the middle of an expression, or brackets that do not match. They
+ * cannot judge whether the mathematics is right — only that what is there can
+ * be typeset.
+ */
+function validateFormulas(text: string, at: string, field: string): string[] {
+  const errors: string[] = [];
+  const delimiters = (text.match(/\$/g) ?? []).length;
+  if (delimiters % 2 !== 0) {
+    errors.push(`${at}: ${field} has an unclosed "$" formula delimiter`);
+    return errors;
+  }
+
+  for (const [, body] of text.matchAll(/\$([^$]*)\$/g)) {
+    const formula = body.trim();
+    if (!formula) {
+      errors.push(`${at}: ${field} has an empty formula`);
+      continue;
+    }
+    if (/[+\-=<>*/,;·:]$/.test(formula)) {
+      errors.push(
+        `${at}: ${field} has a formula ending on an operator: ${formula}`,
+      );
+    }
+    let depth = 0;
+    for (const character of formula) {
+      if (character === '(' || character === '[') {
+        depth += 1;
+      } else if (character === ')' || character === ']') {
+        depth -= 1;
+        if (depth < 0) {
+          break;
+        }
+      }
+    }
+    if (depth !== 0) {
+      errors.push(`${at}: ${field} has unbalanced brackets: ${formula}`);
+    }
+    const open = (formula.match(/{/g) ?? []).length;
+    const close = (formula.match(/}/g) ?? []).length;
+    if (open !== close) {
+      errors.push(`${at}: ${field} has unbalanced braces: ${formula}`);
+    }
+  }
+
+  return errors;
+}
+
 export function validateTopic(topic: TopicContent): string[] {
   const errors: string[] = [];
   const where = (index: number): string => `${topic.slug}[${index}]`;
@@ -40,6 +91,8 @@ export function validateTopic(topic: TopicContent): string[] {
       errors.push(`${at}: title is required`);
     } else if (question.title.length > MAX_TITLE_LENGTH) {
       errors.push(`${at}: title exceeds ${MAX_TITLE_LENGTH} characters`);
+    } else {
+      errors.push(...validateFormulas(question.title, at, 'title'));
     }
 
     // Duplicate wording is the most common quality failure in generated
@@ -64,6 +117,10 @@ export function validateTopic(topic: TopicContent): string[] {
       } else if (question.explanation.length > MAX_EXPLANATION_LENGTH) {
         errors.push(
           `${at}: explanation exceeds ${MAX_EXPLANATION_LENGTH} characters`,
+        );
+      } else {
+        errors.push(
+          ...validateFormulas(question.explanation, at, 'explanation'),
         );
       }
     }
@@ -93,6 +150,13 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       if (!left?.trim() || !right?.trim()) {
         errors.push(`${at}: pair ${i} has an empty side`);
         return;
+      }
+      // A matching option is rendered inside a native <select>, which cannot
+      // hold markup, so those stay in Unicode rather than LaTeX.
+      if (left.includes('$') || right.includes('$')) {
+        errors.push(
+          `${at}: pair ${i} uses "$" — matching options cannot carry formulas`,
+        );
       }
       if (left.length > MAX_OPTION_LENGTH || right.length > MAX_OPTION_LENGTH) {
         errors.push(`${at}: pair ${i} exceeds ${MAX_OPTION_LENGTH} characters`);
@@ -132,6 +196,8 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       errors.push(`${at}: option ${i} is empty`);
     } else if (option.length > MAX_OPTION_LENGTH) {
       errors.push(`${at}: option ${i} exceeds ${MAX_OPTION_LENGTH} characters`);
+    } else {
+      errors.push(...validateFormulas(option, at, `option ${i}`));
     }
   });
 

@@ -537,19 +537,29 @@ model XPTransaction {
 
 /// docs/02-domain/learning-material.md
 model LearningMaterial {
-  id                   String   @id @default(uuid()) @db.Uuid
-  subjectId            String   @db.Uuid
-  topicId              String?  @db.Uuid
-  title                String
-  description          String?
-  content              String
+  id        String  @id @default(uuid()) @db.Uuid
+  subjectId String  @db.Uuid
+  topicId   String? @db.Uuid
+  title     String
+  slug      String
+  description String?
+  /// Markdown, with LaTeX between $…$ / $$…$$ (docs/02-domain/learning-material.md §7).
+  content   String
+  /// Derived from the word count at write time rather than authored, so it
+  /// cannot drift from the text it describes.
   estimatedReadingTime Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  displayOrder Int
+  isPublished  Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
+  /// row, so a slug stays reserved within its subject.
+  deletedAt DateTime?
 
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   topic   Topic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
 
+  @@unique([subjectId, slug])
   @@index([subjectId])
   @@index([topicId])
   @@map("learning_materials")

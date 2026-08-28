@@ -164,9 +164,19 @@ Images should enhance understanding rather than replace question text.
 
 # 10. Mathematical Formulas
 
-Questions support LaTeX notation.
+Formulas are written as **inline LaTeX between `$…$`**, in the question title, the answer options, and the explanation. They are stored exactly as authored and rendered client-side with KaTeX.
 
-Mathematical expressions should render consistently across all supported platforms.
+```text
+Розв'яжіть нерівність $x^2 - 4 > 0$.
+```
+
+A string with no `$` is plain text and costs nothing to render — KaTeX is loaded only for a string that actually contains a formula, so the three subjects without mathematics never pay for it.
+
+**Matching questions are the one exception.** Their options are presented inside a native `<select>`, which cannot hold markup, so they stay in Unicode (`x² − 25`) rather than LaTeX. The seed validator rejects a `$` in a matching pair for this reason. Lifting the exception means replacing that control with a custom listbox.
+
+Units keep their Unicode superscripts too: `15 см²` is a unit attached to a Ukrainian word, not a power, and typesetting it would leave an exponent with nothing to attach to.
+
+The mathematics content was converted from Unicode to LaTeX mechanically, and the conversion was verified three ways: every converted string canonicalises to the same token stream as the original, every formula has balanced delimiters and does not end mid-expression, and every formula compiles under KaTeX in strict mode.
 
 ---
 

@@ -117,6 +117,8 @@ Each question includes:
 - imageUrl (optional);
 - answerOptions — each with id, content, imageUrl, order.
 
+Question titles, answer options, and explanations may contain inline LaTeX between `$…$` (docs/02-domain/question.md §10); the API returns it verbatim and the client renders it.
+
 Correct answers are **never** returned while the session is active: `AnswerOption.isCorrect` and (for Matching) the question `configuration` are withheld — the client submits its guesses and the backend evaluates. These values become available only in the result review after completion.
 
 ---
@@ -181,6 +183,7 @@ Returns the full post-completion **review** — available only after the session
 
 - `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
 - `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
+- `session` — `{ subjectId, topicId }`, where the quiz came from. Carried so the result page can offer the learning material for the topic just tested (docs/04-api/learning-materials.md §4) without a second request to rediscover which topic that was.
 
 The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.
 
