@@ -59,7 +59,11 @@ Creates a new Quiz Session in one of two mutually exclusive ways.
 Request body — **exactly one** of:
 
 - **Stored Quiz:** `quizId` only. The Subject, Topic, question count, timer, and mode are loaded from the referenced published Quiz; the ad-hoc fields must not be provided. Supplying `quizId` together with any ad-hoc field returns `400`.
-- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional), `difficulty` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+
+`difficulty` restricts the pool to a single level (`BEGINNER`, `INTERMEDIATE`, `ADVANCED`); omit it for a mixed quiz, which is the default. It is not combinable with `quizId` (the stored Quiz fixes its own pool) or with `onlyMistakes` — that pool is already a specific set of questions, and narrowing it further would usually leave nothing; both combinations return `400`.
+
+Sizing a level-filtered request needs care: the advanced tier is much smaller than the others (roughly 8–10 questions per topic against 16–24 for the rest), so a request for 10 advanced questions from one topic fails where the same request without a level would succeed. Ask §4a first rather than guessing. The `409` for this case carries its own message, naming the level rather than the content as the limit.
 
 `onlyMistakes: true` narrows the question pool to those whose *most recent* attempt by this user was wrong — the same definition the mistakes view uses (§8a of the Statistics API), so answering one correctly removes it from both. Everything downstream is unchanged: the same fixed snapshot, scoring, XP and statistics. When the pool is smaller than `questionCount` the request returns `409 Conflict` with a message distinct from the ordinary insufficient-questions one, because an empty pool here means the reader has already fixed those mistakes rather than that content is missing. It is not combinable with `quizId`, whose pool comes from the stored Quiz.
 
@@ -75,6 +79,22 @@ The backend, in a single transaction:
 Only one Active session may exist per user at a time.
 
 Response `201 Created` returns the session metadata: sessionId, mode, subjectId, topicId, questionCount, timerEnabled, status, startedAt, expiresAt.
+
+---
+
+# 4a. Available Questions
+
+## Count the Question Pool
+
+```http
+GET /api/v1/quiz/available?subjectId=…&topicId=…&difficulty=…
+```
+
+Returns `{ "available": n }` — how many questions an ad-hoc quiz over exactly these filters would draw from. `subjectId` is required; `topicId` and `difficulty` are optional and mean the same as in §4.
+
+Exists so a caller can size `questionCount` before starting, instead of discovering an empty pool through a `409` it had no way to anticipate. This matters mainly for `difficulty`: without a level the pool is always large enough for the maximum a client offers, so the count is only interesting once a level narrows it.
+
+The count and the picker share one eligibility predicate in the repository, deliberately — if they drifted, this endpoint would promise a pool `POST /quiz/start` could not deliver, defeating its purpose.
 
 ---
 

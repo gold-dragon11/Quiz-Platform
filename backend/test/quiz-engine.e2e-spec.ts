@@ -66,6 +66,7 @@ describe('Quiz Engine (e2e)', () => {
   let topicId: string;
   let secondTopicId: string;
   let matchingTopicId: string;
+  let difficultyTopicId: string;
   let counter = 0;
 
   // Registers a fresh ACTIVE user, returns { token, userId }.
@@ -118,6 +119,30 @@ describe('Quiz Engine (e2e)', () => {
         { content: 'A', isCorrect: correctIndex === 0 },
         { content: 'B', isCorrect: correctIndex === 1 },
         { content: 'C', isCorrect: correctIndex === 2 },
+      ],
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  // Same as above but with an explicit level, for the difficulty filter.
+  const createPublishedAtDifficulty = async (
+    parentTopic: string,
+    difficulty: string,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.SINGLE_CHOICE,
+      title: `Phase51 ${difficulty} ${counter}?`,
+      difficulty,
+      options: [
+        { content: 'A', isCorrect: true },
+        { content: 'B' },
+        { content: 'C' },
       ],
     }).expect(201);
     const id = (created.body as { id: string }).id;
@@ -312,6 +337,16 @@ describe('Quiz Engine (e2e)', () => {
     }
     await createPublishedMatching(matchingTopicId);
     await createPublishedMatching(matchingTopicId);
+
+    // 6 beginner + 2 advanced: lopsided on purpose, like the real content
+    // where the advanced tier is far smaller than the others.
+    difficultyTopicId = await makeTopic('difficulty');
+    for (let i = 0; i < 6; i += 1) {
+      await createPublishedAtDifficulty(difficultyTopicId, 'BEGINNER');
+    }
+    for (let i = 0; i < 2; i += 1) {
+      await createPublishedAtDifficulty(difficultyTopicId, 'ADVANCED');
+    }
   });
 
   afterAll(async () => {
@@ -507,6 +542,159 @@ describe('Quiz Engine (e2e)', () => {
         .expect(200);
 
       expect(active.body).toEqual({ session: null });
+    });
+  });
+
+  describe('difficulty filter', () => {
+    const available = async (
+      token: string,
+      query: Record<string, string>,
+    ): Promise<number> => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/quiz/available')
+        .query(query)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      return (response.body as { available: number }).available;
+    };
+
+    it('rejects the availability check without a token with 401', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/quiz/available')
+        .query({ subjectId })
+        .expect(401);
+    });
+
+    it('counts the whole topic when no level is given', async () => {
+      const { token } = await registerUser();
+      expect(
+        await available(token, { subjectId, topicId: difficultyTopicId }),
+      ).toBe(8);
+    });
+
+    it('counts only the requested level', async () => {
+      const { token } = await registerUser();
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: difficultyTopicId,
+          difficulty: 'BEGINNER',
+        }),
+      ).toBe(6);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: difficultyTopicId,
+          difficulty: 'ADVANCED',
+        }),
+      ).toBe(2);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: difficultyTopicId,
+          difficulty: 'INTERMEDIATE',
+        }),
+      ).toBe(0);
+    });
+
+    it('draws only questions of the requested level', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        difficulty: 'ADVANCED',
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      const questions = await getQuestions(token, sessionId);
+      expect(questions).toHaveLength(2);
+      // Only two advanced questions exist in this topic, so drawing two of
+      // them proves the filter excluded the six beginner ones.
+      expect(questions.every((q) => q.difficulty === 'ADVANCED')).toBe(true);
+    });
+
+    it('refuses more than the level holds, and says the level is the limit', async () => {
+      const { token } = await registerUser();
+      const response = await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: 5,
+        timerEnabled: false,
+        difficulty: 'ADVANCED',
+      }).expect(409);
+
+      expect((response.body as { message: string }).message).toBe(
+        'Для цього рівня бракує опублікованих питань. Оберіть меншу кількість або інший рівень.',
+      );
+    });
+
+    it('the availability count predicts exactly what start accepts', async () => {
+      const { token } = await registerUser();
+      const count = await available(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        difficulty: 'ADVANCED',
+      });
+
+      // Sizing the request by the count succeeds; one more does not. This is
+      // the contract the endpoint exists to provide.
+      await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: count,
+        timerEnabled: false,
+        difficulty: 'ADVANCED',
+      }).expect(201);
+
+      const active = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      await complete(
+        token,
+        (active.body as { session: SessionMeta }).session.sessionId,
+      ).expect(200);
+
+      await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: count + 1,
+        timerEnabled: false,
+        difficulty: 'ADVANCED',
+      }).expect(409);
+    });
+
+    it('rejects difficulty combined with onlyMistakes as 400', async () => {
+      const { token } = await registerUser();
+      await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        difficulty: 'ADVANCED',
+        onlyMistakes: true,
+      }).expect(400);
+    });
+
+    it('rejects difficulty combined with quizId as 400', async () => {
+      const { token } = await registerUser();
+      await start(token, {
+        quizId: '00000000-0000-0000-0000-000000000000',
+        difficulty: 'ADVANCED',
+      }).expect(400);
+    });
+
+    it('rejects an unknown difficulty value with 400', async () => {
+      const { token } = await registerUser();
+      await start(token, {
+        subjectId,
+        topicId: difficultyTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        difficulty: 'IMPOSSIBLE',
+      }).expect(400);
     });
   });
 

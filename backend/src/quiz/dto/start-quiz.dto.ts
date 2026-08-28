@@ -1,6 +1,8 @@
+import { Difficulty } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsUUID,
   Max,
@@ -58,4 +60,15 @@ export class StartQuizDto {
   @ValidateIf((dto: StartQuizDto) => dto.onlyMistakes !== undefined)
   @IsBoolean()
   onlyMistakes?: boolean;
+
+  /**
+   * Draw only questions of this level (docs/04-api/quiz.md §4). Omit for a
+   * mixed quiz, which is the default and what the interface sends today.
+   * Not combinable with `quizId` (the stored Quiz fixes its own pool) or with
+   * `onlyMistakes` (that pool is already small and specific; narrowing it
+   * further would usually leave nothing).
+   */
+  @ValidateIf((dto: StartQuizDto) => dto.difficulty !== undefined)
+  @IsEnum(Difficulty)
+  difficulty?: Difficulty;
 }

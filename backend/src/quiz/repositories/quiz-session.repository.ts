@@ -77,33 +77,48 @@ export class QuizSessionRepository {
    * Picks up to `count` random question ids eligible for a public quiz: the
    * full publication chain must hold (question, topic, subject all published
    * and not soft-deleted), scoped to the subject and optional topic
-   * (decisions D21, D23). ORDER BY random() is adequate for MVP scale.
+   * (decisions D21, D23), and optionally to one difficulty level.
+   * ORDER BY random() is adequate for MVP scale.
    */
   async selectRandomQuestionIds(params: {
     subjectId: string;
     topicId?: string;
+    difficulty?: Difficulty;
     count: number;
   }): Promise<string[]> {
-    const topicFilter =
-      params.topicId === undefined
-        ? Prisma.empty
-        : Prisma.sql`AND t.id = ${params.topicId}::uuid`;
-
     const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
       SELECT q.id
       FROM questions q
       JOIN topics t ON t.id = q."topicId"
       JOIN subjects s ON s.id = t."subjectId"
-      WHERE q."deletedAt" IS NULL AND q."isPublished" = true
-        AND t."deletedAt" IS NULL AND t."isPublished" = true
-        AND s."deletedAt" IS NULL AND s."isPublished" = true
-        AND s.id = ${params.subjectId}::uuid
-        ${topicFilter}
+      WHERE ${eligibleQuestionFilter(params)}
       ORDER BY random()
       LIMIT ${params.count}
     `);
 
     return rows.map((row) => row.id);
+  }
+
+  /**
+   * How many questions a quiz over these filters could draw from. Lets a
+   * caller size a request before making it, instead of discovering an empty
+   * pool through a 409 — which matters most for the difficulty filter, since
+   * the advanced tier is far smaller than the others (docs/04-api/quiz.md §4a).
+   */
+  async countEligibleQuestions(params: {
+    subjectId: string;
+    topicId?: string;
+    difficulty?: Difficulty;
+  }): Promise<number> {
+    const rows = await this.prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
+      SELECT COUNT(*)::int AS count
+      FROM questions q
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      WHERE ${eligibleQuestionFilter(params)}
+    `);
+
+    return rows[0]?.count ?? 0;
   }
 
   /**
@@ -294,4 +309,34 @@ export class QuizSessionRepository {
     });
     return result.count === 1;
   }
+}
+
+/**
+ * The eligibility predicate shared by the question picker and its counter.
+ *
+ * Kept in one place deliberately: if the two drifted, the count would promise
+ * a pool the picker cannot actually deliver, and the caller would still hit
+ * the 409 the count exists to prevent.
+ */
+function eligibleQuestionFilter(params: {
+  subjectId: string;
+  topicId?: string;
+  difficulty?: Difficulty;
+}): Prisma.Sql {
+  return Prisma.sql`
+    q."deletedAt" IS NULL AND q."isPublished" = true
+    AND t."deletedAt" IS NULL AND t."isPublished" = true
+    AND s."deletedAt" IS NULL AND s."isPublished" = true
+    AND s.id = ${params.subjectId}::uuid
+    ${
+      params.topicId === undefined
+        ? Prisma.empty
+        : Prisma.sql`AND t.id = ${params.topicId}::uuid`
+    }
+    ${
+      params.difficulty === undefined
+        ? Prisma.empty
+        : Prisma.sql`AND q.difficulty = ${params.difficulty}::"Difficulty"`
+    }
+  `;
 }

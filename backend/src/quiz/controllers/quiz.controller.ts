@@ -13,6 +13,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
@@ -43,6 +44,18 @@ export class QuizController {
     @Body() startQuizDto: StartQuizDto,
   ): Promise<QuizSessionMetadata> {
     return this.quizService.start(userId, startQuizDto);
+  }
+
+  /**
+   * GET /api/v1/quiz/available — how many questions an ad-hoc quiz over these
+   * filters could draw from. Declared before `:sessionId` for the same reason
+   * as `active`: the literal path must not be read as a session id.
+   */
+  @Get('available')
+  async getAvailable(
+    @Query() query: AvailableQuestionsQueryDto,
+  ): Promise<{ available: number }> {
+    return this.quizService.countAvailableQuestions(query);
   }
 
   /**

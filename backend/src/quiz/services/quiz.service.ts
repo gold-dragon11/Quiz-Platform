@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Difficulty,
   Language,
   Prisma,
   QuizStatus,
@@ -46,6 +47,10 @@ const ACTIVE_SESSION_EXISTS_MESSAGE =
   'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
 const INSUFFICIENT_QUESTIONS_MESSAGE =
   'Для цього тесту бракує опублікованих питань.';
+// Says which pool came up short: the advanced tier holds far fewer questions
+// than the others, so "not enough" here usually means "not at this level".
+const INSUFFICIENT_AT_DIFFICULTY_MESSAGE =
+  'Для цього рівня бракує опублікованих питань. Оберіть меншу кількість або інший рівень.';
 // Distinct from the message above: the pool is empty because the reader has
 // already fixed those mistakes, which is success, not a content gap.
 const INSUFFICIENT_MISTAKES_MESSAGE =
@@ -58,6 +63,8 @@ const QUIZ_ID_XOR_MESSAGE =
   'Provide either quizId or the ad-hoc fields (subjectId, topicId, questionCount, timerEnabled), not both.';
 const MISSING_START_FIELDS_MESSAGE =
   'subjectId, questionCount, and timerEnabled are required when quizId is not provided.';
+const DIFFICULTY_WITH_MISTAKES_MESSAGE =
+  'difficulty cannot be combined with onlyMistakes: the mistake pool is already a fixed set of questions.';
 
 /** The resolved generation config for a start request (Phase 5.6). */
 interface StartConfig {
@@ -69,6 +76,8 @@ interface StartConfig {
   mode: QuizType;
   /** Ad-hoc only: draw from the reader's unresolved mistakes. */
   onlyMistakes: boolean;
+  /** Ad-hoc only: restrict the pool to one level, or null for a mix. */
+  difficulty: Difficulty | null;
 }
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
@@ -127,13 +136,16 @@ export class QuizService {
       : await this.quizSessionRepository.selectRandomQuestionIds({
           subjectId: config.subjectId,
           topicId: config.topicId ?? undefined,
+          difficulty: config.difficulty ?? undefined,
           count: config.questionCount,
         });
     if (questionIds.length < config.questionCount) {
       throw new ConflictException(
         config.onlyMistakes
           ? INSUFFICIENT_MISTAKES_MESSAGE
-          : INSUFFICIENT_QUESTIONS_MESSAGE,
+          : config.difficulty
+            ? INSUFFICIENT_AT_DIFFICULTY_MESSAGE
+            : INSUFFICIENT_QUESTIONS_MESSAGE,
       );
     }
 
@@ -186,6 +198,23 @@ export class QuizService {
    * indistinguishable from a broken response on the wire. Nesting it one
    * level keeps the outer value always a real object.
    */
+  /**
+   * How many questions a quiz over these filters could draw from
+   * (docs/04-api/quiz.md §4a). Exists so a caller can size `questionCount`
+   * before starting — mainly for the difficulty filter, where the advanced
+   * tier holds only 8–10 questions per topic and a request for 10 or more
+   * would otherwise fail with a 409 the caller had no way to anticipate.
+   */
+  async countAvailableQuestions(params: {
+    subjectId: string;
+    topicId?: string;
+    difficulty?: Difficulty;
+  }): Promise<{ available: number }> {
+    const available =
+      await this.quizSessionRepository.countEligibleQuestions(params);
+    return { available };
+  }
+
   async findActive(
     userId: string,
   ): Promise<{ session: QuizSessionMetadata | null }> {
@@ -207,7 +236,8 @@ export class QuizService {
         dto.topicId !== undefined ||
         dto.questionCount !== undefined ||
         dto.timerEnabled !== undefined ||
-        dto.onlyMistakes !== undefined
+        dto.onlyMistakes !== undefined ||
+        dto.difficulty !== undefined
       ) {
         throw new BadRequestException(QUIZ_ID_XOR_MESSAGE);
       }
@@ -225,7 +255,12 @@ export class QuizService {
         timerEnabled: quiz.timerEnabled,
         mode: quiz.mode,
         onlyMistakes: false,
+        difficulty: null,
       };
+    }
+
+    if (dto.difficulty !== undefined && dto.onlyMistakes === true) {
+      throw new BadRequestException(DIFFICULTY_WITH_MISTAKES_MESSAGE);
     }
 
     if (
@@ -246,6 +281,7 @@ export class QuizService {
           ? QuizType.RANDOM_QUIZ
           : QuizType.SUBJECT_QUIZ,
       onlyMistakes: dto.onlyMistakes ?? false,
+      difficulty: dto.difficulty ?? null,
     };
   }
 
