@@ -293,21 +293,47 @@ title a *different* question: the seed creates a new row and leaves the
 original published beside it, so a database seeded before a retitling ends up
 with both.
 
-This happened once, when the mathematics questions were converted from Unicode
-to LaTeX (docs/02-domain/question.md §10). A database seeded before that
-conversion must be repaired **before** it is seeded again:
+This has happened twice — the mathematics questions converted from Unicode to
+LaTeX (docs/02-domain/question.md §10), and a handful of questions reworded by
+the content audit (docs/09-content/question-audit.md). Together **587 titles**
+changed since commit `870657b`, which is the last state production was seeded
+from. A database seeded at or before that commit must be repaired **before** it
+is seeded again:
 
 ```bash
 npx ts-node --compiler-options '{"module":"CommonJS"}' \
-  prisma/scripts/rename-latex-questions.ts            # dry run
+  prisma/scripts/sync-retitled-questions.ts --base 870657b            # dry run
 npx ts-node --compiler-options '{"module":"CommonJS"}' \
-  prisma/scripts/rename-latex-questions.ts --write
+  prisma/scripts/sync-retitled-questions.ts --base 870657b --write
 ```
 
-The script moves each question onto its new title and deletes the duplicate the
-seed created, so question ids — and the QuestionAttempts pointing at them —
-survive. It is idempotent, refuses to touch a duplicate that already has
-attempts, and does nothing at all on a database seeded after the conversion.
+`--base` is the commit that database was last seeded from; the script reads the
+old titles from it with `git show`, so it must run from a checkout of this
+repository. Against a remote database, set `DATABASE_URL` for the command.
+
+The script moves each question onto its current title and deletes the duplicate
+the seed created, so question ids — and the QuestionAttempts, XP transactions
+and statistics pointing at them — survive. It is idempotent, and it does
+nothing at all on a database seeded after the retitle.
+
+Two cases it deliberately does not decide on its own:
+
+- **A duplicate that already has attempts** — someone answered the new row in
+  the window between the seed and the repair. It is left alone and reported;
+  the original then shows up as an orphan for a human to resolve.
+- **Orphans** — questions in the database that no content file claims any more.
+  They are always reported; `--prune-orphans` deletes the ones with no history.
+
+Order matters. Repairing first, then seeding, is the clean path — the seed then
+updates the moved rows in place (`0 created`). If the seed has already run and
+created the duplicates, run the script and then **seed again**, so the rows it
+moved pick up their new content.
+
+Rehearsed against a copy of the pre-conversion database in all four cases:
+repair-then-seed, seed-then-repair-then-seed, a database seeded only from the
+current content (no-op), and a duplicate carrying an attempt. Each ended at
+3 308 questions with no duplicate `(topicId, title)` pair and the attempt still
+attached to its original question id.
 
 ## 17.2 Migrations
 

@@ -121,7 +121,7 @@ This is a workaround for the validator's rule that no two right-hand items may b
 
 The seed identifies a question by `(topicId, title)`. Rewording a stem therefore creates a *second* question and leaves the original published beside it — which is what happened four times while fixing the findings above, and what required a migration script after the LaTeX conversion.
 
-The durable fix is a stable identifier in the authoring files, independent of the wording. Until then, every rewording needs a retitling pass against each seeded database (see `docs/08-development/deployment.md` §17.1a).
+The durable fix is a stable identifier in the authoring files, independent of the wording. Until then, every rewording needs a retitling pass against each seeded database: `prisma/scripts/sync-retitled-questions.ts --base <ref>`, where `<ref>` is the commit that database was last seeded from (see `docs/08-development/deployment.md` §17.1a). 587 titles have changed since `870657b`, so production needs that pass before it is seeded again.
 
 ---
 
