@@ -50,3 +50,7 @@ docker-compose.override.yml
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Python bytecode from the content scripts
+__pycache__/
+*.pyc

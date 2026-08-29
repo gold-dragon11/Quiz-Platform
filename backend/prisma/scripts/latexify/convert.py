@@ -16,8 +16,8 @@ review. So the raw text is edited instead: only the values of `title`,
 `explanation`, and the entries of `options` are decoded, converted, and
 re-encoded, leaving every byte of layout as it was.
 
-`pairs` are deliberately skipped — a matching question's options are rendered
-inside a native <select>, which cannot hold markup.
+`pairs` are converted too, since MathSelect replaced the native `<select>`
+whose options could only ever hold plain text.
 """
 import json, glob, re, sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -33,14 +33,26 @@ WRITE = '--write' in sys.argv
 STRING = r'"((?:[^"\\]|\\.)*)"'
 FIELD = re.compile(rf'"(title|explanation)":\s*{STRING}')
 OPTIONS = re.compile(rf'"options":\s*\[((?:\s*{STRING}\s*,?)*)\]')
+# A matching question's pairs: [["left", "right"], …]. Matched as one blob and
+# rewritten string by string, so the nested array layout survives untouched.
+PAIRS = re.compile(r'"pairs":\s*\[(.*?)\]\s*\]', re.S)
 
 converted = skipped = already = 0
 
 
 def convert_literal(literal: str) -> str:
-    """One JSON string literal in, one out — refusing an unsafe conversion."""
-    global converted, skipped
+    """One JSON string literal in, one out — refusing an unsafe conversion.
+
+    A string that already carries a `$` has been converted before. The
+    converter reads Unicode mathematics and would treat the delimiters and
+    backslashes as content, so such a string is returned untouched — which is
+    what makes a second run over the same file a no-op instead of damage.
+    """
+    global converted, skipped, already
     text = json.loads(literal)
+    if '$' in text:
+        already += 1
+        return literal
     out = convert(text)
     if out == text:
         return literal
@@ -55,13 +67,6 @@ def convert_literal(literal: str) -> str:
 for path in sorted(glob.glob(f'{ROOT}/*.json')):
     raw = open(path).read()
 
-    # The converter reads Unicode mathematics and is not idempotent: run it
-    # over its own output and it would treat `$` and backslashes as content.
-    # Content that is already converted is left alone rather than mangled.
-    if '$' in raw:
-        already += 1
-        continue
-
     def field(match: 're.Match[str]') -> str:
         return f'"{match.group(1)}": ' + convert_literal(f'"{match.group(2)}"')
 
@@ -69,7 +74,11 @@ for path in sorted(glob.glob(f'{ROOT}/*.json')):
         body = re.sub(STRING, lambda m: convert_literal(m.group(0)), match.group(1))
         return f'"options": [{body}]'
 
-    updated = OPTIONS.sub(options, FIELD.sub(field, raw))
+    def pairs(match: 're.Match[str]') -> str:
+        body = re.sub(STRING, lambda m: convert_literal(m.group(0)), match.group(1))
+        return f'"pairs": [{body}]]'
+
+    updated = PAIRS.sub(pairs, OPTIONS.sub(options, FIELD.sub(field, raw)))
 
     # The result must still parse, and parse to the same structure the
     # converter saw — a layout-preserving edit that broke the JSON would be
@@ -80,13 +89,13 @@ for path in sorted(glob.glob(f'{ROOT}/*.json')):
         assert q1.get('correct') == q2.get('correct'), path
         assert q1.get('difficulty') == q2.get('difficulty'), path
         assert len(q1.get('options', [])) == len(q2.get('options', [])), path
-        assert q1.get('pairs') == q2.get('pairs'), path
+        assert len(q1.get('pairs', [])) == len(q2.get('pairs', [])), path
 
     if WRITE and updated != raw:
         open(path, 'w').write(updated)
 
 print(
     f'converted: {converted}  skipped: {skipped}  '
-    f'files already converted: {already}  '
+    f'already converted: {already}  '
     f'({"written" if WRITE else "dry run"})'
 )

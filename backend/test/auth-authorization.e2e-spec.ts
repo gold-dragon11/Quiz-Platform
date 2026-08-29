@@ -13,6 +13,7 @@ import * as jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { AdminOnly } from './../src/auth/decorators/admin-only.decorator';
+import { AuthRepository } from './../src/auth/repositories/auth.repository';
 import { JwtAuthGuard } from './../src/auth/guards/jwt-auth.guard';
 import { AppConfig } from './../src/config/configuration';
 import { PrismaService } from './../src/prisma/prisma.service';
@@ -316,6 +317,33 @@ describe('Authorization (e2e)', () => {
         expect(denial).not.toContain(user.accessToken);
       } finally {
         warnSpy.mockRestore();
+      }
+    });
+
+    /**
+     * The strategy re-reads the account on every request, so a database
+     * failure happens inside the guard. Untreated it surfaced as a bare 500:
+     * technically a server error, but indistinguishable from a bug in the
+     * handler. A dependency being unavailable is its own condition and says
+     * so, and the underlying message stays out of the response.
+     */
+    it('answers 503, not 401, when the authorization lookup fails', async () => {
+      const user = await registerAccount(UserRole.USER);
+      const repository = app.get(AuthRepository);
+      const lookup = jest
+        .spyOn(repository, 'findAccountForAuthorization')
+        .mockRejectedValue(new Error('database unavailable'));
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation(() => undefined);
+
+      try {
+        const body = await get(AUTHENTICATED_URL, user.accessToken, 503);
+        expect(body.statusCode).toBe(503);
+        expect(JSON.stringify(body)).not.toContain('database unavailable');
+      } finally {
+        lookup.mockRestore();
+        errorSpy.mockRestore();
       }
     });
 

@@ -12,7 +12,7 @@ docs/02-domain/question.md §10.
 
 ## Why it is kept
 
-The conversion touched 2 212 strings across 820 questions. Keeping the tool
+The conversion touched 2 320 strings across 820 questions. Keeping the tool
 means the result can be re-derived and audited rather than taken on trust:
 running `convert.py` against the pre-conversion content reproduces exactly
 what is committed.
@@ -37,8 +37,5 @@ fails, so the checks are not merely a report — they gate the edit.
 
 ## What it deliberately leaves alone
 
-- **Matching questions.** Their options are rendered inside a native
-  `<select>`, which cannot hold markup. The seed validator rejects a `$` in a
-  matching pair.
 - **Units.** `15 см²` is a superscript on a Ukrainian word, not a power.
 - **Bare numbers.** An option of `4` is text; only expressions are typeset.

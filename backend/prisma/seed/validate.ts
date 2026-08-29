@@ -151,13 +151,8 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
         errors.push(`${at}: pair ${i} has an empty side`);
         return;
       }
-      // A matching option is rendered inside a native <select>, which cannot
-      // hold markup, so those stay in Unicode rather than LaTeX.
-      if (left.includes('$') || right.includes('$')) {
-        errors.push(
-          `${at}: pair ${i} uses "$" — matching options cannot carry formulas`,
-        );
-      }
+      errors.push(...validateFormulas(left, at, `pair ${i} left`));
+      errors.push(...validateFormulas(right, at, `pair ${i} right`));
       if (left.length > MAX_OPTION_LENGTH || right.length > MAX_OPTION_LENGTH) {
         errors.push(`${at}: pair ${i} exceeds ${MAX_OPTION_LENGTH} characters`);
       }

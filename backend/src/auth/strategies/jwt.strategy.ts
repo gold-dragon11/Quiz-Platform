@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { AccountStatus } from '@prisma/client';
@@ -18,6 +23,8 @@ import { AuthRepository } from '../repositories/auth.repository';
  */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
+  private readonly logger = new Logger(JwtStrategy.name);
+
   constructor(
     configService: ConfigService<AppConfig, true>,
     private readonly authRepository: AuthRepository,
@@ -47,9 +54,24 @@ export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
       throw new UnauthorizedException();
     }
 
-    const account = await this.authRepository.findAccountForAuthorization(
-      payload.sub,
-    );
+    // The account is re-read on every request, so a database failure lands
+    // inside the guard. Left alone it becomes a bare 500, which reads as a bug
+    // in the handler; a dependency being unavailable is a different condition
+    // and is reported as one. Only a genuine answer decides authorization.
+    let account: Awaited<
+      ReturnType<AuthRepository['findAccountForAuthorization']>
+    >;
+    try {
+      account = await this.authRepository.findAccountForAuthorization(
+        payload.sub,
+      );
+    } catch (error) {
+      this.logger.error(
+        'Authorization lookup failed',
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new ServiceUnavailableException();
+    }
 
     if (!account || account.accountStatus !== AccountStatus.ACTIVE) {
       throw new UnauthorizedException();

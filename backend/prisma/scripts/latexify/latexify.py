@@ -8,6 +8,7 @@ that changes anything but formatting cannot pass, so it is reported instead
 of being written.
 """
 import re
+import string
 
 SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹⁻ⁿˣʸᵇ'
 SUB = '₀₁₂₃₄₅₆₇₈₉ₙₐ₋'
@@ -262,7 +263,11 @@ def to_latex(run: str) -> str:
 # ("при яких значеннях x"). Typesetting these too keeps one symbol from being
 # italic inside a formula and upright in the sentence introducing it.
 LONE_VARIABLE = re.compile(r"(?<![\w$\\'′])([a-zA-Z])(?![\w$'′])")
-VARIABLE_LETTERS = set('abcdfgkmnpqrstuvxyzABCDFKMNOPRSTVXY')
+# Every Latin letter. The list started as a hand-picked subset and quietly
+# left out `h`, so "висотою h" stayed upright beside a typeset `a` — in
+# Ukrainian prose a lone Latin letter is a variable, with no exceptions worth
+# carving out.
+VARIABLE_LETTERS = set(string.ascii_letters)
 
 
 def _wrap_lone_variables(text: str) -> str:

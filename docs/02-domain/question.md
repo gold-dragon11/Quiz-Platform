@@ -172,9 +172,9 @@ Formulas are written as **inline LaTeX between `$…$`**, in the question title,
 
 A string with no `$` is plain text and costs nothing to render — KaTeX is loaded only for a string that actually contains a formula, so the three subjects without mathematics never pay for it.
 
-**Matching questions are the one exception.** Their options are presented inside a native `<select>`, which cannot hold markup, so they stay in Unicode (`x² − 25`) rather than LaTeX. The seed validator rejects a `$` in a matching pair for this reason. Lifting the exception means replacing that control with a custom listbox.
+Matching questions carry formulas too. Their options were originally excluded, because a native `<select>` option cannot hold markup — that control was replaced with a custom listbox (`MathSelect`, built to the ARIA combobox pattern), so the exception no longer applies.
 
-Units keep their Unicode superscripts too: `15 см²` is a unit attached to a Ukrainian word, not a power, and typesetting it would leave an exponent with nothing to attach to.
+Units keep their Unicode superscripts: `15 см²` is a unit attached to a Ukrainian word, not a power, and typesetting it would leave an exponent with nothing to attach to.
 
 The mathematics content was converted from Unicode to LaTeX mechanically, and the conversion was verified three ways: every converted string canonicalises to the same token stream as the original, every formula has balanced delimiters and does not end mid-expression, and every formula compiles under KaTeX in strict mode.
 

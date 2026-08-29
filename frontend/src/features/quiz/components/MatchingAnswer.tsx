@@ -1,6 +1,6 @@
 import { MathText } from '@/shared/ui/MathText';
 import { mathToPlainText } from '@/shared/utils/math-text';
-import { Select, type SelectOption } from '@/shared/ui/Select';
+import { MathSelect, type MathSelectOption } from '@/shared/ui/MathSelect';
 import type { QuizAnswerOption } from '@/features/quiz/types/quiz.types';
 import { splitMatchingOptions } from '@/features/quiz/lib/quiz-answers';
 
@@ -18,6 +18,11 @@ interface MatchingAnswerProps {
  * left prompts and right choices by stored order (see splitMatchingOptions).
  * Each prompt gets a dropdown of the still-available right choices; the page
  * builds the `{ pairs: [{ left, right }] }` payload and autosaves it.
+ *
+ * The dropdown is MathSelect rather than a native `<select>`, because an
+ * option in a native one cannot hold markup — a matching question in
+ * mathematics would show its formulas as source while the rest of the page
+ * typeset them.
  */
 export function MatchingAnswer({
   options,
@@ -46,13 +51,13 @@ export function MatchingAnswer({
             .filter(([leftId]) => leftId !== prompt.id)
             .map(([, rightId]) => rightId),
         );
-        const choiceOptions: SelectOption[] = [
-          { value: '', label: '— оберіть відповідність —' },
+        const choiceOptions: MathSelectOption[] = [
+          // Offered only once something is chosen, so the reader can undo a
+          // pairing — the native <select> did this with its empty option.
+          ...(current ? [{ value: '', label: '— зняти вибір —' }] : []),
           ...right
             .filter((choice) => choice.id === current || !takenByOthers.has(choice.id))
-            // A native <select> option cannot hold markup, so a formula is
-            // flattened to readable text here rather than typeset.
-            .map((choice) => ({ value: choice.id, label: mathToPlainText(choice.content) })),
+            .map((choice) => ({ value: choice.id, label: choice.content })),
         ];
 
         return (
@@ -64,12 +69,12 @@ export function MatchingAnswer({
               <MathText>{prompt.content}</MathText>
             </div>
             <div className="sm:w-1/2">
-              <Select
+              <MathSelect
                 aria-label={`Відповідність для: ${mathToPlainText(prompt.content)}`}
                 options={choiceOptions}
                 value={current}
                 disabled={disabled}
-                onChange={(event) => update(prompt.id, event.target.value)}
+                onChange={(choiceId) => update(prompt.id, choiceId)}
               />
             </div>
           </div>
