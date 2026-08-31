@@ -1,33 +1,27 @@
+import { DecorCurves } from '@/features/landing/components/DecorCurves';
+
 /**
- * Hero backdrop: a faint square grid that fades out toward the edges, plus a
- * soft vignette. Replaces the drifting gradient blobs the section used to
- * have — those read as generic template decoration and pulled attention away
- * from the headline.
+ * Hero backdrop: a dense weave of the same faint strokes that run behind every
+ * other section, over a soft vignette.
  *
- * Both layers are pure CSS on a decorative element, so there is nothing to
- * animate, nothing to load, and nothing for a screen reader to announce.
+ * It used to be a square grid. The grid read as generic template decoration —
+ * every dark developer-tool landing page has one — and it fought the headline
+ * for the same rectangle. The curves belong to this page specifically, and
+ * because they are the page's own language they carry the hero without
+ * competing with the type.
+ *
+ * The vignette stays, but lighter than it was under the grid: it dims the
+ * strokes toward the edges so they fade out rather than stopping at the
+ * section boundary, and at the old strength it swallowed them whole.
  */
 export function HeroBackdrop(): React.JSX.Element {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      <DecorCurves set="hero" />
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage:
-            'linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),' +
-            'linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px)',
-          backgroundSize: '72px 72px',
-          // Keeps the grid legible behind the headline and dissolves it at the
-          // edges, so the section has no hard boundary.
-          maskImage: 'radial-gradient(ellipse 75% 60% at 50% 42%, #000 30%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 75% 60% at 50% 42%, #000 30%, transparent 100%)',
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            'radial-gradient(ellipse 90% 70% at 50% 38%, transparent 45%, rgba(11,10,15,0.85) 100%)',
+          background: 'radial-gradient(ellipse 95% 80% at 50% 40%, transparent 58%, rgba(11,10,15,0.6) 100%)',
         }}
       />
     </div>

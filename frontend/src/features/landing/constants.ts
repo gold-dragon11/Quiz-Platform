@@ -11,3 +11,13 @@ export const SECTION_CONTAINER = 'mx-auto w-full max-w-[87.5rem] px-6 sm:px-8';
 
 /** Vertical rhythm between landing sections. */
 export const SECTION_SPACING = 'py-24 md:py-32';
+
+/**
+ * Height of the sticky navigation bar, as a Tailwind length. Sections that a
+ * link scrolls to offset their scroll position by it, so a heading never lands
+ * underneath the bar.
+ */
+export const NAV_HEIGHT = 'h-20';
+
+/** Anchor the hero's "Дізнатись більше" link scrolls to. */
+export const HOW_IT_WORKS_ID = 'yak-tse-pratsyuye';

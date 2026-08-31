@@ -1,61 +1,75 @@
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
-import { Button } from '@/shared/ui/Button';
-import { Logo } from '@/features/landing/components/Logo';
 import { HeroBackdrop } from '@/features/landing/components/HeroBackdrop';
+import { HeroQuizCard } from '@/features/landing/components/HeroQuizCard';
+import { ArrowIcon } from '@/features/landing/components/ArrowIcon';
+import { HOW_IT_WORKS_ID, SECTION_CONTAINER } from '@/features/landing/constants';
 
 /**
- * Landing hero (§1): the logo anchored at the top centre, then the headline,
- * subheadline and the two primary CTAs centred in the remaining space.
+ * Landing hero: the promise on the left, the product on the right.
  *
- * The headline is set on one line from `sm` up. Its size is driven by a
- * viewport-relative clamp rather than fixed breakpoints, so the line grows
- * with the screen and can never overflow; below `sm` it wraps instead of
- * shrinking to an unreadable size.
+ * The headline breaks on its own three lines rather than wrapping, so the
+ * three verbs land as three beats. Sized by a viewport-relative clamp instead
+ * of fixed breakpoints, so it grows with the screen and can never overflow.
+ *
+ * No sign-up button here. The sticky bar above carries it, which leaves the
+ * hero with one quiet affordance — the link down to «Як це працює» — instead
+ * of two purple buttons competing inside the same view.
  */
 export function HeroSection(): React.JSX.Element {
-  const navigate = useNavigate();
+  const scrollToHowItWorks = (): void => {
+    // Framer honors the OS reduced-motion setting app-wide, but a native
+    // smooth scroll does not — it has to be asked.
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.getElementById(HOW_IT_WORKS_ID)?.scrollIntoView({
+      behavior: reduced ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  };
 
   return (
-    <section className="relative flex min-h-screen flex-col overflow-hidden">
+    <section className="relative overflow-hidden">
       <HeroBackdrop />
 
       <motion.div
         variants={staggerContainer}
         initial="initial"
         animate="animate"
-        className="relative flex flex-1 flex-col"
+        className={`${SECTION_CONTAINER} relative grid items-center gap-16 py-20 md:py-28 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] lg:gap-20 lg:py-32`}
       >
-        <motion.div variants={fadeInUp} className="flex justify-center pt-8 sm:pt-10">
-          <Logo size="lg" />
-        </motion.div>
-
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center sm:gap-7">
+        <div className="flex flex-col items-start gap-8">
           <motion.h1
             variants={fadeInUp}
-            className="text-text-primary text-[clamp(2.5rem,5.8vw,5.5rem)] leading-[1.06] font-extrabold tracking-[-0.03em] [word-spacing:0.28em] sm:whitespace-nowrap"
+            className="text-text-primary font-display text-[clamp(3rem,7vw,5.75rem)] leading-[1.04] font-black tracking-[-0.02em]"
           >
-            Вчись Прогресуй Повторюй
+            <span className="block">Вчись.</span>
+            <span className="text-primary block">Прогресуй.</span>
+            <span className="block">Повторюй.</span>
           </motion.h1>
 
           <motion.p
             variants={fadeInUp}
-            className="text-text-secondary max-w-5xl text-lg leading-relaxed text-balance sm:text-xl md:text-2xl lg:text-[1.75rem]"
+            className="text-text-secondary max-w-xl text-lg leading-relaxed text-balance sm:text-xl"
           >
             Проходь тести з улюблених предметів, стеж за тим, як стаєш кращим
           </motion.p>
 
-          <motion.div variants={fadeInUp} className="mt-3 flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-            <Button size="xl" onClick={() => navigate(ROUTES.register)}>
-              Зареєструватись
-            </Button>
-            <Button size="xl" variant="secondary" onClick={() => navigate(ROUTES.login)}>
-              Увійти
-            </Button>
-          </motion.div>
+          <motion.button
+            variants={fadeInUp}
+            type="button"
+            onClick={scrollToHowItWorks}
+            className="text-primary hover:text-primary-hover focus-visible:ring-primary focus-visible:ring-offset-background border-primary/40 hover:border-primary inline-flex items-center gap-2 rounded-sm border-b pb-1 text-lg font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
+          >
+            Дізнатись більше
+            <ArrowIcon direction="down" />
+          </motion.button>
         </div>
+
+        {/* Hidden below lg: stacked under the copy it would push the link out
+            of view on a phone, and it is a product shot, not information. */}
+        <motion.div variants={fadeInUp} className="hidden justify-self-end lg:flex">
+          <HeroQuizCard />
+        </motion.div>
       </motion.div>
     </section>
   );

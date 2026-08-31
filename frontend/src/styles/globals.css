@@ -7,9 +7,13 @@
  * Must precede the Tailwind import: CSS requires @import rules to come first.
  */
 @import '@fontsource-variable/manrope';
-/* Lora is loaded for one thing only: the landing pull quote. A serif at that
-   size reads as a voice rather than as interface copy. */
-@import '@fontsource-variable/lora';
+/* Playfair Display carries every display-size line on the landing: the hero
+   headline, the section headings, the statistics. A high-contrast serif at
+   that scale reads as a voice rather than as interface copy, and it separates
+   the marketing page from the product, which stays entirely in Manrope.
+   Ukrainian is covered — the Cyrillic subset spans U+0400-045F and U+0490-0491,
+   so і, ї, є and ґ all have real glyphs rather than fallbacks. */
+@import '@fontsource-variable/playfair-display';
 @import 'tailwindcss';
 
 /*
@@ -24,7 +28,7 @@
  */
 @theme {
   --font-sans: 'Manrope Variable', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-serif: 'Lora Variable', 'Lora', Georgia, 'Times New Roman', serif;
+  --font-display: 'Playfair Display Variable', 'Playfair Display', Georgia, 'Times New Roman', serif;
 
   --color-background: #0b0a0f;
   --color-surface: #131219;
