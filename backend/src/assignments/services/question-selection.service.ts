@@ -7,18 +7,27 @@ import {
   QuestionSelectionMode,
 } from '../dto/create-assignment.dto';
 import { AssignmentsRepository } from '../repositories/assignments.repository';
+import { ReviewService } from './review.service';
 
 const TOPIC_NOT_IN_SUBJECT_MESSAGE =
   'Тема не належить предмету цієї групи або не опублікована.';
 const UNUSABLE_QUESTIONS_MESSAGE =
   'Деякі запитання не існують, не опубліковані або належать іншому предмету.';
 const NO_QUESTIONS_MESSAGE = 'Потрібно вибрати хоча б одне запитання.';
+const NO_MISTAKES_YET_MESSAGE =
+  'Група ще не має результатів, щоб визначити слабкі теми. Спершу видайте звичайне завдання.';
 const TOO_MANY_MESSAGE = `Максимум ${MAX_QUESTIONS_PER_ASSIGNMENT} запитань на одне завдання.`;
+
+/** How many of the group's weakest topics the MISTAKES pool spans. */
+const WEAK_TOPICS_DRAWN_FROM = 3;
 
 /** Assembles the question list for a new assignment (decision 09). */
 @Injectable()
 export class QuestionSelectionService {
-  constructor(private readonly assignmentsRepository: AssignmentsRepository) {}
+  constructor(
+    private readonly assignmentsRepository: AssignmentsRepository,
+    private readonly reviewService: ReviewService,
+  ) {}
 
   /**
    * Resolves the DTO into a concrete, ordered list of question ids.
@@ -31,8 +40,9 @@ export class QuestionSelectionService {
   async resolve(
     dto: CreateAssignmentDto,
     subjectId: string,
+    groupId: string,
   ): Promise<string[]> {
-    const questionIds = await this.resolveByMode(dto, subjectId);
+    const questionIds = await this.resolveByMode(dto, subjectId, groupId);
 
     if (questionIds.length === 0) {
       throw new BadRequestException(NO_QUESTIONS_MESSAGE);
@@ -46,6 +56,7 @@ export class QuestionSelectionService {
   private async resolveByMode(
     dto: CreateAssignmentDto,
     subjectId: string,
+    groupId: string,
   ): Promise<string[]> {
     switch (dto.mode) {
       case QuestionSelectionMode.MANUAL:
@@ -54,7 +65,69 @@ export class QuestionSelectionService {
         return this.resolveByTopic(dto, subjectId);
       case QuestionSelectionMode.DIFFICULTY:
         return this.resolveByDifficulty(dto, subjectId);
+      case QuestionSelectionMode.MISTAKES:
+        return this.resolveByMistakes(dto, subjectId, groupId);
     }
+  }
+
+  /**
+   * Draws from the topics this group is weakest in.
+   *
+   * Topics rather than the exact questions they got wrong: repeating the same
+   * items tests memory of those items, while a fresh draw from the same topic
+   * tests whether the topic itself has landed.
+   *
+   * Filled worst-topic-first rather than sampled from one merged pool. Merging
+   * looked simpler and was wrong: with two topics of four questions each, a
+   * draw of three could miss the weak topic entirely about one time in
+   * fourteen, and the teacher would get "work on your mistakes" made entirely
+   * of the material the class already knows. Taking as much as possible from
+   * the weakest topic before moving on is the honest reading of the request.
+   *
+   * Refuses rather than falling back to a random draw when the group has no
+   * results yet — a teacher who asked for "their weak spots" and quietly got
+   * an arbitrary set would trust the feature exactly once.
+   */
+  private async resolveByMistakes(
+    dto: CreateAssignmentDto,
+    subjectId: string,
+    groupId: string,
+  ): Promise<string[]> {
+    const count = dto.count as number;
+    const topicIds = await this.reviewService.weakestTopicIds(
+      groupId,
+      WEAK_TOPICS_DRAWN_FROM,
+    );
+    if (topicIds.length === 0) {
+      throw new BadRequestException(NO_MISTAKES_YET_MESSAGE);
+    }
+
+    const picked: string[] = [];
+    for (const topicId of topicIds) {
+      if (picked.length >= count) {
+        break;
+      }
+      const available =
+        await this.assignmentsRepository.findSelectableQuestions({
+          subjectId,
+          topicId,
+        });
+      const take = Math.min(count - picked.length, available.length);
+      picked.push(
+        ...this.sample(
+          available.map((row) => row.id),
+          take,
+          take,
+        ),
+      );
+    }
+
+    if (picked.length < count) {
+      throw new BadRequestException(
+        `Замало запитань у слабких темах: потрібно ${count}, доступно ${picked.length}.`,
+      );
+    }
+    return picked;
   }
 
   /**

@@ -68,6 +68,7 @@ export class AssignmentsService {
     const questionIds = await this.questionSelection.resolve(
       dto,
       group.subject.id,
+      groupId,
     );
     const studentIds = await this.resolveTargets(groupId, dto.studentIds);
 

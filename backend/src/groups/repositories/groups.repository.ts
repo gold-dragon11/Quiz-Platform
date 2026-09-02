@@ -157,6 +157,45 @@ export class GroupsRepository {
     });
   }
 
+  /**
+   * The most recent closed membership for a pair. Needed because a teacher's
+   * review screens still name students who have left: they were recipients of
+   * work that was set, and that record does not disappear with them.
+   */
+  async findClosedMembership(
+    groupId: string,
+    studentId: string,
+  ): Promise<{
+    displayName: string | null;
+    username: string | null;
+    joinedAt: Date;
+    leftAt: Date | null;
+  } | null> {
+    const membership = await this.prisma.groupMembership.findFirst({
+      where: { groupId, studentId, NOT: { leftAt: null } },
+      orderBy: { leftAt: 'desc' },
+      select: {
+        joinedAt: true,
+        leftAt: true,
+        student: {
+          select: {
+            profile: { select: { displayName: true, username: true } },
+          },
+        },
+      },
+    });
+    if (!membership) {
+      return null;
+    }
+
+    return {
+      displayName: membership.student.profile?.displayName ?? null,
+      username: membership.student.profile?.username ?? null,
+      joinedAt: membership.joinedAt,
+      leftAt: membership.leftAt,
+    };
+  }
+
   /** True when the subject exists, is published, and is not soft-deleted. */
   async subjectIsAvailable(subjectId: string): Promise<boolean> {
     const subject = await this.prisma.subject.findFirst({

@@ -25,6 +25,12 @@ export enum QuestionSelectionMode {
   TOPIC = 'TOPIC',
   /** A mix by difficulty, optionally narrowed to one topic. */
   DIFFICULTY = 'DIFFICULTY',
+  /**
+   * Drawn from the topics this group gets wrong most often. The mode that
+   * turns the group's own results into the next lesson — and the reason the
+   * review screens exist at all.
+   */
+  MISTAKES = 'MISTAKES',
 }
 
 /**
