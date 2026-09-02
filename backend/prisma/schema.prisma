@@ -173,6 +173,7 @@ model User {
   reportsResolved    QuestionReport[]   @relation("ReportResolver")
   subscription       Subscription?
   usageSnapshots     UsageSnapshot[]
+  mistakeReviews     MistakeReview[]
 
   @@map("users")
 }
@@ -381,6 +382,7 @@ model Question {
   assignmentQuestions  AssignmentQuestion[]
   exposures            QuestionExposure[]
   reports              QuestionReport[]
+  mistakeReviews       MistakeReview[]
 
   @@index([topicId])
   @@index([type])
@@ -919,4 +921,42 @@ model QuestionReport {
   @@index([status, createdAt])
   @@index([questionId])
   @@map("question_reports")
+}
+
+/// A question this learner got wrong, scheduled to come back.
+///
+/// Spaced repetition over the mistake log the application already keeps: every
+/// wrong answer is recorded anyway, so the only new thing here is *when* to
+/// show it again. That makes it the cheapest serious retention feature in the
+/// product — it turns "I will revise before the exam" into something that
+/// happens on a Tuesday.
+///
+/// One row per learner and question, revived rather than duplicated: getting
+/// the same question wrong a second time restarts the ladder instead of
+/// opening a parallel schedule.
+model MistakeReview {
+  id         String @id @default(uuid()) @db.Uuid
+  userId     String @db.Uuid
+  questionId String @db.Uuid
+
+  /// Position on the ladder — 1, 3 or 7 days out. Answering correctly moves
+  /// up; answering wrong drops back to the first rung.
+  stage     Int       @default(1)
+  dueAt     DateTime
+  /// Set once the learner has answered correctly at the last rung.
+  clearedAt DateTime?
+
+  /// Kept after clearing so a learner can see what they have fixed.
+  timesWrong   Int @default(1)
+  timesCorrect Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, clearedAt, dueAt])
+  @@map("mistake_reviews")
 }

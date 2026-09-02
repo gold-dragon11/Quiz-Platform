@@ -3,6 +3,7 @@ import { QuizzesModule } from '../quizzes/quizzes.module';
 import { SettingsModule } from '../settings/settings.module';
 import { StatisticsModule } from '../statistics/statistics.module';
 import { QuizController } from './controllers/quiz.controller';
+import { MistakeReviewRepository } from './repositories/mistake-review.repository';
 import { QuestionAttemptRepository } from './repositories/question-attempt.repository';
 import { QuizSessionRepository } from './repositories/quiz-session.repository';
 import { ResultRepository } from './repositories/result.repository';
@@ -23,6 +24,7 @@ import { QuizService } from './services/quiz.service';
     QuizService,
     QuizSessionRepository,
     QuestionAttemptRepository,
+    MistakeReviewRepository,
     ResultRepository,
   ],
   // Exported for AssignmentsModule: starting homework is the same engine with

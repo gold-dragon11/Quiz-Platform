@@ -15,6 +15,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
 import { MockExamHistoryQueryDto } from '../dto/mock-exam-history-query.dto';
+import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
@@ -64,6 +65,32 @@ export class QuizController {
     @Query() query: MockExamHistoryQueryDto,
   ): Promise<MockExamAttempt[]> {
     return this.quizService.mockExamHistory(userId, query.subjectId);
+  }
+
+  /**
+   * POST /api/v1/quiz/mistake-review/start — today's due mistakes, at
+   * widening intervals. Nothing due is a 409, not an empty session: an
+   * empty quiz is a bug-shaped experience.
+   */
+  @Post('mistake-review/start')
+  @HttpCode(HttpStatus.CREATED)
+  async startMistakeReview(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartMistakeReviewDto,
+  ): Promise<QuizSessionMetadata> {
+    return this.quizService.startMistakeReview(userId, dto);
+  }
+
+  /**
+   * GET /api/v1/quiz/mistake-review — how much is due today, still on the
+   * ladder, and already fixed. The last number is the one worth showing a
+   * learner: it is the only place the product says "you got better".
+   */
+  @Get('mistake-review')
+  async mistakeReviewSummary(
+    @CurrentUser('id') userId: string,
+  ): Promise<{ due: number; scheduled: number; cleared: number }> {
+    return this.quizService.mistakeReviewSummary(userId);
   }
 
   /** POST /api/v1/quiz/start — creates an ACTIVE session with its questions. */

@@ -18,11 +18,13 @@ import { QuizConfigService } from '../../quizzes/services/quiz-config.service';
 import { SettingsService } from '../../settings/services/settings.service';
 import { StatisticsService } from '../../statistics/services/statistics.service';
 import { XpAward } from '../../statistics/repositories/statistics.repository';
+import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
+import { MistakeReviewRepository } from '../repositories/mistake-review.repository';
 import { QuestionAttemptRepository } from '../repositories/question-attempt.repository';
 import {
   QuizSessionRecord,
@@ -49,6 +51,10 @@ const HIGH_ACCURACY_BONUS_XP = 25;
 const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
 const SUBJECT_NOT_FOUND_MESSAGE =
   'Предмет не знайдено або він не опублікований.';
+const NOTHING_DUE_MESSAGE =
+  'На сьогодні повторювати нічого. Помилки повернуться за розкладом.';
+/** A review is a short sitting by design — it is a habit, not a marathon. */
+const DEFAULT_REVIEW_SIZE = 10;
 const MOCK_EXAM_TOO_SHORT_MESSAGE =
   'У цьому предметі поки замало опублікованих питань для пробного тесту.';
 const ACTIVE_SESSION_EXISTS_MESSAGE =
@@ -117,6 +123,7 @@ export class QuizService {
     private readonly settingsService: SettingsService,
     private readonly statisticsService: StatisticsService,
     private readonly quizConfigService: QuizConfigService,
+    private readonly mistakeReviewRepository: MistakeReviewRepository,
   ) {}
 
   /**
@@ -276,6 +283,80 @@ export class QuizService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Starts a session made of the mistakes due today (decision from
+   * docs/00-overview/teacher-side-decisions.md §6).
+   *
+   * Different from the existing `onlyMistakes` practice, which offers every
+   * unresolved mistake at once: this one respects the schedule, so a learner
+   * who opens it daily meets each question at widening intervals instead of
+   * grinding the same list. Both exist because they answer different
+   * questions — "let me drill my weak spots" and "what should I do today".
+   */
+  async startMistakeReview(
+    userId: string,
+    dto: StartMistakeReviewDto,
+  ): Promise<QuizSessionMetadata> {
+    if (await this.quizSessionRepository.findActiveSelfStudy(userId)) {
+      throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+    }
+
+    const questionIds = await this.mistakeReviewRepository.findDueQuestionIds(
+      userId,
+      dto.questionCount ?? DEFAULT_REVIEW_SIZE,
+      dto.subjectId,
+    );
+    if (questionIds.length === 0) {
+      throw new ConflictException(NOTHING_DUE_MESSAGE);
+    }
+
+    // Every due question belongs to some subject; a review may span several,
+    // so the session is pinned to the subject of the first one only when the
+    // caller narrowed it. Statistics treat it the same either way.
+    const subjectId =
+      dto.subjectId ?? (await this.subjectOfQuestion(questionIds[0]));
+
+    try {
+      const session = await this.prisma.$transaction((tx) =>
+        this.quizSessionRepository.createSessionWithQuestions(tx, {
+          userId,
+          quizId: null,
+          subjectId,
+          topicId: null,
+          mode: QuizType.SUBJECT_QUIZ,
+          timerEnabled: false,
+          questionCount: questionIds.length,
+          expiresAt: null,
+          questionIds,
+        }),
+      );
+      return this.toMetadata(session);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+      }
+      throw error;
+    }
+  }
+
+  /** What the learner owes today, and how much they have already fixed. */
+  async mistakeReviewSummary(
+    userId: string,
+  ): Promise<{ due: number; scheduled: number; cleared: number }> {
+    return this.mistakeReviewRepository.summarize(userId);
+  }
+
+  private async subjectOfQuestion(questionId: string): Promise<string> {
+    const question = await this.prisma.question.findUniqueOrThrow({
+      where: { id: questionId },
+      select: { topic: { select: { subjectId: true } } },
+    });
+    return question.topic.subjectId;
   }
 
   /**
@@ -804,6 +885,26 @@ export class QuizService {
         score: accuracy,
         completedAt,
       });
+
+      // The review ladder moves with the same transaction that writes the
+      // result: a session that counted towards statistics but left the
+      // schedule untouched would keep asking about material the learner has
+      // just recovered.
+      for (const attempt of attempts) {
+        if (attempt.isCorrect) {
+          await this.mistakeReviewRepository.promote(
+            tx,
+            session.userId,
+            attempt.questionId,
+          );
+        } else {
+          await this.mistakeReviewRepository.demote(
+            tx,
+            session.userId,
+            attempt.questionId,
+          );
+        }
+      }
 
       await this.statisticsService.applyQuizCompletion(tx, {
         userId: session.userId,
