@@ -60,6 +60,24 @@ enum SubscriptionStatus {
   CANCELED
 }
 
+/// Which attempt counts when an assignment allows more than one (decision 10).
+/// The teacher chooses per assignment: homework is control by default, but a
+/// topic being drilled deserves a retake.
+enum ScoredAttempt {
+  FIRST
+  LAST
+  BEST
+}
+
+/// When a student may see the explanation for an assignment question
+/// (decision 10). Withholding it until the deadline is what makes an
+/// assignment usable as control rather than as practice.
+enum ExplanationVisibility {
+  IMMEDIATE
+  AFTER_SUBMIT
+  AFTER_DUE
+}
+
 /// Supported languages — used both for UserSettings.language and as the locale
 /// key on translation tables (docs/02-domain/user-settings.md §5,
 /// docs/01-prd/localization.md).
@@ -141,10 +159,12 @@ model User {
   xpTransactions XPTransaction[]
   refreshTokens  RefreshToken[]
 
-  ownedGroups      Group[]
-  groupMemberships GroupMembership[]
-  subscription     Subscription?
-  usageSnapshots   UsageSnapshot[]
+  ownedGroups        Group[]
+  groupMemberships   GroupMembership[]
+  createdAssignments Assignment[]
+  assignmentTargets  AssignmentTarget[]
+  subscription       Subscription?
+  usageSnapshots     UsageSnapshot[]
 
   @@map("users")
 }
@@ -350,6 +370,7 @@ model Question {
   attempts             QuestionAttempt[]
   translations         QuestionTranslation[]
   quizSessionQuestions QuizSessionQuestion[]
+  assignmentQuestions  AssignmentQuestion[]
 
   @@index([topicId])
   @@index([type])
@@ -447,6 +468,10 @@ model QuizSession {
   id              String     @id @default(uuid()) @db.Uuid
   userId          String     @db.Uuid
   quizId          String?    @db.Uuid
+  /// Set when this session is a student working through an assignment; null
+  /// for self-study, which is exactly the product that shipped before the
+  /// teacher side existed (docs/02-domain/assignment.md §7).
+  assignmentId    String?    @db.Uuid
   subjectId       String     @db.Uuid
   topicId         String?    @db.Uuid
   mode            QuizType
@@ -464,6 +489,7 @@ model QuizSession {
 
   user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
   quiz           Quiz?                 @relation(fields: [quizId], references: [id], onDelete: Restrict)
+  assignment     Assignment?           @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
   subject        Subject               @relation(fields: [subjectId], references: [id], onDelete: Restrict)
   topic          Topic?                @relation(fields: [topicId], references: [id], onDelete: Restrict)
   questions      QuizSessionQuestion[]
@@ -476,6 +502,7 @@ model QuizSession {
   @@index([topicId])
   @@index([quizId])
   @@index([userId, completedAt(sort: Desc)])
+  @@index([assignmentId])
   @@map("quiz_sessions")
 }
 
@@ -633,6 +660,7 @@ model Group {
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
 
   memberships GroupMembership[]
+  assignments Assignment[]
 
   @@index([ownerId])
   @@index([subjectId])
@@ -720,4 +748,91 @@ model UsageSnapshot {
   @@unique([userId, periodStart])
   @@index([periodStart])
   @@map("usage_snapshots")
+}
+
+// ============================================================================
+// Assignments
+//
+// docs/02-domain/assignment.md. Two things are frozen at the moment of issue:
+// which questions the assignment contains and who it was issued to. That is
+// what makes an assignment a historical fact rather than a live query, and it
+// is what lets a teacher keep the results of work they set after a student has
+// left the group (docs/00-overview/teacher-side-decisions.md decisions 12, 27).
+// ============================================================================
+
+/// A set of questions issued to named students with a deadline.
+model Assignment {
+  id          String  @id @default(uuid()) @db.Uuid
+  groupId     String  @db.Uuid
+  createdById String  @db.Uuid
+  title       String
+  description String?
+
+  /// When students may start. Null means immediately.
+  openAt DateTime?
+  dueAt  DateTime
+
+  /// How many times a student may take it; one by default, because homework is
+  /// control rather than practice unless the teacher says otherwise.
+  attemptsAllowed Int                   @default(1)
+  scoredAttempt   ScoredAttempt         @default(FIRST)
+  explanations    ExplanationVisibility @default(AFTER_SUBMIT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User  @relation(fields: [createdById], references: [id], onDelete: Restrict)
+
+  questions AssignmentQuestion[]
+  targets   AssignmentTarget[]
+  sessions  QuizSession[]
+
+  @@index([groupId])
+  @@index([groupId, dueAt])
+  @@map("assignments")
+}
+
+/// The question list, frozen at issue.
+///
+/// Rows reference questions rather than copying them, so a correction to a
+/// title still reaches an issued assignment — but the *membership* of the set
+/// never changes. Without this, two students in the same group could sit
+/// different papers and their scores would not be comparable.
+///
+/// The cost is recorded in docs/00-overview/teacher-side-decisions.md §9: a
+/// question later found to be wrong stays in assignments already issued.
+model AssignmentQuestion {
+  id           String @id @default(uuid()) @db.Uuid
+  assignmentId String @db.Uuid
+  questionId   String @db.Uuid
+  /// Same order for every student — a shared paper, not a shuffled one.
+  order        Int
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([assignmentId, questionId])
+  @@unique([assignmentId, order])
+  @@index([assignmentId])
+  @@map("assignment_questions")
+}
+
+/// The recipients, frozen at issue.
+///
+/// A student who joins the group afterwards does not receive it (decision 27):
+/// the assignment stays an unchanging record of what was set, to whom, and
+/// when. A live recipient list would be friendlier to the teacher and would
+/// quietly break the archive rule that decision 02 rests on.
+model AssignmentTarget {
+  id           String @id @default(uuid()) @db.Uuid
+  assignmentId String @db.Uuid
+  studentId    String @db.Uuid
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@map("assignment_targets")
 }

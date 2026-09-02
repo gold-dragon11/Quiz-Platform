@@ -14,6 +14,6 @@ import { GroupsService } from './services/groups.service';
 @Module({
   controllers: [TeacherGroupsController, StudentGroupsController],
   providers: [GroupsService, GroupsRepository],
-  exports: [GroupsService],
+  exports: [GroupsService, GroupsRepository],
 })
 export class GroupsModule {}
