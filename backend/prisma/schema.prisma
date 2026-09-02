@@ -164,6 +164,8 @@ model User {
   createdAssignments Assignment[]
   assignmentTargets  AssignmentTarget[]
   questionExposures  QuestionExposure[]
+  questionReports    QuestionReport[]   @relation("ReportAuthor")
+  reportsResolved    QuestionReport[]   @relation("ReportResolver")
   subscription       Subscription?
   usageSnapshots     UsageSnapshot[]
 
@@ -373,6 +375,7 @@ model Question {
   quizSessionQuestions QuizSessionQuestion[]
   assignmentQuestions  AssignmentQuestion[]
   exposures            QuestionExposure[]
+  reports              QuestionReport[]
 
   @@index([topicId])
   @@index([type])
@@ -861,4 +864,54 @@ model QuestionExposure {
   @@index([userId, shownAt])
   @@index([userId, questionId, shownAt])
   @@map("question_exposures")
+}
+
+/// What is wrong with a question, as the person who hit it sees it.
+enum QuestionReportReason {
+  WRONG_ANSWER
+  TYPO
+  UNCLEAR
+  BROKEN_FORMULA
+  OTHER
+}
+
+/// Where a report sits in the queue.
+enum QuestionReportStatus {
+  NEW
+  ACCEPTED
+  REJECTED
+}
+
+/// A complaint about a question, from a learner or a teacher.
+///
+/// Cheap to build and disproportionately useful: it is free quality control
+/// over a bank of 3 308 questions, it tells a reader that somebody is
+/// watching, and it is the evidence a buyer asks for when they want to know
+/// whether the content has a process behind it.
+///
+/// One open report per person per question — the same reader hitting the same
+/// bad question in three quizzes is one complaint, not three.
+model QuestionReport {
+  id           String               @id @default(uuid()) @db.Uuid
+  questionId   String               @db.Uuid
+  reportedById String               @db.Uuid
+  reason       QuestionReportReason
+  comment      String?
+  status       QuestionReportStatus @default(NEW)
+
+  resolvedAt   DateTime?
+  resolvedById String?   @db.Uuid
+  /// What the reviewer decided, for the next person who opens the queue.
+  resolution   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  reportedBy User     @relation("ReportAuthor", fields: [reportedById], references: [id], onDelete: Cascade)
+  resolvedBy User?    @relation("ReportResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([questionId])
+  @@map("question_reports")
 }
