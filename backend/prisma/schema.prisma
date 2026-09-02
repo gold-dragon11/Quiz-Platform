@@ -31,9 +31,33 @@ enum AccountStatus {
 
 /// Role-based authorization (docs/01-prd/authentication.md §11,
 /// docs/06-backend/security.md §6). Stored on User.role.
+///
+/// TEACHER is a separate account type chosen at registration, not a flag on a
+/// student account: every screen then knows without asking which product it is
+/// showing. It shares nothing with ADMIN — a teacher never edits the question
+/// bank (docs/00-overview/teacher-side-decisions.md decision 17).
 enum UserRole {
   USER
+  TEACHER
   ADMIN
+}
+
+/// Subscription plan, priced by how many students the teacher works with
+/// (decision 19). Steps rather than per-student billing: a teacher knows the
+/// amount in advance, and unpredictability unsettles people more than price.
+enum SubscriptionTier {
+  TIER_10
+  TIER_30
+  UNLIMITED
+}
+
+/// Subscription lifecycle. The trial runs without a card until the teacher
+/// adds a fourth student, so the product is judged on a real group.
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
 }
 
 /// Supported languages — used both for UserSettings.language and as the locale
@@ -116,6 +140,11 @@ model User {
   quizSessions   QuizSession[]
   xpTransactions XPTransaction[]
   refreshTokens  RefreshToken[]
+
+  ownedGroups      Group[]
+  groupMemberships GroupMembership[]
+  subscription     Subscription?
+  usageSnapshots   UsageSnapshot[]
 
   @@map("users")
 }
@@ -209,16 +238,16 @@ model Statistics {
 
 /// docs/02-domain/subject.md
 model Subject {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
   name         String
-  slug         String   @unique
+  slug         String    @unique
   description  String?
   icon         String?
   color        String?
-  isPublished  Boolean  @default(false)
+  isPublished  Boolean   @default(false)
   displayOrder Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row so historical Quiz Sessions stay valid. Slug and name stay reserved.
   deletedAt    DateTime?
@@ -228,6 +257,7 @@ model Subject {
   quizSessions      QuizSession[]
   learningMaterials LearningMaterial[]
   translations      SubjectTranslation[]
+  groups            Group[]
 
   @@index([displayOrder])
   @@map("subjects")
@@ -252,15 +282,15 @@ model SubjectTranslation {
 
 /// docs/02-domain/topic.md
 model Topic {
-  id           String   @id @default(uuid()) @db.Uuid
-  subjectId    String   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  subjectId    String    @db.Uuid
   name         String
   slug         String
   description  String?
   displayOrder Int
-  isPublished  Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row. Name and slug stay reserved within the subject.
   deletedAt    DateTime?
@@ -296,24 +326,24 @@ model TopicTranslation {
 
 /// docs/02-domain/question.md
 model Question {
-  id          String       @id @default(uuid()) @db.Uuid
-  topicId     String       @db.Uuid
-  type        QuestionType
-  title       String
-  explanation String?
-  imageUrl    String?
-  difficulty  Difficulty?
+  id            String       @id @default(uuid()) @db.Uuid
+  topicId       String       @db.Uuid
+  type          QuestionType
+  title         String
+  explanation   String?
+  imageUrl      String?
+  difficulty    Difficulty?
   /// Type-specific correct-answer configuration
   /// (docs/02-domain/answer-option.md §9). For MATCHING it stores the correct
   /// pairs referencing option order values; SINGLE_CHOICE questions keep it
   /// null — their correctness lives on AnswerOption.isCorrect.
   configuration Json?
-  isPublished Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  isPublished   Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row so historical Quiz Sessions stay valid.
-  deletedAt   DateTime?
+  deletedAt     DateTime?
 
   topic                Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
   answerOptions        AnswerOption[]
@@ -381,17 +411,17 @@ model AnswerOptionTranslation {
 
 /// docs/02-domain/quiz.md — optional, reusable admin-authored template.
 model Quiz {
-  id            String   @id @default(uuid()) @db.Uuid
-  subjectId     String   @db.Uuid
-  topicId       String?  @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  subjectId     String    @db.Uuid
+  topicId       String?   @db.Uuid
   title         String
   description   String?
   mode          QuizType
   questionCount Int
   timerEnabled  Boolean
-  isPublished   Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row so historical Quiz Sessions that reference this Quiz stay valid.
   deletedAt     DateTime?
@@ -537,24 +567,24 @@ model XPTransaction {
 
 /// docs/02-domain/learning-material.md
 model LearningMaterial {
-  id        String  @id @default(uuid()) @db.Uuid
-  subjectId String  @db.Uuid
-  topicId   String? @db.Uuid
-  title     String
-  slug      String
-  description String?
+  id                   String    @id @default(uuid()) @db.Uuid
+  subjectId            String    @db.Uuid
+  topicId              String?   @db.Uuid
+  title                String
+  slug                 String
+  description          String?
   /// Markdown, with LaTeX between $…$ / $$…$$ (docs/02-domain/learning-material.md §7).
-  content   String
+  content              String
   /// Derived from the word count at write time rather than authored, so it
   /// cannot drift from the text it describes.
   estimatedReadingTime Int?
-  displayOrder Int
-  isPublished  Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  displayOrder         Int
+  isPublished          Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row, so a slug stays reserved within its subject.
-  deletedAt DateTime?
+  deletedAt            DateTime?
 
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   topic   Topic?  @relation(fields: [topicId], references: [id], onDelete: SetNull)
@@ -563,4 +593,131 @@ model LearningMaterial {
   @@index([subjectId])
   @@index([topicId])
   @@map("learning_materials")
+}
+
+// ============================================================================
+// Teacher side — groups, membership, subscription
+//
+// docs/02-domain/group.md, docs/02-domain/subscription.md, and the numbered
+// decisions in docs/00-overview/teacher-side-decisions.md. Everything here is
+// additive: a
+// student who never joins a group sees exactly the product that shipped
+// before it, because nothing in the existing models depends on these.
+// ============================================================================
+
+/// A teacher's class: their students, in one subject.
+///
+/// One subject rather than a mixed class (decision 05) so the assignment
+/// builder and the group analytics read unambiguously — "64 % accuracy" across
+/// four subjects means nothing. A teacher who works two subjects with the same
+/// children keeps two groups.
+///
+/// One owner rather than co-teachers (decision 06): that is the norm for
+/// private tutoring and the simplest possible permission model.
+model Group {
+  id         String    @id @default(uuid()) @db.Uuid
+  ownerId    String    @db.Uuid
+  subjectId  String    @db.Uuid
+  name       String
+  /// Permanent join code, shared once in a chat rather than issued per student
+  /// (decision 07). Regenerating it replaces the value, which silently retires
+  /// the old one — that is the intended way to lock a group.
+  inviteCode String    @unique
+  /// Archive instead of delete: last year's history is what a teacher shows
+  /// when deciding whether to renew.
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  owner   User    @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  memberships GroupMembership[]
+
+  @@index([ownerId])
+  @@index([subjectId])
+  @@map("groups")
+}
+
+/// A student's membership in a group — the entity the whole permission model
+/// rests on.
+///
+/// Leaving closes the row with `leftAt` instead of deleting it (decision 02).
+/// That is what lets a teacher keep the results of work they set while the
+/// student's current activity disappears the same day, and it makes every
+/// access check a question about time: was this student in my group *when this
+/// data was created*, not are they in it now.
+///
+/// The uniqueness of (group, student) therefore holds only among open
+/// memberships, so a student who left can rejoin without colliding with their
+/// own history. Postgres treats NULLs as distinct, so a plain `@@unique` would
+/// permit several open rows; the partial index that enforces this properly is
+/// added by hand in the migration.
+model GroupMembership {
+  id        String    @id @default(uuid()) @db.Uuid
+  groupId   String    @db.Uuid
+  studentId String    @db.Uuid
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([studentId])
+  @@index([groupId, leftAt])
+  @@map("group_memberships")
+}
+
+/// A teacher's subscription. One per teacher, hence the unique userId.
+///
+/// Exceeding a tier mid-month blocks nothing (decision 20): the lesson finishes
+/// and the difference is charged from the next cycle. Non-payment never
+/// punishes students — they keep taking tests, reading materials and seeing
+/// their own statistics; the teacher loses new assignments and analytics.
+model Subscription {
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+
+  tier   SubscriptionTier   @default(TIER_10)
+  status SubscriptionStatus @default(TRIALING)
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  canceledAt         DateTime?
+
+  /// Identifiers held by the payment provider. Null while trialing, because a
+  /// trial takes no card.
+  providerCustomerId     String?
+  providerSubscriptionId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("subscriptions")
+}
+
+/// What a teacher was billed for in one calendar month.
+///
+/// The count itself is derivable — an active student is one who was set at
+/// least one assignment that month (decision 03) — but the snapshot has to
+/// exist: without it a teacher cannot check what they were charged for, and an
+/// argument about an invoice costs more than a table.
+model UsageSnapshot {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  /// First day of the calendar month the snapshot covers.
+  periodStart    DateTime
+  activeStudents Int
+  tierAtSnapshot SubscriptionTier
+  createdAt      DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodStart])
+  @@index([periodStart])
+  @@map("usage_snapshots")
 }
