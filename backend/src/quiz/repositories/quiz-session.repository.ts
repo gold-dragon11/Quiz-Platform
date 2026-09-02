@@ -24,6 +24,8 @@ export interface QuizSessionRecord {
   expiresAt: Date | null;
   completedAt: Date | null;
   durationSeconds: number | null;
+  /** Set when the session is a student working through an assignment. */
+  assignmentId: string | null;
 }
 
 /** One snapshot question with its options and per-locale translations. */
@@ -53,6 +55,7 @@ const SESSION_SELECT = {
   userId: true,
   subjectId: true,
   topicId: true,
+  assignmentId: true,
   mode: true,
   timerEnabled: true,
   questionCount: true,
@@ -170,6 +173,50 @@ export class QuizSessionRepository {
     return rows.map((row) => row.id);
   }
 
+  /**
+   * The user's active self-study session, if any.
+   *
+   * Self-study is limited to one at a time; assignment work is limited per
+   * subject (decision 13). Splitting the lookup is what lets a student have
+   * unfinished homework in maths and still practise English — the old
+   * one-session-for-everything rule would have made them abandon one to touch
+   * the other.
+   */
+  async findActiveSelfStudy(userId: string): Promise<QuizSessionRecord | null> {
+    return this.prisma.quizSession.findFirst({
+      where: { userId, status: QuizStatus.ACTIVE, assignmentId: null },
+      select: SESSION_SELECT,
+    });
+  }
+
+  /** Active assignment work in one subject — at most one by construction. */
+  async findActiveAssignmentInSubject(
+    userId: string,
+    subjectId: string,
+  ): Promise<QuizSessionRecord | null> {
+    return this.prisma.quizSession.findFirst({
+      where: {
+        userId,
+        subjectId,
+        status: QuizStatus.ACTIVE,
+        assignmentId: { not: null },
+      },
+      select: SESSION_SELECT,
+    });
+  }
+
+  /** Any active session for this exact assignment — the resume path. */
+  async findActiveForAssignment(
+    userId: string,
+    assignmentId: string,
+  ): Promise<QuizSessionRecord | null> {
+    return this.prisma.quizSession.findFirst({
+      where: { userId, assignmentId, status: QuizStatus.ACTIVE },
+      select: SESSION_SELECT,
+    });
+  }
+
+  /** Anything active at all — used by the resume banner, which is mode-blind. */
   async findActiveByUser(userId: string): Promise<QuizSessionRecord | null> {
     return this.prisma.quizSession.findFirst({
       where: { userId, status: QuizStatus.ACTIVE },
@@ -197,6 +244,7 @@ export class QuizSessionRepository {
     params: {
       userId: string;
       quizId: string | null;
+      assignmentId?: string | null;
       subjectId: string;
       topicId: string | null;
       mode: QuizType;
@@ -210,6 +258,7 @@ export class QuizSessionRepository {
       data: {
         userId: params.userId,
         quizId: params.quizId,
+        assignmentId: params.assignmentId ?? null,
         subjectId: params.subjectId,
         topicId: params.topicId,
         mode: params.mode,

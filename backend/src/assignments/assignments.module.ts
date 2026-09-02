@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GroupsModule } from '../groups/groups.module';
+import { QuizModule } from '../quiz/quiz.module';
 import { StudentAssignmentsController } from './controllers/student-assignments.controller';
 import { TeacherAssignmentsController } from './controllers/teacher-assignments.controller';
 import { AssignmentsRepository } from './repositories/assignments.repository';
@@ -14,7 +15,7 @@ import { QuestionSelectionService } from './services/question-selection.service'
  * every route rather than assumed from the URL.
  */
 @Module({
-  imports: [GroupsModule],
+  imports: [GroupsModule, QuizModule],
   controllers: [TeacherAssignmentsController, StudentAssignmentsController],
   providers: [
     AssignmentsService,

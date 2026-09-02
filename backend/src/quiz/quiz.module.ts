@@ -25,5 +25,8 @@ import { QuizService } from './services/quiz.service';
     QuestionAttemptRepository,
     ResultRepository,
   ],
+  // Exported for AssignmentsModule: starting homework is the same engine with
+  // a frozen question list, not a second implementation of it.
+  exports: [QuizService],
 })
 export class QuizModule {}

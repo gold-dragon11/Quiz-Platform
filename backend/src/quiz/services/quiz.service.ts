@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   Difficulty,
+  ExplanationVisibility,
   Language,
   Prisma,
   QuizStatus,
@@ -45,6 +46,8 @@ const HIGH_ACCURACY_BONUS_XP = 25;
 const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
 const ACTIVE_SESSION_EXISTS_MESSAGE =
   'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
+const ACTIVE_ASSIGNMENT_SESSION_MESSAGE =
+  'У вас уже є незавершене завдання з цього предмета. Завершіть його спочатку.';
 const INSUFFICIENT_QUESTIONS_MESSAGE =
   'Для цього тесту бракує опублікованих питань.';
 // Says which pool came up short: the advanced tier holds far fewer questions
@@ -110,17 +113,23 @@ export class QuizService {
   ) {}
 
   /**
-   * Starts a new quiz (docs/04-api/quiz.md §4). Resolves the generation
-   * configuration from either a stored Quiz or the ad-hoc request (Phase 5.6),
-   * then, in one transaction: enforces the single-active-session rule
-   * (decision D4), selects the random published question set (decisions
-   * D21/D23), and creates the ACTIVE session with its snapshot and timer
-   * deadline (decisions D1/D3/D5).
+   * Starts a new self-study quiz (docs/04-api/quiz.md §4). Resolves the
+   * generation configuration from either a stored Quiz or the ad-hoc request
+   * (Phase 5.6), then, in one transaction: enforces the concurrency rule,
+   * selects the random published question set (decisions D21/D23), and creates
+   * the ACTIVE session with its snapshot and timer deadline (decisions
+   * D1/D3/D5).
+   *
+   * The rule this route enforces is now the self-study half of decision 13:
+   * one active self-study session per user. Homework is counted separately,
+   * per subject, so a student halfway through maths homework can still open a
+   * practice quiz — under the old single-session rule they had to abandon one
+   * to touch the other.
    */
   async start(userId: string, dto: StartQuizDto): Promise<QuizSessionMetadata> {
     const config = await this.resolveStartConfig(dto);
 
-    if (await this.quizSessionRepository.findActiveByUser(userId)) {
+    if (await this.quizSessionRepository.findActiveSelfStudy(userId)) {
       throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
     }
 
@@ -181,6 +190,126 @@ export class QuizService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Starts — or resumes — a student's work on an assignment.
+   *
+   * Differs from `start` in three ways, all of them consequences of the
+   * assignment being a frozen record rather than a generated quiz:
+   *
+   * - the questions come from the assignment's snapshot, in its order, so every
+   *   recipient sits the same paper;
+   * - the concurrency limit is per subject, not global (decision 13);
+   * - an already-active session for this assignment is returned rather than
+   *   refused, so closing the tab does not cost an attempt.
+   *
+   * Untimed by design: the deadline is the time pressure, and a per-question
+   * timer on homework would punish the student who thinks before answering.
+   *
+   * Validation of *whether* the student may start — recipient, open date,
+   * attempts left — belongs to AssignmentsService, which owns those rules.
+   */
+  async startFromAssignment(
+    userId: string,
+    params: {
+      assignmentId: string;
+      subjectId: string;
+      questionIds: string[];
+    },
+  ): Promise<QuizSessionMetadata> {
+    const resumable = await this.quizSessionRepository.findActiveForAssignment(
+      userId,
+      params.assignmentId,
+    );
+    if (resumable) {
+      return this.toMetadata(resumable);
+    }
+
+    const blocking =
+      await this.quizSessionRepository.findActiveAssignmentInSubject(
+        userId,
+        params.subjectId,
+      );
+    if (blocking) {
+      throw new ConflictException(ACTIVE_ASSIGNMENT_SESSION_MESSAGE);
+    }
+
+    // Carry the topic only when the whole paper sits in one — it feeds
+    // per-topic statistics, and a mixed paper has no single honest answer.
+    const topicId = await this.singleTopicOf(params.questionIds);
+
+    try {
+      const session = await this.prisma.$transaction((tx) =>
+        this.quizSessionRepository.createSessionWithQuestions(tx, {
+          userId,
+          quizId: null,
+          assignmentId: params.assignmentId,
+          subjectId: params.subjectId,
+          topicId,
+          mode: QuizType.SUBJECT_QUIZ,
+          timerEnabled: false,
+          questionCount: params.questionIds.length,
+          expiresAt: null,
+          questionIds: params.questionIds,
+        }),
+      );
+      return this.toMetadata(session);
+    } catch (error) {
+      // The partial unique index is the concurrency backstop, exactly as it is
+      // for self-study.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(ACTIVE_ASSIGNMENT_SESSION_MESSAGE);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Whether this session's review may show explanations.
+   *
+   * Self-study always may: the session is over, and an explanation cannot give
+   * away an answer that has already been submitted.
+   *
+   * Homework may withhold them until the deadline (`AFTER_DUE`), because
+   * otherwise the first student to finish can hand the whole paper to the rest
+   * of the class. `IMMEDIATE` and `AFTER_SUBMIT` behave identically here — the
+   * engine has no mid-session feedback path, so "immediate" currently means
+   * "as soon as the session ends". Wiring per-answer feedback is an engine
+   * change, not a flag, and it is not in this phase.
+   */
+  private async explanationsVisibleFor(
+    session: QuizSessionRecord,
+  ): Promise<boolean> {
+    if (!session.assignmentId) {
+      return true;
+    }
+
+    const assignment = await this.prisma.assignment.findUnique({
+      where: { id: session.assignmentId },
+      select: { explanations: true, dueAt: true },
+    });
+    if (!assignment) {
+      return true;
+    }
+
+    return (
+      assignment.explanations !== ExplanationVisibility.AFTER_DUE ||
+      assignment.dueAt.getTime() <= Date.now()
+    );
+  }
+
+  /** The topic every one of these questions belongs to, or null if they differ. */
+  private async singleTopicOf(questionIds: string[]): Promise<string | null> {
+    const topics = await this.prisma.question.findMany({
+      where: { id: { in: questionIds } },
+      select: { topicId: true },
+      distinct: ['topicId'],
+    });
+    return topics.length === 1 ? topics[0].topicId : null;
   }
 
   /**
@@ -439,6 +568,7 @@ export class QuizService {
     const attemptByQuestion = new Map(
       attempts.map((attempt) => [attempt.questionId, attempt]),
     );
+    const explanationsVisible = await this.explanationsVisibleFor(session);
 
     const reviewQuestions: QuizReviewQuestion[] = questions.map((question) => {
       const attempt = attemptByQuestion.get(question.id);
@@ -454,7 +584,8 @@ export class QuizService {
         // Safe to reveal only here: the review runs after completion, so an
         // explanation can no longer give away an answer in progress. The
         // active-session view (`toQuestionView`) never carries this field.
-        explanation: question.explanation,
+        // Homework can withhold it further — see `explanationsVisibleFor`.
+        explanation: explanationsVisible ? question.explanation : null,
       };
     });
 

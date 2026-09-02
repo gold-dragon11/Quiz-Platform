@@ -241,6 +241,16 @@ export class AssignmentsRepository {
     return new Set(rows.map((row) => row.id));
   }
 
+  /** The frozen question list, in the order every recipient sees it. */
+  async findQuestionIds(assignmentId: string): Promise<string[]> {
+    const rows = await this.prisma.assignmentQuestion.findMany({
+      where: { assignmentId },
+      orderBy: { order: 'asc' },
+      select: { questionId: true },
+    });
+    return rows.map((row) => row.questionId);
+  }
+
   async topicBelongsToSubject(
     topicId: string,
     subjectId: string,

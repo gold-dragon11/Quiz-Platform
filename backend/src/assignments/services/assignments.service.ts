@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { ExplanationVisibility, ScoredAttempt } from '@prisma/client';
 import { GroupsRepository } from '../../groups/repositories/groups.repository';
+import { QuizService } from '../../quiz/services/quiz.service';
+import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
 import { CreateAssignmentDto } from '../dto/create-assignment.dto';
 import { UpdateAssignmentDto } from '../dto/update-assignment.dto';
 import {
@@ -28,6 +30,8 @@ const NO_STUDENTS_MESSAGE =
 const NOT_MEMBERS_MESSAGE = 'Не всі вибрані учні є в цій групі.';
 const DUE_IN_PAST_MESSAGE = 'Дедлайн має бути в майбутньому.';
 const OPEN_AFTER_DUE_MESSAGE = 'Відкриття не може бути пізніше за дедлайн.';
+const NOT_OPEN_YET_MESSAGE = 'Завдання ще не відкрите.';
+const NO_ATTEMPTS_LEFT_MESSAGE = 'Спроби вичерпано.';
 
 /**
  * Assignments (docs/02-domain/assignment.md).
@@ -45,6 +49,7 @@ export class AssignmentsService {
     private readonly assignmentsRepository: AssignmentsRepository,
     private readonly groupsRepository: GroupsRepository,
     private readonly questionSelection: QuestionSelectionService,
+    private readonly quizService: QuizService,
   ) {}
 
   // ---------------------------------------------------------------- teacher
@@ -166,6 +171,53 @@ export class AssignmentsService {
     return assignments.map((assignment) =>
       this.toStudentAssignment(assignment, sessions.get(assignment.id)),
     );
+  }
+
+  /**
+   * Starts — or resumes — work on an assignment.
+   *
+   * This method owns the question of *whether* the student may begin; the quiz
+   * engine owns what happens once they do. Three gates, in the order a student
+   * runs into them: were you given this, has it opened, have you any attempts
+   * left.
+   *
+   * A missed deadline is deliberately not a gate. Late work is still work
+   * (decision 11) — it is marked late, not refused, so a student who was ill
+   * does not lose the material along with the marks.
+   */
+  async start(
+    studentId: string,
+    assignmentId: string,
+  ): Promise<QuizSessionMetadata> {
+    const assignment = await this.assignmentsRepository.findById(assignmentId);
+    if (
+      !assignment ||
+      !(await this.assignmentsRepository.isTarget(assignmentId, studentId))
+    ) {
+      throw new NotFoundException(ASSIGNMENT_NOT_FOUND_MESSAGE);
+    }
+
+    if (assignment.openAt && assignment.openAt.getTime() > Date.now()) {
+      throw new ConflictException(NOT_OPEN_YET_MESSAGE);
+    }
+
+    const completed = await this.assignmentsRepository.completedSessions(
+      [assignmentId],
+      studentId,
+    );
+    const used = completed.get(assignmentId)?.attempts ?? 0;
+    if (used >= assignment.attemptsAllowed) {
+      throw new ConflictException(NO_ATTEMPTS_LEFT_MESSAGE);
+    }
+
+    const questionIds =
+      await this.assignmentsRepository.findQuestionIds(assignmentId);
+
+    return this.quizService.startFromAssignment(studentId, {
+      assignmentId,
+      subjectId: assignment.group.subject.id,
+      questionIds,
+    });
   }
 
   async findForStudent(

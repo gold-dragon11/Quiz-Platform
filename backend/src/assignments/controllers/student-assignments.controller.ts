@@ -1,12 +1,16 @@
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
 import { AssignmentsService } from '../services/assignments.service';
 import { StudentAssignment } from '../types/assignment.types';
 
@@ -41,5 +45,20 @@ export class StudentAssignmentsController {
     @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
   ): Promise<StudentAssignment> {
     return this.assignmentsService.findForStudent(studentId, assignmentId);
+  }
+
+  /**
+   * POST /api/v1/assignments/:assignmentId/start — begin the work, or return
+   * the session already in progress. From here the ordinary quiz routes take
+   * over: the questions, the answers and the review are the same engine the
+   * student already knows.
+   */
+  @Post(':assignmentId/start')
+  @HttpCode(HttpStatus.OK)
+  async start(
+    @CurrentUser('id') studentId: string,
+    @Param('assignmentId', ParseUUIDPipe) assignmentId: string,
+  ): Promise<QuizSessionMetadata> {
+    return this.assignmentsService.start(studentId, assignmentId);
   }
 }
