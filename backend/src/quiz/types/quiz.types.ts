@@ -94,3 +94,14 @@ export interface QuizReview {
     topicId: string | null;
   };
 }
+
+/** One past mock sitting, for the curve a student watches over months. */
+export interface MockExamAttempt {
+  sessionId: string;
+  subject: { id: string; name: string };
+  correctAnswers: number;
+  totalQuestions: number;
+  accuracy: number;
+  durationSeconds: number | null;
+  completedAt: Date;
+}

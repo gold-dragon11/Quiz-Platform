@@ -118,6 +118,11 @@ enum Difficulty {
 enum QuizType {
   SUBJECT_QUIZ
   RANDOM_QUIZ
+  /// A full mock sitting of the national exam, timed as a whole rather than
+  /// per question (docs/00-overview/teacher-side-decisions.md decision 28).
+  /// Its own type rather than a preset so that "how did my mock exams go" is
+  /// a query, not an archaeology exercise over ordinary practice.
+  MOCK_EXAM
 }
 
 /// Quiz session lifecycle status (docs/02-domain/quiz-session.md §6). Abandoned

@@ -14,11 +14,14 @@ import { Prisma } from '@prisma/client';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
+import { MockExamHistoryQueryDto } from '../dto/mock-exam-history-query.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
+import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { QuizService } from '../services/quiz.service';
 import {
+  MockExamAttempt,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -35,6 +38,33 @@ import {
 @Controller('quiz')
 export class QuizController {
   constructor(private readonly quizService: QuizService) {}
+
+  /**
+   * POST /api/v1/quiz/mock-exam/start — a full sitting under exam conditions:
+   * a fixed paper, one clock for the whole thing, nothing to configure.
+   */
+  @Post('mock-exam/start')
+  @HttpCode(HttpStatus.CREATED)
+  async startMockExam(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartMockExamDto,
+  ): Promise<QuizSessionMetadata> {
+    return this.quizService.startMockExam(userId, dto);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/history — past sittings, oldest first.
+   * Deliberately no converted exam score: the official conversion table is not
+   * something to invent, so this reports what happened rather than what it
+   * would have been worth.
+   */
+  @Get('mock-exam/history')
+  async mockExamHistory(
+    @CurrentUser('id') userId: string,
+    @Query() query: MockExamHistoryQueryDto,
+  ): Promise<MockExamAttempt[]> {
+    return this.quizService.mockExamHistory(userId, query.subjectId);
+  }
 
   /** POST /api/v1/quiz/start — creates an ACTIVE session with its questions. */
   @Post('start')

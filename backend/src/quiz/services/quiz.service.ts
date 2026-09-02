@@ -18,7 +18,9 @@ import { QuizConfigService } from '../../quizzes/services/quiz-config.service';
 import { SettingsService } from '../../settings/services/settings.service';
 import { StatisticsService } from '../../statistics/services/statistics.service';
 import { XpAward } from '../../statistics/repositories/statistics.repository';
+import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
+import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
 import { QuestionAttemptRepository } from '../repositories/question-attempt.repository';
@@ -29,6 +31,7 @@ import {
 } from '../repositories/quiz-session.repository';
 import { ResultRepository } from '../repositories/result.repository';
 import {
+  MockExamAttempt,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -44,6 +47,10 @@ const HIGH_ACCURACY_THRESHOLD = 90;
 const HIGH_ACCURACY_BONUS_XP = 25;
 
 const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
+const SUBJECT_NOT_FOUND_MESSAGE =
+  'Предмет не знайдено або він не опублікований.';
+const MOCK_EXAM_TOO_SHORT_MESSAGE =
+  'У цьому предметі поки замало опублікованих питань для пробного тесту.';
 const ACTIVE_SESSION_EXISTS_MESSAGE =
   'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
 const ACTIVE_ASSIGNMENT_SESSION_MESSAGE =
@@ -195,6 +202,110 @@ export class QuizService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Starts a mock sitting of the national exam (decision 28).
+   *
+   * Three things separate it from ordinary practice, and all three are the
+   * point: the paper is fixed by the specification rather than chosen, the
+   * clock runs for the whole paper rather than per question, and the sitting
+   * is recorded as its own type so a student can watch the curve across
+   * months instead of hunting it out of general practice.
+   *
+   * It occupies the self-study slot: one mock at a time, and starting one
+   * while an ordinary quiz is open is refused the same way as any other
+   * second practice session.
+   */
+  async startMockExam(
+    userId: string,
+    dto: StartMockExamDto,
+  ): Promise<QuizSessionMetadata> {
+    const subject = await this.quizSessionRepository.findSubjectForMock(
+      dto.subjectId,
+    );
+    if (!subject) {
+      throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
+    }
+
+    if (await this.quizSessionRepository.findActiveSelfStudy(userId)) {
+      throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+    }
+
+    const spec = mockExamSpecFor(subject.slug);
+    const questionIds: string[] = [];
+
+    for (const tier of questionsPerDifficulty(spec)) {
+      questionIds.push(
+        ...(await this.quizSessionRepository.selectRandomQuestionIds({
+          subjectId: subject.id,
+          difficulty: tier.difficulty,
+          count: tier.count,
+          userId,
+        })),
+      );
+    }
+
+    // A short paper is not a mock. Better to say the bank is not ready than to
+    // hand someone a twelve-question "exam" and let them draw conclusions.
+    if (questionIds.length < spec.questionCount) {
+      throw new ConflictException(MOCK_EXAM_TOO_SHORT_MESSAGE);
+    }
+
+    try {
+      const session = await this.prisma.$transaction((tx) =>
+        this.quizSessionRepository.createSessionWithQuestions(tx, {
+          userId,
+          quizId: null,
+          subjectId: subject.id,
+          topicId: null,
+          mode: QuizType.MOCK_EXAM,
+          timerEnabled: true,
+          questionCount: questionIds.length,
+          expiresAt: new Date(Date.now() + spec.minutes * 60 * 1000),
+          questionIds,
+        }),
+      );
+      return this.toMetadata(session);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Past mock sittings, oldest first — the shape a student and a parent both
+   * ask for, which is whether the line is going up.
+   */
+  async mockExamHistory(
+    userId: string,
+    subjectId?: string,
+  ): Promise<MockExamAttempt[]> {
+    const sessions = await this.quizSessionRepository.findMockExamAttempts(
+      userId,
+      subjectId,
+    );
+
+    return sessions.flatMap((session) =>
+      session.result && session.completedAt
+        ? [
+            {
+              sessionId: session.id,
+              subject: session.subject,
+              correctAnswers: session.result.correctAnswers,
+              totalQuestions: session.result.totalQuestions,
+              accuracy: Number(session.result.accuracy),
+              durationSeconds: session.durationSeconds,
+              completedAt: session.completedAt,
+            },
+          ]
+        : [],
+    );
   }
 
   /**

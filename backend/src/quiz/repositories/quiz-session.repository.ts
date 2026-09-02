@@ -284,6 +284,57 @@ export class QuizSessionRepository {
     });
   }
 
+  /** Completed mock sittings for one learner, oldest first. */
+  async findMockExamAttempts(
+    userId: string,
+    subjectId?: string,
+  ): Promise<
+    {
+      id: string;
+      subject: { id: string; name: string };
+      durationSeconds: number | null;
+      completedAt: Date | null;
+      result: {
+        correctAnswers: number;
+        totalQuestions: number;
+        accuracy: Prisma.Decimal;
+      } | null;
+    }[]
+  > {
+    return this.prisma.quizSession.findMany({
+      where: {
+        userId,
+        subjectId,
+        mode: QuizType.MOCK_EXAM,
+        status: QuizStatus.COMPLETED,
+      },
+      orderBy: { completedAt: 'asc' },
+      select: {
+        id: true,
+        durationSeconds: true,
+        completedAt: true,
+        subject: { select: { id: true, name: true } },
+        result: {
+          select: {
+            correctAnswers: true,
+            totalQuestions: true,
+            accuracy: true,
+          },
+        },
+      },
+    });
+  }
+
+  /** The subject's slug, which selects its mock-exam specification. */
+  async findSubjectForMock(
+    subjectId: string,
+  ): Promise<{ id: string; slug: string } | null> {
+    return this.prisma.subject.findFirst({
+      where: { id: subjectId, isPublished: true, deletedAt: null },
+      select: { id: true, slug: true },
+    });
+  }
+
   /** Anything active at all — used by the resume banner, which is mode-blind. */
   async findActiveByUser(userId: string): Promise<QuizSessionRecord | null> {
     return this.prisma.quizSession.findFirst({
