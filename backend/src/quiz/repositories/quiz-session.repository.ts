@@ -10,6 +10,18 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
 
+/**
+ * Rows older than this can no longer affect selection, so they are dropped.
+ *
+ * There is deliberately no "recently seen" cut-off to go with it. Decision 15
+ * describes a 30-day exclusion with a longest-unseen fallback; ordering by
+ * when a question was last shown, never-seen first, produces exactly that
+ * behaviour and nothing else. A hard window would empty the pool by the fourth
+ * sitting — roughly 41 questions to a topic, ten to a sitting — and tell the
+ * learner to come back in a month.
+ */
+const EXPOSURE_RETENTION_DAYS = 180;
+
 /** A quiz session row as needed by the engine. */
 export interface QuizSessionRecord {
   id: string;
@@ -88,18 +100,74 @@ export class QuizSessionRepository {
     topicId?: string;
     difficulty?: Difficulty;
     count: number;
+    /** Prefer questions this learner has not seen lately (decision 15). */
+    userId?: string;
   }): Promise<string[]> {
     const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
       SELECT q.id
       FROM questions q
       JOIN topics t ON t.id = q."topicId"
       JOIN subjects s ON s.id = t."subjectId"
+      ${
+        params.userId === undefined
+          ? Prisma.empty
+          : Prisma.sql`
+      LEFT JOIN LATERAL (
+        SELECT MAX(e."shownAt") AS last_seen
+        FROM question_exposures e
+        WHERE e."questionId" = q.id AND e."userId" = ${params.userId}::uuid
+      ) seen ON true`
+      }
       WHERE ${eligibleQuestionFilter(params)}
-      ORDER BY random()
+      ORDER BY ${
+        params.userId === undefined
+          ? Prisma.sql`random()`
+          : // Never seen first, then longest ago. `random()` only breaks ties,
+            // which in practice means shuffling the never-seen pool: every
+            // other row has a distinct timestamp. Each sitting pushes what it
+            // showed to the back, so repeat practice becomes a round robin
+            // rather than a reshuffle.
+            Prisma.sql`
+        seen.last_seen ASC NULLS FIRST,
+        random()`
+      }
       LIMIT ${params.count}
     `);
 
     return rows.map((row) => row.id);
+  }
+
+  /**
+   * Records that these questions were put in front of this learner, and trims
+   * the log while it is here.
+   *
+   * Pruning happens on write rather than on a schedule because the application
+   * has no scheduler, and a table that only ever grows is a slow leak: one row
+   * per question per sitting, forever. Anything past the retention window can
+   * no longer influence selection, so keeping it buys nothing.
+   */
+  async recordExposure(
+    tx: PrismaTransactionClient,
+    userId: string,
+    questionIds: string[],
+  ): Promise<void> {
+    if (questionIds.length === 0) {
+      return;
+    }
+
+    await tx.questionExposure.createMany({
+      data: questionIds.map((questionId) => ({ userId, questionId })),
+    });
+    await tx.questionExposure.deleteMany({
+      where: {
+        userId,
+        shownAt: {
+          lt: new Date(
+            Date.now() - EXPOSURE_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+          ),
+        },
+      },
+    });
   }
 
   /**
@@ -254,7 +322,7 @@ export class QuizSessionRepository {
       questionIds: string[];
     },
   ): Promise<QuizSessionRecord> {
-    return tx.quizSession.create({
+    const session = await tx.quizSession.create({
       data: {
         userId: params.userId,
         quizId: params.quizId,
@@ -275,6 +343,13 @@ export class QuizSessionRepository {
       },
       select: SESSION_SELECT,
     });
+
+    // In the same transaction as the snapshot: a session that exists without
+    // its exposures would let the learner draw the same questions again the
+    // moment they abandon it.
+    await this.recordExposure(tx, params.userId, params.questionIds);
+
+    return session;
   }
 
   /**

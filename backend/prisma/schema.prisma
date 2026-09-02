@@ -163,6 +163,7 @@ model User {
   groupMemberships   GroupMembership[]
   createdAssignments Assignment[]
   assignmentTargets  AssignmentTarget[]
+  questionExposures  QuestionExposure[]
   subscription       Subscription?
   usageSnapshots     UsageSnapshot[]
 
@@ -371,6 +372,7 @@ model Question {
   translations         QuestionTranslation[]
   quizSessionQuestions QuizSessionQuestion[]
   assignmentQuestions  AssignmentQuestion[]
+  exposures            QuestionExposure[]
 
   @@index([topicId])
   @@index([type])
@@ -835,4 +837,28 @@ model AssignmentTarget {
   @@unique([assignmentId, studentId])
   @@index([studentId])
   @@map("assignment_targets")
+}
+
+/// Which questions a learner has already been shown, and when
+/// (docs/00-overview/teacher-side-decisions.md decision 15).
+///
+/// Exists because a bank of roughly 41 questions per topic empties fast: a
+/// ten-question test exhausts a topic in four sittings, after which practice
+/// quietly turns into a memory test of those particular items. Recording what
+/// has been seen is what lets selection prefer what has not.
+///
+/// Written for every session, whatever its kind — homework, practice, a duel.
+/// "Seen" is a fact about the learner, not about the mode they saw it in.
+model QuestionExposure {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid
+  questionId String   @db.Uuid
+  shownAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, shownAt])
+  @@index([userId, questionId, shownAt])
+  @@map("question_exposures")
 }

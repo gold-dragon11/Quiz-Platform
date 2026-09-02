@@ -147,6 +147,11 @@ export class QuizService {
           topicId: config.topicId ?? undefined,
           difficulty: config.difficulty ?? undefined,
           count: config.questionCount,
+          // Practice prefers what this learner has not seen lately
+          // (decision 15). Mistake practice above deliberately does not: its
+          // whole purpose is to bring back the questions they got wrong, and
+          // filtering by exposure would empty the pool it draws from.
+          userId,
         });
     if (questionIds.length < config.questionCount) {
       throw new ConflictException(
