@@ -14,6 +14,7 @@ import { QuizModule } from './quiz/quiz.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { SettingsModule } from './settings/settings.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { GroupsModule } from './groups/groups.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { TopicsModule } from './topics/topics.module';
 import { UsersModule } from './users/users.module';
@@ -47,6 +48,7 @@ import { UsersModule } from './users/users.module';
     TopicsModule,
     QuestionsModule,
     LearningMaterialsModule,
+    GroupsModule,
     QuizModule,
     QuizzesModule,
     StatisticsModule,
