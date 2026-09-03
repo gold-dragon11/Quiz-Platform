@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { LocalizedThrottlerGuard } from './common/guards/localized-throttler.guard';
 import { AppConfigModule } from './config/config.module';
 import { AppConfig } from './config/configuration';
+import { DuelsModule } from './duels/duels.module';
 import { HealthModule } from './health/health.module';
 import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -50,6 +51,7 @@ import { UsersModule } from './users/users.module';
     TopicsModule,
     QuestionsModule,
     QuestionReportsModule,
+    DuelsModule,
     LearningMaterialsModule,
     GroupsModule,
     AssignmentsModule,

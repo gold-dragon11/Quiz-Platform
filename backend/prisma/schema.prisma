@@ -118,6 +118,11 @@ enum Difficulty {
 enum QuizType {
   SUBJECT_QUIZ
   RANDOM_QUIZ
+  /// One player's half of a duel (decision 21). A session rather than its own
+  /// entity so scoring, exposure history, XP and statistics stay single
+  /// implementations — a parallel engine for duels would drift from the real
+  /// one within a month.
+  DUEL
   /// A full mock sitting of the national exam, timed as a whole rather than
   /// per question (docs/00-overview/teacher-side-decisions.md decision 28).
   /// Its own type rather than a preset so that "how did my mock exams go" is
@@ -174,6 +179,8 @@ model User {
   subscription       Subscription?
   usageSnapshots     UsageSnapshot[]
   mistakeReviews     MistakeReview[]
+  duelsChallenged    Duel[]             @relation("DuelChallenger")
+  duelsReceived      Duel[]             @relation("DuelOpponent")
 
   @@map("users")
 }
@@ -287,6 +294,7 @@ model Subject {
   learningMaterials LearningMaterial[]
   translations      SubjectTranslation[]
   groups            Group[]
+  duels             Duel[]
 
   @@index([displayOrder])
   @@map("subjects")
@@ -330,6 +338,7 @@ model Topic {
   quizSessions      QuizSession[]
   learningMaterials LearningMaterial[]
   translations      TopicTranslation[]
+  duels             Duel[]
 
   @@unique([subjectId, slug])
   @@index([subjectId])
@@ -380,6 +389,7 @@ model Question {
   translations         QuestionTranslation[]
   quizSessionQuestions QuizSessionQuestion[]
   assignmentQuestions  AssignmentQuestion[]
+  duelQuestions        DuelQuestion[]
   exposures            QuestionExposure[]
   reports              QuestionReport[]
   mistakeReviews       MistakeReview[]
@@ -484,6 +494,9 @@ model QuizSession {
   /// for self-study, which is exactly the product that shipped before the
   /// teacher side existed (docs/02-domain/assignment.md §7).
   assignmentId    String?    @db.Uuid
+  /// Set when this session is one player's half of a duel. Two sessions of one
+  /// duel share this value (docs/02-domain/duel.md).
+  duelId          String?    @db.Uuid
   subjectId       String     @db.Uuid
   topicId         String?    @db.Uuid
   mode            QuizType
@@ -502,6 +515,7 @@ model QuizSession {
   user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
   quiz           Quiz?                 @relation(fields: [quizId], references: [id], onDelete: Restrict)
   assignment     Assignment?           @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  duel           Duel?                 @relation(fields: [duelId], references: [id], onDelete: Restrict)
   subject        Subject               @relation(fields: [subjectId], references: [id], onDelete: Restrict)
   topic          Topic?                @relation(fields: [topicId], references: [id], onDelete: Restrict)
   questions      QuizSessionQuestion[]
@@ -515,6 +529,7 @@ model QuizSession {
   @@index([quizId])
   @@index([userId, completedAt(sort: Desc)])
   @@index([assignmentId])
+  @@index([duelId])
   @@map("quiz_sessions")
 }
 
@@ -959,4 +974,81 @@ model MistakeReview {
   @@unique([userId, questionId])
   @@index([userId, clearedAt, dueAt])
   @@map("mistake_reviews")
+}
+
+/// How the two players meet.
+enum DuelMode {
+  /// Both sit the same paper whenever they like; the result is a comparison.
+  /// Needs no real-time anything, which is why it ships first.
+  ASYNC
+  /// Both on the clock together, question by question.
+  LIVE
+}
+
+/// Where a duel sits in its life.
+enum DuelStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  COMPLETED
+  EXPIRED
+}
+
+/// A match between two learners over the same set of questions.
+///
+/// Challenged by name, never matched at random (docs/00-overview/
+/// teacher-side-decisions.md §8). At this size a random queue would leave
+/// somebody staring at a spinner, and an empty search for an opponent reads
+/// worse than no button at all.
+///
+/// The paper is frozen when the challenge is accepted, in one order for both
+/// players — otherwise the loser can always blame an easier draw.
+model Duel {
+  id           String @id @default(uuid()) @db.Uuid
+  challengerId String @db.Uuid
+  opponentId   String @db.Uuid
+
+  subjectId String  @db.Uuid
+  topicId   String? @db.Uuid
+
+  mode          DuelMode   @default(ASYNC)
+  status        DuelStatus @default(PENDING)
+  questionCount Int
+
+  /// An unanswered challenge goes stale rather than sitting in a list forever.
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  challenger User    @relation("DuelChallenger", fields: [challengerId], references: [id], onDelete: Cascade)
+  opponent   User    @relation("DuelOpponent", fields: [opponentId], references: [id], onDelete: Cascade)
+  subject    Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  topic      Topic?  @relation(fields: [topicId], references: [id], onDelete: Restrict)
+
+  questions DuelQuestion[]
+  sessions  QuizSession[]
+
+  @@index([challengerId, status])
+  @@index([opponentId, status])
+  @@index([status, expiresAt])
+  @@map("duels")
+}
+
+/// The frozen paper, in the order both players see it.
+model DuelQuestion {
+  id         String @id @default(uuid()) @db.Uuid
+  duelId     String @db.Uuid
+  questionId String @db.Uuid
+  order      Int
+
+  duel     Duel     @relation(fields: [duelId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([duelId, order])
+  @@unique([duelId, questionId])
+  @@index([duelId])
+  @@map("duel_questions")
 }

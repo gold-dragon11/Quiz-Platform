@@ -390,6 +390,65 @@ export class QuizService {
   }
 
   /**
+   * Starts — or resumes — one player's half of a duel.
+   *
+   * The questions come from the duel's frozen paper in its order, so both
+   * players sit the same thing. Untimed here: the asynchronous duel's whole
+   * premise is that the two play whenever they like, and the comparison is
+   * what makes it a contest. A per-question clock belongs to the live variant.
+   *
+   * Occupies the self-study slot, like practice and mock exams — homework is
+   * the only thing counted per subject.
+   */
+  async startForDuel(
+    userId: string,
+    params: {
+      duelId: string;
+      subjectId: string;
+      topicId: string | null;
+      questionIds: string[];
+    },
+  ): Promise<QuizSessionMetadata> {
+    const resumable = await this.quizSessionRepository.findActiveForDuel(
+      userId,
+      params.duelId,
+    );
+    if (resumable) {
+      return this.toMetadata(resumable);
+    }
+
+    if (await this.quizSessionRepository.findActiveSelfStudy(userId)) {
+      throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+    }
+
+    try {
+      const session = await this.prisma.$transaction((tx) =>
+        this.quizSessionRepository.createSessionWithQuestions(tx, {
+          userId,
+          quizId: null,
+          duelId: params.duelId,
+          subjectId: params.subjectId,
+          topicId: params.topicId,
+          mode: QuizType.DUEL,
+          timerEnabled: false,
+          questionCount: params.questionIds.length,
+          expiresAt: null,
+          questionIds: params.questionIds,
+        }),
+      );
+      return this.toMetadata(session);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Starts — or resumes — a student's work on an assignment.
    *
    * Differs from `start` in three ways, all of them consequences of the

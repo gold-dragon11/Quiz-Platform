@@ -38,6 +38,8 @@ export interface QuizSessionRecord {
   durationSeconds: number | null;
   /** Set when the session is a student working through an assignment. */
   assignmentId: string | null;
+  /** Set when the session is one player's half of a duel. */
+  duelId: string | null;
 }
 
 /** One snapshot question with its options and per-locale translations. */
@@ -68,6 +70,7 @@ const SESSION_SELECT = {
   subjectId: true,
   topicId: true,
   assignmentId: true,
+  duelId: true,
   mode: true,
   timerEnabled: true,
   questionCount: true,
@@ -335,6 +338,17 @@ export class QuizSessionRepository {
     });
   }
 
+  /** This player's unfinished half of a duel — the resume path. */
+  async findActiveForDuel(
+    userId: string,
+    duelId: string,
+  ): Promise<QuizSessionRecord | null> {
+    return this.prisma.quizSession.findFirst({
+      where: { userId, duelId, status: QuizStatus.ACTIVE },
+      select: SESSION_SELECT,
+    });
+  }
+
   /** Anything active at all — used by the resume banner, which is mode-blind. */
   async findActiveByUser(userId: string): Promise<QuizSessionRecord | null> {
     return this.prisma.quizSession.findFirst({
@@ -364,6 +378,7 @@ export class QuizSessionRepository {
       userId: string;
       quizId: string | null;
       assignmentId?: string | null;
+      duelId?: string | null;
       subjectId: string;
       topicId: string | null;
       mode: QuizType;
@@ -378,6 +393,7 @@ export class QuizSessionRepository {
         userId: params.userId,
         quizId: params.quizId,
         assignmentId: params.assignmentId ?? null,
+        duelId: params.duelId ?? null,
         subjectId: params.subjectId,
         topicId: params.topicId,
         mode: params.mode,
