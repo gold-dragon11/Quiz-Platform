@@ -179,6 +179,7 @@ model User {
   subscription       Subscription?
   usageSnapshots     UsageSnapshot[]
   mistakeReviews     MistakeReview[]
+  emailDispatches    EmailDispatch[]
   duelsChallenged    Duel[]             @relation("DuelChallenger")
   duelsReceived      Duel[]             @relation("DuelOpponent")
 
@@ -234,13 +235,18 @@ model Avatar {
 
 /// docs/02-domain/user-settings.md
 model UserSettings {
-  id                   String   @id @default(uuid()) @db.Uuid
-  userId               String   @unique @db.Uuid
-  language             Language @default(UKRAINIAN)
-  theme                Theme    @default(DARK)
-  publicProfileEnabled Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @unique @db.Uuid
+  language                Language @default(UKRAINIAN)
+  theme                   Theme    @default(DARK)
+  publicProfileEnabled    Boolean  @default(true)
+  /// Email about new homework and approaching deadlines
+  /// (docs/00-overview/teacher-side-decisions.md decision 25). On by default:
+  /// a deadline nobody is told about is a deadline that gets missed, and the
+  /// learner who does not want the mail is one switch away from silence.
+  assignmentEmailsEnabled Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1051,4 +1057,34 @@ model DuelQuestion {
   @@unique([duelId, questionId])
   @@index([duelId])
   @@map("duel_questions")
+}
+
+/// What a notification is about.
+enum NotificationKind {
+  ASSIGNMENT_ISSUED
+  ASSIGNMENT_DUE_SOON
+}
+
+/// One notification that has already gone out.
+///
+/// Exists purely so nothing is sent twice. A reminder that arrives every time
+/// a scheduler happens to run is not a reminder, it is spam, and the fastest
+/// way to have every learner filter the product into a folder they never open.
+///
+/// The uniqueness of (person, kind, subject-of-the-notification) is the whole
+/// mechanism: writing the row is what claims the right to send, so two workers
+/// racing on the same reminder produce one email and one conflict.
+model EmailDispatch {
+  id     String           @id @default(uuid()) @db.Uuid
+  userId String           @db.Uuid
+  kind   NotificationKind
+  /// What the notification is about — an assignment id, for both kinds so far.
+  refId  String           @db.Uuid
+  sentAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refId])
+  @@index([kind, sentAt])
+  @@map("email_dispatches")
 }

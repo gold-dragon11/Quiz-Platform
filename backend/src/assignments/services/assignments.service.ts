@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { ExplanationVisibility, ScoredAttempt } from '@prisma/client';
 import { GroupsRepository } from '../../groups/repositories/groups.repository';
+import { NotificationsService } from '../../notifications/services/notifications.service';
 import { QuizService } from '../../quiz/services/quiz.service';
 import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
 import { CreateAssignmentDto } from '../dto/create-assignment.dto';
@@ -50,6 +51,7 @@ export class AssignmentsService {
     private readonly groupsRepository: GroupsRepository,
     private readonly questionSelection: QuestionSelectionService,
     private readonly quizService: QuizService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ---------------------------------------------------------------- teacher
@@ -85,6 +87,11 @@ export class AssignmentsService {
       questionIds,
       studentIds,
     });
+
+    // Awaited rather than fired and forgotten: the teacher deserves to know
+    // the mail went out, and NotificationsService swallows its own failures,
+    // so setting homework cannot fail because a provider is down.
+    await this.notificationsService.assignmentIssued(assignment.id);
 
     return this.toTeacherAssignment(assignment, 0);
   }

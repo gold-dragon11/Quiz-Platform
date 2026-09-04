@@ -25,4 +25,34 @@ export abstract class EmailService {
     recipient: string,
     resetUrl: string,
   ): Promise<void>;
+
+  /**
+   * Tells a learner that homework has been set
+   * (docs/00-overview/teacher-side-decisions.md decision 25).
+   *
+   * Email rather than an in-app bell: the whole problem is the learner who has
+   * not opened the application, and a bell is seen only by somebody who
+   * already came back.
+   */
+  abstract sendAssignmentIssuedEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void>;
+
+  /** Reminds a learner a day before the deadline, once. */
+  abstract sendAssignmentDueSoonEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void>;
+}
+
+/** What both assignment emails need to say something useful. */
+export interface AssignmentEmailContext {
+  title: string;
+  subjectName: string;
+  teacherName: string | null;
+  questionCount: number;
+  dueAt: Date;
+  /** Deep link into the assignment, built from FRONTEND_URL. */
+  url: string;
 }

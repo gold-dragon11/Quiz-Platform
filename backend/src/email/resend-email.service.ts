@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import { AppConfig } from '../config/configuration';
-import { EmailService } from './email.service';
+import { AssignmentEmailContext, EmailService } from './email.service';
 
 /**
  * Sends real email through Resend (docs/06-backend/authentication.md §15).
@@ -60,6 +60,43 @@ export class ResendEmailService extends EmailService {
     );
   }
 
+  async sendAssignmentIssuedEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void> {
+    const from = assignment.teacherName
+      ? ` від ${escapeHtml(assignment.teacherName)}`
+      : '';
+    await this.send(
+      recipient,
+      `Нове завдання з предмета «${assignment.subjectName}» — L&S`,
+      `<p>Вам задали нове завдання${from}.</p>
+       <p><strong>${escapeHtml(assignment.title)}</strong><br>
+       ${assignment.questionCount} запитань · до ${formatDeadline(assignment.dueAt)}</p>
+       <p><a href="${assignment.url}">Відкрити завдання</a></p>`,
+      `Нове завдання${assignment.teacherName ? ` від ${assignment.teacherName}` : ''}: ${assignment.title}\n` +
+        `${assignment.questionCount} запитань, до ${formatDeadline(assignment.dueAt)}\n${assignment.url}`,
+    );
+  }
+
+  async sendAssignmentDueSoonEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void> {
+    await this.send(
+      recipient,
+      `Завтра дедлайн: «${assignment.title}» — L&S`,
+      `<p>Нагадуємо про завдання з предмета «${escapeHtml(assignment.subjectName)}».</p>
+       <p><strong>${escapeHtml(assignment.title)}</strong><br>
+       Термін — ${formatDeadline(assignment.dueAt)}</p>
+       <p><a href="${assignment.url}">Виконати зараз</a></p>
+       <p>Здати можна й пізніше — робота просто буде позначена як прострочена.</p>`,
+      `Завтра дедлайн: ${assignment.title}\n` +
+        `Термін — ${formatDeadline(assignment.dueAt)}\n${assignment.url}\n\n` +
+        'Здати можна й пізніше — робота просто буде позначена як прострочена.',
+    );
+  }
+
   private async send(
     to: string,
     subject: string,
@@ -81,4 +118,27 @@ export class ResendEmailService extends EmailService {
       throw new Error(`Resend delivery failed: ${error.message}`);
     }
   }
+}
+
+/**
+ * Titles come from teachers, so they reach this template as untrusted text.
+ * Escaped rather than trusted: an apostrophe in a subject name should not be
+ * able to close an attribute, and a title is not a place for markup.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Kyiv time, because that is where the deadline actually falls. */
+function formatDeadline(dueAt: Date): string {
+  return new Intl.DateTimeFormat('uk-UA', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'Europe/Kyiv',
+  }).format(dueAt);
 }

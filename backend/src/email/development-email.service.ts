@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailService } from './email.service';
+import { AssignmentEmailContext, EmailService } from './email.service';
 
 /**
  * Development stand-in for a real email provider: writes the message to the
@@ -28,6 +28,28 @@ export class DevelopmentEmailService extends EmailService {
   sendPasswordResetEmail(recipient: string, resetUrl: string): Promise<void> {
     this.logger.log(
       `[DEV EMAIL] To: ${recipient} — Reset your password: ${resetUrl}`,
+    );
+
+    return Promise.resolve();
+  }
+
+  sendAssignmentIssuedEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void> {
+    this.logger.log(
+      `[DEV EMAIL] To: ${recipient} — New assignment "${assignment.title}" due ${assignment.dueAt.toISOString()}`,
+    );
+
+    return Promise.resolve();
+  }
+
+  sendAssignmentDueSoonEmail(
+    recipient: string,
+    assignment: AssignmentEmailContext,
+  ): Promise<void> {
+    this.logger.log(
+      `[DEV EMAIL] To: ${recipient} — Reminder "${assignment.title}" due ${assignment.dueAt.toISOString()}`,
     );
 
     return Promise.resolve();

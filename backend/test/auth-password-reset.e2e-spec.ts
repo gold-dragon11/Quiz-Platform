@@ -25,6 +25,15 @@ class CapturingEmailService extends EmailService {
     return Promise.resolve();
   }
 
+  // Required by the abstraction; this suite never sends assignment mail.
+  sendAssignmentIssuedEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  sendAssignmentDueSoonEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
   sendPasswordResetEmail(recipient: string, resetUrl: string): Promise<void> {
     this.resetEmails.push({ recipient, url: resetUrl });
     return Promise.resolve();

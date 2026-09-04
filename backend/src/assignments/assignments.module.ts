@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { GroupsModule } from '../groups/groups.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { QuizModule } from '../quiz/quiz.module';
 import { StudentAssignmentsController } from './controllers/student-assignments.controller';
 import { TeacherReviewController } from './controllers/teacher-review.controller';
@@ -18,7 +19,7 @@ import { ReviewService } from './services/review.service';
  * every route rather than assumed from the URL.
  */
 @Module({
-  imports: [GroupsModule, QuizModule],
+  imports: [GroupsModule, QuizModule, NotificationsModule],
   controllers: [
     TeacherAssignmentsController,
     TeacherReviewController,

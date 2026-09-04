@@ -9,6 +9,7 @@ import { AppConfig } from './config/configuration';
 import { DuelsModule } from './duels/duels.module';
 import { HealthModule } from './health/health.module';
 import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionReportsModule } from './question-reports/question-reports.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -52,6 +53,7 @@ import { UsersModule } from './users/users.module';
     QuestionsModule,
     QuestionReportsModule,
     DuelsModule,
+    NotificationsModule,
     LearningMaterialsModule,
     GroupsModule,
     AssignmentsModule,
