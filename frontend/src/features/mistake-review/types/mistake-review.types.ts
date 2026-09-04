@@ -3,6 +3,14 @@
  * `mistake-review/*` routes) — never redesigned here.
  */
 
+/** One rung of the ladder: how far out it schedules, and who is sitting on it. */
+export interface LadderRung {
+  /** The interval this rung schedules, in days. Comes from the server so the
+   *  UI never repeats the ladder and drifts from it. */
+  days: number;
+  count: number;
+}
+
 /** GET /quiz/mistake-review — where every unresolved mistake currently sits. */
 export interface MistakeReviewSummary {
   /** Waiting today. This is the only number that implies an action. */
@@ -11,6 +19,8 @@ export interface MistakeReviewSummary {
   scheduled: number;
   /** Answered right often enough to leave the ladder for good. */
   cleared: number;
+  /** Every rung, in order, empty ones included. */
+  ladder: LadderRung[];
 }
 
 /** Body of POST /quiz/mistake-review/start — both fields optional by design. */

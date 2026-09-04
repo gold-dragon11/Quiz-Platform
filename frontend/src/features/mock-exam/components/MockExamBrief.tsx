@@ -1,9 +1,11 @@
+import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { pluralUk } from '@/shared/utils/format';
 import { useMockExamSpec } from '@/features/mock-exam/hooks/use-mock-exam';
 
 interface MockExamBriefProps {
   subjectId: string;
+  className?: string;
 }
 
 /**
@@ -15,64 +17,43 @@ interface MockExamBriefProps {
  * this file — the paper's shape is the backend's to define, and the moment it
  * is repeated here the two start drifting apart.
  */
-export function MockExamBrief({ subjectId }: MockExamBriefProps): React.JSX.Element {
+export function MockExamBrief({ subjectId, className = '' }: MockExamBriefProps): React.JSX.Element {
   const spec = useMockExamSpec(subjectId);
 
   if (spec.isPending) {
-    return (
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Skeleton className="h-20" />
-        <Skeleton className="h-20" />
-      </div>
-    );
+    return <Skeleton className={`h-32 ${className}`} />;
   }
 
   if (spec.isError || !spec.data) {
     // Not an error banner: the page's own Start button surfaces the real
-    // failure. A brief that cannot load simply says nothing rather than
-    // guessing at numbers.
+    // failure. A brief that cannot load says nothing rather than guessing.
     return <></>;
   }
 
   const { questionCount, minutes } = spec.data;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Figure
-          value={String(questionCount)}
-          unit={pluralUk(questionCount, 'питання', 'питання', 'питань')}
-          caption="Склад роботи фіксований — обрати не можна"
-        />
-        <Figure
-          value={String(minutes)}
-          unit={pluralUk(minutes, 'хвилина', 'хвилини', 'хвилин')}
-          caption="Один годинник на всю роботу, не на кожне питання"
-        />
-      </div>
-      <p className="text-text-secondary text-sm">
+    <div className={className}>
+      <FigureGrid
+        figures={[
+          {
+            value: questionCount,
+            label: pluralUk(questionCount, 'питання', 'питання', 'питань'),
+            hint: 'Склад роботи фіксований — обрати не можна',
+          },
+          {
+            value: minutes,
+            label: pluralUk(minutes, 'хвилина', 'хвилини', 'хвилин'),
+            hint: 'Один годинник на всю роботу, не на кожне питання',
+          },
+        ]}
+      />
+      {/* A rule on the left rather than a tinted box: the note is an aside to
+          the figures above it, and boxing it would give it equal weight. */}
+      <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
         Робота йде без пояснень і без підказок — розбір відкриється після завершення. Почавши, ви займаєте
         єдиний слот активної сесії: звичайна практика буде недоступна, доки не завершите.
       </p>
-    </div>
-  );
-}
-
-function Figure({
-  value,
-  unit,
-  caption,
-}: {
-  value: string;
-  unit: string;
-  caption: string;
-}): React.JSX.Element {
-  return (
-    <div className="bg-surface-elevated border-border rounded-lg border p-4">
-      <p className="text-text-primary font-display text-3xl leading-none">
-        {value} <span className="text-text-secondary text-base font-normal">{unit}</span>
-      </p>
-      <p className="text-text-secondary mt-2 text-xs">{caption}</p>
     </div>
   );
 }

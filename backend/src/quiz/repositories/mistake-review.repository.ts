@@ -12,6 +12,20 @@ import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
  */
 export const REVIEW_LADDER_DAYS = [1, 3, 7] as const;
 
+/** One rung of the ladder: how far out it schedules, and who is sitting on it. */
+export interface LadderRung {
+  days: number;
+  count: number;
+}
+
+/** GET /quiz/mistake-review — the whole state of a learner's ladder. */
+export interface MistakeReviewSummary {
+  due: number;
+  scheduled: number;
+  cleared: number;
+  ladder: LadderRung[];
+}
+
 /** How far out the next showing is, from a rung number (1-based). */
 export function nextDueDate(stage: number, from: Date = new Date()): Date {
   const index = Math.min(Math.max(stage, 1), REVIEW_LADDER_DAYS.length) - 1;
@@ -104,11 +118,18 @@ export class MistakeReviewRepository {
     return rows.map((row) => row.questionId);
   }
 
-  /** Counts for the badge: what is due now, and what is still on the ladder. */
-  async summarize(
-    userId: string,
-  ): Promise<{ due: number; scheduled: number; cleared: number }> {
-    const [due, scheduled, cleared] = await Promise.all([
+  /**
+   * Counts for the badge: what is due now, what is still on the ladder, and
+   * how the uncleared ones are spread across its rungs.
+   *
+   * The rung breakdown is what turns three bare totals into something a
+   * learner can read a trajectory off: a pile sitting on rung one means the
+   * same mistakes keep coming back, while weight on the top rung means most of
+   * them are nearly gone. The rungs are reported with their real intervals so
+   * no client has to repeat REVIEW_LADDER_DAYS and drift from it.
+   */
+  async summarize(userId: string): Promise<MistakeReviewSummary> {
+    const [due, scheduled, cleared, byStage] = await Promise.all([
       this.prisma.mistakeReview.count({
         where: { userId, clearedAt: null, dueAt: { lte: new Date() } },
       }),
@@ -118,7 +139,25 @@ export class MistakeReviewRepository {
       this.prisma.mistakeReview.count({
         where: { userId, NOT: { clearedAt: null } },
       }),
+      this.prisma.mistakeReview.groupBy({
+        by: ['stage'],
+        where: { userId, clearedAt: null },
+        _count: { _all: true },
+      }),
     ]);
-    return { due, scheduled, cleared };
+
+    const countByStage = new Map(
+      byStage.map((row) => [row.stage, row._count._all]),
+    );
+
+    // Every rung is listed, including the empty ones: a ladder that hides its
+    // empty rungs changes shape as a learner progresses, and the shape is the
+    // whole point of drawing it.
+    const ladder = REVIEW_LADDER_DAYS.map((days, index) => ({
+      days,
+      count: countByStage.get(index + 1) ?? 0,
+    }));
+
+    return { due, scheduled, cleared, ladder };
   }
 }

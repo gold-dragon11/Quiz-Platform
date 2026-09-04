@@ -2,14 +2,12 @@ import { generatePath, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
+import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { StatCard } from '@/shared/ui/StatCard';
 import { formatNumber, pluralUk } from '@/shared/utils/format';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
+import { ReviewLadder } from '@/features/mistake-review/components/ReviewLadder';
 import {
   useMistakeReviewSummary,
   useStartMistakeReview,
@@ -23,8 +21,12 @@ import {
  * at once. This one respects the schedule, so a learner who opens it daily
  * meets each question at growing gaps instead of grinding the same list.
  *
- * Nothing to do today is a success state, not an empty one. The backend says
- * so in its own words on 409, and the page says so before the learner even
+ * One number dominates the screen and it is the only one that implies an
+ * action: how much is due today. The rest of the state belongs in the ladder
+ * below it, where it can be read as a trajectory instead of a scoreboard.
+ *
+ * Nothing to do today is a success state, not an empty one — the backend says
+ * so in its own words on 409, and this page says so before the learner even
  * presses the button.
  */
 export function MistakeReviewPage(): React.JSX.Element {
@@ -52,65 +54,77 @@ export function MistakeReviewPage(): React.JSX.Element {
 
   const due = summary.data?.due ?? 0;
   // `scheduled` from the API counts every uncleared mistake — the ones due
-  // today included. Showing it raw beside `due` would put 12 next to 36 with
-  // the 12 inside the 36, so the tiles split it into three groups that do not
-  // overlap and add up.
+  // today included — so anything derived from it has to subtract them.
   const laterOn = Math.max((summary.data?.scheduled ?? 0) - due, 0);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <SectionHeader
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        eyebrow="Інтервальне повторення"
         title="Повторення помилок"
-        description="Кожна помилка повертається за розкладом — спершу за день, потім за три, за тиждень. Доки не перестане бути помилкою."
+        lead="Кожна помилка повертається за розкладом, і кожного разу пізніше. Відповіли правильно — інтервал росте; помилилися знову — усе спочатку."
       />
 
-      <ActiveQuizBanner />
+      <ActiveQuizBanner className="mt-8" />
 
-      {summary.isPending ? (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-        </div>
-      ) : summary.isError ? (
-        <Alert variant="error">Не вдалося завантажити стан повторення. Оновіть сторінку.</Alert>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <StatCard label="Сьогодні" value={formatNumber(summary.data.due)} hint="Чекають на повторення" />
-          <StatCard label="Далі за розкладом" value={formatNumber(laterOn)} hint="Повернуться пізніше" />
-          <StatCard
-            label="Виправлено"
-            value={formatNumber(summary.data.cleared)}
-            hint="Зійшли з розкладу назавжди"
-          />
-        </div>
+      {errorMessage && (
+        <Alert variant="error" className="mt-8">
+          {errorMessage}
+        </Alert>
       )}
 
-      <Card className="flex flex-col gap-5">
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
+      {summary.isPending ? (
+        <Skeleton className="mt-12 h-40" />
+      ) : summary.isError ? (
+        <Alert variant="error" className="mt-8">
+          Не вдалося завантажити стан повторення. Оновіть сторінку.
+        </Alert>
+      ) : (
+        <>
+          {/* The one number that implies an action, at the size that says so,
+              with the action beside it rather than buried under a panel. */}
+          <div className="border-border mt-12 flex flex-col gap-8 border-b pb-10 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-text-primary font-display text-7xl leading-none font-bold lining-nums sm:text-8xl">
+                {formatNumber(due)}
+              </p>
+              <p className="text-text-muted mt-4 text-xs tracking-[0.18em] uppercase">
+                {due === 1 ? 'питання на сьогодні' : 'питань на сьогодні'}
+              </p>
+            </div>
 
-        {!summary.isPending && !summary.isError && due === 0 ? (
-          <EmptyState
-            title="На сьогодні повторювати нічого"
-            description={
-              laterOn > 0
-                ? `Ще ${formatNumber(laterOn)} ${pluralUk(laterOn, 'помилка чекає', 'помилки чекають', 'помилок чекає')} свого дня. Загляньте завтра.`
-                : 'Помилок на розкладі немає. Вони зʼявляться самі, щойно ви їх припуститеся.'
-            }
-          />
-        ) : (
-          <>
-            <p className="text-text-secondary text-sm">
-              {due > 0
-                ? `Сьогодні до повторення ${formatNumber(due)} ${pluralUk(due, 'питання', 'питання', 'питань')}. Це коротка сесія — вона задумана як звичка, а не як марафон.`
-                : 'Коротка сесія з тих помилок, що підійшли за розкладом.'}
+            <div className="max-w-sm sm:text-right">
+              {due > 0 ? (
+                <>
+                  <p className="text-text-secondary mb-4 text-sm">
+                    Коротка сесія — вона задумана як звичка, а не як марафон.
+                  </p>
+                  <Button onClick={handleStart} isLoading={startReview.isPending}>
+                    Почати повторення
+                  </Button>
+                </>
+              ) : (
+                <p className="text-text-secondary text-sm">
+                  {laterOn > 0
+                    ? `Сьогодні вільно. Ще ${formatNumber(laterOn)} ${pluralUk(laterOn, 'помилка чекає', 'помилки чекають', 'помилок чекає')} свого дня — загляньте завтра.`
+                    : 'Помилок на розкладі немає. Вони зʼявляться самі, щойно ви їх припуститеся.'}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <section className="mt-16">
+            <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Сходинки</h2>
+            <p className="text-text-secondary mt-4 max-w-2xl text-sm">
+              Де лежить вага — там ви і є. Купа на першій сходинці означає, що ті самі помилки повертаються;
+              вага праворуч — що більшість уже майже позаду.
             </p>
-            <Button onClick={handleStart} isLoading={startReview.isPending} fullWidth>
-              Почати повторення
-            </Button>
-          </>
-        )}
-      </Card>
+            <div className="mt-8">
+              <ReviewLadder rungs={summary.data.ladder} cleared={summary.data.cleared} />
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

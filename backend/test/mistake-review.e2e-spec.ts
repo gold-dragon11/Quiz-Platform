@@ -20,7 +20,15 @@ interface SummaryBody {
   due: number;
   scheduled: number;
   cleared: number;
+  ladder: { days: number; count: number }[];
 }
+
+/** The ladder with nobody on it — the shape a fresh learner sees. */
+const EMPTY_LADDER = [
+  { days: 1, count: 0 },
+  { days: 3, count: 0 },
+  { days: 7, count: 0 },
+];
 
 const DAY_MS = 86_400_000;
 
@@ -499,7 +507,51 @@ describe('Mistake review (e2e)', () => {
         due: 0,
         scheduled: 0,
         cleared: 0,
+        ladder: EMPTY_LADDER,
       });
+    });
+
+    it('reports every rung with its real interval, empty ones included', async () => {
+      const learner = await register();
+
+      const response = await request(app.getHttpServer())
+        .get(SUMMARY_URL)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+
+      // The intervals travel with the counts so no client repeats
+      // REVIEW_LADDER_DAYS and drifts from it. Empty rungs are listed because
+      // a ladder that changes shape as it empties cannot be read as a shape.
+      expect((response.body as SummaryBody).ladder).toEqual(EMPTY_LADDER);
+    });
+
+    it('moves a question up a rung once it is answered correctly', async () => {
+      const learner = await register();
+      await practise(learner.token, 0);
+
+      const bottom = await request(app.getHttpServer())
+        .get(SUMMARY_URL)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+      expect((bottom.body as SummaryBody).ladder).toEqual([
+        { days: 1, count: questionIds.length },
+        { days: 3, count: 0 },
+        { days: 7, count: 0 },
+      ]);
+
+      await makeEverythingDue(learner.userId);
+      await practise(learner.token, questionIds.length);
+
+      const climbed = await request(app.getHttpServer())
+        .get(SUMMARY_URL)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+      // Weight moving up the ladder is exactly what the drawing is for.
+      expect((climbed.body as SummaryBody).ladder).toEqual([
+        { days: 1, count: 0 },
+        { days: 3, count: questionIds.length },
+        { days: 7, count: 0 },
+      ]);
     });
   });
 });

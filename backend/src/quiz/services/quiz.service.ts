@@ -24,7 +24,10 @@ import { StartQuizDto } from '../dto/start-quiz.dto';
 import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
-import { MistakeReviewRepository } from '../repositories/mistake-review.repository';
+import {
+  MistakeReviewRepository,
+  MistakeReviewSummary,
+} from '../repositories/mistake-review.repository';
 import { QuestionAttemptRepository } from '../repositories/question-attempt.repository';
 import {
   QuizSessionRecord,
@@ -366,9 +369,7 @@ export class QuizService {
   }
 
   /** What the learner owes today, and how much they have already fixed. */
-  async mistakeReviewSummary(
-    userId: string,
-  ): Promise<{ due: number; scheduled: number; cleared: number }> {
+  async mistakeReviewSummary(userId: string): Promise<MistakeReviewSummary> {
     return this.mistakeReviewRepository.summarize(userId);
   }
 

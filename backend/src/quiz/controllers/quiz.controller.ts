@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
 import { MockExamHistoryQueryDto } from '../dto/mock-exam-history-query.dto';
 import { MockExamSpecQueryDto } from '../dto/mock-exam-spec-query.dto';
+import { MistakeReviewSummary } from '../repositories/mistake-review.repository';
 import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
@@ -106,7 +107,7 @@ export class QuizController {
   @Get('mistake-review')
   async mistakeReviewSummary(
     @CurrentUser('id') userId: string,
-  ): Promise<{ due: number; scheduled: number; cleared: number }> {
+  ): Promise<MistakeReviewSummary> {
     return this.quizService.mistakeReviewSummary(userId);
   }
 

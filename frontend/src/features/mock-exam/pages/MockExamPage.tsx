@@ -3,8 +3,7 @@ import { generatePath, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
+import { PageHeader } from '@/shared/ui/PageHeader';
 import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { isApiError } from '@/shared/utils/apply-api-error';
@@ -59,45 +58,54 @@ export function MockExamPage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-8">
-      <SectionHeader
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        eyebrow="Пробна робота"
         title="Пробний НМТ"
-        description="Робота цілком, на один годинник, без права щось налаштувати — рівно так, як на іспиті."
+        lead="Робота цілком, на один годинник, без права щось налаштувати — рівно так, як на іспиті."
       />
 
-      <ActiveQuizBanner />
+      <ActiveQuizBanner className="mt-8" />
 
-      <Card className="flex flex-col gap-6">
-        {subjects.isPending ? (
-          <Skeleton className="h-10" />
-        ) : subjects.isError ? (
-          <Alert variant="error">Не вдалося завантажити предмети. Оновіть сторінку.</Alert>
-        ) : (
-          <Select
-            label="Предмет"
-            options={options}
-            value={subjectId}
-            onChange={(event) => setSubjectId(event.target.value)}
-          />
-        )}
-
-        {subjectId && <MockExamBrief subjectId={subjectId} />}
-
-        {errorMessage && <Alert variant="error">{errorMessage}</Alert>}
-
-        <Button onClick={handleStart} disabled={!subjectId} isLoading={startMockExam.isPending} fullWidth>
+      {/* The subject sits on the same line as the action: one control, one
+          button, no panel around them. A form this small in a card reads as a
+          dialog that lost its window. */}
+      <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="w-full sm:max-w-xs">
+          {subjects.isPending ? (
+            <Skeleton className="h-11" />
+          ) : subjects.isError ? (
+            <Alert variant="error">Не вдалося завантажити предмети. Оновіть сторінку.</Alert>
+          ) : (
+            <Select
+              label="Предмет"
+              options={options}
+              value={subjectId}
+              onChange={(event) => setSubjectId(event.target.value)}
+            />
+          )}
+        </div>
+        <Button onClick={handleStart} disabled={!subjectId} isLoading={startMockExam.isPending}>
           Почати роботу
         </Button>
-      </Card>
+      </div>
 
-      <section>
-        <SectionHeader
-          title="Ваші спроби"
-          description="Що показує пробна робота — це рух, а не бал: офіційної таблиці переведення платформа не вигадує."
-        />
-        <Card>
-          <AttemptHistory subjectId={subjectId || undefined} />
-        </Card>
+      {errorMessage && (
+        <Alert variant="error" className="mt-6">
+          {errorMessage}
+        </Alert>
+      )}
+
+      {subjectId && <MockExamBrief subjectId={subjectId} className="mt-12" />}
+
+      <section className="mt-20">
+        <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
+          Ваші спроби
+        </h2>
+        <p className="text-text-secondary mt-4 max-w-2xl text-sm">
+          Пробна робота показує рух, а не бал: офіційної таблиці переведення платформа не вигадує.
+        </p>
+        <AttemptHistory subjectId={subjectId || undefined} className="mt-8" />
       </section>
     </div>
   );
