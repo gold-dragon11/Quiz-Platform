@@ -44,6 +44,13 @@ const icons = {
       <path d="M12 11v3M12 17h.01" />
     </svg>
   ),
+  duels: (
+    <svg {...ICON} aria-hidden="true">
+      <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+      <path d="m13 19 6-6M16 16l4 4M19 21l2-2" />
+      <path d="M5 21 3 19l1.5-1.5" />
+    </svg>
+  ),
   mistakeReview: (
     <svg {...ICON} aria-hidden="true">
       <path d="M3 12a9 9 0 1 0 3-6.7" />
@@ -80,6 +87,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
   { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
   { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview },
+  { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels },
   { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
   { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
@@ -110,6 +118,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/quiz')) return 'Тест';
   if (pathname.startsWith('/mock-exam')) return 'Пробний НМТ';
   if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
+  if (pathname.startsWith('/duels')) return 'Дуелі';
   if (pathname.startsWith('/statistics')) return 'Статистика';
   if (pathname.startsWith('/profile')) return 'Профіль';
   if (pathname.startsWith('/settings')) return 'Налаштування';

@@ -73,6 +73,23 @@ export type QuizType = (typeof QuizType)[keyof typeof QuizType];
 export const AUTHORABLE_QUIZ_MODES = [QuizType.SUBJECT_QUIZ, QuizType.RANDOM_QUIZ] as const;
 export type AuthorableQuizMode = (typeof AUTHORABLE_QUIZ_MODES)[number];
 
+export const DuelMode = {
+  /** Both sit the same paper whenever they like; the result is a comparison. */
+  ASYNC: 'ASYNC',
+  /** Both on the clock together, question by question. Not built yet. */
+  LIVE: 'LIVE',
+} as const;
+export type DuelMode = (typeof DuelMode)[keyof typeof DuelMode];
+
+export const DuelStatus = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  DECLINED: 'DECLINED',
+  COMPLETED: 'COMPLETED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type DuelStatus = (typeof DuelStatus)[keyof typeof DuelStatus];
+
 export const QuizStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',

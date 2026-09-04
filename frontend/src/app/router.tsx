@@ -21,6 +21,7 @@ import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 import { MockExamPage } from '@/features/mock-exam';
 import { MistakeReviewPage } from '@/features/mistake-review';
+import { DuelPage, DuelsPage } from '@/features/duels';
 import { StatisticsPage } from '@/features/statistics';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
@@ -128,6 +129,8 @@ export const router = createBrowserRouter([
                 path: ROUTES.mistakeReview,
                 element: page(<MistakeReviewPage />),
               },
+              { path: ROUTES.duels, element: page(<DuelsPage />) },
+              { path: ROUTES.duel, element: page(<DuelPage />) },
               {
                 path: ROUTES.topicMaterial,
                 element: page(<MaterialPage />),

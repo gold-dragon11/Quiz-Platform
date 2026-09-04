@@ -72,6 +72,8 @@ Authenticated routes require a valid access token.
 | `/quiz/:sessionId/result` | Quiz results |
 | `/mock-exam` | Mock exam: start a sitting, past attempts |
 | `/mistake-review` | Mistakes due today, on the spaced-repetition ladder |
+| `/duels` | Duels: challenge somebody, and every duel you are in |
+| `/duels/:duelId` | One duel — invitation, paper, wait, or result |
 | `/topics/:topicId/material` | Learning material for one topic |
 | `/statistics` | Learning statistics |
 | `/profile` | User profile |
