@@ -42,6 +42,26 @@ export interface TopicPerformance {
   accuracy: number;
 }
 
+/**
+ * What a tutor may know about a learner's own practice (decisions 04 and 16).
+ *
+ * Shape, never diary: how much, how well, on which topics. Individual sessions
+ * are not here and never will be — that is the line between a signal a tutor
+ * can act on and surveillance a teenager will route around with a second
+ * account.
+ */
+export interface SelfStudySummary {
+  /** False when the learner has turned sharing off; every figure is then null. */
+  shared: boolean;
+  /** True only while the membership is open — a tutor loses this on the day. */
+  visible: boolean;
+  sessions: number | null;
+  questionsAnswered: number | null;
+  accuracy: number | null;
+  lastActivityAt: Date | null;
+  topics: TopicPerformance[];
+}
+
 /** One student as their teacher sees them inside one group. */
 export interface StudentProfile {
   student: {
@@ -56,6 +76,7 @@ export interface StudentProfile {
   assignmentsLate: number;
   overallAccuracy: number | null;
   weakestTopics: TopicPerformance[];
+  selfStudy: SelfStudySummary;
 }
 
 /** The group as a whole. */

@@ -235,18 +235,31 @@ model Avatar {
 
 /// docs/02-domain/user-settings.md
 model UserSettings {
-  id                      String   @id @default(uuid()) @db.Uuid
-  userId                  String   @unique @db.Uuid
-  language                Language @default(UKRAINIAN)
-  theme                   Theme    @default(DARK)
-  publicProfileEnabled    Boolean  @default(true)
+  id                       String   @id @default(uuid()) @db.Uuid
+  userId                   String   @unique @db.Uuid
+  language                 Language @default(UKRAINIAN)
+  theme                    Theme    @default(DARK)
+  publicProfileEnabled     Boolean  @default(true)
   /// Email about new homework and approaching deadlines
   /// (docs/00-overview/teacher-side-decisions.md decision 25). On by default:
   /// a deadline nobody is told about is a deadline that gets missed, and the
   /// learner who does not want the mail is one switch away from silence.
-  assignmentEmailsEnabled Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  assignmentEmailsEnabled  Boolean  @default(true)
+  /// Whether tutors of the learner's groups see a summary of their own,
+  /// unassigned practice (decisions 04 and 16).
+  ///
+  /// On by default, and the disclosure that makes that acceptable happens when
+  /// the learner joins a group — the point at which it starts to mean
+  /// anything. Off by default would make the feature dead: nobody opens
+  /// settings to enable something they have never seen. On in silence would be
+  /// a surprise, and the surprise is the problem, not the sharing.
+  ///
+  /// One switch for every group: a teenager who does not want to share does
+  /// not want to share with anybody, and a per-group screen is one they will
+  /// never open.
+  shareSelfStudyWithTutors Boolean  @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

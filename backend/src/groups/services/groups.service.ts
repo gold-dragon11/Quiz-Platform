@@ -8,7 +8,12 @@ import { CreateGroupDto } from '../dto/create-group.dto';
 import { JoinGroupDto } from '../dto/join-group.dto';
 import { UpdateGroupDto } from '../dto/update-group.dto';
 import { GroupRow, GroupsRepository } from '../repositories/groups.repository';
-import { GroupStudent, StudentGroup, TeacherGroup } from '../types/group.types';
+import {
+  GroupStudent,
+  JoinedGroup,
+  StudentGroup,
+  TeacherGroup,
+} from '../types/group.types';
 import { generateInviteCode, normalizeInviteCode } from '../utils/invite-code';
 
 const GROUP_NOT_FOUND_MESSAGE = 'Групу не знайдено.';
@@ -172,7 +177,7 @@ export class GroupsService {
    * Joining is idempotent. A student who pastes the code twice is not making a
    * mistake worth an error page — they get the group either way.
    */
-  async join(studentId: string, dto: JoinGroupDto): Promise<StudentGroup> {
+  async join(studentId: string, dto: JoinGroupDto): Promise<JoinedGroup> {
     const group = await this.groupsRepository.findByInviteCode(
       normalizeInviteCode(dto.inviteCode),
     );
@@ -191,7 +196,13 @@ export class GroupsService {
       existing ??
       (await this.groupsRepository.createMembership(group.id, studentId));
 
-    return this.toStudentGroup(group, membership.joinedAt);
+    return {
+      ...this.toStudentGroup(group, membership.joinedAt),
+      // Told here, at the one moment it means anything: from now on this
+      // tutor sees a summary of the learner's own practice in this subject
+      // (decision 16). The client is expected to say so out loud.
+      selfStudyShared: await this.groupsRepository.sharesSelfStudy(studentId),
+    };
   }
 
   async listForStudent(studentId: string): Promise<StudentGroup[]> {

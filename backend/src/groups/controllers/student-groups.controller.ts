@@ -14,7 +14,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { JoinGroupDto } from '../dto/join-group.dto';
 import { GroupsService } from '../services/groups.service';
-import { StudentGroup } from '../types/group.types';
+import { JoinedGroup, StudentGroup } from '../types/group.types';
 
 /**
  * Groups from the student's side (docs/02-domain/group.md).
@@ -36,7 +36,7 @@ export class StudentGroupsController {
   async join(
     @CurrentUser('id') studentId: string,
     @Body() dto: JoinGroupDto,
-  ): Promise<StudentGroup> {
+  ): Promise<JoinedGroup> {
     return this.groupsService.join(studentId, dto);
   }
 

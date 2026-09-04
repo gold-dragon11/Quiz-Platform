@@ -221,6 +221,101 @@ export class ReviewRepository {
     });
   }
 
+  /**
+   * A learner's own practice in one subject, reduced to an aggregate.
+   *
+   * Only sessions with no assignment and no duel: those are the ones the
+   * learner chose to run. Returns counts and per-topic tallies — never the
+   * sessions themselves, because decision 04 shares the shape of the work and
+   * not its diary.
+   */
+  async selfStudyAggregate(
+    studentId: string,
+    subjectId: string,
+  ): Promise<{
+    sessions: number;
+    answered: number;
+    correct: number;
+    lastActivityAt: Date | null;
+    topics: {
+      topicId: string;
+      topicName: string;
+      answered: number;
+      correct: number;
+    }[];
+  }> {
+    const sessions = await this.prisma.quizSession.findMany({
+      where: {
+        userId: studentId,
+        subjectId,
+        assignmentId: null,
+        duelId: null,
+        status: QuizStatus.COMPLETED,
+      },
+      select: { id: true, completedAt: true },
+    });
+    if (sessions.length === 0) {
+      return {
+        sessions: 0,
+        answered: 0,
+        correct: 0,
+        lastActivityAt: null,
+        topics: [],
+      };
+    }
+
+    const attempts = await this.prisma.questionAttempt.findMany({
+      where: { quizSessionId: { in: sessions.map((one) => one.id) } },
+      select: {
+        isCorrect: true,
+        question: {
+          select: { topicId: true, topic: { select: { name: true } } },
+        },
+      },
+    });
+
+    const byTopic = new Map<
+      string,
+      { topicId: string; topicName: string; answered: number; correct: number }
+    >();
+    for (const attempt of attempts) {
+      const entry = byTopic.get(attempt.question.topicId) ?? {
+        topicId: attempt.question.topicId,
+        topicName: attempt.question.topic.name,
+        answered: 0,
+        correct: 0,
+      };
+      entry.answered += 1;
+      if (attempt.isCorrect) {
+        entry.correct += 1;
+      }
+      byTopic.set(attempt.question.topicId, entry);
+    }
+
+    const completions = sessions
+      .map((one) => one.completedAt)
+      .filter((one): one is Date => one !== null)
+      .sort((left, right) => right.getTime() - left.getTime());
+
+    return {
+      sessions: sessions.length,
+      answered: attempts.length,
+      correct: attempts.filter((one) => one.isCorrect).length,
+      lastActivityAt: completions[0] ?? null,
+      topics: [...byTopic.values()],
+    };
+  }
+
+  /** Whether this learner lets their tutors see that aggregate (decision 16). */
+  async sharesSelfStudy(studentId: string): Promise<boolean> {
+    const settings = await this.prisma.userSettings.findUnique({
+      where: { userId: studentId },
+      select: { shareSelfStudyWithTutors: true },
+    });
+    // No settings row yet means defaults, and the default is on.
+    return settings?.shareSelfStudyWithTutors ?? true;
+  }
+
   /** Assignment ids of one group — the anchor for every aggregate. */
   async assignmentIdsOfGroup(groupId: string): Promise<string[]> {
     const rows = await this.prisma.assignment.findMany({

@@ -10,6 +10,7 @@ import {
 import {
   GroupAnalytics,
   QuestionBreakdownRow,
+  SelfStudySummary,
   StudentProfile,
   SubmissionRow,
   TopicPerformance,
@@ -198,6 +199,72 @@ export class ReviewService {
         0,
         WEAKEST_TOPICS_SHOWN,
       ),
+      selfStudy: await this.selfStudySummary(
+        studentId,
+        groupId,
+        membership.leftAt === null,
+      ),
+    };
+  }
+
+  /**
+   * The learner's own practice, as much of it as they allow a tutor to see.
+   *
+   * Two gates, and both must be open. The membership has to be current —
+   * decision 02 gives a tutor the archive of work they set, not a window that
+   * stays open after somebody leaves. And the learner has to be sharing —
+   * decision 16, on by default, disclosed when they join a group.
+   *
+   * The subject is the group's, so a maths tutor sees maths practice. Nothing
+   * else of the learner's life reaches them.
+   */
+  private async selfStudySummary(
+    studentId: string,
+    groupId: string,
+    membershipOpen: boolean,
+  ): Promise<SelfStudySummary> {
+    const shared = await this.reviewRepository.sharesSelfStudy(studentId);
+    const hidden: SelfStudySummary = {
+      shared,
+      visible: false,
+      sessions: null,
+      questionsAnswered: null,
+      accuracy: null,
+      lastActivityAt: null,
+      topics: [],
+    };
+    if (!shared || !membershipOpen) {
+      return hidden;
+    }
+
+    const group = await this.groupsRepository.findById(groupId);
+    if (!group) {
+      return hidden;
+    }
+
+    const aggregate = await this.reviewRepository.selfStudyAggregate(
+      studentId,
+      group.subject.id,
+    );
+
+    return {
+      shared: true,
+      visible: true,
+      sessions: aggregate.sessions,
+      questionsAnswered: aggregate.answered,
+      accuracy: aggregate.answered
+        ? Math.round((aggregate.correct / aggregate.answered) * 100)
+        : null,
+      lastActivityAt: aggregate.lastActivityAt,
+      topics: aggregate.topics
+        .map((topic) => ({
+          ...topic,
+          accuracy: Math.round((topic.correct / topic.answered) * 100),
+        }))
+        .sort(
+          (left, right) =>
+            left.accuracy - right.accuracy || right.answered - left.answered,
+        ),
     };
   }
 

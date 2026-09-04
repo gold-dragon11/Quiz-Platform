@@ -7,6 +7,8 @@ export interface UserSettingsRecord {
   language: Language;
   theme: Theme;
   publicProfileEnabled: boolean;
+  assignmentEmailsEnabled: boolean;
+  shareSelfStudyWithTutors: boolean;
 }
 
 /**
@@ -29,7 +31,13 @@ export class SettingsRepository {
   async findByUserId(userId: string): Promise<UserSettingsRecord | null> {
     return this.prisma.userSettings.findUnique({
       where: { userId },
-      select: { language: true, theme: true, publicProfileEnabled: true },
+      select: {
+        language: true,
+        theme: true,
+        publicProfileEnabled: true,
+        assignmentEmailsEnabled: true,
+        shareSelfStudyWithTutors: true,
+      },
     });
   }
 
@@ -44,7 +52,13 @@ export class SettingsRepository {
     return this.prisma.userSettings.update({
       where: { userId },
       data,
-      select: { language: true, theme: true, publicProfileEnabled: true },
+      select: {
+        language: true,
+        theme: true,
+        publicProfileEnabled: true,
+        assignmentEmailsEnabled: true,
+        shareSelfStudyWithTutors: true,
+      },
     });
   }
 }

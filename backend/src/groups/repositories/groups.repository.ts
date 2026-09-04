@@ -196,6 +196,16 @@ export class GroupsRepository {
     };
   }
 
+  /** Whether this learner lets their tutors see a summary of own practice. */
+  async sharesSelfStudy(studentId: string): Promise<boolean> {
+    const settings = await this.prisma.userSettings.findUnique({
+      where: { userId: studentId },
+      select: { shareSelfStudyWithTutors: true },
+    });
+    // No settings row yet means defaults, and the default is on.
+    return settings?.shareSelfStudyWithTutors ?? true;
+  }
+
   /** True when the subject exists, is published, and is not soft-deleted. */
   async subjectIsAvailable(subjectId: string): Promise<boolean> {
     const subject = await this.prisma.subject.findFirst({

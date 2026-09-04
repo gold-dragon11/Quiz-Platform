@@ -30,3 +30,18 @@ export interface StudentGroup {
   teacherName: string | null;
   joinedAt: Date;
 }
+
+/**
+ * What joining a group returns.
+ *
+ * Carries the sharing state alongside the group so the client can say, at the
+ * one moment it means anything, what the tutor will now be able to see. The
+ * setting is on by default (decision 16), and that is only defensible if the
+ * learner is told at the point it starts to apply — a switch buried in
+ * settings that nobody opens is not consent, and a surprise discovered later
+ * is what sends a teenager to a second account.
+ */
+export interface JoinedGroup extends StudentGroup {
+  /** True when this tutor will see a summary of the learner's own practice. */
+  selfStudyShared: boolean;
+}

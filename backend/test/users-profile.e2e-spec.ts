@@ -288,12 +288,24 @@ describe('User Profile & Settings (e2e)', () => {
       const { token } = await register();
       const body = (await getSettings(token).expect(200)).body as SettingsBody;
       expect(Object.keys(body).sort()).toEqual(
-        ['language', 'publicProfileEnabled', 'theme'].sort(),
+        [
+          'assignmentEmailsEnabled',
+          'language',
+          'publicProfileEnabled',
+          'shareSelfStudyWithTutors',
+          'theme',
+        ].sort(),
       );
       expect(body).toEqual({
         language: 'UKRAINIAN',
         theme: 'DARK',
         publicProfileEnabled: true,
+        // Both default to on: a deadline nobody is told about is a missed
+        // deadline, and sharing that nobody enables is a feature that does not
+        // exist. What makes the second defensible is the disclosure when the
+        // learner joins a group (decision 16).
+        assignmentEmailsEnabled: true,
+        shareSelfStudyWithTutors: true,
       });
     });
 
@@ -306,6 +318,8 @@ describe('User Profile & Settings (e2e)', () => {
         }).expect(200)
       ).body as SettingsBody;
       expect(updated).toEqual({
+        assignmentEmailsEnabled: true,
+        shareSelfStudyWithTutors: true,
         language: 'UKRAINIAN',
         theme: 'DARK',
         publicProfileEnabled: false,
