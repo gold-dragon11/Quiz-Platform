@@ -1,4 +1,4 @@
-import type { Difficulty, QuestionType, QuizType } from '@/shared/types/enums';
+import type { AuthorableQuizMode, Difficulty, QuestionType } from '@/shared/types/enums';
 
 /**
  * Admin feature types, mirrored exactly from the backend admin contracts
@@ -62,7 +62,7 @@ export interface QuizRecord {
   topicId: string | null;
   title: string;
   description: string | null;
-  mode: QuizType;
+  mode: AuthorableQuizMode;
   questionCount: number;
   timerEnabled: boolean;
   isPublished: boolean;
@@ -141,7 +141,7 @@ export interface CreateQuizPayload {
   topicId?: string;
   title: string;
   description?: string;
-  mode: QuizType;
+  mode: AuthorableQuizMode;
   questionCount: number;
   timerEnabled?: boolean;
   isPublished?: boolean;
@@ -151,7 +151,7 @@ export interface UpdateQuizPayload {
   topicId?: string | null;
   title?: string;
   description?: string | null;
-  mode?: QuizType;
+  mode?: AuthorableQuizMode;
   questionCount?: number;
   timerEnabled?: boolean;
   isPublished?: boolean;

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
+import { MistakeReviewPrompt } from '@/features/mistake-review';
 import { WelcomeHero } from '@/features/dashboard/components/WelcomeHero';
 import { SubjectStatisticsSection } from '@/features/dashboard/components/SubjectStatisticsSection';
 import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection';
@@ -32,6 +33,9 @@ export function DashboardPage(): React.JSX.Element {
           the flex `gap-8` above would leave a phantom gap when there is no
           active session to show. */}
       <ActiveQuizBanner />
+      {/* Same reasoning as above: renders nothing at all when nothing is due,
+          so the flex gap never opens around an empty node. */}
+      <MistakeReviewPrompt />
       <motion.div variants={fadeInUp}>
         <SubjectStatisticsSection />
       </motion.div>

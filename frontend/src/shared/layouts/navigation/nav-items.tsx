@@ -37,6 +37,19 @@ const icons = {
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
     </svg>
   ),
+  mockExam: (
+    <svg {...ICON} aria-hidden="true">
+      <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M12 11v3M12 17h.01" />
+    </svg>
+  ),
+  mistakeReview: (
+    <svg {...ICON} aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </svg>
+  ),
   statistics: (
     <svg {...ICON} aria-hidden="true">
       <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
@@ -65,6 +78,8 @@ const icons = {
 export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
   { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
+  { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
+  { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview },
   { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
   { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
@@ -93,6 +108,8 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/dashboard')) return 'Головна';
   if (pathname.startsWith('/subjects')) return 'Предмети';
   if (pathname.startsWith('/quiz')) return 'Тест';
+  if (pathname.startsWith('/mock-exam')) return 'Пробний НМТ';
+  if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
   if (pathname.startsWith('/statistics')) return 'Статистика';
   if (pathname.startsWith('/profile')) return 'Профіль';
   if (pathname.startsWith('/settings')) return 'Налаштування';

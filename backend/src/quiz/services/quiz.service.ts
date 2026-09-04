@@ -286,6 +286,27 @@ export class QuizService {
   }
 
   /**
+   * The shape of a sitting in this subject, for a client that wants to say
+   * what the student is about to walk into before they start.
+   *
+   * Only the two numbers a learner acts on. The difficulty mix stays private:
+   * it is a generation detail, and publishing it would invite gaming a paper
+   * whose whole point is that it is not configurable.
+   */
+  async mockExamSpec(
+    subjectId: string,
+  ): Promise<{ questionCount: number; minutes: number }> {
+    const subject =
+      await this.quizSessionRepository.findSubjectForMock(subjectId);
+    if (!subject) {
+      throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
+    }
+
+    const spec = mockExamSpecFor(subject.slug);
+    return { questionCount: spec.questionCount, minutes: spec.minutes };
+  }
+
+  /**
    * Starts a session made of the mistakes due today (decision from
    * docs/00-overview/teacher-side-decisions.md §6).
    *

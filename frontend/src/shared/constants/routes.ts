@@ -18,6 +18,8 @@ export const ROUTES = {
   quiz: '/quiz',
   quizSession: '/quiz/:sessionId',
   quizResult: '/quiz/:sessionId/result',
+  mockExam: '/mock-exam',
+  mistakeReview: '/mistake-review',
   topicMaterial: '/topics/:topicId/material',
   statistics: '/statistics',
   profile: '/profile',

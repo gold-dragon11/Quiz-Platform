@@ -15,6 +15,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
 import { MockExamHistoryQueryDto } from '../dto/mock-exam-history-query.dto';
+import { MockExamSpecQueryDto } from '../dto/mock-exam-spec-query.dto';
 import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
@@ -65,6 +66,22 @@ export class QuizController {
     @Query() query: MockExamHistoryQueryDto,
   ): Promise<MockExamAttempt[]> {
     return this.quizService.mockExamHistory(userId, query.subjectId);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/spec — what a sitting in this subject will be:
+   * how many questions, how many minutes.
+   *
+   * Exposed rather than published as a constant the client repeats, because
+   * these numbers are provisional until the official specification is checked
+   * (see mock-exam.config.ts). A duplicated "30 questions, 60 minutes" in the
+   * UI would keep saying so long after the real numbers land here.
+   */
+  @Get('mock-exam/spec')
+  async mockExamSpec(
+    @Query() query: MockExamSpecQueryDto,
+  ): Promise<{ questionCount: number; minutes: number }> {
+    return this.quizService.mockExamSpec(query.subjectId);
   }
 
   /**

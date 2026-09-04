@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Difficulty, QuestionType, QuizType } from '@/shared/types/enums';
+import { AUTHORABLE_QUIZ_MODES, Difficulty, QuestionType } from '@/shared/types/enums';
 
 /**
  * Admin form schemas, mirroring the backend DTO rules and messages
@@ -60,7 +60,9 @@ export const quizFormSchema = z.object({
   topicId: z.string(),
   title: z.string().min(1, 'Вкажіть заголовок').max(100),
   description: z.string().max(500),
-  mode: z.nativeEnum(QuizType),
+  // Not `nativeEnum(QuizType)`: that enum also carries DUEL and MOCK_EXAM,
+  // which are generated under fixed conditions and must never be authorable.
+  mode: z.enum(AUTHORABLE_QUIZ_MODES),
   questionCount: z.coerce.number().int().min(1, 'Щонайменше 1 питання').max(50, 'Не більше ніж 50 питань'),
   timerEnabled: z.boolean(),
   isPublished: z.boolean(),

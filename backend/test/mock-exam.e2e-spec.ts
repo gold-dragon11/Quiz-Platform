@@ -45,6 +45,7 @@ describe('Mock exam (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const START_URL = '/api/v1/quiz/mock-exam/start';
   const HISTORY_URL = '/api/v1/quiz/mock-exam/history';
+  const SPEC_URL = '/api/v1/quiz/mock-exam/spec';
 
   const spec = mockExamSpecFor('anything');
 
@@ -353,6 +354,78 @@ describe('Mock exam (e2e)', () => {
       await request(app.getHttpServer())
         .post(START_URL)
         .send({ subjectId })
+        .expect(401);
+    });
+  });
+
+  describe('spec', () => {
+    it('tells the client what the paper will be, so the UI need not repeat it', async () => {
+      const learner = await register();
+
+      const response = await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .query({ subjectId })
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+
+      // The numbers must come from the same place the paper is drawn from.
+      // A client hardcoding "30 questions, 60 minutes" would keep saying so
+      // long after the official specification changes these.
+      expect(response.body).toEqual({
+        questionCount: spec.questionCount,
+        minutes: spec.minutes,
+      });
+    });
+
+    it('keeps the difficulty mix to itself', async () => {
+      const learner = await register();
+
+      const response = await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .query({ subjectId })
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+
+      // Publishing the weighting would invite gaming a paper whose whole
+      // point is that it cannot be configured.
+      expect(Object.keys(response.body as object).sort()).toEqual([
+        'minutes',
+        'questionCount',
+      ]);
+    });
+
+    it('refuses an unpublished subject', async () => {
+      const learner = await register();
+      await prisma.subject.update({
+        where: { id: subjectId },
+        data: { isPublished: false },
+      });
+
+      await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .query({ subjectId })
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(404);
+
+      await prisma.subject.update({
+        where: { id: subjectId },
+        data: { isPublished: true },
+      });
+    });
+
+    it('requires a subject', async () => {
+      const learner = await register();
+
+      await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(400);
+    });
+
+    it('requires a token', async () => {
+      await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .query({ subjectId })
         .expect(401);
     });
   });

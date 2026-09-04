@@ -19,6 +19,8 @@ import {
 import { ProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
+import { MockExamPage } from '@/features/mock-exam';
+import { MistakeReviewPage } from '@/features/mistake-review';
 import { StatisticsPage } from '@/features/statistics';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
@@ -120,6 +122,11 @@ export const router = createBrowserRouter([
               {
                 path: ROUTES.quizResult,
                 element: page(<QuizResultPage />),
+              },
+              { path: ROUTES.mockExam, element: page(<MockExamPage />) },
+              {
+                path: ROUTES.mistakeReview,
+                element: page(<MistakeReviewPage />),
               },
               {
                 path: ROUTES.topicMaterial,
