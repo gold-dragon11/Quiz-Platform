@@ -1,6 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { AccountStatus, AvatarType, Prisma } from '@prisma/client';
+import { AccountStatus, AvatarType, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+
+/** One account as an administrator sees it in the directory. */
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  role: UserRole;
+  accountStatus: AccountStatus;
+  createdAt: Date;
+  username: string | null;
+  displayName: string | null;
+}
 
 /** The authenticated user's profile with account email and avatar. */
 export interface MyProfileRecord {
@@ -168,5 +179,112 @@ export class UsersRepository {
         },
       },
     });
+  }
+
+  // ------------------------------------------------------ administration
+
+  /**
+   * The directory an administrator searches when deciding who becomes a
+   * teacher. Deleted accounts are excluded: a role on an account nobody can
+   * sign into is not a decision worth offering.
+   */
+  async listForAdmin(params: {
+    page: number;
+    pageSize: number;
+    search?: string;
+    role?: UserRole;
+  }): Promise<{ items: AdminUserRecord[]; total: number }> {
+    const where: Prisma.UserWhereInput = {
+      accountStatus: { not: AccountStatus.DELETED },
+      ...(params.role ? { role: params.role } : {}),
+      ...(params.search
+        ? {
+            OR: [
+              { email: { contains: params.search, mode: 'insensitive' } },
+              {
+                profile: {
+                  username: { contains: params.search, mode: 'insensitive' },
+                },
+              },
+              {
+                profile: {
+                  displayName: {
+                    contains: params.search,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [rows, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (params.page - 1) * params.pageSize,
+        take: params.pageSize,
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          accountStatus: true,
+          createdAt: true,
+          profile: { select: { username: true, displayName: true } },
+        },
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+
+    return {
+      items: rows.map((row) => ({
+        id: row.id,
+        email: row.email,
+        role: row.role,
+        accountStatus: row.accountStatus,
+        createdAt: row.createdAt,
+        username: row.profile?.username ?? null,
+        displayName: row.profile?.displayName ?? null,
+      })),
+      total,
+    };
+  }
+
+  /** The role and status of one account, for the role-change checks. */
+  async findRole(userId: string): Promise<{
+    id: string;
+    role: UserRole;
+    accountStatus: AccountStatus;
+  } | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, accountStatus: true },
+    });
+  }
+
+  async updateRole(userId: string, role: UserRole): Promise<AdminUserRecord> {
+    const row = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        accountStatus: true,
+        createdAt: true,
+        profile: { select: { username: true, displayName: true } },
+      },
+    });
+
+    return {
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      accountStatus: row.accountStatus,
+      createdAt: row.createdAt,
+      username: row.profile?.username ?? null,
+      displayName: row.profile?.displayName ?? null,
+    };
   }
 }

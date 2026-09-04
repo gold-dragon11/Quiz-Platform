@@ -646,3 +646,62 @@ The Admin API is considered successful if it:
 - validates all incoming data;
 - preserves historical learning integrity;
 - supports future platform expansion.
+---
+
+# 19. Accounts and Roles
+
+Placed at the end rather than beside the other resources: sections 10–18 are
+cross-cutting and renumbering them would invalidate the `§10`/`§12` references
+scattered through the backend's comments.
+
+## Get Users
+
+```http
+GET /api/v1/admin/users
+```
+
+The account directory. Deleted accounts are never returned — a role on an
+account nobody can sign into decides nothing.
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| search | — | case-insensitive match against email, username and display name |
+| role | — | USER, TEACHER or ADMIN |
+
+Responses use the pagination envelope (§12). Each item carries `id`, `email`,
+`role`, `accountStatus`, `createdAt`, `username` and `displayName` — never a
+password hash.
+
+---
+
+## Set User Role
+
+```http
+PATCH /api/v1/admin/users/{userId}/role
+```
+
+```json
+{ "role": "TEACHER" }
+```
+
+Moves an account between `USER` and `TEACHER`. This is the only way the teacher
+role is granted: there is no self-service path to it, because a tutor's account
+can read a whole group's mistakes.
+
+`ADMIN` is out of reach in both directions, and deliberately so:
+
+- the body accepts only `USER` and `TEACHER`, so this route can never mint an
+  administrator (`400` otherwise);
+- an account that already holds `ADMIN` is refused as a subject (`409`), so no
+  sequence of calls here ends with a platform that has no administrators.
+
+Administrator access is granted where the platform is deployed.
+
+| Status | Meaning |
+|---|---|
+| 200 | Role changed; the updated account is returned |
+| 400 | `role` is missing, unknown, or `ADMIN` |
+| 404 | No such account |
+| 409 | The account is an administrator, or has been deleted |

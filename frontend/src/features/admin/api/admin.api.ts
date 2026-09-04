@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/api-client';
 import type { Paginated } from '@/shared/types/api';
 import type {
   AdminListParams,
+  AdminUserRecord,
+  AssignableRole,
   CreateQuestionPayload,
   CreateQuizPayload,
   CreateSubjectPayload,
@@ -80,4 +82,11 @@ export const adminQuizzesApi = {
   remove: async (id: string): Promise<void> => {
     await apiClient.delete(`/admin/quizzes/${id}`);
   },
+};
+
+export const adminUsersApi = {
+  list: async (params: AdminListParams): Promise<Paginated<AdminUserRecord>> =>
+    (await apiClient.get<Paginated<AdminUserRecord>>('/admin/users', { params })).data,
+  setRole: async (userId: string, role: AssignableRole): Promise<AdminUserRecord> =>
+    (await apiClient.patch<AdminUserRecord>(`/admin/users/${userId}/role`, { role })).data,
 };

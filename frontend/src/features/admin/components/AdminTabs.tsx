@@ -1,4 +1,4 @@
-export type AdminTabId = 'subjects' | 'topics' | 'questions' | 'quizzes';
+export type AdminTabId = 'subjects' | 'topics' | 'questions' | 'quizzes' | 'users';
 
 interface AdminTabsProps {
   active: AdminTabId;
@@ -10,6 +10,7 @@ const TABS: { id: AdminTabId; label: string }[] = [
   { id: 'topics', label: 'Теми' },
   { id: 'questions', label: 'Питання' },
   { id: 'quizzes', label: 'Тести' },
+  { id: 'users', label: 'Користувачі' },
 ];
 
 /** In-page tab navigation for the admin panel (no route changes — local state). */

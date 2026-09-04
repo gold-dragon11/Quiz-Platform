@@ -1,4 +1,10 @@
-import type { AuthorableQuizMode, Difficulty, QuestionType } from '@/shared/types/enums';
+import type {
+  AccountStatus,
+  AuthorableQuizMode,
+  Difficulty,
+  QuestionType,
+  UserRole,
+} from '@/shared/types/enums';
 
 /**
  * Admin feature types, mirrored exactly from the backend admin contracts
@@ -159,6 +165,29 @@ export interface UpdateQuizPayload {
 
 // --- List query params --------------------------------------------------
 
+/** One account in the administrator's directory (GET /admin/users). */
+export interface AdminUserRecord {
+  id: string;
+  email: string;
+  role: UserRole;
+  accountStatus: AccountStatus;
+  createdAt: string;
+  username: string | null;
+  displayName: string | null;
+}
+
+/**
+ * The roles an administrator may assign — mirrors the backend's
+ * ASSIGNABLE_ROLES exactly.
+ *
+ * ADMIN is absent in both directions: this endpoint can neither grant it nor
+ * take it away, because a route that mints administrators is one compromised
+ * session away from permanent. Spelled out rather than derived from UserRole,
+ * so adding a role to the enum does not silently widen the UI.
+ */
+export const ASSIGNABLE_ROLES = ['USER', 'TEACHER'] as const;
+export type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+
 export interface AdminListParams {
   page?: number;
   pageSize?: number;
@@ -167,4 +196,5 @@ export interface AdminListParams {
   topicId?: string;
   type?: QuestionType;
   difficulty?: Difficulty;
+  role?: UserRole;
 }
