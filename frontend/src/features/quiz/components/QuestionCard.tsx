@@ -12,6 +12,7 @@ import {
 } from '@/features/quiz/lib/quiz-answers';
 import { SingleChoiceAnswer } from '@/features/quiz/components/SingleChoiceAnswer';
 import { MatchingAnswer } from '@/features/quiz/components/MatchingAnswer';
+import { ReportQuestionButton } from '@/features/question-reports';
 
 interface QuestionCardProps {
   question: QuizQuestionView;
@@ -56,6 +57,11 @@ export function QuestionCard({
           onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
         />
       )}
+
+      {/* Also here, not only in the review: a formula that fails to render or
+          a stem with a typo is noticed mid-question, and a learner told to
+          finish first would simply never report it. */}
+      <ReportQuestionButton questionId={question.id} className="self-start" />
     </Card>
   );
 }

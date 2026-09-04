@@ -5,6 +5,7 @@ import { Card } from '@/shared/ui/Card';
 import { SectionHeader } from '@/shared/ui/SectionHeader';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
 import { getCorrectOptionId, getMatchingPairs, getSelectedOptionId } from '@/features/quiz/lib/quiz-answers';
+import { ReportQuestionButton } from '@/features/question-reports';
 
 /**
  * Post-completion review (docs/04-api/quiz.md §8): every question with the
@@ -33,6 +34,10 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
               <MatchingReview question={question} />
             )}
             {question.explanation && <Explanation text={question.explanation} />}
+            {/* The review is where a wrong key actually shows itself: the
+                learner has just been told they were wrong and can see the
+                answer that says so. */}
+            <ReportQuestionButton questionId={question.id} className="self-start" />
           </Card>
         ))}
       </div>

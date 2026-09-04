@@ -73,6 +73,22 @@ export type QuizType = (typeof QuizType)[keyof typeof QuizType];
 export const AUTHORABLE_QUIZ_MODES = [QuizType.SUBJECT_QUIZ, QuizType.RANDOM_QUIZ] as const;
 export type AuthorableQuizMode = (typeof AUTHORABLE_QUIZ_MODES)[number];
 
+export const QuestionReportReason = {
+  WRONG_ANSWER: 'WRONG_ANSWER',
+  TYPO: 'TYPO',
+  UNCLEAR: 'UNCLEAR',
+  BROKEN_FORMULA: 'BROKEN_FORMULA',
+  OTHER: 'OTHER',
+} as const;
+export type QuestionReportReason = (typeof QuestionReportReason)[keyof typeof QuestionReportReason];
+
+export const QuestionReportStatus = {
+  NEW: 'NEW',
+  ACCEPTED: 'ACCEPTED',
+  REJECTED: 'REJECTED',
+} as const;
+export type QuestionReportStatus = (typeof QuestionReportStatus)[keyof typeof QuestionReportStatus];
+
 export const DuelMode = {
   /** Both sit the same paper whenever they like; the result is a comparison. */
   ASYNC: 'ASYNC',
