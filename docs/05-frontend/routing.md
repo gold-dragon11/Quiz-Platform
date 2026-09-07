@@ -90,6 +90,7 @@ an administrator owns no groups.
 | Route | Purpose |
 |---------|---------|
 | `/teacher/groups` | The teacher's groups; creating one |
+| `/teacher/questions` | The question bank, with correct answers and explanations |
 | `/teacher/groups/:groupId` | One group — invite code, roster, assignments, analytics |
 | `/teacher/groups/:groupId/assignments/new` | Issuing homework |
 | `/teacher/groups/:groupId/students/:studentId` | One learner inside one group |

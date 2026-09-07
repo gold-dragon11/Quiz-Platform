@@ -59,6 +59,12 @@ const icons = {
       <path d="m9 13 2 2 4-4" />
     </svg>
   ),
+  bank: (
+    <svg {...ICON} aria-hidden="true">
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H19v14H6.5A2.5 2.5 0 0 0 4 20.5z" />
+      <path d="M9 8h6M9 11.5h4" />
+    </svg>
+  ),
   groups: (
     <svg {...ICON} aria-hidden="true">
       <circle cx="9" cy="8" r="3.2" />
@@ -103,19 +109,35 @@ const icons = {
   ),
 };
 
-/** Full navigation (sidebar + slide-out menu). Admin is filtered by role. */
+/**
+ * Entries only a learner has any use for.
+ *
+ * Spelled out as "everyone except a teacher" rather than `[USER]`: an
+ * administrator managing the question bank has a real reason to sit a test and
+ * see what a learner sees, while a teacher does not — they set the work, they
+ * do not do it.
+ */
+const LEARNERS = [UserRole.USER, UserRole.ADMIN];
+
+/** Full navigation (sidebar + slide-out menu), filtered by role. */
 export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS },
   { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
-  { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview },
-  { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels },
+  { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview, roles: LEARNERS },
+  { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels, roles: LEARNERS },
   { to: ROUTES.assignments, label: 'Домашка', icon: icons.assignments, roles: [UserRole.USER] },
   { to: ROUTES.groups, label: 'Мої групи', icon: icons.groups, roles: [UserRole.USER] },
   {
     to: ROUTES.teacherGroups,
     label: 'Групи',
     icon: icons.groups,
+    roles: [UserRole.TEACHER],
+  },
+  {
+    to: ROUTES.teacherQuestions,
+    label: 'Банк питань',
+    icon: icons.bank,
     roles: [UserRole.TEACHER],
   },
   { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
@@ -126,7 +148,17 @@ export const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * Condensed navigation for the mobile bottom bar (no admin).
+ * Condensed navigation for the mobile bottom bar.
+ *
+ * Role-filtered like the sidebar, and it has to be: the bar showed a teacher
+ * "Тест" long after the sidebar had stopped, because it was a second list
+ * nobody remembered to gate. Five slots is the ceiling — at six each label
+ * gets about 65px, too narrow for "Налаштування" — and the role filter is
+ * what keeps any one person under it. Count it when adding an entry: a
+ * learner sees five (головна, тест, домашка, статистика, налаштування), a
+ * teacher five (головна, групи, питання, статистика, налаштування), an
+ * administrator four. Subjects lives in the slide-out menu only — it was the
+ * sixth slot, and six does not fit.
  *
  * Settings is here because the sidebar is desktop-only and the dashboard quick
  * action that used to reach it has been removed. Profile is not: the avatar in
@@ -135,8 +167,15 @@ export const NAV_ITEMS: NavItem[] = [
  */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz },
-  { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS },
+  { to: ROUTES.assignments, label: 'Домашка', icon: icons.assignments, roles: [UserRole.USER] },
+  { to: ROUTES.teacherGroups, label: 'Групи', icon: icons.groups, roles: [UserRole.TEACHER] },
+  {
+    to: ROUTES.teacherQuestions,
+    label: 'Питання',
+    icon: icons.bank,
+    roles: [UserRole.TEACHER],
+  },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
   { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
 ];
@@ -150,6 +189,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
   if (pathname.startsWith('/duels')) return 'Дуелі';
   if (pathname.startsWith('/teacher/groups')) return 'Групи';
+  if (pathname.startsWith('/teacher/questions')) return 'Банк питань';
   if (pathname.startsWith('/assignments')) return 'Домашка';
   if (pathname.startsWith('/groups')) return 'Мої групи';
   if (pathname.startsWith('/statistics')) return 'Статистика';

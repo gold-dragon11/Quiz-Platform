@@ -32,6 +32,7 @@ export const ROUTES = {
 
   // Teacher
   teacherGroups: '/teacher/groups',
+  teacherQuestions: '/teacher/questions',
   teacherGroup: '/teacher/groups/:groupId',
   teacherAssignmentNew: '/teacher/groups/:groupId/assignments/new',
   teacherAssignment: '/teacher/assignments/:assignmentId',

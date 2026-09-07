@@ -32,6 +32,7 @@ import {
   StudentProfilePage,
 } from '@/features/assignments';
 import { StatisticsPage } from '@/features/statistics';
+import { QuestionBankPage } from '@/features/question-bank';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
 import { AdminPanelPage } from '@/features/admin';
@@ -165,6 +166,7 @@ export const router = createBrowserRouter([
             element: <MainLayout />,
             children: [
               { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
+              { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
               { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
               {
                 path: ROUTES.teacherAssignmentNew,

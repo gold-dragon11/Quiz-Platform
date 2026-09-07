@@ -9,6 +9,7 @@ import { TopicsService } from '../../topics/services/topics.service';
 import { AnswerOptionInputDto } from '../dto/answer-option-input.dto';
 import { CreateQuestionDto } from '../dto/create-question.dto';
 import { ListQuestionsQueryDto } from '../dto/list-questions-query.dto';
+import { ListTeacherQuestionsQueryDto } from '../dto/list-teacher-questions-query.dto';
 import { PublishQuestionDto } from '../dto/publish-question.dto';
 import { UpdateQuestionDto } from '../dto/update-question.dto';
 import {
@@ -165,6 +166,40 @@ export class QuestionsService {
       search: query.search,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+    });
+
+    return {
+      items,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / query.pageSize),
+    };
+  }
+
+  /**
+   * The bank as a teacher reads it: published questions only, with their
+   * correct answers and explanations.
+   *
+   * `isPublished` is pinned here rather than taken from the query. Passing it
+   * through would have let a teacher list the administrator's unfinished
+   * drafts by adding one parameter, and nothing in the DTO would have looked
+   * wrong.
+   */
+  async listForTeacher(
+    query: ListTeacherQuestionsQueryDto,
+  ): Promise<PaginatedQuestions> {
+    const { items, totalItems } = await this.questionsRepository.findPage({
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      topicId: query.topicId,
+      subjectId: query.subjectId,
+      type: query.type,
+      difficulty: query.difficulty,
+      isPublished: true,
+      search: query.search,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     });
 
     return {

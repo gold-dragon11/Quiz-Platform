@@ -3,6 +3,7 @@ import { SettingsModule } from '../settings/settings.module';
 import { TopicsModule } from '../topics/topics.module';
 import { AdminQuestionsController } from './controllers/admin-questions.controller';
 import { PublicQuestionsController } from './controllers/public-questions.controller';
+import { TeacherQuestionsController } from './controllers/teacher-questions.controller';
 import { QuestionsRepository } from './repositories/questions.repository';
 import { QuestionsService } from './services/questions.service';
 
@@ -15,7 +16,11 @@ import { QuestionsService } from './services/questions.service';
  */
 @Module({
   imports: [TopicsModule, SettingsModule],
-  controllers: [AdminQuestionsController, PublicQuestionsController],
+  controllers: [
+    AdminQuestionsController,
+    PublicQuestionsController,
+    TeacherQuestionsController,
+  ],
   providers: [QuestionsService, QuestionsRepository],
   exports: [QuestionsService],
 })

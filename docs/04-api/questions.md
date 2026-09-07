@@ -265,7 +265,7 @@ All errors return a consistent JSON structure.
 
 # 14. Security
 
-The Questions API never returns:
+The **delivery** endpoints — everything a learner's client calls — never return:
 
 - correct answers;
 - scoring rules;
@@ -273,6 +273,13 @@ The Questions API never returns:
 - unpublished content.
 
 Only information required to display the question is exposed.
+
+There is exactly one exception, and it is not a delivery endpoint:
+`GET /api/v1/teacher/questions` (§17) returns the correct options and the
+explanations, because a tutor cannot judge a question from its stem. It is
+gated on the `TEACHER` role, which is granted by an administrator one account
+at a time (admin.md §19) and has no self-service path. Everything a student's
+client can reach still withholds both, and must keep withholding them.
 
 ---
 
@@ -300,3 +307,38 @@ The Questions API is considered successful if it:
 - supports multiple question types;
 - integrates seamlessly with Quiz Sessions;
 - remains extensible for future content formats.
+
+---
+
+# 17. Teacher Question Bank
+
+```http
+GET /api/v1/teacher/questions
+```
+
+The bank as a teacher reads it. Requires the `TEACHER` role; administrators are
+refused here and use `/admin/questions` instead.
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| subjectId | — | uuid; filters through the topic relation |
+| topicId | — | uuid |
+| type | — | SINGLE_CHOICE or MATCHING |
+| difficulty | — | BEGINNER, INTERMEDIATE or ADVANCED |
+| search | — | case-insensitive match against the title |
+
+Responses use the pagination envelope (admin.md §12). Each item is the full
+question record: `explanation`, `configuration`, and every answer option with
+its `isCorrect` flag.
+
+Two properties are enforced rather than documented as a convention:
+
+- **Only published questions.** `isPublished` is pinned server-side, not read
+  from the query, so a teacher cannot reach an administrator's drafts by adding
+  a parameter. Sending `isPublished` at all is a `400` — accepted-and-ignored
+  would look identical to working.
+- **Read only.** Writing to the bank stays with the administrator. A teacher who
+  finds a bad question reports it through `POST /questions/{id}/report`, the
+  same route a student uses.
