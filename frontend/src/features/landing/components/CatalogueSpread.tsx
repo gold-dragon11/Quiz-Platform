@@ -1,53 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Skeleton } from '@/shared/ui/Skeleton';
 import { formatNumber, pluralUk } from '@/shared/utils/format';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { REVEAL_VIEWPORT } from '@/features/landing/constants';
-import { fetchCatalogue, type CatalogueSubject } from '@/features/landing/api/catalogue.api';
+import type { Catalogue, CatalogueSubject } from '@/features/landing/api/catalogue.api';
 
-/**
- * The bank, laid out as a table of contents rather than counted in tiles.
- *
- * The four tiles this replaced had two problems. The smaller one: «4 предмети»
- * shouted at the same size as «3308 запитань», advertising the weakest fact as
- * loudly as the strongest. The larger one: «76 тем» and «76 навчальних
- * матеріалів» were the *same fact counted twice* — every topic has exactly one
- * material — and nobody noticed, because tiles are looked at rather than read.
- *
- * Topic names can be read and judged: a candidate sees whether what they need
- * is covered. Four numbers never told them that. The numbers move into the one
- * sentence at the bottom, where the 76 = 76 coincidence becomes the claim it
- * always was: every topic has a material.
- *
- * Ordered by question count, so the strongest subject opens the list and «4
- * предмети» disappears as a figure — you can see there are four.
- */
-export function CatalogueSpread(): React.JSX.Element {
-  const catalogue = useQuery({
-    queryKey: ['landing', 'catalogue'],
-    queryFn: fetchCatalogue,
-    staleTime: 60 * 60 * 1000,
-    retry: 1,
-  });
-
-  if (catalogue.isPending) {
-    return (
-      <div className="flex flex-col gap-10">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-24" />
-        ))}
-      </div>
-    );
-  }
-
-  // A marketing page that cannot reach the API says nothing rather than
-  // apologising: a visitor did not come here to read about our outage.
-  if (catalogue.isError || catalogue.data.subjects.length === 0) {
-    return <></>;
-  }
-
-  const { subjects, totalQuestions, totalTopics, totalMaterials } = catalogue.data;
+export function CatalogueSpread({ catalogue }: { catalogue: Catalogue }): React.JSX.Element {
+  const { subjects, totalQuestions, totalTopics, totalMaterials } = catalogue;
   const ordered = [...subjects].sort((a, b) => b.questionCount - a.questionCount);
   const everyTopicCovered = totalMaterials === totalTopics;
 

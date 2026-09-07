@@ -1,5 +1,7 @@
 import { DecorCurves } from '@/features/landing/components/DecorCurves';
+import { Skeleton } from '@/shared/ui/Skeleton';
 import { CatalogueSpread } from '@/features/landing/components/CatalogueSpread';
+import { useCatalogue } from '@/features/landing/hooks/use-catalogue';
 import { SectionHeading } from '@/features/landing/components/SectionHeading';
 import { SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
@@ -15,7 +17,16 @@ import { SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants
  * this. Four hand-kept numbers were a defensible thing to write down; seventy-
  * six hand-kept topic names would drift from the bank in silence.
  */
-export function StatsSection(): React.JSX.Element {
+export function StatsSection(): React.JSX.Element | null {
+  const catalogue = useCatalogue();
+
+  // The whole section goes, heading included. Hiding only the body left the
+  // heading standing over nothing — a page that looks broken rather than one
+  // that quietly has less to say.
+  if (catalogue.isError) {
+    return null;
+  }
+
   return (
     <section className="relative overflow-hidden">
       <DecorCurves set="b" />
@@ -23,7 +34,15 @@ export function StatsSection(): React.JSX.Element {
       <div className={`${SECTION_CONTAINER} ${SECTION_SPACING} relative`}>
         <SectionHeading title="Підготовка, зібрана в одному місці" />
 
-        <CatalogueSpread />
+        {catalogue.isPending ? (
+          <div className="mx-auto flex max-w-5xl flex-col gap-10">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-28" />
+            ))}
+          </div>
+        ) : (
+          <CatalogueSpread catalogue={catalogue.data} />
+        )}
       </div>
     </section>
   );
