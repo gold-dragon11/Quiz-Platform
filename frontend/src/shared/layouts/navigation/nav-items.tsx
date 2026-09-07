@@ -52,6 +52,13 @@ const icons = {
       <path d="M12 11v3M12 17h.01" />
     </svg>
   ),
+  assignments: (
+    <svg {...ICON} aria-hidden="true">
+      <path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1z" />
+      <path d="M16 5h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2" />
+      <path d="m9 13 2 2 4-4" />
+    </svg>
+  ),
   groups: (
     <svg {...ICON} aria-hidden="true">
       <circle cx="9" cy="8" r="3.2" />
@@ -103,6 +110,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
   { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview },
   { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels },
+  { to: ROUTES.assignments, label: 'Домашка', icon: icons.assignments, roles: [UserRole.USER] },
   { to: ROUTES.groups, label: 'Мої групи', icon: icons.groups, roles: [UserRole.USER] },
   {
     to: ROUTES.teacherGroups,
@@ -142,6 +150,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
   if (pathname.startsWith('/duels')) return 'Дуелі';
   if (pathname.startsWith('/teacher/groups')) return 'Групи';
+  if (pathname.startsWith('/assignments')) return 'Домашка';
   if (pathname.startsWith('/groups')) return 'Мої групи';
   if (pathname.startsWith('/statistics')) return 'Статистика';
   if (pathname.startsWith('/profile')) return 'Профіль';

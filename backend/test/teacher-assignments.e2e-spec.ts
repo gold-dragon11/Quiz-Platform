@@ -349,6 +349,26 @@ describe('Assignments (e2e)', () => {
         .expect(400);
     });
 
+    it('names the missing field when a mistakes draw arrives without a count', async () => {
+      const group = await groupWithStudents();
+
+      // MISTAKES needs a count exactly as TOPIC does. Without one the draw
+      // ends up comparing against undefined and produces an empty list, so
+      // the teacher is told the bank is short of questions when in fact they
+      // left a field out — a wrong diagnosis is worse than a blunt one.
+      const response = await request(app.getHttpServer())
+        .post(`${TEACHER_URL}/groups/${group.id}/assignments`)
+        .set('Authorization', `Bearer ${teacher}`)
+        .send({
+          title: 'Робота над помилками',
+          dueAt: IN_A_WEEK(),
+          mode: 'MISTAKES',
+        })
+        .expect(400);
+
+      expect(JSON.stringify(response.body)).toContain('count');
+    });
+
     it('refuses questions from another subject even when the ids are valid', async () => {
       const group = await groupWithStudents();
 

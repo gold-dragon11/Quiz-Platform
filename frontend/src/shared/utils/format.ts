@@ -76,7 +76,14 @@ export function pluralUk(count: number, one: string, few: string, many: string):
   return many;
 }
 
-/** Short absolute date (e.g. "20 лип. 2026 р."); echoes the input if unparseable. */
+/**
+ * Short absolute date (e.g. "20 лип. 2026 р."); echoes the input if unparseable.
+ *
+ * Note the trailing full stop — it is part of the Ukrainian abbreviation, not
+ * punctuation you may add to. Ending a sentence with this helper needs no
+ * period of its own, or the reader gets "…14 вер. 2026 р..". This has been
+ * written twice already.
+ */
 export function formatShortDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {

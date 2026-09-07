@@ -11,6 +11,7 @@ import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { formatShortDate } from '@/shared/utils/format';
 import { isApiError } from '@/shared/utils/apply-api-error';
+import { GroupAssignments } from '@/features/assignments/components/GroupAssignments';
 import { InviteCode } from '@/features/groups/components/InviteCode';
 import { useGroupActions, useGroupRoster, useTeacherGroup } from '@/features/groups/hooks/use-groups';
 import type { GroupStudent, TeacherGroup } from '@/features/groups/types/group.types';
@@ -177,6 +178,8 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
           </ul>
         )}
       </section>
+
+      <GroupAssignments groupId={group.id} archived={archived} />
 
       <ConfirmDialog
         open={archiving}

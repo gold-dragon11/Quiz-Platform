@@ -106,9 +106,20 @@ export class CreateAssignmentDto {
   @IsUUID()
   topicId?: string;
 
-  /** TOPIC only. */
+  /**
+   * How many questions to draw — required by TOPIC and by MISTAKES.
+   *
+   * MISTAKES was missing from this condition, and the omission was invisible
+   * because every caller happened to send a count. Without one the draw
+   * compared its progress against `undefined`, took `NaN` questions, and ended
+   * with an empty list — so the teacher was told the bank was short of
+   * questions when in fact they had left a field out. A wrong diagnosis costs
+   * more than a blunt one.
+   */
   @ValidateIf(
-    (dto: CreateAssignmentDto) => dto.mode === QuestionSelectionMode.TOPIC,
+    (dto: CreateAssignmentDto) =>
+      dto.mode === QuestionSelectionMode.TOPIC ||
+      dto.mode === QuestionSelectionMode.MISTAKES,
   )
   @IsInt()
   @Min(1)

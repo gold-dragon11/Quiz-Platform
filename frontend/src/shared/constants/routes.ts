@@ -21,6 +21,8 @@ export const ROUTES = {
   mockExam: '/mock-exam',
   mistakeReview: '/mistake-review',
   groups: '/groups',
+  assignments: '/assignments',
+  assignment: '/assignments/:assignmentId',
   duels: '/duels',
   duel: '/duels/:duelId',
   topicMaterial: '/topics/:topicId/material',
@@ -31,6 +33,7 @@ export const ROUTES = {
   // Teacher
   teacherGroups: '/teacher/groups',
   teacherGroup: '/teacher/groups/:groupId',
+  teacherAssignmentNew: '/teacher/groups/:groupId/assignments/new',
 
   // Administrator
   admin: '/admin',
