@@ -5,8 +5,12 @@
  * The state it depicts is a real one. Choosing an option does not advance the
  * session — the learner stays on the question until they press «Далі» — so
  * «Питання 1 з 10» beside «Відповіли на 1 з 10» is what the app shows once the
- * first answer is picked, and the bar sits at 10% because
- * `QuizProgress` fills it from the answered count, not from the position.
+ * first answer is picked.
+ *
+ * The session itself no longer draws a progress bar: it draws a strip of
+ * numbered questions that doubles as a navigator. This card keeps the bar
+ * because it is a still life, not a screenshot — it has one question to
+ * suggest, and a strip of ten cells would invite a click it cannot honour.
  *
  * Entirely decorative. It is hidden from assistive technology and takes no
  * pointer events: the headline beside it already carries the message, and a

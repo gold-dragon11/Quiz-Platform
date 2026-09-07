@@ -1,8 +1,5 @@
 import { MathText } from '@/shared/ui/MathText';
 import { QuestionType } from '@/shared/types/enums';
-import { Badge } from '@/shared/ui/Badge';
-import { Card } from '@/shared/ui/Card';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
 import { getCorrectOptionId, getMatchingPairs, getSelectedOptionId } from '@/features/quiz/lib/quiz-answers';
 import { ReportQuestionButton } from '@/features/question-reports';
@@ -10,23 +7,33 @@ import { ReportQuestionButton } from '@/features/question-reports';
 /**
  * Post-completion review (docs/04-api/quiz.md §8): every question with the
  * user's submission, the correct answer (revealed only now), and correctness.
- * Handles both documented types.
+ *
+ * Ruled rows rather than a stack of cards, and the same А/Б/В/Г letters the
+ * session used — a student comparing what they picked with what was right
+ * should be reading the same shapes they read a minute ago, not a different
+ * component's idea of the same data.
  */
 export function ResultReview({ questions }: { questions: QuizReviewQuestion[] }): React.JSX.Element {
   return (
     <section>
-      <SectionHeader title="Розбір" description="Подивіться, що вдалося, а що варто підтягнути." />
-      <div className="flex flex-col gap-4">
+      <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
+        Розбір
+      </h2>
+      <ul className="divide-border divide-y">
         {questions.map((question, i) => (
-          <Card key={question.id} className="flex flex-col gap-4">
+          <li key={question.id} className="flex flex-col gap-4 py-8">
             <div className="flex items-start justify-between gap-4">
-              <h3 className="text-text-primary font-medium whitespace-pre-wrap">
+              <h3 className="text-text-primary whitespace-pre-wrap">
                 <span className="text-text-muted mr-2">{i + 1}.</span>
                 <MathText>{question.title}</MathText>
               </h3>
-              <Badge tone={question.isCorrect ? 'success' : 'error'} className="shrink-0">
-                {question.isCorrect ? 'Правильно' : 'Неправильно'}
-              </Badge>
+              <span
+                className={`shrink-0 text-xs tracking-[0.14em] uppercase ${
+                  question.isCorrect ? 'text-success' : 'text-error'
+                }`}
+              >
+                {question.isCorrect ? 'правильно' : 'неправильно'}
+              </span>
             </div>
             {question.type === QuestionType.SINGLE_CHOICE ? (
               <SingleChoiceReview question={question} />
@@ -38,9 +45,9 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
                 learner has just been told they were wrong and can see the
                 answer that says so. */}
             <ReportQuestionButton questionId={question.id} className="self-start" />
-          </Card>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }
@@ -53,14 +60,17 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
  */
 function Explanation({ text }: { text: string }): React.JSX.Element {
   return (
-    <div className="border-border bg-surface-elevated flex flex-col gap-1 rounded-lg border p-4">
-      <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Пояснення</p>
-      <p className="text-text-secondary text-sm whitespace-pre-wrap">
+    <div className="border-border border-l pl-5">
+      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Пояснення</p>
+      <p className="text-text-secondary mt-2 text-sm whitespace-pre-wrap">
         <MathText>{text}</MathText>
       </p>
     </div>
   );
 }
+
+/** Same letters as the session screen, and as the exam paper. */
+const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
 
 function optionMap(options: QuizAnswerOption[]): Map<string, QuizAnswerOption> {
   return new Map(options.map((option) => [option.id, option]));
@@ -76,35 +86,42 @@ function contentOf(options: Map<string, QuizAnswerOption>, id: string | null): s
 function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element {
   const correctId = getCorrectOptionId(question.correctAnswer);
   const submittedId = getSelectedOptionId(question.submittedAnswer);
+  const ordered = [...question.answerOptions].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="flex flex-col gap-2">
-      {[...question.answerOptions]
-        .sort((a, b) => a.order - b.order)
-        .map((option) => {
-          const isCorrect = option.id === correctId;
-          const isSubmitted = option.id === submittedId;
-          const wrongPick = isSubmitted && !isCorrect;
-          return (
-            <div
-              key={option.id}
-              className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-sm ${
+    <div className="flex flex-col">
+      {ordered.map((option, position) => {
+        const isCorrect = option.id === correctId;
+        const wrongPick = option.id === submittedId && !isCorrect;
+
+        return (
+          <div key={option.id} className="flex items-start gap-4 py-2 text-sm">
+            <span
+              aria-hidden="true"
+              className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm ${
                 isCorrect
-                  ? 'border-success/40 bg-success/10 text-text-primary'
+                  ? 'bg-success font-medium text-white'
                   : wrongPick
-                    ? 'border-error/40 bg-error/10 text-text-primary'
-                    : 'border-border text-text-secondary'
+                    ? 'bg-error font-medium text-white'
+                    : 'border-border text-text-muted border'
               }`}
             >
-              <span>
-                <MathText>{option.content}</MathText>
-              </span>
-              {isCorrect && <Badge tone="success">Правильна відповідь</Badge>}
-              {wrongPick && <Badge tone="error">Ваша відповідь</Badge>}
-            </div>
-          );
-        })}
-      {!submittedId && <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>}
+              {LETTERS[position] ?? position + 1}
+            </span>
+            <span
+              className={`pt-0.5 ${isCorrect || wrongPick ? 'text-text-primary' : 'text-text-secondary'}`}
+            >
+              <MathText>{option.content}</MathText>
+            </span>
+            {/* Colour alone is not a signal — it fails for anyone who cannot
+                tell red from green, and it fails on a projector. Each state
+                that matters says what it is. */}
+            {isCorrect && <span className="text-success ml-auto shrink-0 pt-1 text-xs">правильна</span>}
+            {wrongPick && <span className="text-error ml-auto shrink-0 pt-1 text-xs">ваш вибір</span>}
+          </div>
+        );
+      })}
+      {!submittedId && <p className="text-text-muted mt-2 text-xs">Ви не відповіли на це питання.</p>}
     </div>
   );
 }
@@ -154,9 +171,13 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
                 <MathText>{contentOf(options, pair.left)}</MathText>
                 <span className="text-text-muted">→</span>
                 <MathText>{contentOf(options, pair.right)}</MathText>
-                <Badge tone={isPairCorrect ? 'success' : 'error'} className="ml-auto shrink-0">
-                  {isPairCorrect ? 'Правильно' : 'Неправильно'}
-                </Badge>
+                <span
+                  className={`ml-auto shrink-0 text-xs tracking-[0.14em] uppercase ${
+                    isPairCorrect ? 'text-success' : 'text-error'
+                  }`}
+                >
+                  {isPairCorrect ? 'правильно' : 'неправильно'}
+                </span>
               </div>
             );
           })

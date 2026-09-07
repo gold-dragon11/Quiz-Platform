@@ -77,18 +77,23 @@ export function QuizResultPage(): React.JSX.Element {
         </motion.div>
       )}
 
-      <motion.div variants={fadeInUp} className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Button onClick={() => navigate(ROUTES.quiz)}>Спробувати ще раз</Button>
-        <Button variant="secondary" onClick={() => navigate(ROUTES.dashboard)}>
-          На головну
-        </Button>
-        <Button variant="ghost" onClick={() => navigate(ROUTES.statistics)}>
-          Статистика
-        </Button>
-      </motion.div>
-
       <motion.div variants={fadeInUp}>
         <ResultReview questions={result.data.questions} />
+      </motion.div>
+
+      {/* One action, at the end, where somebody who has actually read the
+          review arrives. Three equal buttons above the review asked the reader
+          to choose before they had seen anything — and the first of them said
+          "спробувати ще раз" while opening the form for a different test. */}
+      <motion.div variants={fadeInUp} className="border-border flex flex-wrap gap-6 border-t pt-6">
+        <Button onClick={() => navigate(ROUTES.quiz)}>Пройти ще один тест</Button>
+        <button
+          type="button"
+          onClick={() => navigate(ROUTES.dashboard)}
+          className="text-text-secondary hover:text-text-primary text-sm underline underline-offset-4 transition-colors"
+        >
+          На головну
+        </button>
       </motion.div>
     </motion.div>
   );
@@ -97,13 +102,9 @@ export function QuizResultPage(): React.JSX.Element {
 function ResultSkeleton(): React.JSX.Element {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
-      <Skeleton className="h-48 w-full rounded-xl" />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
-        ))}
-      </div>
-      <Skeleton className="h-40 w-full rounded-xl" />
+      <Skeleton className="h-40 w-full" />
+      <Skeleton className="h-24 w-full" />
+      <Skeleton className="h-64 w-full" />
     </div>
   );
 }

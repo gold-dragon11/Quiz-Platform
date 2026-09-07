@@ -9,10 +9,19 @@ interface SingleChoiceAnswerProps {
 }
 
 /**
+ * Letters, because that is what the exam uses.
+ *
+ * The НМТ paper labels its options А, Б, В, Г — a student reads them, hears
+ * them read out, and writes them on the answer sheet. Numbering them the same
+ * way costs nothing and makes the practice look like the thing it prepares
+ * for; generic radio pills quietly do not.
+ *
  * Single-choice answer input (docs/04-api/quiz.md §6). Accessible radio group;
- * the selected option is highlighted. Emits the chosen option id — the page
- * builds the `{ answerOptionId }` payload and autosaves it.
+ * emits the chosen option id — the page builds the `{ answerOptionId }`
+ * payload and autosaves it.
  */
+const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
+
 export function SingleChoiceAnswer({
   options,
   selectedId,
@@ -22,8 +31,8 @@ export function SingleChoiceAnswer({
   const ordered = [...options].sort((a, b) => a.order - b.order);
 
   return (
-    <div role="radiogroup" aria-label="Варіанти відповіді" className="flex flex-col gap-3">
-      {ordered.map((option) => {
+    <div role="radiogroup" aria-label="Варіанти відповіді" className="divide-border divide-y">
+      {ordered.map((option, position) => {
         const selected = option.id === selectedId;
         return (
           <button
@@ -33,24 +42,22 @@ export function SingleChoiceAnswer({
             aria-checked={selected}
             disabled={disabled}
             onClick={() => onSelect(option.id)}
-            className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 ${
-              selected
-                ? 'border-primary bg-primary/10 text-text-primary'
-                : 'border-border bg-surface hover:border-border-subtle text-text-secondary'
+            className={`focus-visible:ring-primary flex w-full items-start gap-4 py-4 text-left outline-none transition-colors focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+              selected ? '' : 'hover:bg-surface-elevated'
             }`}
           >
             <span
               aria-hidden="true"
-              className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
-                selected ? 'border-primary' : 'border-border-subtle'
+              className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm transition-colors ${
+                selected ? 'bg-primary font-medium text-white' : 'border-border text-text-muted border'
               }`}
             >
-              {selected && <span className="bg-primary size-2.5 rounded-full" />}
+              {LETTERS[position] ?? position + 1}
             </span>
             {option.imageUrl && (
               <img src={option.imageUrl} alt="" className="max-h-16 rounded-md object-contain" />
             )}
-            <span className="text-sm">
+            <span className={`pt-0.5 text-sm ${selected ? 'text-text-primary' : 'text-text-secondary'}`}>
               <MathText>{option.content}</MathText>
             </span>
           </button>

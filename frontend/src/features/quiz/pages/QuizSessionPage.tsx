@@ -15,7 +15,7 @@ import { QuizStatus } from '@/shared/types/enums';
 import { useQuizSession, useSubmitAnswer, useCompleteQuiz } from '@/features/quiz/hooks/use-quiz';
 import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { QuestionCard } from '@/features/quiz/components/QuestionCard';
-import { QuizProgress } from '@/features/quiz/components/QuizProgress';
+import { QuestionStrip } from '@/features/quiz/components/QuestionStrip';
 import { QuizTimer } from '@/features/quiz/components/QuizTimer';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -184,10 +184,15 @@ export function QuizSessionPage(): React.JSX.Element {
   const unanswered = total - answeredCount;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <QuizProgress index={index} total={total} answeredCount={answeredCount} />
+    <div className="mx-auto flex max-w-2xl flex-col gap-8">
+      <div className="flex items-start gap-6">
+        <div className="min-w-0 flex-1">
+          <QuestionStrip
+            total={total}
+            index={index}
+            answered={questions.map((question) => answers[question.id] !== undefined)}
+            onJump={setIndex}
+          />
         </div>
         {meta.timerEnabled && meta.expiresAt && (
           <QuizTimer expiresAt={meta.expiresAt} onExpire={handleComplete} />
@@ -212,7 +217,7 @@ export function QuizSessionPage(): React.JSX.Element {
         </motion.div>
       </AnimatePresence>
 
-      <div className="flex items-center justify-between gap-4">
+      <div className="border-border flex items-center justify-between gap-4 border-t pt-6">
         <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
           Назад
         </Button>
@@ -265,7 +270,7 @@ function SaveIndicator({ status }: { status: SaveStatus }): React.JSX.Element | 
 
 function SessionSkeleton(): React.JSX.Element {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Skeleton className="h-6 w-full" />
       <Card className="flex flex-col gap-5">
         <Skeleton className="h-6 w-3/4" />

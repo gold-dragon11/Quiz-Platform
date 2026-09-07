@@ -1,5 +1,4 @@
 import { QuestionType } from '@/shared/types/enums';
-import { Card } from '@/shared/ui/Card';
 import { MathText } from '@/shared/ui/MathText';
 import type { QuizQuestionView, SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import {
@@ -33,8 +32,10 @@ export function QuestionCard({
   onAnswerChange,
 }: QuestionCardProps): React.JSX.Element {
   return (
-    <Card className="flex flex-col gap-5">
-      <h2 className="text-text-primary text-lg leading-relaxed font-medium whitespace-pre-wrap">
+    // No card: the page is already the container, and a bordered box inside a
+    // bordered page is the visual equivalent of saying everything twice.
+    <div className="flex flex-col gap-6">
+      <h2 className="text-text-primary text-lg leading-relaxed whitespace-pre-wrap">
         <MathText>{question.title}</MathText>
       </h2>
 
@@ -62,6 +63,6 @@ export function QuestionCard({
           a stem with a typo is noticed mid-question, and a learner told to
           finish first would simply never report it. */}
       <ReportQuestionButton questionId={question.id} className="self-start" />
-    </Card>
+    </div>
   );
 }
