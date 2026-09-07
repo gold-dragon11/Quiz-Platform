@@ -1,13 +1,25 @@
 import { motion } from 'framer-motion';
-import { formatNumber, pluralUk } from '@/shared/utils/format';
+import { formatNumber } from '@/shared/utils/format';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { REVEAL_VIEWPORT } from '@/features/landing/constants';
 import type { Catalogue, CatalogueSubject } from '@/features/landing/api/catalogue.api';
 
+/**
+ * The bank, laid out as a table of contents rather than counted in tiles.
+ *
+ * The four tiles this replaced had two problems. The smaller one: «4 предмети»
+ * shouted at the same size as «3308 запитань», advertising the weakest fact as
+ * loudly as the strongest. The larger one: «76 тем» and «76 навчальних
+ * матеріалів» were the *same fact counted twice* — every topic has exactly one
+ * material — and nobody noticed, because tiles are looked at rather than read.
+ *
+ * Topic names can be read and judged: a candidate sees whether what they need
+ * is covered. Four numbers never told them that.
+ */
 export function CatalogueSpread({ catalogue }: { catalogue: Catalogue }): React.JSX.Element {
-  const { subjects, totalQuestions, totalTopics, totalMaterials } = catalogue;
-  const ordered = [...subjects].sort((a, b) => b.questionCount - a.questionCount);
-  const everyTopicCovered = totalMaterials === totalTopics;
+  // Ordered by question count: the strongest subject opens the list, and «4
+  // предмети» never has to be stated as a figure — you can see there are four.
+  const ordered = [...catalogue.subjects].sort((a, b) => b.questionCount - a.questionCount);
 
   return (
     <motion.div
@@ -24,23 +36,6 @@ export function CatalogueSpread({ catalogue }: { catalogue: Catalogue }): React.
           </motion.div>
         ))}
       </dl>
-
-      <motion.p
-        variants={fadeInUp}
-        className="text-text-secondary mt-10 max-w-3xl text-lg leading-relaxed text-balance"
-      >
-        {everyTopicCovered ? (
-          <>
-            До кожної з {formatNumber(totalTopics)} тем — конспект. До кожного з{' '}
-            {formatNumber(totalQuestions)} запитань — написане пояснення, а не просто позначка «правильно».
-          </>
-        ) : (
-          <>
-            {formatNumber(totalQuestions)} запитань у {formatNumber(totalTopics)}{' '}
-            {pluralUk(totalTopics, 'темі', 'темах', 'темах')}, і до кожного — написане пояснення.
-          </>
-        )}
-      </motion.p>
     </motion.div>
   );
 }

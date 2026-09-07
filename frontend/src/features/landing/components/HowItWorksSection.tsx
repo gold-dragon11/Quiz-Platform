@@ -1,6 +1,5 @@
 import { DecorCurves } from '@/features/landing/components/DecorCurves';
 import { QuizRun } from '@/features/landing/components/QuizRun';
-import { SectionHeading } from '@/features/landing/components/SectionHeading';
 import { HOW_IT_WORKS_ID, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
 /**
@@ -12,9 +11,12 @@ import { HOW_IT_WORKS_ID, SECTION_CONTAINER, SECTION_SPACING } from '@/features/
  * not the product.
  *
  * So the section shows the product instead: one run through a test, built
- * from the app's own parts rather than described in words.
+ * from the app's own parts rather than described in words — and with no
+ * heading at all. A caption explaining that this is the real interface would
+ * have been the same mistake in smaller type: if the run does not read as the
+ * product, no sentence above it will fix that.
  *
- * `scroll-mt` keeps the heading clear of the sticky bar when the hero link
+ * `scroll-mt` keeps the run clear of the sticky bar when the hero link
  * scrolls here.
  */
 export function HowItWorksSection(): React.JSX.Element {
@@ -23,11 +25,6 @@ export function HowItWorksSection(): React.JSX.Element {
       <DecorCurves set="a" />
 
       <div className={`${SECTION_CONTAINER} ${SECTION_SPACING} relative`}>
-        <SectionHeading
-          title="Один тест, від початку до кінця"
-          description="Не опис, а сам застосунок: ті самі літери, та сама смуга питань, той самий розбір із поясненням до кожної відповіді."
-        />
-
         <QuizRun />
       </div>
     </section>

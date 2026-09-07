@@ -40,7 +40,7 @@ const MATCHING = {
  * How long each beat holds, in milliseconds. The last one is the pause before
  * the run starts over.
  */
-const STEP_MS = [1600, 1200, 1500, 1200, 1500, 800, 900, 1800, 2200, 4000];
+const STEP_MS = [1600, 1200, 1500, 1200, 1400, 900, 900, 900, 1400, 1800, 2200, 4000];
 const LAST_STEP = STEP_MS.length - 1;
 
 /**
@@ -81,17 +81,20 @@ export function QuizRun(): React.JSX.Element {
     return () => window.clearTimeout(timer);
   }, [step, reduceMotion]);
 
-  // 0-1 question three · 2-3 question four · 4-6 matching · 7 confirm ·
-  // 8-9 result
+  // 0-1 question three · 2-3 question four · 4-8 matching · 9 confirm ·
+  // 10-11 result
   const questionIndex = step >= 2 ? 1 : 0;
-  const onMatching = step >= 4 && step <= 6;
-  const showConfirm = step === 7;
-  const showResult = step >= 8;
+  const onMatching = step >= 4 && step <= 8;
+  const showConfirm = step === 9;
+  const showResult = step >= 10;
+  // One pair at a time. Filling two at once read as a form autocompleting
+  // itself rather than as somebody working through a question.
+  const matchingFilled = onMatching ? Math.min(Math.max(step - 4, 0), 4) : 0;
   const current = showResult ? 5 : onMatching ? 5 : questionIndex === 0 ? 3 : 4;
   const answeredCount = showResult
     ? 5
     : onMatching
-      ? 4 + (step >= 6 ? 1 : 0)
+      ? 4 + (matchingFilled === 4 ? 1 : 0)
       : step >= 3
         ? 4
         : step >= 1
@@ -114,9 +117,9 @@ export function QuizRun(): React.JSX.Element {
 
       <AnimatePresence mode="wait">
         {showResult ? (
-          <Result key="result" showReview={step >= 9} />
+          <Result key="result" showReview={step >= 11} />
         ) : onMatching ? (
-          <Matching key="matching" filled={step >= 5 ? (step >= 6 ? 4 : 2) : 0} />
+          <Matching key="matching" filled={matchingFilled} />
         ) : (
           <SingleChoice
             key={`single-${questionIndex}`}
@@ -279,9 +282,19 @@ function Result({ showReview }: { showReview: boolean }): React.JSX.Element {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Тест пройдено</p>
-      <p className="text-text-primary font-display mt-3 text-6xl leading-none font-bold lining-nums">80%</p>
-      <p className="text-text-secondary mt-3 text-sm">правильних 4 з 5</p>
+      {/* The XP badge sits beside the figure, as it does in the app: the run
+          was missing it entirely, and a result screen without the reward is
+          not the screen the product shows. */}
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div>
+          <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Тест пройдено</p>
+          <p className="text-text-primary font-display mt-3 text-6xl leading-none font-bold lining-nums">
+            80%
+          </p>
+          <p className="text-text-secondary mt-3 text-sm">правильних 4 з 5</p>
+        </div>
+        <span className="bg-primary/15 text-primary rounded-full px-4 py-2 text-sm font-medium">+80 XP</span>
+      </div>
 
       <dl className="border-border mt-8 grid grid-cols-3 border-y">
         {[
