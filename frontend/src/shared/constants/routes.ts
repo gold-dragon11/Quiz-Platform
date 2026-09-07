@@ -20,12 +20,17 @@ export const ROUTES = {
   quizResult: '/quiz/:sessionId/result',
   mockExam: '/mock-exam',
   mistakeReview: '/mistake-review',
+  groups: '/groups',
   duels: '/duels',
   duel: '/duels/:duelId',
   topicMaterial: '/topics/:topicId/material',
   statistics: '/statistics',
   profile: '/profile',
   settings: '/settings',
+
+  // Teacher
+  teacherGroups: '/teacher/groups',
+  teacherGroup: '/teacher/groups/:groupId',
 
   // Administrator
   admin: '/admin',

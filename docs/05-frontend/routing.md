@@ -74,10 +74,21 @@ Authenticated routes require a valid access token.
 | `/mistake-review` | Mistakes due today, on the spaced-repetition ladder |
 | `/duels` | Duels: challenge somebody, and every duel you are in |
 | `/duels/:duelId` | One duel — invitation, paper, wait, or result |
+| `/groups` | The learner's groups; joining by invite code |
 | `/topics/:topicId/material` | Learning material for one topic |
 | `/statistics` | Learning statistics |
 | `/profile` | User profile |
 | `/settings` | User settings |
+
+### Teacher routes
+
+Gated by the `TEACHER` role, which administrators deliberately do not satisfy —
+an administrator owns no groups.
+
+| Route | Purpose |
+|---------|---------|
+| `/teacher/groups` | The teacher's groups; creating one |
+| `/teacher/groups/:groupId` | One group — invite code, roster, rename, archive |
 
 Unauthenticated users are redirected to:
 

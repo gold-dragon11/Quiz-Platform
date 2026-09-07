@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react';
 import { ROUTES } from '@/shared/constants/routes';
+import { UserRole } from '@/shared/types/enums';
 
 export interface NavItem {
   to: string;
   label: string;
   icon: ReactNode;
-  adminOnly?: boolean;
+  /**
+   * Roles this entry is for. Omitted means everyone.
+   *
+   * A list rather than the `adminOnly` flag it replaces: the moment a second
+   * role appeared, booleans would have multiplied one per role and the two
+   * call sites would have had to know about each of them.
+   */
+  roles?: UserRole[];
 }
 
 const ICON = {
@@ -42,6 +50,13 @@ const icons = {
       <path d="M8 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2" />
       <rect x="8" y="2" width="8" height="4" rx="1" />
       <path d="M12 11v3M12 17h.01" />
+    </svg>
+  ),
+  groups: (
+    <svg {...ICON} aria-hidden="true">
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 20a5.5 5.5 0 0 1 11 0" />
+      <path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a5.4 5.4 0 0 0-2.2-4.3" />
     </svg>
   ),
   duels: (
@@ -88,11 +103,18 @@ export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
   { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview },
   { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels },
+  { to: ROUTES.groups, label: 'Мої групи', icon: icons.groups, roles: [UserRole.USER] },
+  {
+    to: ROUTES.teacherGroups,
+    label: 'Групи',
+    icon: icons.groups,
+    roles: [UserRole.TEACHER],
+  },
   { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
   { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
   { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
-  { to: ROUTES.admin, label: 'Адміністрування', icon: icons.admin, adminOnly: true },
+  { to: ROUTES.admin, label: 'Адміністрування', icon: icons.admin, roles: [UserRole.ADMIN] },
 ];
 
 /**
@@ -119,6 +141,8 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/mock-exam')) return 'Пробний НМТ';
   if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
   if (pathname.startsWith('/duels')) return 'Дуелі';
+  if (pathname.startsWith('/teacher/groups')) return 'Групи';
+  if (pathname.startsWith('/groups')) return 'Мої групи';
   if (pathname.startsWith('/statistics')) return 'Статистика';
   if (pathname.startsWith('/profile')) return 'Профіль';
   if (pathname.startsWith('/settings')) return 'Налаштування';
@@ -126,7 +150,7 @@ export function getPageTitle(pathname: string): string {
   return 'L&S';
 }
 
-/** Filters the admin-only items out for non-admins. */
-export function visibleNavItems(items: NavItem[], isAdmin: boolean): NavItem[] {
-  return items.filter((item) => !item.adminOnly || isAdmin);
+/** Keeps the entries this role is allowed to see. */
+export function visibleNavItems(items: NavItem[], role: UserRole | undefined): NavItem[] {
+  return items.filter((item) => !item.roles || (role !== undefined && item.roles.includes(role)));
 }

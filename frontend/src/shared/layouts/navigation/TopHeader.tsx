@@ -1,9 +1,10 @@
+import type { UserRole } from '@/shared/types/enums';
 import { UserMenu } from '@/shared/layouts/navigation/UserMenu';
 
 interface TopHeaderProps {
   title: string;
   onOpenMenu: () => void;
-  isAdmin: boolean;
+  role: UserRole | undefined;
   displayName: string;
   username?: string;
   avatarUrl?: string;
@@ -22,7 +23,7 @@ interface TopHeaderProps {
 export function TopHeader({
   title,
   onOpenMenu,
-  isAdmin,
+  role,
   displayName,
   username,
   avatarUrl,
@@ -53,7 +54,7 @@ export function TopHeader({
         <h1 className="text-text-primary truncate text-lg font-semibold">{title}</h1>
 
         <div className="ml-auto">
-          <UserMenu isAdmin={isAdmin} displayName={displayName} username={username} avatarUrl={avatarUrl} />
+          <UserMenu role={role} displayName={displayName} username={username} avatarUrl={avatarUrl} />
         </div>
       </div>
     </header>

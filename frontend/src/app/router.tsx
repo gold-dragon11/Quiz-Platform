@@ -6,6 +6,7 @@ import { MainLayout } from '@/shared/layouts/MainLayout';
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
 import { RequireAdmin } from '@/shared/guards/RequireAdmin';
+import { RequireTeacher } from '@/shared/guards/RequireTeacher';
 import { PageTransition } from '@/shared/components/PageTransition';
 import { RouteError } from '@/shared/components/RouteError';
 import { ROUTES } from '@/shared/constants/routes';
@@ -22,6 +23,7 @@ import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz'
 import { MockExamPage } from '@/features/mock-exam';
 import { MistakeReviewPage } from '@/features/mistake-review';
 import { DuelPage, DuelsPage } from '@/features/duels';
+import { StudentGroupsPage, TeacherGroupPage, TeacherGroupsPage } from '@/features/groups';
 import { StatisticsPage } from '@/features/statistics';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
@@ -129,6 +131,7 @@ export const router = createBrowserRouter([
                 path: ROUTES.mistakeReview,
                 element: page(<MistakeReviewPage />),
               },
+              { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
               { path: ROUTES.duels, element: page(<DuelsPage />) },
               { path: ROUTES.duel, element: page(<DuelPage />) },
               {
@@ -138,6 +141,22 @@ export const router = createBrowserRouter([
               { path: ROUTES.statistics, element: page(<StatisticsPage />) },
               { path: ROUTES.profile, element: page(<ProfilePage />) },
               { path: ROUTES.settings, element: page(<SettingsPage />) },
+            ],
+          },
+        ],
+      },
+
+      // Teacher routes — same authenticated shell, own role gate. Deliberately
+      // not open to administrators: the backend's @TeacherOnly() refuses them
+      // too, because an administrator owns no groups.
+      {
+        element: <RequireTeacher />,
+        children: [
+          {
+            element: <MainLayout />,
+            children: [
+              { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
+              { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
             ],
           },
         ],

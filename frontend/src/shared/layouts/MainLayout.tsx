@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { UserRole } from '@/shared/types/enums';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { Sidebar } from '@/shared/layouts/navigation/Sidebar';
 import { TopHeader } from '@/shared/layouts/navigation/TopHeader';
@@ -21,7 +20,7 @@ export function MainLayout(): React.JSX.Element {
   const { data: user, isPending } = useCurrentUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const role = user?.role;
   const displayName = user?.profile?.displayName ?? 'Account';
   const username = user?.profile?.username ?? undefined;
   const avatarUrl = user?.avatar?.imageUrl ?? undefined;
@@ -30,7 +29,7 @@ export function MainLayout(): React.JSX.Element {
   return (
     <div className="bg-background text-text-primary flex min-h-screen">
       <Sidebar
-        isAdmin={isAdmin}
+        role={role}
         displayName={displayName}
         username={username}
         avatarUrl={avatarUrl}
@@ -41,7 +40,7 @@ export function MainLayout(): React.JSX.Element {
         <TopHeader
           title={title}
           onOpenMenu={() => setMenuOpen(true)}
-          isAdmin={isAdmin}
+          role={role}
           displayName={displayName}
           username={username}
           avatarUrl={avatarUrl}
@@ -56,7 +55,7 @@ export function MainLayout(): React.JSX.Element {
       <MobileMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        isAdmin={isAdmin}
+        role={role}
         displayName={displayName}
         username={username}
         avatarUrl={avatarUrl}

@@ -7,9 +7,10 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { useLogout } from '@/shared/hooks/use-logout';
 import { NavList } from '@/shared/layouts/navigation/NavList';
 import { NAV_ITEMS, visibleNavItems } from '@/shared/layouts/navigation/nav-items';
+import type { UserRole } from '@/shared/types/enums';
 
 interface SidebarProps {
-  isAdmin: boolean;
+  role: UserRole | undefined;
   displayName: string;
   username?: string;
   avatarUrl?: string;
@@ -18,7 +19,7 @@ interface SidebarProps {
 
 /** Desktop left sidebar: logo, navigation, profile, and logout. */
 export function Sidebar({
-  isAdmin,
+  role,
   displayName,
   username,
   avatarUrl,
@@ -37,7 +38,7 @@ export function Sidebar({
         </Link>
 
         <div className="flex-1 overflow-y-auto">
-          <NavList items={visibleNavItems(NAV_ITEMS, isAdmin)} layoutId="sidebar-active" />
+          <NavList items={visibleNavItems(NAV_ITEMS, role)} layoutId="sidebar-active" />
         </div>
 
         <div className="border-border flex flex-col gap-3 border-t pt-4">
