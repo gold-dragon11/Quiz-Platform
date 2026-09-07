@@ -75,6 +75,8 @@ Authenticated routes require a valid access token.
 | `/duels` | Duels: challenge somebody, and every duel you are in |
 | `/duels/:duelId` | One duel — invitation, paper, wait, or result |
 | `/groups` | The learner's groups; joining by invite code |
+| `/assignments` | Homework across every group |
+| `/assignments/:assignmentId` | One piece of homework — what it is, and starting it |
 | `/topics/:topicId/material` | Learning material for one topic |
 | `/statistics` | Learning statistics |
 | `/profile` | User profile |
@@ -88,7 +90,10 @@ an administrator owns no groups.
 | Route | Purpose |
 |---------|---------|
 | `/teacher/groups` | The teacher's groups; creating one |
-| `/teacher/groups/:groupId` | One group — invite code, roster, rename, archive |
+| `/teacher/groups/:groupId` | One group — invite code, roster, assignments, analytics |
+| `/teacher/groups/:groupId/assignments/new` | Issuing homework |
+| `/teacher/groups/:groupId/students/:studentId` | One learner inside one group |
+| `/teacher/assignments/:assignmentId` | How the work went — submissions and the question breakdown |
 
 Unauthenticated users are redirected to:
 

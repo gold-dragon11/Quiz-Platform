@@ -8,6 +8,12 @@ import { lazy } from 'react';
 export const NewAssignmentPage = lazy(() =>
   import('./pages/NewAssignmentPage').then((m) => ({ default: m.NewAssignmentPage })),
 );
+export const AssignmentReviewPage = lazy(() =>
+  import('./pages/AssignmentReviewPage').then((m) => ({ default: m.AssignmentReviewPage })),
+);
+export const StudentProfilePage = lazy(() =>
+  import('./pages/StudentProfilePage').then((m) => ({ default: m.StudentProfilePage })),
+);
 export const StudentAssignmentsPage = lazy(() =>
   import('./pages/StudentAssignmentsPage').then((m) => ({
     default: m.StudentAssignmentsPage,

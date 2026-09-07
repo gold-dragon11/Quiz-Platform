@@ -24,7 +24,13 @@ import { MockExamPage } from '@/features/mock-exam';
 import { MistakeReviewPage } from '@/features/mistake-review';
 import { DuelPage, DuelsPage } from '@/features/duels';
 import { StudentGroupsPage, TeacherGroupPage, TeacherGroupsPage } from '@/features/groups';
-import { NewAssignmentPage, StudentAssignmentPage, StudentAssignmentsPage } from '@/features/assignments';
+import {
+  AssignmentReviewPage,
+  NewAssignmentPage,
+  StudentAssignmentPage,
+  StudentAssignmentsPage,
+  StudentProfilePage,
+} from '@/features/assignments';
 import { StatisticsPage } from '@/features/statistics';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
@@ -163,6 +169,14 @@ export const router = createBrowserRouter([
               {
                 path: ROUTES.teacherAssignmentNew,
                 element: page(<NewAssignmentPage />),
+              },
+              {
+                path: ROUTES.teacherAssignment,
+                element: page(<AssignmentReviewPage />),
+              },
+              {
+                path: ROUTES.teacherStudent,
+                element: page(<StudentProfilePage />),
               },
             ],
           },

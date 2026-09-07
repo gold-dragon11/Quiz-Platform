@@ -1,4 +1,4 @@
-import { generatePath, useNavigate } from 'react-router-dom';
+import { generatePath, Link, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
@@ -68,10 +68,11 @@ function AssignmentRow({ assignment }: { assignment: TeacherAssignment }): React
   const complete = assignment.submittedCount >= assignment.targetCount;
 
   return (
-    // Not a link yet: the review screen is the next thing to build, and a row
-    // that navigates nowhere is worse than a row that plainly does not.
     <li>
-      <div className="flex items-center justify-between gap-4 py-5 pr-2 pl-1">
+      <Link
+        to={generatePath(ROUTES.teacherAssignment, { assignmentId: assignment.id })}
+        className="hover:bg-surface-elevated flex items-center justify-between gap-4 py-5 pr-2 pl-1 transition-colors"
+      >
         <div className="min-w-0">
           <p className="text-text-primary truncate font-medium">{assignment.title}</p>
           <p className="text-text-muted mt-1 text-xs">
@@ -91,7 +92,7 @@ function AssignmentRow({ assignment }: { assignment: TeacherAssignment }): React
           </p>
           <p className="text-text-muted text-xs">здали</p>
         </div>
-      </div>
+      </Link>
     </li>
   );
 }

@@ -34,6 +34,8 @@ export const ROUTES = {
   teacherGroups: '/teacher/groups',
   teacherGroup: '/teacher/groups/:groupId',
   teacherAssignmentNew: '/teacher/groups/:groupId/assignments/new',
+  teacherAssignment: '/teacher/assignments/:assignmentId',
+  teacherStudent: '/teacher/groups/:groupId/students/:studentId',
 
   // Administrator
   admin: '/admin',

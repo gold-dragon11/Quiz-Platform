@@ -2,6 +2,12 @@ import { apiClient } from '@/lib/api-client';
 import type { Paginated } from '@/shared/types/api';
 import type { QuizSessionMetadata } from '@/features/quiz/types/quiz.types';
 import type {
+  GroupAnalytics,
+  QuestionBreakdownRow,
+  StudentProfile,
+  SubmissionRow,
+} from '@/features/assignments/types/review.types';
+import type {
   CreateAssignmentPayload,
   PickableQuestion,
   StudentAssignment,
@@ -78,6 +84,36 @@ export const pickableQuestionsApi = {
     const { data } = await apiClient.get<Paginated<PickableQuestion>>(`/topics/${topicId}/questions`, {
       params,
     });
+    return data;
+  },
+};
+
+/**
+ * What happened after the work went out (`/teacher/*`, teacher role required).
+ *
+ * Four reads, and they answer four different questions: who handed in, what
+ * the class got wrong, how one learner is doing, and where the group stands.
+ */
+export const teacherReviewApi = {
+  async submissions(assignmentId: string): Promise<SubmissionRow[]> {
+    const { data } = await apiClient.get<SubmissionRow[]>(`/teacher/assignments/${assignmentId}/submissions`);
+    return data;
+  },
+
+  async questionBreakdown(assignmentId: string): Promise<QuestionBreakdownRow[]> {
+    const { data } = await apiClient.get<QuestionBreakdownRow[]>(
+      `/teacher/assignments/${assignmentId}/questions`,
+    );
+    return data;
+  },
+
+  async studentProfile(groupId: string, studentId: string): Promise<StudentProfile> {
+    const { data } = await apiClient.get<StudentProfile>(`/teacher/groups/${groupId}/students/${studentId}`);
+    return data;
+  },
+
+  async groupAnalytics(groupId: string): Promise<GroupAnalytics> {
+    const { data } = await apiClient.get<GroupAnalytics>(`/teacher/groups/${groupId}/analytics`);
     return data;
   },
 };

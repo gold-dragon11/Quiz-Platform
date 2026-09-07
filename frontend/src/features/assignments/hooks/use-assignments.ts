@@ -3,6 +3,7 @@ import {
   pickableQuestionsApi,
   studentAssignmentsApi,
   teacherAssignmentsApi,
+  teacherReviewApi,
 } from '@/features/assignments/api/assignments.api';
 import type { CreateAssignmentPayload } from '@/features/assignments/types/assignment.types';
 import { QUIZ_QUERY_KEYS } from '@/features/quiz/hooks/use-quiz';
@@ -13,6 +14,10 @@ export const ASSIGNMENT_QUERY_KEYS = {
   student: ['assignments', 'student'] as const,
   studentOne: (assignmentId: string) => ['assignments', 'student', assignmentId] as const,
   pickable: (topicId: string, page: number) => ['assignments', 'pickable', topicId, page] as const,
+  submissions: (assignmentId: string) => ['review', 'submissions', assignmentId] as const,
+  breakdown: (assignmentId: string) => ['review', 'breakdown', assignmentId] as const,
+  studentProfile: (groupId: string, studentId: string) => ['review', 'student', groupId, studentId] as const,
+  analytics: (groupId: string) => ['review', 'analytics', groupId] as const,
 };
 
 // ------------------------------------------------------------------ teacher
@@ -41,6 +46,43 @@ export function usePickableQuestions(topicId: string | undefined, page: number) 
     queryFn: () => pickableQuestionsApi.listForTopic(topicId as string, { page, pageSize: 20 }),
     enabled: Boolean(topicId),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useTeacherAssignment(assignmentId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.teacherOne(assignmentId),
+    queryFn: () => teacherAssignmentsApi.findOne(assignmentId),
+    retry: false,
+  });
+}
+
+export function useSubmissions(assignmentId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.submissions(assignmentId),
+    queryFn: () => teacherReviewApi.submissions(assignmentId),
+  });
+}
+
+export function useQuestionBreakdown(assignmentId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.breakdown(assignmentId),
+    queryFn: () => teacherReviewApi.questionBreakdown(assignmentId),
+  });
+}
+
+export function useStudentProfile(groupId: string, studentId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.studentProfile(groupId, studentId),
+    queryFn: () => teacherReviewApi.studentProfile(groupId, studentId),
+    retry: false,
+  });
+}
+
+export function useGroupAnalytics(groupId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.analytics(groupId),
+    queryFn: () => teacherReviewApi.groupAnalytics(groupId),
   });
 }
 
