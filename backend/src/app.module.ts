@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { CatalogueModule } from './catalogue/catalogue.module';
 import { LocalizedThrottlerGuard } from './common/guards/localized-throttler.guard';
 import { AppConfigModule } from './config/config.module';
 import { AppConfig } from './config/configuration';
@@ -48,6 +49,7 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     HealthModule,
     AuthModule,
+    CatalogueModule,
     SubjectsModule,
     TopicsModule,
     QuestionsModule,
