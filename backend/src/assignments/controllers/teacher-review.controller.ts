@@ -5,6 +5,7 @@ import { ReviewService } from '../services/review.service';
 import {
   GroupAnalytics,
   QuestionBreakdownRow,
+  StudentPerformanceRow,
   StudentProfile,
   SubmissionRow,
 } from '../types/review.types';
@@ -64,6 +65,19 @@ export class TeacherReviewController {
    * GET /api/v1/teacher/groups/:groupId/analytics — the group's weakest topics,
    * worst first. This is the list the MISTAKES selection mode draws from.
    */
+  /**
+   * GET /api/v1/teacher/groups/:groupId/performance — the roster with each
+   * student's standing. One call for the whole group; the per-student page
+   * stays at /groups/:groupId/students/:studentId for the detail.
+   */
+  @Get('groups/:groupId/performance')
+  async performance(
+    @CurrentUser('id') teacherId: string,
+    @Param('groupId', ParseUUIDPipe) groupId: string,
+  ): Promise<StudentPerformanceRow[]> {
+    return this.reviewService.groupPerformance(teacherId, groupId);
+  }
+
   @Get('groups/:groupId/analytics')
   async analytics(
     @CurrentUser('id') teacherId: string,

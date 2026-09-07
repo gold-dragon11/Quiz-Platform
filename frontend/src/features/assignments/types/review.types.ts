@@ -84,6 +84,25 @@ export interface StudentProfile {
   selfStudy: SelfStudySummary;
 }
 
+/**
+ * One student's standing inside one group, as the roster shows it.
+ *
+ * The same counts the per-student page reports, computed in one batch for the
+ * whole group. A teacher comparing the two must not find different numbers.
+ */
+export interface StudentPerformanceRow {
+  student: {
+    id: string;
+    displayName: string | null;
+    username: string | null;
+    joinedAt: string;
+  };
+  assignmentsIssued: number;
+  assignmentsSubmitted: number;
+  assignmentsLate: number;
+  overallAccuracy: number | null;
+}
+
 /** The group as a whole. */
 export interface GroupAnalytics {
   studentCount: number;

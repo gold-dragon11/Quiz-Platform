@@ -574,6 +574,134 @@ describe('Teacher review (e2e)', () => {
     });
   });
 
+  describe('group performance', () => {
+    interface PerformanceRow {
+      student: {
+        id: string;
+        displayName: string | null;
+        username: string | null;
+      };
+      assignmentsIssued: number;
+      assignmentsSubmitted: number;
+      assignmentsLate: number;
+      overallAccuracy: number | null;
+    }
+
+    const performance = (groupId: string, token = teacher) =>
+      request(app.getHttpServer())
+        .get(`/api/v1/teacher/groups/${groupId}/performance`)
+        .set('Authorization', `Bearer ${token}`);
+
+    it('agrees with the per-student page, number for number', async () => {
+      const group = await makeGroup();
+      await join(studentA, group.inviteCode);
+
+      const easy = await issue(group.id, easyQuestionIds.slice(0, 2));
+      await doAssignment(studentA, easy, 2);
+      const hard = await issue(group.id, hardQuestionIds.slice(0, 2));
+      await doAssignment(studentA, hard, 0);
+      await issue(group.id, easyQuestionIds.slice(2, 4));
+
+      const [roster, profile] = await Promise.all([
+        performance(group.id).expect(200),
+        request(app.getHttpServer())
+          .get(`/api/v1/teacher/groups/${group.id}/students/${studentAId}`)
+          .set('Authorization', `Bearer ${teacher}`)
+          .expect(200),
+      ]);
+
+      const row = (roster.body as PerformanceRow[]).find(
+        (one) => one.student.id === studentAId,
+      );
+      const detail = profile.body as ProfileBody;
+
+      // The two are computed by different code paths — one batched over the
+      // whole group, one per student. A teacher who found 3/4 on the roster
+      // and 2/4 on the student's page would stop believing both.
+      expect(row).toBeDefined();
+      expect(row?.assignmentsIssued).toBe(detail.assignmentsIssued);
+      expect(row?.assignmentsSubmitted).toBe(detail.assignmentsSubmitted);
+      expect(row?.overallAccuracy).toBe(detail.overallAccuracy);
+    });
+
+    it('counts a twice-attempted assignment as one submission, not two', async () => {
+      const group = await makeGroup();
+      await join(studentA, group.inviteCode);
+
+      const twice = await issue(group.id, easyQuestionIds.slice(0, 2), {
+        attemptsAllowed: 2,
+      });
+      await doAssignment(studentA, twice, 1);
+      await doAssignment(studentA, twice, 2);
+
+      const response = await performance(group.id).expect(200);
+      const row = (response.body as PerformanceRow[]).find(
+        (one) => one.student.id === studentAId,
+      );
+
+      // Two runs at one piece of work is one piece of work handed in. Counting
+      // runs would let a student "submit" 3/1 by retrying, and the roster
+      // would disagree with the submitted count on the group page.
+      expect(row?.assignmentsIssued).toBe(1);
+      expect(row?.assignmentsSubmitted).toBe(1);
+    });
+
+    it('gives a student who was issued nothing a clean zero, not a null row', async () => {
+      const group = await makeGroup();
+      await join(studentA, group.inviteCode);
+      await join(studentB, group.inviteCode);
+
+      // Issued to A only: B is on the roster but owes nothing.
+      const only = await issue(group.id, easyQuestionIds.slice(0, 2), {
+        studentIds: [studentAId],
+      });
+      await doAssignment(studentA, only, 2);
+
+      const response = await performance(group.id).expect(200);
+      const rows = response.body as PerformanceRow[];
+      const b = rows.find((one) => one.student.id === studentBId);
+
+      expect(rows).toHaveLength(2);
+      expect(b?.assignmentsIssued).toBe(0);
+      expect(b?.assignmentsSubmitted).toBe(0);
+      expect(b?.overallAccuracy).toBeNull();
+    });
+
+    it('leaves a departed student off the register', async () => {
+      const group = await makeGroup();
+      await join(studentA, group.inviteCode);
+      await join(studentB, group.inviteCode);
+
+      const work = await issue(group.id, easyQuestionIds.slice(0, 2));
+      await doAssignment(studentB, work, 2);
+
+      await request(app.getHttpServer())
+        .delete(`/api/v1/groups/${group.id}/membership`)
+        .set('Authorization', `Bearer ${studentB}`)
+        .expect(204);
+
+      const response = await performance(group.id).expect(200);
+      const ids = (response.body as PerformanceRow[]).map(
+        (one) => one.student.id,
+      );
+
+      // Their submitted work still counts on the assignment review — it just
+      // is not on the roster any more, and this list sits beside the roster.
+      expect(ids).toContain(studentAId);
+      expect(ids).not.toContain(studentBId);
+    });
+
+    it('is closed to another teacher', async () => {
+      const group = await makeGroup();
+      await performance(group.id, otherTeacher).expect(404);
+    });
+
+    it('refuses a student outright', async () => {
+      const group = await makeGroup();
+      await performance(group.id, studentA).expect(403);
+    });
+  });
+
   describe('assignments from the group mistakes', () => {
     it('draws from the topics the group is weakest in', async () => {
       const group = await makeGroup();

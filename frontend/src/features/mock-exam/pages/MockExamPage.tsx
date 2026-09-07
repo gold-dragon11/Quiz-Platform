@@ -8,6 +8,8 @@ import { Select, type SelectOption } from '@/shared/ui/Select';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
+import { UserRole } from '@/shared/types/enums';
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { useSubjects } from '@/features/quiz/hooks/use-content';
 import { AttemptHistory } from '@/features/mock-exam/components/AttemptHistory';
 import { MockExamBrief } from '@/features/mock-exam/components/MockExamBrief';
@@ -29,6 +31,7 @@ export function MockExamPage(): React.JSX.Element {
   const navigate = useNavigate();
   const subjects = useSubjects();
   const startMockExam = useStartMockExam();
+  const { data: user } = useCurrentUser();
   const [subjectId, setSubjectId] = useState('');
 
   const options: SelectOption[] = [
@@ -98,15 +101,20 @@ export function MockExamPage(): React.JSX.Element {
 
       {subjectId && <MockExamBrief subjectId={subjectId} className="mt-12" />}
 
-      <section className="mt-20">
-        <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-          Ваші спроби
-        </h2>
-        <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-          Пробна робота показує рух, а не бал: офіційної таблиці переведення платформа не вигадує.
-        </p>
-        <AttemptHistory subjectId={subjectId || undefined} className="mt-8" />
-      </section>
+      {/* A teacher may sit a mock to see what the work actually is, but their
+          own attempt history is not their progress to track — their statistics
+          screen is about their groups. */}
+      {user?.role !== UserRole.TEACHER && (
+        <section className="mt-20">
+          <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
+            Ваші спроби
+          </h2>
+          <p className="text-text-secondary mt-4 max-w-2xl text-sm">
+            Пробна робота показує рух, а не бал: офіційної таблиці переведення платформа не вигадує.
+          </p>
+          <AttemptHistory subjectId={subjectId || undefined} className="mt-8" />
+        </section>
+      )}
     </div>
   );
 }

@@ -9,13 +9,16 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { formatShortDate } from '@/shared/utils/format';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { GroupAnalyticsSection } from '@/features/assignments/components/GroupAnalytics';
+import { GroupRoster } from '@/features/assignments/components/GroupRoster';
 import { GroupAssignments } from '@/features/assignments/components/GroupAssignments';
 import { InviteCode } from '@/features/groups/components/InviteCode';
-import { useGroupActions, useGroupRoster, useTeacherGroup } from '@/features/groups/hooks/use-groups';
-import type { GroupStudent, TeacherGroup } from '@/features/groups/types/group.types';
+import { useGroupActions, useTeacherGroup } from '@/features/groups/hooks/use-groups';
+import type { TeacherGroup } from '@/features/groups/types/group.types';
+
+/** What the removal dialog needs: who, by name. */
+type RemovableStudent = { id: string; displayName: string | null; username: string | null };
 
 /**
  * `/teacher/groups/:groupId` (RequireTeacher) — one group: its code, its
@@ -54,13 +57,12 @@ export function TeacherGroupPage(): React.JSX.Element {
 
 function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
   const navigate = useNavigate();
-  const roster = useGroupRoster(group.id);
   const actions = useGroupActions(group.id);
 
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(group.name);
   const [archiving, setArchiving] = useState(false);
-  const [removing, setRemoving] = useState<GroupStudent | null>(null);
+  const [removing, setRemoving] = useState<RemovableStudent | null>(null);
 
   const archived = group.archivedAt !== null;
 
@@ -145,39 +147,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
 
       <section className="mt-16">
         <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Учні</h2>
-
-        {roster.isPending ? (
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-16" />
-            <Skeleton className="h-16" />
-          </div>
-        ) : roster.isError ? (
-          <Alert variant="error">Не вдалося завантажити список учнів.</Alert>
-        ) : roster.data.length === 0 ? (
-          <EmptyState
-            title="У групі поки нікого"
-            description="Поділіться кодом запрошення — щойно хтось увійде, він зʼявиться тут."
-          />
-        ) : (
-          <ul className="divide-border border-border divide-y border-t">
-            {roster.data.map((student) => (
-              <li key={student.id} className="flex items-center justify-between gap-4 py-4">
-                <div className="min-w-0">
-                  <p className="text-text-primary truncate font-medium">
-                    {student.displayName ?? student.username ?? '—'}
-                  </p>
-                  <p className="text-text-muted mt-1 text-xs">
-                    {student.username && `@${student.username} · `}
-                    приєднався {formatShortDate(student.joinedAt)}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setRemoving(student)}>
-                  Прибрати
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <GroupRoster groupId={group.id} onRemove={setRemoving} />
       </section>
 
       <GroupAssignments groupId={group.id} archived={archived} />

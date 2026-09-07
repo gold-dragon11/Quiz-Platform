@@ -58,6 +58,9 @@ export function useGroupActions(groupId: string) {
   const queryClient = useQueryClient();
   const refresh = (): void => {
     void queryClient.invalidateQueries({ queryKey: GROUP_QUERY_KEYS.teacher });
+    // The roster now shows each student's standing, and that lives under the
+    // review keys — removing somebody has to drop them from both.
+    void queryClient.invalidateQueries({ queryKey: ['review'] });
   };
 
   return {

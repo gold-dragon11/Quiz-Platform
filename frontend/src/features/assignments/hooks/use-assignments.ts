@@ -18,6 +18,7 @@ export const ASSIGNMENT_QUERY_KEYS = {
   breakdown: (assignmentId: string) => ['review', 'breakdown', assignmentId] as const,
   studentProfile: (groupId: string, studentId: string) => ['review', 'student', groupId, studentId] as const,
   analytics: (groupId: string) => ['review', 'analytics', groupId] as const,
+  performance: (groupId: string) => ['review', 'performance', groupId] as const,
 };
 
 // ------------------------------------------------------------------ teacher
@@ -76,6 +77,13 @@ export function useStudentProfile(groupId: string, studentId: string) {
     queryKey: ASSIGNMENT_QUERY_KEYS.studentProfile(groupId, studentId),
     queryFn: () => teacherReviewApi.studentProfile(groupId, studentId),
     retry: false,
+  });
+}
+
+export function useGroupPerformance(groupId: string) {
+  return useQuery({
+    queryKey: ASSIGNMENT_QUERY_KEYS.performance(groupId),
+    queryFn: () => teacherReviewApi.groupPerformance(groupId),
   });
 }
 

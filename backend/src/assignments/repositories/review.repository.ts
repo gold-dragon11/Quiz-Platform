@@ -335,4 +335,30 @@ export class ReviewRepository {
       select: { id: true, dueAt: true },
     });
   }
+
+  /**
+   * Every assignment in the group with the students it was issued to.
+   *
+   * One query for the whole group rather than one per student: the roster view
+   * needs the same three counts for everybody, and asking per student turned a
+   * class of thirty into thirty round trips.
+   */
+  async assignmentsWithTargets(
+    groupId: string,
+  ): Promise<{ id: string; dueAt: Date; studentIds: string[] }[]> {
+    const rows = await this.prisma.assignment.findMany({
+      where: { groupId },
+      select: {
+        id: true,
+        dueAt: true,
+        targets: { select: { studentId: true } },
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      dueAt: row.dueAt,
+      studentIds: row.targets.map((target) => target.studentId),
+    }));
+  }
 }

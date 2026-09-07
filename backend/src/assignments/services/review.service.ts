@@ -11,6 +11,7 @@ import {
   GroupAnalytics,
   QuestionBreakdownRow,
   SelfStudySummary,
+  StudentPerformanceRow,
   StudentProfile,
   SubmissionRow,
   TopicPerformance,
@@ -338,6 +339,71 @@ export class ReviewService {
   }
 
   /** Worst accuracy first, and ties broken by volume so noise sinks. */
+  /**
+   * The roster with each student's standing, for the group page.
+   *
+   * Built from three queries for the whole group rather than the per-student
+   * profile repeated N times: same numbers, one round trip instead of thirty.
+   * The two must agree — a teacher who sees 3/4 here and 2/4 on the student's
+   * own page stops believing both — so the counting rules are the ones
+   * `studentProfile` uses, including "late is per assignment, not per run".
+   *
+   * Open memberships only, matching the roster it is drawn beside. Somebody
+   * who left keeps their submitted work, and it still counts on the assignment
+   * review; they simply are not on the register any more.
+   */
+  async groupPerformance(
+    teacherId: string,
+    groupId: string,
+  ): Promise<StudentPerformanceRow[]> {
+    await this.requireOwnedGroup(teacherId, groupId);
+
+    const [members, assignments] = await Promise.all([
+      this.groupsRepository.listOpenMembers(groupId),
+      this.reviewRepository.assignmentsWithTargets(groupId),
+    ]);
+
+    const assignmentIds = assignments.map((one) => one.id);
+    const dueByAssignment = new Map(
+      assignments.map((one) => [one.id, one.dueAt]),
+    );
+
+    const [runs, attempts] = await Promise.all([
+      this.reviewRepository.completedRuns(assignmentIds),
+      this.reviewRepository.attempts(assignmentIds),
+    ]);
+
+    return members.map((member) => {
+      const studentId = member.student.id;
+      const issued = assignments.filter((one) =>
+        one.studentIds.includes(studentId),
+      );
+      // Filtering by student is enough: `start` refuses an assignment the
+      // student is not a target of, and the target list is frozen at issue, so
+      // a completed run implies they were given the work.
+      const mine = runs.filter((run) => run.studentId === studentId);
+      const late = mine.filter((run) => {
+        const dueAt = dueByAssignment.get(run.assignmentId);
+        return dueAt ? run.completedAt.getTime() > dueAt.getTime() : false;
+      });
+
+      return {
+        student: {
+          id: studentId,
+          displayName: member.student.profile?.displayName ?? null,
+          username: member.student.profile?.username ?? null,
+          joinedAt: member.joinedAt,
+        },
+        assignmentsIssued: issued.length,
+        assignmentsSubmitted: new Set(mine.map((run) => run.assignmentId)).size,
+        assignmentsLate: new Set(late.map((run) => run.assignmentId)).size,
+        overallAccuracy: this.accuracyOf(
+          attempts.filter((attempt) => attempt.studentId === studentId),
+        ),
+      };
+    });
+  }
+
   private topicPerformance(attempts: AttemptRow[]): TopicPerformance[] {
     const byTopic = new Map<string, TopicPerformance>();
 

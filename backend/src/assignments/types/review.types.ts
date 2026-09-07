@@ -79,6 +79,27 @@ export interface StudentProfile {
   selfStudy: SelfStudySummary;
 }
 
+/**
+ * One student's standing inside one group, as the roster shows it.
+ *
+ * The same three counts and the same accuracy as StudentProfile — deliberately
+ * so, because a teacher comparing the roster with a student's own page must
+ * not find two different numbers. What it leaves out is what needs a page of
+ * its own: weakest topics and the self-study summary.
+ */
+export interface StudentPerformanceRow {
+  student: {
+    id: string;
+    displayName: string | null;
+    username: string | null;
+    joinedAt: Date;
+  };
+  assignmentsIssued: number;
+  assignmentsSubmitted: number;
+  assignmentsLate: number;
+  overallAccuracy: number | null;
+}
+
 /** The group as a whole. */
 export interface GroupAnalytics {
   studentCount: number;

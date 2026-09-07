@@ -4,6 +4,7 @@ import type { QuizSessionMetadata } from '@/features/quiz/types/quiz.types';
 import type {
   GroupAnalytics,
   QuestionBreakdownRow,
+  StudentPerformanceRow,
   StudentProfile,
   SubmissionRow,
 } from '@/features/assignments/types/review.types';
@@ -109,6 +110,12 @@ export const teacherReviewApi = {
 
   async studentProfile(groupId: string, studentId: string): Promise<StudentProfile> {
     const { data } = await apiClient.get<StudentProfile>(`/teacher/groups/${groupId}/students/${studentId}`);
+    return data;
+  },
+
+  /** The roster with each student's standing — one call for the whole group. */
+  async groupPerformance(groupId: string): Promise<StudentPerformanceRow[]> {
+    const { data } = await apiClient.get<StudentPerformanceRow[]>(`/teacher/groups/${groupId}/performance`);
     return data;
   },
 
