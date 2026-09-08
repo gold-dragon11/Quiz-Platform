@@ -30,6 +30,25 @@ export interface SubjectStatistics {
 }
 
 /**
+ * GET /statistics/topics — one topic's aggregated statistics (§6).
+ *
+ * Counts only sessions that targeted this topic: a subject-wide quiz has no
+ * `topicId`, so none of its answers land here. A reader who only ever takes
+ * subject-wide quizzes therefore gets an empty list from this endpoint, which
+ * is why the topics section reads mistakes alongside it rather than alone.
+ */
+export interface TopicStatistics {
+  topicId: string;
+  topicName: string;
+  subjectId: string;
+  subjectName: string;
+  completedQuizzes: number;
+  totalQuestions: number;
+  averageAccuracy: string;
+  earnedXP: number;
+}
+
+/**
  * GET /statistics/mistakes item — one topic with unresolved mistakes (§8a).
  * `mistakeCount` counts questions whose *most recent* answer was wrong, so it
  * is exactly the size of a practice quiz over that topic.

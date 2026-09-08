@@ -1,18 +1,15 @@
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { fadeInUp, staggerContainer, staggerDense } from '@/shared/constants/motion';
-import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
+import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { pluralUk } from '@/shared/utils/format';
 import { useAllSubjectTopics, useSubjects } from '@/features/subjects/hooks/use-subjects';
-import { SubjectsHero } from '@/features/subjects/components/SubjectsHero';
-import { SubjectCard } from '@/features/subjects/components/SubjectCard';
+import { SubjectEntry } from '@/features/subjects/components/SubjectEntry';
 import { SubjectTopicsView } from '@/features/subjects/components/SubjectTopicsView';
 import { SectionError } from '@/features/subjects/components/SectionError';
+import type { PublicTopic } from '@/features/subjects/types/subjects.types';
 
 /** Query parameter holding the opened subject's slug. */
 const SUBJECT_PARAM = 'subject';
@@ -21,7 +18,17 @@ const SUBJECT_PARAM = 'subject';
  * `/subjects` (RequireAuth). The learning hub, as a two-step drill-down:
  * browse every subject, open one to see its topics, and start a quiz —
  * subject-wide or per topic — through the existing Quiz Start flow, prefilled
- * via query params. Search is client-side over subject and topic names.
+ * via query params.
+ *
+ * The list is a table of contents, not a grid of cards. A card per subject
+ * gave four equal boxes whose only content was a name, a coloured initial and
+ * «18 тем» — the reader could not tell from it whether what they needed was
+ * covered. Printing the topic names is the whole answer, and it costs no extra
+ * request: the browser already loads every subject's topics to power search.
+ *
+ * Search filters subjects, and inside a matched subject it narrows the printed
+ * topics to the ones that matched, so a hit on «Вектори» shows *why* Математика
+ * is still on screen instead of leaving the reader to guess.
  *
  * The opened subject lives in the URL (`?subject=<slug>`) rather than in
  * component state, so the browser's own back control and a phone's back
@@ -50,24 +57,35 @@ export function SubjectsBrowserPage(): React.JSX.Element {
   }, [subjectIds, topicQueries]);
 
   const normalizedQuery = query.trim().toLowerCase();
-  const filtered = useMemo(
-    () =>
-      subjectList.filter((subject) => {
-        if (!normalizedQuery) {
-          return true;
-        }
-        if (subject.name.toLowerCase().includes(normalizedQuery)) {
-          return true;
-        }
-        const topics = topicsById.get(subject.id)?.data ?? [];
-        return topics.some((topic) => topic.name.toLowerCase().includes(normalizedQuery));
-      }),
-    [subjectList, normalizedQuery, topicsById],
-  );
 
-  const openedSubject = openedSlug
-    ? (subjectList.find((subject) => subject.slug === openedSlug) ?? null)
-    : null;
+  /**
+   * Each surviving subject carries the topics worth printing for it: all of
+   * them normally, and only the matching ones when the subject itself did not
+   * match the query by name.
+   */
+  const entries = useMemo(() => {
+    return subjectList
+      .map((subject) => {
+        const topics: PublicTopic[] = topicsById.get(subject.id)?.data ?? [];
+        const topicsPending = topicsById.get(subject.id)?.isPending ?? false;
+
+        if (!normalizedQuery) {
+          return { subject, topics, shownTopics: topics, topicsPending, matched: true };
+        }
+
+        const nameMatches = subject.name.toLowerCase().includes(normalizedQuery);
+        const matchingTopics = topics.filter((topic) => topic.name.toLowerCase().includes(normalizedQuery));
+
+        return {
+          subject,
+          topics,
+          shownTopics: nameMatches ? topics : matchingTopics,
+          topicsPending,
+          matched: nameMatches || matchingTopics.length > 0,
+        };
+      })
+      .filter((entry) => entry.matched);
+  }, [subjectList, normalizedQuery, topicsById]);
 
   const openSubject = (slug: string): void => {
     setSearchParams((params) => {
@@ -91,11 +109,15 @@ export function SubjectsBrowserPage(): React.JSX.Element {
     navigate({ pathname: ROUTES.quiz, search: `?${params.toString()}` });
   };
 
+  const openedSubject = openedSlug
+    ? (subjectList.find((subject) => subject.slug === openedSlug) ?? null)
+    : null;
+
   // A slug that matches nothing — an edited URL, or a subject unpublished
   // since the link was made — falls back to the list rather than an error.
   if (openedSubject) {
     return (
-      <div className="mx-auto w-full max-w-6xl">
+      <div className="mx-auto w-full max-w-4xl">
         <SubjectTopicsView
           subject={openedSubject}
           topics={topicsById.get(openedSubject.id)}
@@ -107,84 +129,79 @@ export function SubjectsBrowserPage(): React.JSX.Element {
   }
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-      className="mx-auto flex w-full max-w-6xl flex-col gap-8"
-    >
-      <motion.div variants={fadeInUp}>
-        <SubjectsHero />
-      </motion.div>
+    <div className="mx-auto w-full max-w-4xl">
+      <PageHeader
+        eyebrow="Каталог"
+        title="Предмети"
+        lead="Усе, що можна вчити. Оберіть предмет, щоб відкрити його теми, конспекти й тести."
+      />
 
-      <motion.div variants={fadeInUp}>
+      <div className="mt-10 max-w-md">
         <Input
           type="search"
           aria-label="Пошук предметів і тем"
-          placeholder="Пошук предметів і тем…"
+          placeholder="Пошук за назвою предмета або теми…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-      </motion.div>
+      </div>
 
-      <motion.div variants={fadeInUp}>
+      <div className="mt-10">
         {subjects.isPending ? (
-          <SubjectsGridSkeleton />
+          <ListSkeleton />
         ) : subjects.isError ? (
-          <Card>
-            <SectionError onRetry={() => void subjects.refetch()} />
-          </Card>
+          <SectionError onRetry={() => void subjects.refetch()} />
         ) : subjectList.length === 0 ? (
-          <Card>
-            <EmptyState
-              title="Предметів поки немає"
-              description="Опублікованих предметів поки немає. Зазирніть трохи згодом."
-            />
-          </Card>
-        ) : filtered.length === 0 ? (
-          <Card>
-            <EmptyState
-              title="Нічого не знайдено"
-              description={`За запитом «${query.trim()}» нічого не знайдено. Спробуйте інший.`}
-              action={
-                <Button variant="secondary" size="sm" onClick={() => setQuery('')}>
-                  Очистити пошук
-                </Button>
-              }
-            />
-          </Card>
+          <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
+            Опублікованих предметів поки немає. Зазирніть трохи згодом.
+          </p>
+        ) : entries.length === 0 ? (
+          <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
+            За запитом «{query.trim()}» не знайшлося ні предмета, ні теми.{' '}
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="text-primary underline underline-offset-4"
+            >
+              Показати всі
+            </button>
+          </p>
         ) : (
-          <motion.div
-            variants={staggerDense}
-            initial="initial"
-            animate="animate"
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {filtered.map((subject) => {
-              const topics = topicsById.get(subject.id);
-              return (
-                <motion.div key={subject.id} variants={fadeInUp}>
-                  <SubjectCard
-                    subject={subject}
-                    topicCount={topics?.data?.length ?? null}
-                    topicsLoading={topics?.isPending ?? false}
-                    onSelect={() => openSubject(subject.slug)}
-                  />
-                </motion.div>
-              );
-            })}
-          </motion.div>
+          <>
+            <ul className="border-border border-t">
+              {entries.map((entry) => (
+                <SubjectEntry
+                  key={entry.subject.id}
+                  subject={entry.subject}
+                  topics={entry.shownTopics}
+                  topicCount={entry.topics.length}
+                  topicsPending={entry.topicsPending}
+                  filtered={normalizedQuery.length > 0 && entry.shownTopics.length < entry.topics.length}
+                  onOpen={() => openSubject(entry.subject.slug)}
+                />
+              ))}
+            </ul>
+
+            {normalizedQuery && (
+              <p className="text-text-muted mt-6 text-sm">
+                Знайдено {entries.length} {pluralUk(entries.length, 'предмет', 'предмети', 'предметів')}.
+              </p>
+            )}
+          </>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
-function SubjectsGridSkeleton(): React.JSX.Element {
+function ListSkeleton(): React.JSX.Element {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Skeleton key={i} className="h-36 rounded-xl" />
+    <div className="border-border flex flex-col border-t">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="border-border flex flex-col gap-3 border-b py-8">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-full max-w-2xl" />
+        </div>
       ))}
     </div>
   );

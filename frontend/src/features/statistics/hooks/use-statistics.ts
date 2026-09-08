@@ -14,6 +14,7 @@ const RECENT_PAGE_SIZE = 10;
 export const STATISTICS_QUERY_KEYS = {
   overall: ['statistics', 'overall'] as const,
   subjects: ['statistics', 'subjects'] as const,
+  topics: ['statistics', 'topics'] as const,
   recent: (pageSize: number) => ['statistics', 'recent', { pageSize }] as const,
   mistakes: ['statistics', 'mistakes'] as const,
 };
@@ -30,6 +31,19 @@ export function useSubjectStatistics() {
   return useQuery({
     queryKey: STATISTICS_QUERY_KEYS.subjects,
     queryFn: () => statisticsApi.getSubjects(),
+    staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Per-topic accuracy. Read together with `useMistakes` by the topics section:
+ * neither list is a superset of the other, because this one sees only quizzes
+ * that targeted a topic while mistakes are counted from the answers themselves.
+ */
+export function useTopicStatistics() {
+  return useQuery({
+    queryKey: STATISTICS_QUERY_KEYS.topics,
+    queryFn: () => statisticsApi.getTopics(),
     staleTime: 30 * 1000,
   });
 }
