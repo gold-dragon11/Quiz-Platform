@@ -113,7 +113,7 @@ export function RegisterPage(): React.JSX.Element {
   return (
     <AuthCard
       title="Створення акаунта"
-      subtitle="Почни навчатися з L&S"
+      subtitle="Безкоштовно. Далі — лист на пошту, і можна проходити тести."
       footer={
         <p>
           Уже маєте акаунт?{' '}
