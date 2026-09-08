@@ -114,7 +114,7 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
   }
 
   if (items.length === 0) {
-    return <NothingDue />;
+    return <NothingDue scheduled={review.data?.scheduled ?? 0} />;
   }
 
   return (
@@ -141,10 +141,17 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
 
 /**
  * An empty list here is the good outcome, so it does not apologise. It names
- * the two things worth doing when nothing is owed — and neither of them is a
- * number to admire.
+ * the things worth doing when nothing is owed — and none of them is a number
+ * to admire.
+ *
+ * Mistakes still on the ladder but not yet due lead the suggestions when there
+ * are any. The wording above is accurate — nothing is due *by the schedule* —
+ * but a reader with a dozen unfixed mistakes was offered a mock exam and a
+ * fresh quiz, and never told that the most useful thing available is already
+ * waiting. The schedule decides when a review is *owed*; it was never meant to
+ * stop anyone doing one early.
  */
-function NothingDue(): React.JSX.Element {
+function NothingDue({ scheduled }: { scheduled: number }): React.JSX.Element {
   return (
     <div className="pt-2">
       <p className="text-text-primary font-display text-2xl">На сьогодні нічого не горить.</p>
@@ -152,6 +159,17 @@ function NothingDue(): React.JSX.Element {
         Ні прострочених робіт, ні помилок за розкладом. Якщо є час — ось що дає найбільше:
       </p>
       <ul className="mt-6 flex flex-col gap-3">
+        {scheduled > 0 && (
+          <li>
+            <Link to={ROUTES.mistakeReview} className="text-primary text-sm underline underline-offset-4">
+              Робота над помилками
+            </Link>
+            <span className="text-text-muted ml-2 text-sm">
+              — {scheduled} {pluralUk(scheduled, 'помилка', 'помилки', 'помилок')} ще на драбині; розклад каже
+              «пізніше», але чекати не обовʼязково
+            </span>
+          </li>
+        )}
         <li>
           <Link to={ROUTES.mockExam} className="text-primary text-sm underline underline-offset-4">
             Пробний НМТ

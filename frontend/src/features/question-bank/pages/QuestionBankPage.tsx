@@ -28,7 +28,9 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 };
 
 const DIFFICULTY_OPTIONS: SelectOption[] = [
-  { value: '', label: 'Будь-яка складність' },
+  // «Будь-яка складність» is clipped in a half-width select, and the word it
+  // repeats is already the field's own label.
+  { value: '', label: 'Будь-яка' },
   ...Object.values(Difficulty).map((value) => ({
     value,
     label: DIFFICULTY_LABEL[value],
@@ -92,13 +94,21 @@ export function QuestionBankPage(): React.JSX.Element {
         lead="Усе, з чого складаються роботи, — разом із правильними відповідями й поясненнями. Це той самий матеріал, який учень бачить без ключів."
       />
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Input
-          label="Пошук"
-          placeholder="За текстом умови"
-          value={searchInput}
-          onChange={(event) => reset(setSearchInput)(event.target.value)}
-        />
+      {/* Two columns even on a phone. Stacked one per row, the four filters
+          filled the entire first screen and the bank itself — the point of
+          the page — began below the fold. Search keeps the full width: it is
+          the one filter people type into. */}
+      <div className="mt-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/* Wrapped: Input forwards `className` to the field itself, so the
+            grid span has to live on the cell around it. */}
+        <div className="col-span-2 lg:col-span-1">
+          <Input
+            label="Пошук"
+            placeholder="За текстом умови"
+            value={searchInput}
+            onChange={(event) => reset(setSearchInput)(event.target.value)}
+          />
+        </div>
         <Select
           label="Предмет"
           options={subjectOptions}

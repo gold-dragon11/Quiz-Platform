@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LEARNER_ROLES } from '@/shared/constants/roles';
 import { ROUTES } from '@/shared/constants/routes';
 import { UserRole } from '@/shared/types/enums';
 
@@ -14,7 +15,21 @@ export interface NavItem {
    * call sites would have had to know about each of them.
    */
   roles?: UserRole[];
+  /**
+   * Which block of the sidebar this belongs to. Entries sharing a section are
+   * drawn together; a hairline separates one section from the next.
+   *
+   * Sections carry no visible caption. A caption would have to read sensibly
+   * for every role, and after the role filter a section can come down to a
+   * single entry — «Навчання» over one link is worse than no heading at all.
+   * A rule groups just as well and is the same device the rest of the
+   * interface already uses instead of boxes.
+   */
+  section: NavSection;
 }
+
+/** Sidebar blocks, in the order they are drawn. */
+export type NavSection = 'overview' | 'learn' | 'class' | 'admin';
 
 const ICON = {
   width: 20,
@@ -109,95 +124,117 @@ const icons = {
   ),
 };
 
-/**
- * Entries only a learner has any use for.
- *
- * Spelled out as "everyone except a teacher" rather than `[USER]`: an
- * administrator managing the question bank has a real reason to sit a test and
- * see what a learner sees, while a teacher does not — they set the work, they
- * do not do it.
- */
-const LEARNERS = [UserRole.USER, UserRole.ADMIN];
+/** Entries only a learner has any use for — the same set the router serves. */
+const LEARNERS = [...LEARNER_ROLES];
 
-/** Full navigation (sidebar + slide-out menu), filtered by role. */
+/**
+ * Full navigation for the sidebar and the slide-out menu, filtered by role.
+ *
+ * «Профіль» and «Налаштування» are deliberately absent: the avatar menu in the
+ * top-right already opens both, and carrying them here too made a nine-line
+ * list where two lines were about the account rather than about studying.
+ *
+ * «Пробний НМТ» is a learner entry. It used to have no role at all, so a
+ * teacher saw it in the sidebar (though not in the bottom bar, which did
+ * filter) and could sit a full mock exam — collecting XP and a level that
+ * their own statistics page, which is about their groups, never shows them.
+ * Every other learner action was already hidden from them; this was the one
+ * hole in that rule.
+ */
 export const NAV_ITEMS: NavItem[] = [
-  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS },
-  { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam },
-  { to: ROUTES.mistakeReview, label: 'Повторення', icon: icons.mistakeReview, roles: LEARNERS },
-  { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels, roles: LEARNERS },
-  { to: ROUTES.assignments, label: 'Домашка', icon: icons.assignments, roles: [UserRole.USER] },
-  { to: ROUTES.groups, label: 'Мої групи', icon: icons.groups, roles: [UserRole.USER] },
+  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard, section: 'overview' },
+  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics, section: 'overview' },
+
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS, section: 'learn' },
+  { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam, roles: LEARNERS, section: 'learn' },
+  {
+    to: ROUTES.mistakeReview,
+    label: 'Повторення',
+    icon: icons.mistakeReview,
+    roles: LEARNERS,
+    section: 'learn',
+  },
+  { to: ROUTES.duels, label: 'Дуелі', icon: icons.duels, roles: LEARNERS, section: 'learn' },
+  { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects, section: 'learn' },
+
+  {
+    to: ROUTES.assignments,
+    label: 'Домашка',
+    icon: icons.assignments,
+    roles: [UserRole.USER],
+    section: 'class',
+  },
+  { to: ROUTES.groups, label: 'Мої групи', icon: icons.groups, roles: [UserRole.USER], section: 'class' },
   {
     to: ROUTES.teacherGroups,
     label: 'Групи',
     icon: icons.groups,
     roles: [UserRole.TEACHER],
+    section: 'class',
   },
   {
     to: ROUTES.teacherQuestions,
     label: 'Банк питань',
     icon: icons.bank,
     roles: [UserRole.TEACHER],
+    section: 'class',
   },
-  { to: ROUTES.subjects, label: 'Предмети', icon: icons.subjects },
-  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
-  { to: ROUTES.profile, label: 'Профіль', icon: icons.profile },
-  { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
-  { to: ROUTES.admin, label: 'Адміністрування', icon: icons.admin, roles: [UserRole.ADMIN] },
+
+  {
+    to: ROUTES.admin,
+    label: 'Адміністрування',
+    icon: icons.admin,
+    roles: [UserRole.ADMIN],
+    section: 'admin',
+  },
 ];
 
 /**
  * Condensed navigation for the mobile bottom bar.
  *
  * Role-filtered like the sidebar, and it has to be: the bar showed a teacher
- * "Тест" long after the sidebar had stopped, because it was a second list
- * nobody remembered to gate. Five slots is the ceiling — at six each label
- * gets about 65px, too narrow for "Налаштування" — and the role filter is
- * what keeps any one person under it. Count it when adding an entry: a
- * learner sees five (головна, тест, домашка, статистика, налаштування), a
- * teacher five (головна, групи, питання, статистика, налаштування), an
- * administrator four. Subjects lives in the slide-out menu only — it was the
- * sixth slot, and six does not fit.
+ * «Тест» long after the sidebar had stopped, because it was a second list
+ * nobody remembered to gate. Five slots is the ceiling — at 390px each label
+ * gets about 78px — and the role filter is what keeps any one person under it.
+ * Count it when adding an entry: a learner sees five (головна, тест, домашка,
+ * статистика, профіль), a teacher five (головна, групи, питання, статистика,
+ * профіль), an administrator four.
  *
- * Settings is here because the sidebar is desktop-only and the dashboard quick
- * action that used to reach it has been removed. Profile is not: the avatar in
- * the top-right already opens a menu with Profile as its first entry, and six
- * slots would leave each label ~65px — too narrow for "Налаштування".
+ * The fifth slot is «Профіль» rather than «Налаштування»: that word does not
+ * fit 78px and ran into the edge of the screen. Profile is the shorter label,
+ * it is now a screen with something on it, and it links onward to settings —
+ * which is the rarer errand of the two.
+ *
+ * «Предмети» lives in the slide-out menu only; it was the sixth slot, and six
+ * does not fit.
  */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard },
-  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS },
-  { to: ROUTES.assignments, label: 'Домашка', icon: icons.assignments, roles: [UserRole.USER] },
-  { to: ROUTES.teacherGroups, label: 'Групи', icon: icons.groups, roles: [UserRole.TEACHER] },
+  { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard, section: 'overview' },
+  { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS, section: 'learn' },
+  {
+    to: ROUTES.assignments,
+    label: 'Домашка',
+    icon: icons.assignments,
+    roles: [UserRole.USER],
+    section: 'class',
+  },
+  {
+    to: ROUTES.teacherGroups,
+    label: 'Групи',
+    icon: icons.groups,
+    roles: [UserRole.TEACHER],
+    section: 'class',
+  },
   {
     to: ROUTES.teacherQuestions,
     label: 'Питання',
     icon: icons.bank,
     roles: [UserRole.TEACHER],
+    section: 'class',
   },
-  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics },
-  { to: ROUTES.settings, label: 'Налаштування', icon: icons.settings },
+  { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics, section: 'overview' },
+  { to: ROUTES.profile, label: 'Профіль', icon: icons.profile, section: 'overview' },
 ];
-
-/** Resolves the current page title from a pathname (for the header). */
-export function getPageTitle(pathname: string): string {
-  if (pathname.startsWith('/dashboard')) return 'Головна';
-  if (pathname.startsWith('/subjects')) return 'Предмети';
-  if (pathname.startsWith('/quiz')) return 'Тест';
-  if (pathname.startsWith('/mock-exam')) return 'Пробний НМТ';
-  if (pathname.startsWith('/mistake-review')) return 'Повторення помилок';
-  if (pathname.startsWith('/duels')) return 'Дуелі';
-  if (pathname.startsWith('/teacher/groups')) return 'Групи';
-  if (pathname.startsWith('/teacher/questions')) return 'Банк питань';
-  if (pathname.startsWith('/assignments')) return 'Домашка';
-  if (pathname.startsWith('/groups')) return 'Мої групи';
-  if (pathname.startsWith('/statistics')) return 'Статистика';
-  if (pathname.startsWith('/profile')) return 'Профіль';
-  if (pathname.startsWith('/settings')) return 'Налаштування';
-  if (pathname.startsWith('/admin')) return 'Адміністрування';
-  return 'L&S';
-}
 
 /** Keeps the entries this role is allowed to see. */
 export function visibleNavItems(items: NavItem[], role: UserRole | undefined): NavItem[] {

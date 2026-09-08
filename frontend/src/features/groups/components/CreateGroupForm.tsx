@@ -56,6 +56,12 @@ export function CreateGroupForm(): React.JSX.Element {
         </Alert>
       )}
 
+      {/* The row aligns on the bottom edge of the fields. The subject select
+          used to carry its own helper line underneath, so `items-end` matched
+          the bottom of that *hint* to the bottom of the name input — lifting
+          the select itself by a line and leaving the button on a third level.
+          The note now sits under the whole row, where it also reads as being
+          about the group rather than about the dropdown. */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <div className="sm:flex-1">
           <Input
@@ -69,7 +75,6 @@ export function CreateGroupForm(): React.JSX.Element {
         <div className="sm:w-56">
           <Select
             label="Предмет"
-            helperText="Змінити згодом не можна"
             options={options}
             value={subjectId}
             onChange={(event) => setSubjectId(event.target.value)}
@@ -79,6 +84,10 @@ export function CreateGroupForm(): React.JSX.Element {
           Створити
         </Button>
       </div>
+
+      <p className="text-text-muted mt-3 text-xs">
+        Предмет групи змінити згодом не можна — для іншого предмета створіть окрему групу.
+      </p>
     </form>
   );
 }

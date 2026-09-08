@@ -77,7 +77,11 @@ function RosterRow({
   const behind = row.assignmentsIssued - row.assignmentsSubmitted;
 
   return (
-    <li className="flex items-center justify-between gap-4 py-4">
+    // Stacks on a phone. As one row it kept three columns at 390px, so the
+    // «@nick · з 8 вер. 2026 р.» line wrapped to two and ran under the figure
+    // beside it. Below `sm` the name takes its own line and the figure sits
+    // opposite the button on the next one.
+    <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <div className="min-w-0">
         {/* The name is the link, not the whole row: the row also holds a
             button, and a button inside a link is not a thing. */}
@@ -93,7 +97,7 @@ function RosterRow({
         </p>
       </div>
 
-      <div className="flex shrink-0 items-center gap-6">
+      <div className="flex shrink-0 items-center justify-between gap-6 sm:justify-end">
         {row.assignmentsIssued > 0 ? (
           <div className="text-right">
             <p

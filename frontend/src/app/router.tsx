@@ -6,6 +6,9 @@ import { MainLayout } from '@/shared/layouts/MainLayout';
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
 import { RequireAdmin } from '@/shared/guards/RequireAdmin';
+import { RequireLearner } from '@/shared/guards/RequireLearner';
+import { RequireRole } from '@/shared/guards/RequireRole';
+import { UserRole } from '@/shared/types/enums';
 import { RequireTeacher } from '@/shared/guards/RequireTeacher';
 import { PageTransition } from '@/shared/components/PageTransition';
 import { RouteError } from '@/shared/components/RouteError';
@@ -123,27 +126,9 @@ export const router = createBrowserRouter([
           {
             element: <MainLayout />,
             children: [
+              // Open to every signed-in role.
               { path: ROUTES.dashboard, element: page(<DashboardPage />) },
               { path: ROUTES.subjects, element: page(<SubjectsBrowserPage />) },
-              { path: ROUTES.quiz, element: page(<QuizStartPage />) },
-              {
-                path: ROUTES.quizSession,
-                element: page(<QuizSessionPage />),
-              },
-              {
-                path: ROUTES.quizResult,
-                element: page(<QuizResultPage />),
-              },
-              { path: ROUTES.mockExam, element: page(<MockExamPage />) },
-              {
-                path: ROUTES.mistakeReview,
-                element: page(<MistakeReviewPage />),
-              },
-              { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
-              { path: ROUTES.assignments, element: page(<StudentAssignmentsPage />) },
-              { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
-              { path: ROUTES.duels, element: page(<DuelsPage />) },
-              { path: ROUTES.duel, element: page(<DuelPage />) },
               {
                 path: ROUTES.topicMaterial,
                 element: page(<MaterialPage />),
@@ -151,6 +136,44 @@ export const router = createBrowserRouter([
               { path: ROUTES.statistics, element: page(<StatisticsPage />) },
               { path: ROUTES.profile, element: page(<ProfilePage />) },
               { path: ROUTES.settings, element: page(<SettingsPage />) },
+
+              // Sitting a test. The navigation has always hidden these from a
+              // teacher; until now the routes themselves were still served, so
+              // typing the address gave them a mock exam their own statistics
+              // page would never show them.
+              {
+                element: <RequireLearner />,
+                children: [
+                  { path: ROUTES.quiz, element: page(<QuizStartPage />) },
+                  {
+                    path: ROUTES.quizSession,
+                    element: page(<QuizSessionPage />),
+                  },
+                  {
+                    path: ROUTES.quizResult,
+                    element: page(<QuizResultPage />),
+                  },
+                  { path: ROUTES.mockExam, element: page(<MockExamPage />) },
+                  {
+                    path: ROUTES.mistakeReview,
+                    element: page(<MistakeReviewPage />),
+                  },
+                  { path: ROUTES.duels, element: page(<DuelsPage />) },
+                  { path: ROUTES.duel, element: page(<DuelPage />) },
+                ],
+              },
+
+              // Being taught: a student's own groups and homework. An
+              // administrator joins no groups, so this is USER alone rather
+              // than the learner set above.
+              {
+                element: <RequireRole role={UserRole.USER} />,
+                children: [
+                  { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
+                  { path: ROUTES.assignments, element: page(<StudentAssignmentsPage />) },
+                  { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
+                ],
+              },
             ],
           },
         ],

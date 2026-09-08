@@ -53,7 +53,7 @@ export function StudentGroupsPage(): React.JSX.Element {
       <PageHeader
         eyebrow="Навчання"
         title="Мої групи"
-        lead="Група — це зв'язок з репетитором під один предмет. Він видає завдання й бачить, як вони йдуть."
+        lead="Група — це звʼязок з репетитором під один предмет. Він видає завдання й бачить, як вони йдуть."
       />
 
       <section className="mt-12">
@@ -118,8 +118,12 @@ export function StudentGroupsPage(): React.JSX.Element {
                     {group.teacherName && ` · ${group.teacherName}`} · з {formatShortDate(group.joinedAt)}
                   </p>
                 </div>
+                {/* Not «Вийти»: that word already means signing out of the
+                    account, in the sidebar and under the avatar. Two different
+                    exits called the same thing, one of them irreversible from
+                    the reader's side without the invite code. */}
                 <Button variant="ghost" size="sm" onClick={() => setLeaving(group)}>
-                  Вийти
+                  Покинути групу
                 </Button>
               </li>
             ))}
@@ -129,9 +133,9 @@ export function StudentGroupsPage(): React.JSX.Element {
 
       <ConfirmDialog
         open={leaving !== null}
-        title="Вийти з групи?"
+        title="Покинути групу?"
         description={`Ви більше не отримуватимете завдань групи «${leaving?.name ?? ''}», і репетитор перестане бачити вашу практику з цього предмета. Ваша статистика й історія помилок лишаються при вас. Повернутися можна за тим самим кодом.`}
-        confirmLabel="Вийти"
+        confirmLabel="Покинути групу"
         confirmVariant="danger"
         isLoading={leave.isPending}
         onConfirm={() => {
@@ -141,7 +145,7 @@ export function StudentGroupsPage(): React.JSX.Element {
           leave.mutate(leaving.id, {
             onSuccess: () => {
               setLeaving(null);
-              toast.success('Ви вийшли з групи.');
+              toast.success('Ви покинули групу.');
             },
             onError: (error) => {
               setLeaving(null);

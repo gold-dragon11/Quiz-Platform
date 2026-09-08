@@ -59,8 +59,8 @@ export function RegisterPage(): React.JSX.Element {
           applyApiErrorToForm(error, setError, {
             // Conflict errors come back in Ukrainian…
             'Ця електронна адреса': 'email',
-            "Таке ім'я користувача": 'username',
-            "Це ім'я користувача": 'username',
+            'Таке імʼя користувача': 'username',
+            'Це імʼя користувача': 'username',
             // …validation messages still lead with the English field name.
             email: 'email',
             username: 'username',
@@ -134,7 +134,7 @@ export function RegisterPage(): React.JSX.Element {
           {...register('email')}
         />
         <Input
-          label="Ім'я користувача"
+          label="Імʼя користувача"
           autoComplete="username"
           placeholder="your_username"
           helperText="Від 3 до 30 символів: латинські літери, цифри та підкреслення."
