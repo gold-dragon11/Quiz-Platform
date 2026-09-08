@@ -3,6 +3,7 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/ui/Button';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { useIsLearner } from '@/shared/hooks/use-is-learner';
 import type { PublicSubject, PublicTopic } from '@/features/subjects/types/subjects.types';
 import { SectionError } from '@/features/subjects/components/SectionError';
 import { useSubjectMaterials } from '@/features/learning-materials';
@@ -28,6 +29,10 @@ interface SubjectTopicsViewProps {
  * of equal weight and the reader had to read the labels to find out that half
  * of them did the same thing. On a row the two actions can differ in weight:
  * the test is the point of the screen, the conspectus is a link beside it.
+ *
+ * The test actions are shown only to accounts that can sit one. A teacher
+ * browses subjects for the material their groups will read, but `/quiz` is
+ * closed to them, so every one of these buttons would have led to a 403.
  */
 export function SubjectTopicsView({
   subject,
@@ -36,6 +41,7 @@ export function SubjectTopicsView({
   onStartQuiz,
 }: SubjectTopicsViewProps): React.JSX.Element {
   const topicCount = topics?.data?.length ?? null;
+  const isLearner = useIsLearner();
 
   // One request per subject tells us which topics have a material, so each
   // row can decide whether to offer it without asking per topic. A failure
@@ -62,9 +68,12 @@ export function SubjectTopicsView({
           </p>
         )}
         <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
-          <Button onClick={() => onStartQuiz(subject.id)}>Тест з усього предмета</Button>
+          {isLearner && <Button onClick={() => onStartQuiz(subject.id)}>Тест з усього предмета</Button>}
           {topicCount !== null && topicCount > 0 && (
-            <p className="text-text-muted text-sm">або оберіть окрему тему — їх тут {topicCount}</p>
+            <p className="text-text-muted text-sm">
+              {isLearner ? 'або оберіть окрему тему — їх тут ' : 'Тем у предметі — '}
+              {topicCount}
+            </p>
           )}
         </div>
       </header>
@@ -93,6 +102,7 @@ export function SubjectTopicsView({
                 key={topic.id}
                 topic={topic}
                 hasMaterial={materials.data?.has(topic.id) ?? false}
+                canTest={isLearner}
                 onStartQuiz={() => onStartQuiz(subject.id, topic.id)}
               />
             ))}
@@ -106,10 +116,12 @@ export function SubjectTopicsView({
 function TopicRow({
   topic,
   hasMaterial,
+  canTest,
   onStartQuiz,
 }: {
   topic: PublicTopic;
   hasMaterial: boolean;
+  canTest: boolean;
   onStartQuiz: () => void;
 }): React.JSX.Element {
   const navigate = useNavigate();
@@ -131,13 +143,15 @@ function TopicRow({
             Конспект
           </button>
         )}
-        <button
-          type="button"
-          onClick={onStartQuiz}
-          className="text-primary text-sm underline underline-offset-4"
-        >
-          Пройти тест
-        </button>
+        {canTest && (
+          <button
+            type="button"
+            onClick={onStartQuiz}
+            className="text-primary text-sm underline underline-offset-4"
+          >
+            Пройти тест
+          </button>
+        )}
       </div>
     </li>
   );
