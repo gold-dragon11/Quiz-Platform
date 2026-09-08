@@ -121,8 +121,8 @@ export function TopicsSection(): React.JSX.Element {
         />
       ) : (
         <>
-          <div className="border-border overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[40rem] text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="border-border w-full border-t min-w-[40rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 font-medium">Назва</th>

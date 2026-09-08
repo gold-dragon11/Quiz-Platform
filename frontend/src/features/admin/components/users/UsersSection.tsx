@@ -4,7 +4,6 @@ import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { UserRole } from '@/shared/types/enums';
 import { Badge } from '@/shared/ui/Badge';
-import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
@@ -118,8 +117,8 @@ export function UsersSection(): React.JSX.Element {
         />
       ) : (
         <>
-          <div className="border-border overflow-x-auto rounded-xl border">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="border-border w-full border-t text-sm">
               <thead className="text-text-muted border-border border-b text-left text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 font-medium">Обліковий запис</th>
@@ -183,13 +182,17 @@ function UserRow({
           // this is a rule worth knowing.
           <span className="text-text-muted text-xs">Змінюється не тут</span>
         ) : (
-          <Button
-            variant="secondary"
-            size="sm"
+          // A link, not a filled button. Down a page of ten accounts the
+          // filled version stacked into a column of identical purple blocks
+          // that outshouted the roles they were meant to change — and on a
+          // directory the roles are the content.
+          <button
+            type="button"
             onClick={() => onChangeRole({ user, role: isTeacher ? UserRole.USER : UserRole.TEACHER })}
+            className="text-primary text-sm underline underline-offset-4"
           >
             {isTeacher ? 'Зняти викладача' : 'Зробити викладачем'}
-          </Button>
+          </button>
         )}
       </td>
     </tr>
