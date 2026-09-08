@@ -762,7 +762,7 @@ export class AuthService implements OnModuleInit {
     }
 
     if (existingProfile) {
-      throw new ConflictException("Таке ім'я користувача вже існує.");
+      throw new ConflictException('Таке імʼя користувача вже існує.');
     }
   }
 
@@ -788,7 +788,7 @@ export class AuthService implements OnModuleInit {
       : [];
 
     if (target.includes('username')) {
-      return new ConflictException("Таке ім'я користувача вже існує.");
+      return new ConflictException('Таке імʼя користувача вже існує.');
     }
 
     if (target.includes('email')) {
