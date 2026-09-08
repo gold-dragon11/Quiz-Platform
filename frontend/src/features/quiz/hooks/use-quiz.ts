@@ -12,7 +12,23 @@ export const QUIZ_QUERY_KEYS = {
   session: (sessionId: string) => ['quiz', 'session', sessionId] as const,
   result: (sessionId: string) => ['quiz', 'result', sessionId] as const,
   active: ['quiz', 'active'] as const,
+  available: (subjectId: string, topicId: string) => ['quiz', 'available', subjectId, topicId] as const,
 };
+
+/**
+ * Size of the pool a quiz over these filters would draw from.
+ *
+ * Disabled until a subject is chosen, because that is the one required filter
+ * — asking earlier would send a request that can only 400.
+ */
+export function useAvailableQuestions(subjectId: string, topicId: string) {
+  return useQuery({
+    queryKey: QUIZ_QUERY_KEYS.available(subjectId, topicId),
+    queryFn: () => quizApi.getAvailable({ subjectId, topicId: topicId || undefined }),
+    enabled: Boolean(subjectId),
+    staleTime: 60 * 1000,
+  });
+}
 
 /**
  * The user's in-progress session, if any. Shared by the Quiz Start form

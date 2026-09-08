@@ -28,13 +28,18 @@ export function ResultSummary({ result }: { result: QuizResultSummary }): React.
             правильних {formatNumber(result.correctAnswers)} з {formatNumber(result.totalQuestions)}
           </p>
         </div>
-        <XpReward xp={result.xpEarned} />
+        {/* Nothing to celebrate at zero: «+0 XP» in a badge reads as a joke
+            at the reader's expense on the one result that already stings. */}
+        {result.xpEarned > 0 && <XpReward xp={result.xpEarned} />}
       </div>
 
+      {/* The grid breaks down what went wrong, and only that. «Правильних»
+          lived here too, restating the line directly above it — the split
+          that actually carries information is the one between a wrong answer
+          and no answer at all. */}
       <FigureGrid
         className="mt-8"
         figures={[
-          { value: formatNumber(result.correctAnswers), label: 'правильних' },
           { value: formatNumber(result.incorrectAnswers), label: 'неправильних' },
           { value: formatNumber(result.unansweredQuestions), label: 'без відповіді' },
         ]}

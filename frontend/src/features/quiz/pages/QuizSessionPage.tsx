@@ -5,9 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { slideSwap, TRANSITION } from '@/shared/constants/motion';
 import { toast } from '@/stores/toast-store';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Spinner } from '@/shared/ui/Spinner';
 import { isApiError } from '@/shared/utils/apply-api-error';
@@ -27,6 +25,12 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
  * navigation, shows the timer when enabled, and completes the quiz. Reconnects
  * reload via the resume query; an already-completed session redirects to the
  * result.
+ *
+ * Finishing is available from any question, not only the last one. It used to
+ * appear solely in place of «Далі» on the final card, so a reader who had
+ * answered everything and was re-checking question three had to page all the
+ * way to the end to hand the work in — and the question strip above exists
+ * precisely so nobody has to page anywhere.
  */
 export function QuizSessionPage(): React.JSX.Element {
   const { sessionId = '' } = useParams();
@@ -128,26 +132,31 @@ export function QuizSessionPage(): React.JSX.Element {
     const notFound = isApiError(session.error) && session.error.status === 404;
     return (
       <div className="mx-auto max-w-2xl">
-        <Card>
+        <p className="border-error text-text-secondary max-w-xl border-l pl-5 text-sm">
           {notFound ? (
-            <EmptyState
-              title="Тест недоступний"
-              description="Такої сесії тесту не існує або вона більше недоступна."
-              action={
-                <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                  До тестів
-                </Button>
-              }
-            />
+            <>
+              Такої сесії тесту не існує або вона більше недоступна.{' '}
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.quiz)}
+                className="text-primary underline underline-offset-4"
+              >
+                Почати новий
+              </button>
+            </>
           ) : (
-            <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <p className="text-text-muted text-sm">Не вдалося завантажити цю сесію тесту.</p>
-              <Button variant="secondary" size="sm" onClick={() => void session.refetch()}>
+            <>
+              Не вдалося завантажити цю сесію тесту.{' '}
+              <button
+                type="button"
+                onClick={() => void session.refetch()}
+                className="text-primary underline underline-offset-4"
+              >
                 Спробувати ще раз
-              </Button>
-            </div>
+              </button>
+            </>
           )}
-        </Card>
+        </p>
       </div>
     );
   }
@@ -162,17 +171,16 @@ export function QuizSessionPage(): React.JSX.Element {
   if (questions.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">
-        <Card>
-          <EmptyState
-            title="Питань немає"
-            description="У цьому тесті немає питань для показу."
-            action={
-              <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                До тестів
-              </Button>
-            }
-          />
-        </Card>
+        <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
+          У цій сесії немає жодного питання — показувати нічого.{' '}
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.quiz)}
+            className="text-primary underline underline-offset-4"
+          >
+            Почати новий тест
+          </button>
+        </p>
       </div>
     );
   }
@@ -217,19 +225,34 @@ export function QuizSessionPage(): React.JSX.Element {
         </motion.div>
       </AnimatePresence>
 
-      <div className="border-border flex items-center justify-between gap-4 border-t pt-6">
-        <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
-          Назад
-        </Button>
-
-        <SaveIndicator status={saveStatus} />
-
-        {isLast ? (
-          <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
-            Завершити тест
+      <div className="border-border border-t pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
+            Назад
           </Button>
-        ) : (
-          <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Далі</Button>
+
+          <SaveIndicator status={saveStatus} />
+
+          {isLast ? (
+            <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
+              Завершити тест
+            </Button>
+          ) : (
+            <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Далі</Button>
+          )}
+        </div>
+
+        {/* Available from anywhere, quietly: the reader who is done but standing
+            on question three should not have to page to the end to hand in. */}
+        {!isLast && (
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(true)}
+            disabled={complete.isPending}
+            className="text-text-muted hover:text-text-primary mt-5 text-sm underline underline-offset-4 transition-colors disabled:opacity-60"
+          >
+            Завершити тест зараз
+          </button>
         )}
       </div>
 
@@ -272,14 +295,14 @@ function SessionSkeleton(): React.JSX.Element {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Skeleton className="h-6 w-full" />
-      <Card className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <Skeleton className="h-6 w-3/4" />
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-xl" />
           ))}
         </div>
-      </Card>
+      </div>
       <div className="flex justify-between">
         <Skeleton className="h-11 w-24" />
         <Skeleton className="h-11 w-28" />

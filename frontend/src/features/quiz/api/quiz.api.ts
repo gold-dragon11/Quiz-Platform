@@ -59,6 +59,19 @@ export const quizApi = {
     return data;
   },
 
+  /**
+   * GET /quiz/available — how many questions an ad-hoc quiz over these filters
+   * could draw from (§4a).
+   *
+   * The start form asks before it offers a question count: the pool for one
+   * topic is often smaller than the largest option, and a request for more
+   * than exists comes back as a 409 the reader had no way to see coming.
+   */
+  async getAvailable(params: { subjectId: string; topicId?: string }): Promise<number> {
+    const { data } = await apiClient.get<{ available: number }>('/quiz/available', { params });
+    return data.available;
+  },
+
   /** GET /quiz/:sessionId/result — full post-completion review (§8). */
   async getResult(sessionId: string): Promise<QuizReview> {
     const { data } = await apiClient.get<QuizReview>(`/quiz/${sessionId}/result`);

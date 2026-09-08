@@ -3,8 +3,6 @@ import { generatePath, useNavigate, useParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { useQuizResult } from '@/features/quiz/hooks/use-quiz';
@@ -27,35 +25,34 @@ export function QuizResultPage(): React.JSX.Element {
   }
 
   if (result.isError) {
-    const status = isApiError(result.error) ? result.error.status : 0;
-    const notCompleted = status === 409;
+    const notCompleted = isApiError(result.error) && result.error.status === 409;
     return (
       <div className="mx-auto max-w-2xl">
-        <Card>
-          <EmptyState
-            title="Результат недоступний"
-            description={
-              notCompleted
-                ? 'Цей тест ще не завершено, тож результату немає.'
-                : 'Не вдалося знайти результат цього тесту.'
-            }
-            action={
-              notCompleted ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => navigate(generatePath(ROUTES.quizSession, { sessionId }))}
-                >
-                  Продовжити тест
-                </Button>
-              ) : (
-                <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                  До тестів
-                </Button>
-              )
-            }
-          />
-        </Card>
+        <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
+          {notCompleted ? (
+            <>
+              Цей тест ще не завершено, тож результату поки немає.{' '}
+              <button
+                type="button"
+                onClick={() => navigate(generatePath(ROUTES.quizSession, { sessionId }))}
+                className="text-primary underline underline-offset-4"
+              >
+                Повернутися до нього
+              </button>
+            </>
+          ) : (
+            <>
+              Не вдалося знайти результат цього тесту.{' '}
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.quiz)}
+                className="text-primary underline underline-offset-4"
+              >
+                Почати новий
+              </button>
+            </>
+          )}
+        </p>
       </div>
     );
   }

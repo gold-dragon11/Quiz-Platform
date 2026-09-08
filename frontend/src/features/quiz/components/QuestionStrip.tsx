@@ -26,8 +26,11 @@ export function QuestionStrip({ total, index, answered, onJump }: QuestionStripP
   return (
     <nav aria-label="Питання тесту">
       <div className="text-text-muted mb-3 flex items-baseline justify-between text-xs">
+        {/* A slash, not «з». Uppercased and letterspaced, the Ukrainian «З»
+            is indistinguishable from a 3 — and it sat between two numerals,
+            so «ПИТАННЯ 1 З 5» read as «1 3 5». */}
         <span className="tracking-[0.18em] uppercase">
-          Питання {index + 1} з {total}
+          Питання {index + 1} / {total}
         </span>
         <span>
           відповіли на {answeredCount} з {total}
