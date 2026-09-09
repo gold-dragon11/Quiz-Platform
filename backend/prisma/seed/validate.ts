@@ -1,4 +1,4 @@
-import { Difficulty } from '@prisma/client';
+import { Difficulty, QuestionFormat } from '@prisma/client';
 import { isMatching, type QuestionContent, type TopicContent } from './types';
 
 /**
@@ -109,6 +109,10 @@ export function validateTopic(topic: TopicContent): string[] {
       errors.push(`${at}: unknown difficulty "${question.difficulty}"`);
     }
 
+    if (question.format !== undefined && !(question.format in QuestionFormat)) {
+      errors.push(`${at}: unknown format "${question.format}"`);
+    }
+
     // Mirrors the Admin API's own limit, so seeded content can never be
     // something an administrator could not have typed into the form.
     if (question.explanation !== undefined) {
@@ -140,7 +144,8 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       errors.push(`${at}: matching needs at least 2 pairs`);
       return errors;
     }
-    if (pairs.length * 2 > MAX_OPTIONS) {
+    const spare = question.extraChoices ?? [];
+    if (pairs.length * 2 + spare.length > MAX_OPTIONS) {
       errors.push(`${at}: matching exceeds ${MAX_OPTIONS} options`);
     }
 
@@ -167,6 +172,27 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       }
       lefts.add(left);
       rights.add(right);
+    });
+
+    // A spare choice is only a distractor if it is distinguishable from every
+    // real one: repeat a paired choice and two options become equally correct.
+    spare.forEach((choice, i) => {
+      if (!choice?.trim()) {
+        errors.push(`${at}: extra choice ${i} is empty`);
+        return;
+      }
+      errors.push(...validateFormulas(choice, at, `extra choice ${i}`));
+      if (choice.length > MAX_OPTION_LENGTH) {
+        errors.push(
+          `${at}: extra choice ${i} exceeds ${MAX_OPTION_LENGTH} characters`,
+        );
+      }
+      if (rights.has(choice) || lefts.has(choice)) {
+        errors.push(`${at}: extra choice "${choice}" repeats a paired item`);
+      }
+      if (spare.indexOf(choice) !== i) {
+        errors.push(`${at}: duplicate extra choice "${choice}"`);
+      }
     });
 
     // A value appearing on both sides makes the intended pairing ambiguous.

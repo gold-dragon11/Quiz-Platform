@@ -18,9 +18,12 @@ const ALLOWED_KEYS = new Set([
   'title',
   'difficulty',
   'type',
+  'format',
   'options',
   'correct',
   'pairs',
+  'extraChoices',
+  'explanation',
 ]);
 
 /** Leftover editorial notes that must never reach a learner. */

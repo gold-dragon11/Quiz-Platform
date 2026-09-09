@@ -1,7 +1,12 @@
 import { Difficulty, PrismaClient, QuestionType } from '@prisma/client';
 import { loadSubject } from './seed/load';
 import { loadMaterials, type MaterialContent } from './seed/materials';
-import { isMatching, questionType, type QuestionContent } from './seed/types';
+import {
+  isMatching,
+  questionFormat,
+  questionType,
+  type QuestionContent,
+} from './seed/types';
 import { estimateReadingTime } from '../src/learning-materials/learning-material.constants';
 
 /**
@@ -203,11 +208,13 @@ function buildAnswers(question: QuestionContent): {
   configuration: { pairs: { left: number; right: number }[] } | null;
 } {
   if (isMatching(question)) {
-    // Block layout: every left item first (orders 0..n-1), then every right
-    // item (orders n..2n-1). The two sides stay disjoint — which is what the
-    // backend requires — and the halves line up with how the quiz UI splits a
-    // matching question into a left prompt column and a right choice column.
+    // Block layout: every prompt first (orders 0..n-1), then every choice
+    // (orders n onwards). The two sides stay disjoint — which is what the
+    // backend requires — and the leading block is how the delivery side knows
+    // where the prompts end, which is what lets a question offer more choices
+    // than it has prompts.
     const n = question.pairs.length;
+    const spare = question.extraChoices ?? [];
     const options = [
       ...question.pairs.map(([left], i) => ({
         content: left,
@@ -218,6 +225,11 @@ function buildAnswers(question: QuestionContent): {
         content: right,
         isCorrect: false,
         order: n + i,
+      })),
+      ...spare.map((content, i) => ({
+        content,
+        isCorrect: false,
+        order: 2 * n + i,
       })),
     ];
     return {
@@ -253,6 +265,7 @@ async function seedQuestion(
 ): Promise<void> {
   const { options, configuration } = buildAnswers(question);
   const type = questionType(question);
+  const format = questionFormat(question);
   const difficulty = Difficulty[question.difficulty];
 
   const existing = await prisma.question.findFirst({
@@ -269,6 +282,7 @@ async function seedQuestion(
       data: {
         topicId,
         type,
+        format,
         title: question.title,
         difficulty,
         explanation,
@@ -293,6 +307,7 @@ async function seedQuestion(
     );
   const scalarsMatch =
     existing.type === type &&
+    existing.format === format &&
     existing.difficulty === difficulty &&
     existing.explanation === explanation &&
     existing.isPublished &&
@@ -313,6 +328,7 @@ async function seedQuestion(
       where: { id: existing.id },
       data: {
         type,
+        format,
         difficulty,
         explanation,
         configuration: configuration ?? undefined,
