@@ -31,11 +31,15 @@ export function ReviewLadder({ rungs, cleared }: ReviewLadderProps): React.JSX.E
   ];
 
   return (
-    <ol className="grid grid-cols-4 items-end">
+    // Columns follow the number of steps rather than a hard-coded four: the
+    // rungs come from the server, and a fifth interval would have overflowed
+    // a `grid-cols-4`. `minmax(0, 1fr)` is what lets a column shrink below
+    // its content instead of pushing the row past the screen edge.
+    <ol className="grid items-end" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
       {steps.map((step, index) => (
         <li
           key={step.key}
-          className="border-border flex flex-col justify-end border-l pl-3 first:border-l-0 first:pl-0 sm:pl-5"
+          className="border-border flex min-w-0 flex-col justify-end border-l pl-2 first:border-l-0 first:pl-0 sm:pl-5"
         >
           {/* The rule above each step is the tread, and it is what rises: the
               blocks are pushed up by an increasing bottom padding, so the row
@@ -48,7 +52,11 @@ export function ReviewLadder({ rungs, cleared }: ReviewLadderProps): React.JSX.E
             >
               {step.count}
             </span>
-            <span className="text-text-muted mt-2 block text-[11px] tracking-[0.14em] uppercase">
+            {/* «ВИПРАВЛЕНО» is one unbreakable word: at 390px four columns
+                leave about 85px and the label needed more, so it ran off the
+                right edge. The letterspacing is decoration and gives way
+                first; it comes back at `sm`. */}
+            <span className="text-text-muted mt-2 block text-[10px] tracking-[0.04em] uppercase sm:text-[11px] sm:tracking-[0.14em]">
               {step.label}
             </span>
           </div>

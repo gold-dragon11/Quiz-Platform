@@ -105,9 +105,13 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
         />
         <div className="min-w-0">
           <p className="text-text-primary truncate text-lg">{user.profile?.displayName ?? user.email}</p>
-          <p className="text-text-muted mt-1 truncate text-sm">
-            {user.profile ? `@${user.profile.username} · ` : ''}
-            {user.email}
+          {/* Nick and address stack below `sm`. On one line with `truncate`
+              a 390px screen cut the email — «claude@example.…» — and the
+              address is the half a reader actually needs to check. */}
+          <p className="text-text-muted mt-1 text-sm">
+            {user.profile && <span className="block sm:inline">@{user.profile.username}</span>}
+            {user.profile && <span className="hidden sm:inline"> · </span>}
+            <span className="block break-all sm:inline">{user.email}</span>
           </p>
         </div>
       </div>

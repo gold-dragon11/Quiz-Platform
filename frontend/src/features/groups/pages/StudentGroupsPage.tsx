@@ -112,7 +112,7 @@ export function StudentGroupsPage(): React.JSX.Element {
             {groups.data.map((group) => (
               <li key={group.id} className="flex items-center justify-between gap-4 py-5">
                 <div className="min-w-0">
-                  <p className="text-text-primary truncate font-medium">{group.name}</p>
+                  <p className="text-text-primary font-medium break-words">{group.name}</p>
                   <p className="text-text-muted mt-1 text-xs">
                     {group.subject.name}
                     {group.teacherName && ` · ${group.teacherName}`} · з {formatShortDate(group.joinedAt)}

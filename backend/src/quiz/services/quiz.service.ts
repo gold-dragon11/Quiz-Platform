@@ -24,6 +24,7 @@ import { StartQuizDto } from '../dto/start-quiz.dto';
 import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
+import { shuffleMatchingOrder } from '../matching-shuffle.util';
 import {
   MistakeReviewRepository,
   MistakeReviewSummary,
@@ -711,7 +712,9 @@ export class QuizService {
       sessionId,
       localeArg(locale),
     );
-    return questions.map((question) => this.toQuestionView(question));
+    return questions.map((question) =>
+      this.toQuestionView(question, sessionId),
+    );
   }
 
   /**
@@ -739,7 +742,9 @@ export class QuizService {
 
     return {
       session: this.toMetadata(session),
-      questions: questions.map((question) => this.toQuestionView(question)),
+      questions: questions.map((question) =>
+        this.toQuestionView(question, sessionId),
+      ),
       answers: attempts.map((attempt) => ({
         questionId: attempt.questionId,
         selectedAnswer: attempt.selectedAnswer,
@@ -851,7 +856,7 @@ export class QuizService {
     const reviewQuestions: QuizReviewQuestion[] = questions.map((question) => {
       const attempt = attemptByQuestion.get(question.id);
       return {
-        ...this.toQuestionView(question),
+        ...this.toQuestionView(question, sessionId),
         submittedAnswer: attempt?.selectedAnswer ?? null,
         correctAnswer: correctAnswerFor(
           question.type,
@@ -1089,19 +1094,31 @@ export class QuizService {
   }
 
   /** Strips the correct answer (isCorrect, configuration) — decision D11. */
-  private toQuestionView(question: SessionQuestionRecord): QuizQuestionView {
+  /**
+   * One question as the client sees it. `sessionId` seeds the matching shuffle
+   * — see matching-shuffle.util — so the same session always deals the same
+   * order and the review matches what the reader answered on.
+   */
+  private toQuestionView(
+    question: SessionQuestionRecord,
+    sessionId: string,
+  ): QuizQuestionView {
     return {
       id: question.id,
       type: question.type,
       title: question.translations[0]?.title ?? question.title,
       difficulty: question.difficulty,
       imageUrl: question.imageUrl,
-      answerOptions: question.answerOptions.map((option) => ({
-        id: option.id,
-        content: option.translations[0]?.content ?? option.content,
-        imageUrl: option.imageUrl,
-        order: option.order,
-      })),
+      answerOptions: shuffleMatchingOrder(
+        question.type,
+        question.answerOptions.map((option) => ({
+          id: option.id,
+          content: option.translations[0]?.content ?? option.content,
+          imageUrl: option.imageUrl,
+          order: option.order,
+        })),
+        `${sessionId}:${question.id}`,
+      ),
     };
   }
 }

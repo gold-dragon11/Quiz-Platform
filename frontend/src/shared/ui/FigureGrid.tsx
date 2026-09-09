@@ -35,12 +35,19 @@ export function FigureGrid({ figures, className = '' }: FigureGridProps): React.
       {figures.map((figure) => (
         <div
           key={figure.label}
-          className="border-border flex flex-col px-4 py-8 first:border-l-0 first:pl-0 sm:border-l sm:px-8"
+          className="border-border flex min-w-0 flex-col px-2.5 py-8 first:border-l-0 first:pl-0 sm:border-l sm:px-8"
         >
           <dd className="text-text-primary font-display order-1 text-4xl font-bold lining-nums sm:text-5xl">
             {figure.value}
           </dd>
-          <dt className="text-text-muted order-2 mt-3 text-xs tracking-[0.18em] uppercase">{figure.label}</dt>
+          {/* Tighter and smaller below `sm`. At 390px three columns leave each
+              label about 88px, and «НЕПРАВИЛЬНИХ» set in 12px with 0.18em of
+              tracking needs more than that — it overflowed into the column
+              beside it. The letterspacing is a house style, not a measurement,
+              so it is the part that gives. */}
+          <dt className="text-text-muted order-2 mt-3 text-[0.625rem] tracking-[0.1em] break-words uppercase sm:text-xs sm:tracking-[0.18em]">
+            {figure.label}
+          </dt>
           {figure.hint && <p className="text-text-muted order-3 mt-2 text-xs">{figure.hint}</p>}
         </div>
       ))}

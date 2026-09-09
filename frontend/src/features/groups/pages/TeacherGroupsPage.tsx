@@ -87,7 +87,10 @@ function GroupRow({ group }: { group: TeacherGroup }): React.JSX.Element {
         className="hover:bg-surface-elevated flex items-center justify-between gap-4 py-5 pr-2 pl-1 transition-colors"
       >
         <div className="min-w-0">
-          <p className="text-text-primary truncate font-medium">{group.name}</p>
+          {/* Wraps rather than truncates: a group's name is what its owner
+              identifies it by, and «11-А, підготовка до НМТ» came out as
+              «11-А, підготовка до…» on a phone. */}
+          <p className="text-text-primary font-medium break-words">{group.name}</p>
           <p className="text-text-muted mt-1 text-xs">
             {group.subject.name} · створено {formatShortDate(group.createdAt)}
             {group.archivedAt && ` · заархівовано ${formatShortDate(group.archivedAt)}`}

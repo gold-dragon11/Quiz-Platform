@@ -203,7 +203,11 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
     <li className="py-5">
       <div className="flex items-baseline justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-text-primary truncate">{standing.topicName}</p>
+          {/* Wraps rather than truncates. «Відновлення незалежності України
+              (1985–1999 рр.)» came out as «Відновлення незалежності України
+              (198…» on a phone, and the topic name is the thing the reader
+              navigates by — there is nowhere else on this row to learn it. */}
+          <p className="text-text-primary break-words">{standing.topicName}</p>
           <p className="text-text-muted mt-1 text-xs tracking-[0.18em] uppercase">{standing.subjectName}</p>
         </div>
         <p

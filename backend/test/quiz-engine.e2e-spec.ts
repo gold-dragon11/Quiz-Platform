@@ -66,6 +66,7 @@ describe('Quiz Engine (e2e)', () => {
   let topicId: string;
   let secondTopicId: string;
   let matchingTopicId: string;
+  let wideMatchingTopicId: string;
   let difficultyTopicId: string;
   let counter = 0;
 
@@ -170,6 +171,44 @@ describe('Quiz Engine (e2e)', () => {
         pairs: [
           { left: 0, right: 1 },
           { left: 2, right: 3 },
+        ],
+      },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /**
+   * A matching question shaped like the real bank: four prompts (order 0-3)
+   * followed by four choices (order 4-7), keyed straight down — 0→4, 1→5,
+   * 2→6, 3→7. Every one of the 630 published matching questions is stored
+   * exactly this way, which is why the delivered order has to be dealt.
+   */
+  const createWideMatching = async (parentTopic: string): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.MATCHING,
+      title: `Phase51 WideMatch ${counter}?`,
+      options: [
+        { content: 'L1' },
+        { content: 'L2' },
+        { content: 'L3' },
+        { content: 'L4' },
+        { content: 'R1' },
+        { content: 'R2' },
+        { content: 'R3' },
+        { content: 'R4' },
+      ],
+      configuration: {
+        pairs: [
+          { left: 0, right: 4 },
+          { left: 1, right: 5 },
+          { left: 2, right: 6 },
+          { left: 3, right: 7 },
         ],
       },
     }).expect(201);
@@ -337,6 +376,9 @@ describe('Quiz Engine (e2e)', () => {
     }
     await createPublishedMatching(matchingTopicId);
     await createPublishedMatching(matchingTopicId);
+
+    wideMatchingTopicId = await makeTopic('wide-matching');
+    await createWideMatching(wideMatchingTopicId);
 
     // 6 beginner + 2 advanced: lopsided on purpose, like the real content
     // where the advanced tier is far smaller than the others.
@@ -967,6 +1009,121 @@ describe('Quiz Engine (e2e)', () => {
       });
       expect(xp).toHaveLength(1);
       expect(xp[0].amount).toBe(25);
+    });
+
+    /**
+     * Every matching question in the bank is keyed 0→4, 1→5, 2→6, 3→7, so
+     * pairing the columns straight down scored full marks without reading a
+     * word. The choices are therefore dealt at delivery; these cover the four
+     * things that has to keep true.
+     */
+    describe('matching choices are dealt, not listed in key order', () => {
+      const rightIdsOf = (question: QuestionView): string[] => {
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        return ordered.slice(Math.ceil(ordered.length / 2)).map((o) => o.id);
+      };
+
+      const startWide = async (
+        token: string,
+      ): Promise<{ sessionId: string; question: QuestionView }> => {
+        const started = await start(token, {
+          subjectId,
+          topicId: wideMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+        return { sessionId, question };
+      };
+
+      it('keeps the prompts and the choices on their own sides', async () => {
+        const { token } = await registerUser();
+        const { question } = await startWide(token);
+
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        // The client splits the flat list in half by order, so a dealt value
+        // must never cross the midpoint.
+        expect(ordered.slice(0, 4).map((o) => o.content)).toEqual([
+          'L1',
+          'L2',
+          'L3',
+          'L4',
+        ]);
+        expect(
+          ordered
+            .slice(4)
+            .map((o) => o.content)
+            .sort(),
+        ).toEqual(['R1', 'R2', 'R3', 'R4']);
+        expect(ordered.map((o) => o.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+      });
+
+      it('still accepts the correct pairing', async () => {
+        const { token } = await registerUser();
+        const { sessionId, question } = await startWide(token);
+
+        const options = await prisma.answerOption.findMany({
+          where: { questionId: question.id },
+          select: { id: true, order: true },
+        });
+        const byOrder = new Map(options.map((o) => [o.order, o.id]));
+
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: {
+            pairs: [
+              { left: byOrder.get(0), right: byOrder.get(4) },
+              { left: byOrder.get(1), right: byOrder.get(5) },
+              { left: byOrder.get(2), right: byOrder.get(6) },
+              { left: byOrder.get(3), right: byOrder.get(7) },
+            ],
+          },
+        }).expect(200);
+        await complete(token, sessionId).expect(200);
+
+        const attempt = await prisma.questionAttempt.findFirstOrThrow({
+          where: { quizSessionId: sessionId, questionId: question.id },
+        });
+        expect(attempt.isCorrect).toBe(true);
+      });
+
+      it('deals the same order on resume and in the review', async () => {
+        const { token } = await registerUser();
+        const { sessionId, question } = await startWide(token);
+        const dealt = rightIdsOf(question);
+
+        const [again] = await getQuestions(token, sessionId);
+        expect(rightIdsOf(again)).toEqual(dealt);
+
+        // Completed without answering: the review still has to show the same
+        // cards the reader was looking at.
+        await complete(token, sessionId).expect(200);
+
+        const review = await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}/result`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200);
+        const reviewed = (review.body as { questions: QuestionView[] })
+          .questions[0];
+        expect(rightIdsOf(reviewed)).toEqual(dealt);
+      });
+
+      it('does not deal every session the same way', async () => {
+        // Seeded per session, so six deals landing on one order would mean the
+        // shuffle is not running. With 4! orders that is (1/24)^5 by chance.
+        const seen = new Set<string>();
+        for (let i = 0; i < 6; i += 1) {
+          const { token } = await registerUser();
+          const { question } = await startWide(token);
+          seen.add(rightIdsOf(question).join());
+        }
+        expect(seen.size).toBeGreaterThan(1);
+      });
     });
 
     it('evaluates MATCHING all-or-nothing', async () => {

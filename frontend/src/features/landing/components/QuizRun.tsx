@@ -296,15 +296,25 @@ function Result({ showReview }: { showReview: boolean }): React.JSX.Element {
         <span className="bg-primary/15 text-primary rounded-full px-4 py-2 text-sm font-medium">+80 XP</span>
       </div>
 
-      <dl className="border-border mt-8 grid grid-cols-3 border-y">
+      {/* Two figures, matching the real result screen. It used to show three,
+          the first of them «правильних» — which restated «правильних 4 з 5»
+          directly above it. The app dropped that duplicate; an animation that
+          promises the product should show the product. Two columns also give
+          «неправильних» room it did not have at 390px, where three columns
+          left each label about 88px and the word ran into its neighbour. */}
+      <dl className="border-border mt-8 grid grid-cols-2 border-y">
         {[
-          ['4', 'правильних'],
           ['1', 'неправильних'],
           ['0', 'без відповіді'],
         ].map(([value, label], index) => (
-          <div key={label} className={`px-5 py-6 ${index > 0 ? 'border-border border-l' : ''}`}>
+          <div
+            key={label}
+            className={`min-w-0 px-4 py-6 sm:px-5 ${index > 0 ? 'border-border border-l' : ''}`}
+          >
             <dd className="text-text-primary font-display text-3xl font-bold lining-nums">{value}</dd>
-            <dt className="text-text-muted mt-2 text-xs tracking-[0.18em] uppercase">{label}</dt>
+            <dt className="text-text-muted mt-2 text-[0.625rem] tracking-[0.1em] break-words uppercase sm:text-xs sm:tracking-[0.18em]">
+              {label}
+            </dt>
           </div>
         ))}
       </dl>
