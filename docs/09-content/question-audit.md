@@ -1,8 +1,8 @@
 # Question Bank Audit
 
-**Document Version:** 1.0
-**Status:** Complete — findings fixed except where marked
-**Last Updated:** August 2026
+**Document Version:** 1.1
+**Status:** Complete — findings fixed except where marked; §5 covers the NMT-format bank
+**Last Updated:** September 2026
 
 ---
 
@@ -125,10 +125,46 @@ The durable fix is a stable identifier in the authoring files, independent of th
 
 ---
 
-# 5. Reproducing the checks
+# 5. The NMT-format bank
+
+Finding 2 — the longest option being the correct one — could not be fixed by
+editing the practice bank one question at a time: it follows from how those
+questions are shaped. A correct answer stated precisely is longer than a
+distractor waved away in two words.
+
+The exam's own format does not have that problem, because its options are
+parallel by construction: four rows of three words each, or four sentences
+that differ by one rule. Questions written to that shape are marked
+`format: NMT` in the authoring files and carry a separate measurement.
+
+| Bank | Single-choice questions | Longest option is correct | Strictly longest |
+|---|---|---|---|
+| Ukrainian, practice | 660 | 73 % | 63 % |
+| Ukrainian, NMT format | 340 | 35 % | **25 %** |
+
+25 % is the chance rate for four options: on the NMT bank, picking the longest
+option is worth exactly nothing. The remaining 10 percentage points are ties,
+where the correct option shares the maximum length with another — no cue.
+
+The matching tasks follow the exam too: four rows and five choices, so the
+last row cannot be answered by elimination. The spare choice is authored as
+`extraChoices` and validated against repeating any paired item, which would
+otherwise create a second correct answer.
+
+**Coverage.** 424 questions across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay). 340 single-choice, 84
+matching, every one with an explanation.
+
+**Not yet covered.** The demo paper's tasks 21–25 hang off a shared text, and
+the schema has no shared-stimulus entity; those are absent from this bank.
+
+---
+
+# 6. Reproducing the checks
 
 ```bash
 cd backend
 python3 prisma/scripts/audit/audit.py         # mechanical checks
 python3 prisma/scripts/audit/audit_math.py    # recompute arithmetic answers
+python3 prisma/scripts/audit/audit_nmt.py     # NMT-format shape and length cues
 ```
