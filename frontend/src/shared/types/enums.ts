@@ -50,6 +50,16 @@ export const Difficulty = {
 } as const;
 export type Difficulty = (typeof Difficulty)[keyof typeof Difficulty];
 
+/**
+ * How a question was authored: PRACTICE is the general bank, NMT is written
+ * to the exam's own specification. Mirrors the backend enum.
+ */
+export const QuestionFormat = {
+  PRACTICE: 'PRACTICE',
+  NMT: 'NMT',
+} as const;
+export type QuestionFormat = (typeof QuestionFormat)[keyof typeof QuestionFormat];
+
 export const QuizType = {
   SUBJECT_QUIZ: 'SUBJECT_QUIZ',
   RANDOM_QUIZ: 'RANDOM_QUIZ',

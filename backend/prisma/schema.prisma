@@ -105,6 +105,21 @@ enum QuestionType {
   MATCHING
 }
 
+/// Which specification a question was written to.
+///
+/// `PRACTICE` is the original bank: useful for drilling a topic, but not
+/// built to the exam's shape — four options where the paper gives five,
+/// matching tasks with no spare choices.
+///
+/// `NMT` is written to the current specification and is what a mock exam may
+/// draw from. The two live side by side on purpose: a practice question is
+/// still a good question to train on, it just must not turn up in a sitting
+/// that claims to be like the real thing.
+enum QuestionFormat {
+  PRACTICE
+  NMT
+}
+
 /// Optional question difficulty tag (docs/02-domain/question.md §4).
 enum Difficulty {
   BEGINNER
@@ -383,8 +398,8 @@ model TopicTranslation {
 
 /// docs/02-domain/question.md
 model Question {
-  id            String       @id @default(uuid()) @db.Uuid
-  topicId       String       @db.Uuid
+  id            String         @id @default(uuid()) @db.Uuid
+  topicId       String         @db.Uuid
   type          QuestionType
   title         String
   explanation   String?
@@ -395,9 +410,12 @@ model Question {
   /// pairs referencing option order values; SINGLE_CHOICE questions keep it
   /// null — their correctness lives on AnswerOption.isCorrect.
   configuration Json?
-  isPublished   Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  /// Which specification this question follows — see QuestionFormat. Existing
+  /// questions default to PRACTICE, so nothing has to be backfilled.
+  format        QuestionFormat @default(PRACTICE)
+  isPublished   Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row so historical Quiz Sessions stay valid.
   deletedAt     DateTime?

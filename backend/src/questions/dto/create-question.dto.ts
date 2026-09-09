@@ -1,4 +1,4 @@
-import { Difficulty, QuestionType } from '@prisma/client';
+import { Difficulty, QuestionFormat, QuestionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -51,6 +51,16 @@ export class CreateQuestionDto {
   @ValidateIf((dto: CreateQuestionDto) => dto.difficulty !== undefined)
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
+
+  /**
+   * Which specification this question follows (docs/02-domain/question.md).
+   * Defaults to PRACTICE: a question is only NMT when its author says so,
+   * because claiming the format without meeting it is worse than not
+   * claiming it — a mock exam would then draw a question of the wrong shape.
+   */
+  @ValidateIf((dto: CreateQuestionDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 
   @ValidateIf((dto: CreateQuestionDto) => dto.explanation !== undefined)
   @IsString()

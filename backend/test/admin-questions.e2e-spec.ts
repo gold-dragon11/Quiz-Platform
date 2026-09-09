@@ -4,6 +4,7 @@ import {
   AccountStatus,
   Difficulty,
   Language,
+  QuestionFormat,
   QuestionType,
   UserRole,
 } from '@prisma/client';
@@ -23,6 +24,7 @@ interface QuestionBody {
   id: string;
   topicId: string;
   type: string;
+  format: string;
   title: string;
   imageUrl: string | null;
   difficulty: string | null;
@@ -548,6 +550,32 @@ describe('Admin Questions (e2e)', () => {
       expect(unpublished.items.some((q) => q.id === inOther.id)).toBe(false);
     });
 
+    it('defaults format to PRACTICE, keeps NMT, and filters on it', async () => {
+      const practice = await createQuestion(singleChoicePayload());
+      const reference = await createQuestion(
+        singleChoicePayload({ format: QuestionFormat.NMT }),
+      );
+
+      expect(practice.format).toBe(QuestionFormat.PRACTICE);
+      expect(reference.format).toBe(QuestionFormat.NMT);
+
+      const nmtOnly = await listQuestions('?format=NMT&pageSize=100');
+      expect(nmtOnly.items.some((q) => q.id === reference.id)).toBe(true);
+      expect(nmtOnly.items.some((q) => q.id === practice.id)).toBe(false);
+      expect(nmtOnly.items.every((q) => q.format === QuestionFormat.NMT)).toBe(
+        true,
+      );
+
+      const practiceOnly = await listQuestions('?format=PRACTICE&pageSize=100');
+      expect(practiceOnly.items.some((q) => q.id === practice.id)).toBe(true);
+      expect(practiceOnly.items.some((q) => q.id === reference.id)).toBe(false);
+
+      await request(app.getHttpServer())
+        .get(`${QUESTIONS_URL}?format=EXAM`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+    });
+
     it('searches the title case-insensitively and sorts by title', async () => {
       const created = await createQuestion(
         singleChoicePayload({ title: 'Phase43 Unmistakable Needle?' }),
@@ -601,6 +629,27 @@ describe('Admin Questions (e2e)', () => {
       });
       expect(cleared.imageUrl).toBeNull();
       expect(cleared.difficulty).toBeNull();
+    });
+
+    it('promotes a question to the NMT format and back', async () => {
+      const created = await createQuestion(singleChoicePayload());
+      expect(created.format).toBe(QuestionFormat.PRACTICE);
+
+      const promoted = await updateQuestion(created.id, {
+        format: QuestionFormat.NMT,
+      });
+      expect(promoted.format).toBe(QuestionFormat.NMT);
+
+      // An update that says nothing about the format leaves it alone.
+      const renamed = await updateQuestion(created.id, {
+        title: 'Phase43 still reference?',
+      });
+      expect(renamed.format).toBe(QuestionFormat.NMT);
+
+      const demoted = await updateQuestion(created.id, {
+        format: QuestionFormat.PRACTICE,
+      });
+      expect(demoted.format).toBe(QuestionFormat.PRACTICE);
     });
 
     it('stores an explanation at creation, edits it, and clears it with null', async () => {

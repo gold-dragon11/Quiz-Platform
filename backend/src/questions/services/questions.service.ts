@@ -161,6 +161,7 @@ export class QuestionsService {
       topicId: query.topicId,
       subjectId: query.subjectId,
       type: query.type,
+      format: query.format,
       difficulty: query.difficulty,
       isPublished: query.isPublished,
       search: query.search,
@@ -195,6 +196,7 @@ export class QuestionsService {
       topicId: query.topicId,
       subjectId: query.subjectId,
       type: query.type,
+      format: query.format,
       difficulty: query.difficulty,
       isPublished: true,
       search: query.search,
@@ -265,6 +267,7 @@ export class QuestionsService {
       title: dto.title,
       imageUrl: dto.imageUrl,
       difficulty: dto.difficulty,
+      format: dto.format,
       explanation: dto.explanation,
       configuration,
       options,
@@ -288,6 +291,7 @@ export class QuestionsService {
       ...(dto.title === undefined ? {} : { title: dto.title }),
       ...(dto.imageUrl === undefined ? {} : { imageUrl: dto.imageUrl }),
       ...(dto.difficulty === undefined ? {} : { difficulty: dto.difficulty }),
+      ...(dto.format === undefined ? {} : { format: dto.format }),
       ...(dto.explanation === undefined
         ? {}
         : { explanation: dto.explanation }),

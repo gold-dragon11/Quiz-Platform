@@ -326,6 +326,7 @@ refused here and use `/admin/questions` instead.
 | subjectId | — | uuid; filters through the topic relation |
 | topicId | — | uuid |
 | type | — | SINGLE_CHOICE or MATCHING |
+| format | — | PRACTICE or NMT |
 | difficulty | — | BEGINNER, INTERMEDIATE or ADVANCED |
 | search | — | case-insensitive match against the title |
 

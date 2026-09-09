@@ -2,6 +2,7 @@ import type {
   AccountStatus,
   AuthorableQuizMode,
   Difficulty,
+  QuestionFormat,
   QuestionType,
   UserRole,
 } from '@/shared/types/enums';
@@ -51,6 +52,7 @@ export interface QuestionRecord {
   id: string;
   topicId: string;
   type: QuestionType;
+  format: QuestionFormat;
   title: string;
   imageUrl: string | null;
   difficulty: Difficulty | null;
@@ -125,6 +127,7 @@ export interface AnswerOptionInput {
 export interface CreateQuestionPayload {
   topicId: string;
   type: QuestionType;
+  format?: QuestionFormat;
   title: string;
   imageUrl?: string;
   difficulty?: Difficulty;
@@ -134,6 +137,7 @@ export interface CreateQuestionPayload {
 }
 
 export interface UpdateQuestionPayload {
+  format?: QuestionFormat;
   title?: string;
   imageUrl?: string | null;
   difficulty?: Difficulty | null;
@@ -195,6 +199,7 @@ export interface AdminListParams {
   subjectId?: string;
   topicId?: string;
   type?: QuestionType;
+  format?: QuestionFormat;
   difficulty?: Difficulty;
   role?: UserRole;
 }

@@ -274,6 +274,7 @@ Supported query parameters:
 | topicId | — | UUID |
 | subjectId | — | UUID; filters through the topic relation |
 | type | — | SINGLE_CHOICE or MATCHING |
+| format | — | PRACTICE or NMT |
 | difficulty | — | BEGINNER, INTERMEDIATE, or ADVANCED |
 | isPublished | — | true or false |
 | search | — | case-insensitive match against the title |
@@ -302,6 +303,7 @@ Required fields:
 Optional fields:
 
 - imageUrl
+- format — PRACTICE (default) or NMT. NMT marks a question written to the exam's own specification; the older practice bank stays PRACTICE, so a mock exam can be drawn from the reference set alone.
 - difficulty
 - configuration (MATCHING only — see below)
 

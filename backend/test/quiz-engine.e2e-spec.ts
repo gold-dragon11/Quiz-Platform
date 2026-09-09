@@ -71,6 +71,7 @@ describe('Quiz Engine (e2e)', () => {
   let wideMatchingTopicId: string;
   let nmtMatchingTopicId: string;
   let difficultyTopicId: string;
+  let formatTopicId: string;
   let counter = 0;
 
   // Registers a fresh ACTIVE user, returns { token, userId }.
@@ -143,6 +144,30 @@ describe('Quiz Engine (e2e)', () => {
       type: QuestionType.SINGLE_CHOICE,
       title: `Phase51 ${difficulty} ${counter}?`,
       difficulty,
+      options: [
+        { content: 'A', isCorrect: true },
+        { content: 'B' },
+        { content: 'C' },
+      ],
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  // Same again but with an authoring format, for the format filter.
+  const createPublishedInFormat = async (
+    parentTopic: string,
+    format: string,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.SINGLE_CHOICE,
+      title: `Phase51 ${format} ${counter}?`,
+      format,
       options: [
         { content: 'A', isCorrect: true },
         { content: 'B' },
@@ -435,6 +460,16 @@ describe('Quiz Engine (e2e)', () => {
     }
     for (let i = 0; i < 2; i += 1) {
       await createPublishedAtDifficulty(difficultyTopicId, 'ADVANCED');
+    }
+
+    // 5 practice + 3 reference: the bank as it is while the NMT set is still
+    // being written topic by topic.
+    formatTopicId = await makeTopic('format');
+    for (let i = 0; i < 5; i += 1) {
+      await createPublishedInFormat(formatTopicId, 'PRACTICE');
+    }
+    for (let i = 0; i < 3; i += 1) {
+      await createPublishedInFormat(formatTopicId, 'NMT');
     }
   });
 
@@ -783,6 +818,100 @@ describe('Quiz Engine (e2e)', () => {
         questionCount: 2,
         timerEnabled: false,
         difficulty: 'IMPOSSIBLE',
+      }).expect(400);
+    });
+  });
+
+  describe('format filter', () => {
+    const available = async (
+      token: string,
+      query: Record<string, string>,
+    ): Promise<number> => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/quiz/available')
+        .query(query)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      return (response.body as { available: number }).available;
+    };
+
+    it('counts both formats when none is given, and each on its own', async () => {
+      const { token } = await registerUser();
+      expect(
+        await available(token, { subjectId, topicId: formatTopicId }),
+      ).toBe(8);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: formatTopicId,
+          format: 'NMT',
+        }),
+      ).toBe(3);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: formatTopicId,
+          format: 'PRACTICE',
+        }),
+      ).toBe(5);
+    });
+
+    it('draws only questions of the requested format', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+        format: 'NMT',
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      // Only three NMT questions exist in this topic, so drawing three of them
+      // proves the filter excluded the five practice ones. Their titles carry
+      // the format, which the client never sees on the question itself.
+      const questions = await getQuestions(token, sessionId);
+      expect(questions).toHaveLength(3);
+      expect(questions.every((q) => q.title.includes('NMT'))).toBe(true);
+    });
+
+    it('refuses more than the format holds, and says which pool ran out', async () => {
+      const { token } = await registerUser();
+      const response = await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 5,
+        timerEnabled: false,
+        format: 'NMT',
+      }).expect(409);
+
+      expect((response.body as { message: string }).message).toBe(
+        'Завдань формату НМТ у цій темі поки бракує. Оберіть меншу кількість або звичайне тренування.',
+      );
+    });
+
+    it('rejects format combined with onlyMistakes, with quizId, and unknown values', async () => {
+      const { token } = await registerUser();
+      await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        format: 'NMT',
+        onlyMistakes: true,
+      }).expect(400);
+
+      await start(token, {
+        quizId: '00000000-0000-0000-0000-000000000000',
+        format: 'NMT',
+      }).expect(400);
+
+      await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        format: 'ZNO',
       }).expect(400);
     });
   });

@@ -3,6 +3,7 @@ import {
   Difficulty,
   Language,
   Prisma,
+  QuestionFormat,
   QuestionType,
   QuizStatus,
   QuizType,
@@ -102,6 +103,7 @@ export class QuizSessionRepository {
     subjectId: string;
     topicId?: string;
     difficulty?: Difficulty;
+    format?: QuestionFormat;
     count: number;
     /** Prefer questions this learner has not seen lately (decision 15). */
     userId?: string;
@@ -183,6 +185,7 @@ export class QuizSessionRepository {
     subjectId: string;
     topicId?: string;
     difficulty?: Difficulty;
+    format?: QuestionFormat;
   }): Promise<number> {
     const rows = await this.prisma.$queryRaw<{ count: number }[]>(Prisma.sql`
       SELECT COUNT(*)::int AS count
@@ -513,6 +516,7 @@ function eligibleQuestionFilter(params: {
   subjectId: string;
   topicId?: string;
   difficulty?: Difficulty;
+  format?: QuestionFormat;
 }): Prisma.Sql {
   return Prisma.sql`
     q."deletedAt" IS NULL AND q."isPublished" = true
@@ -528,6 +532,11 @@ function eligibleQuestionFilter(params: {
       params.difficulty === undefined
         ? Prisma.empty
         : Prisma.sql`AND q.difficulty = ${params.difficulty}::"Difficulty"`
+    }
+    ${
+      params.format === undefined
+        ? Prisma.empty
+        : Prisma.sql`AND q.format = ${params.format}::"QuestionFormat"`
     }
   `;
 }

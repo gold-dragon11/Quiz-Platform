@@ -1,4 +1,4 @@
-import { Difficulty, QuestionType } from '@prisma/client';
+import { Difficulty, QuestionFormat, QuestionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsEnum,
@@ -46,6 +46,11 @@ export class ListTeacherQuestionsQueryDto {
   @ValidateIf((dto: ListTeacherQuestionsQueryDto) => dto.type !== undefined)
   @IsEnum(QuestionType)
   type?: QuestionType;
+
+  /** Lets a teacher pull only the reference NMT questions for a lesson. */
+  @ValidateIf((dto: ListTeacherQuestionsQueryDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 
   @ValidateIf(
     (dto: ListTeacherQuestionsQueryDto) => dto.difficulty !== undefined,

@@ -59,9 +59,11 @@ Creates a new Quiz Session in one of two mutually exclusive ways.
 Request body — **exactly one** of:
 
 - **Stored Quiz:** `quizId` only. The Subject, Topic, question count, timer, and mode are loaded from the referenced published Quiz; the ad-hoc fields must not be provided. Supplying `quizId` together with any ad-hoc field returns `400`.
-- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional), `difficulty` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional), `difficulty` (optional), `format` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
 
 `difficulty` restricts the pool to a single level (`BEGINNER`, `INTERMEDIATE`, `ADVANCED`); omit it for a mixed quiz, which is the default. It is not combinable with `quizId` (the stored Quiz fixes its own pool) or with `onlyMistakes` — that pool is already a specific set of questions, and narrowing it further would usually leave nothing; both combinations return `400`.
+
+`format` restricts the pool to one authoring format: `NMT` is the reference bank written to the exam's own specification, `PRACTICE` is the older bank. Omit it to draw from both, which is what practice does by default. It carries the same two restrictions as `difficulty` — not combinable with `quizId` or `onlyMistakes` — and when the requested format has too few questions in the topic, the `409` says so rather than reporting a general content gap.
 
 Sizing a level-filtered request needs care: the advanced tier is much smaller than the others (roughly 8–10 questions per topic against 16–24 for the rest), so a request for 10 advanced questions from one topic fails where the same request without a level would succeed. Ask §4a first rather than guessing. The `409` for this case carries its own message, naming the level rather than the content as the limit.
 
@@ -87,10 +89,10 @@ Response `201 Created` returns the session metadata: sessionId, mode, subjectId,
 ## Count the Question Pool
 
 ```http
-GET /api/v1/quiz/available?subjectId=…&topicId=…&difficulty=…
+GET /api/v1/quiz/available?subjectId=…&topicId=…&difficulty=…&format=…
 ```
 
-Returns `{ "available": n }` — how many questions an ad-hoc quiz over exactly these filters would draw from. `subjectId` is required; `topicId` and `difficulty` are optional and mean the same as in §4.
+Returns `{ "available": n }` — how many questions an ad-hoc quiz over exactly these filters would draw from. `subjectId` is required; `topicId`, `difficulty` and `format` are optional and mean the same as in §4.
 
 Exists so a caller can size `questionCount` before starting, instead of discovering an empty pool through a `409` it had no way to anticipate. This matters mainly for `difficulty`: without a level the pool is always large enough for the maximum a client offers, so the count is only interesting once a level narrows it.
 

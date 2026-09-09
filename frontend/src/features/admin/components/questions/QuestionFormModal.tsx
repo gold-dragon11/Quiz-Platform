@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/stores/toast-store';
-import { Difficulty, QuestionType } from '@/shared/types/enums';
+import { Difficulty, QuestionFormat, QuestionType } from '@/shared/types/enums';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -34,6 +34,10 @@ const FIELD_MAP = { title: 'title', imageurl: 'imageUrl' } as const;
 const TYPE_OPTIONS: SelectOption[] = [
   { value: QuestionType.SINGLE_CHOICE, label: 'Одна відповідь' },
   { value: QuestionType.MATCHING, label: 'Відповідності' },
+];
+const FORMAT_OPTIONS: SelectOption[] = [
+  { value: QuestionFormat.PRACTICE, label: 'Тренувальне' },
+  { value: QuestionFormat.NMT, label: 'Формат НМТ' },
 ];
 const DIFFICULTY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Без рівня' },
@@ -94,6 +98,7 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
     subjectId: '',
     topicId: question?.topicId ?? '',
     type: question?.type ?? QuestionType.SINGLE_CHOICE,
+    format: question?.format ?? QuestionFormat.PRACTICE,
     title: question?.title ?? '',
     imageUrl: question?.imageUrl ?? '',
     difficulty: question?.difficulty ?? '',
@@ -109,8 +114,10 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
  * review; an empty field clears it.
  *
  * Matching authoring uses row-pairs: each row is a left↔right pair. Options are
- * flattened with explicit orders (left = 2i, right = 2i+1) and the configuration
- * references those orders — a valid, side-disjoint matching configuration.
+ * flattened prompts-first — the left sides take orders 0..n-1 and the right
+ * sides n..2n-1 — and the configuration references those orders. That block
+ * layout is what tells the delivery side where the prompts end and the
+ * choices begin.
  */
 export function QuestionFormModal({
   open,
@@ -250,23 +257,27 @@ export function QuestionFormModal({
       setAnswersError('Додайте щонайменше дві пари, заповнивши обидві частини.');
       return;
     }
-    const built: AnswerOptionInput[] = [];
-    cleanedPairs.forEach((p, i) => {
-      built.push({
+    // Prompts occupy the opening block of orders and the choices follow, which
+    // is the only layout the backend accepts and the only one the learner's
+    // screen can draw: a numbered column on the left, a lettered one on the
+    // right. Interleaving them would put a choice where a prompt belongs.
+    const promptCount = cleanedPairs.length;
+    const built: AnswerOptionInput[] = [
+      ...cleanedPairs.map((p, i) => ({
         ...(p.leftId ? { id: p.leftId } : {}),
         content: p.leftContent,
         imageUrl: isEdit ? p.leftImage.trim() || null : p.leftImage.trim() || undefined,
-        order: i * 2,
-      });
-      built.push({
+        order: i,
+      })),
+      ...cleanedPairs.map((p, i) => ({
         ...(p.rightId ? { id: p.rightId } : {}),
         content: p.rightContent,
         imageUrl: isEdit ? p.rightImage.trim() || null : p.rightImage.trim() || undefined,
-        order: i * 2 + 1,
-      });
-    });
+        order: promptCount + i,
+      })),
+    ];
     const configuration = {
-      pairs: cleanedPairs.map((_, i) => ({ left: i * 2, right: i * 2 + 1 })),
+      pairs: cleanedPairs.map((_, i) => ({ left: i, right: promptCount + i })),
     };
     submit(values, difficulty, built, configuration);
   });
@@ -279,6 +290,7 @@ export function QuestionFormModal({
   ): void {
     if (question) {
       const payload: UpdateQuestionPayload = {
+        format: values.format,
         title: values.title,
         imageUrl: values.imageUrl.trim() || null,
         difficulty: difficulty ?? null,
@@ -300,6 +312,7 @@ export function QuestionFormModal({
       const payload: CreateQuestionPayload = {
         topicId: values.topicId,
         type: values.type,
+        format: values.format,
         title: values.title,
         imageUrl: values.imageUrl.trim() || undefined,
         difficulty,
@@ -364,6 +377,13 @@ export function QuestionFormModal({
           />
           <Select label="Рівень" options={DIFFICULTY_OPTIONS} {...register('difficulty')} />
         </div>
+
+        <Select
+          label="Формат"
+          options={FORMAT_OPTIONS}
+          helperText="«Формат НМТ» — завдання, написане за специфікацією зовнішнього іспиту. Пробний іспит збиратиметься лише з таких."
+          {...register('format')}
+        />
 
         <Textarea label="Заголовок" error={errors.title?.message} {...register('title')} />
         <Input

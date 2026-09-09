@@ -1,4 +1,4 @@
-import { Difficulty } from '@prisma/client';
+import { Difficulty, QuestionFormat } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -71,4 +71,16 @@ export class StartQuizDto {
   @ValidateIf((dto: StartQuizDto) => dto.difficulty !== undefined)
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
+
+  /**
+   * Draw only from questions of this format (docs/04-api/quiz.md §4). NMT
+   * means the reference bank written to the exam's own specification;
+   * omitting the field mixes both, which is what practice does by default.
+   * Bound by the same rules as `difficulty`: not combinable with `quizId`,
+   * whose pool is fixed by the stored Quiz, nor with `onlyMistakes`, whose
+   * pool is a specific set of questions the reader already got wrong.
+   */
+  @ValidateIf((dto: StartQuizDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 }

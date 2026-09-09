@@ -1,4 +1,4 @@
-import { Difficulty } from '@prisma/client';
+import { Difficulty, QuestionFormat } from '@prisma/client';
 import { IsEnum, IsUUID, ValidateIf } from 'class-validator';
 
 /**
@@ -17,4 +17,8 @@ export class AvailableQuestionsQueryDto {
   @ValidateIf((dto: AvailableQuestionsQueryDto) => dto.difficulty !== undefined)
   @IsEnum(Difficulty)
   difficulty?: Difficulty;
+
+  @ValidateIf((dto: AvailableQuestionsQueryDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 }

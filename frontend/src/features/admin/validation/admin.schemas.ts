@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AUTHORABLE_QUIZ_MODES, Difficulty, QuestionType } from '@/shared/types/enums';
+import { AUTHORABLE_QUIZ_MODES, Difficulty, QuestionFormat, QuestionType } from '@/shared/types/enums';
 
 /**
  * Admin form schemas, mirroring the backend DTO rules and messages
@@ -48,6 +48,7 @@ export const questionScalarSchema = z.object({
   type: z.nativeEnum(QuestionType),
   title: z.string().min(1, 'Вкажіть заголовок').max(2000),
   imageUrl: z.string().max(500),
+  format: z.nativeEnum(QuestionFormat),
   difficulty: z.union([z.nativeEnum(Difficulty), z.literal('')]),
   // Empty means "no explanation"; the form maps it to null before sending,
   // since the API rejects an empty string but accepts null to clear.

@@ -9,6 +9,7 @@ import {
   ExplanationVisibility,
   Language,
   Prisma,
+  QuestionFormat,
   QuestionType,
   QuizStatus,
   QuizType,
@@ -76,6 +77,11 @@ const INSUFFICIENT_AT_DIFFICULTY_MESSAGE =
 // already fixed those mistakes, which is success, not a content gap.
 const INSUFFICIENT_MISTAKES_MESSAGE =
   'Помилок для повторення вже немає — ви виправили їх усі.';
+// The NMT bank is being written topic by topic, so a reader can reasonably
+// ask for a format that has no content in this topic yet. Saying which pool
+// is empty keeps that from reading as a bug.
+const INSUFFICIENT_IN_FORMAT_MESSAGE =
+  'Завдань формату НМТ у цій темі поки бракує. Оберіть меншу кількість або звичайне тренування.';
 const SESSION_NOT_ACTIVE_MESSAGE = 'Ця сесія тесту неактивна.';
 const SESSION_NOT_COMPLETED_MESSAGE = 'Ця сесія тесту ще не завершена.';
 const QUESTION_NOT_IN_SESSION_MESSAGE = 'Це питання не належить до цієї сесії.';
@@ -86,6 +92,8 @@ const MISSING_START_FIELDS_MESSAGE =
   'subjectId, questionCount, and timerEnabled are required when quizId is not provided.';
 const DIFFICULTY_WITH_MISTAKES_MESSAGE =
   'difficulty cannot be combined with onlyMistakes: the mistake pool is already a fixed set of questions.';
+const FORMAT_WITH_MISTAKES_MESSAGE =
+  'format cannot be combined with onlyMistakes: the mistake pool is already a fixed set of questions.';
 
 /** The resolved generation config for a start request (Phase 5.6). */
 interface StartConfig {
@@ -99,6 +107,8 @@ interface StartConfig {
   onlyMistakes: boolean;
   /** Ad-hoc only: restrict the pool to one level, or null for a mix. */
   difficulty: Difficulty | null;
+  /** Ad-hoc only: restrict the pool to one format, or null for both. */
+  format: QuestionFormat | null;
 }
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
@@ -165,6 +175,7 @@ export class QuizService {
           subjectId: config.subjectId,
           topicId: config.topicId ?? undefined,
           difficulty: config.difficulty ?? undefined,
+          format: config.format ?? undefined,
           count: config.questionCount,
           // Practice prefers what this learner has not seen lately
           // (decision 15). Mistake practice above deliberately does not: its
@@ -178,7 +189,9 @@ export class QuizService {
           ? INSUFFICIENT_MISTAKES_MESSAGE
           : config.difficulty
             ? INSUFFICIENT_AT_DIFFICULTY_MESSAGE
-            : INSUFFICIENT_QUESTIONS_MESSAGE,
+            : config.format
+              ? INSUFFICIENT_IN_FORMAT_MESSAGE
+              : INSUFFICIENT_QUESTIONS_MESSAGE,
       );
     }
 
@@ -618,6 +631,7 @@ export class QuizService {
     subjectId: string;
     topicId?: string;
     difficulty?: Difficulty;
+    format?: QuestionFormat;
   }): Promise<{ available: number }> {
     const available =
       await this.quizSessionRepository.countEligibleQuestions(params);
@@ -646,7 +660,8 @@ export class QuizService {
         dto.questionCount !== undefined ||
         dto.timerEnabled !== undefined ||
         dto.onlyMistakes !== undefined ||
-        dto.difficulty !== undefined
+        dto.difficulty !== undefined ||
+        dto.format !== undefined
       ) {
         throw new BadRequestException(QUIZ_ID_XOR_MESSAGE);
       }
@@ -665,11 +680,16 @@ export class QuizService {
         mode: quiz.mode,
         onlyMistakes: false,
         difficulty: null,
+        format: null,
       };
     }
 
     if (dto.difficulty !== undefined && dto.onlyMistakes === true) {
       throw new BadRequestException(DIFFICULTY_WITH_MISTAKES_MESSAGE);
+    }
+
+    if (dto.format !== undefined && dto.onlyMistakes === true) {
+      throw new BadRequestException(FORMAT_WITH_MISTAKES_MESSAGE);
     }
 
     if (
@@ -691,6 +711,7 @@ export class QuizService {
           : QuizType.SUBJECT_QUIZ,
       onlyMistakes: dto.onlyMistakes ?? false,
       difficulty: dto.difficulty ?? null,
+      format: dto.format ?? null,
     };
   }
 
