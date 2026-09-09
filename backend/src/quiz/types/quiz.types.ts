@@ -24,6 +24,20 @@ export interface QuizQuestionView {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /**
+   * MATCHING only: how many of the ordered options are prompts. Everything
+   * from this index on is a choice.
+   *
+   * The client used to split the flat list down the middle, which only works
+   * while the two columns are the same size. Every NMT matching task offers
+   * spare choices — 4 prompts against 5 choices in Ukrainian and history — so
+   * the midpoint would have moved a choice into the prompt column.
+   *
+   * Stating the count gives away nothing: which choice belongs to which
+   * prompt still lives in `configuration`, which never leaves the server
+   * while a session is active.
+   */
+  promptCount?: number;
   answerOptions: {
     id: string;
     content: string;

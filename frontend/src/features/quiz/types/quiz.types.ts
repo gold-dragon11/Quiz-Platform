@@ -76,6 +76,11 @@ export interface QuizQuestionView {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /**
+   * MATCHING only: how many of the ordered options are prompts. Absent on
+   * older questions, where the two columns are the same size.
+   */
+  promptCount?: number;
   answerOptions: QuizAnswerOption[];
 }
 

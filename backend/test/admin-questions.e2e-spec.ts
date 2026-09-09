@@ -94,14 +94,14 @@ describe('Admin Questions (e2e)', () => {
       title: `Phase43 matching ${counter}?`,
       options: [
         { content: 'Left 1' },
-        { content: 'Right 1' },
         { content: 'Left 2' },
+        { content: 'Right 1' },
         { content: 'Right 2' },
       ],
       configuration: {
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       },
       ...overrides,
@@ -423,8 +423,8 @@ describe('Admin Questions (e2e)', () => {
       expect(body.type).toBe(QuestionType.MATCHING);
       expect(body.configuration).toEqual({
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       });
       expect(body.answerOptions).toHaveLength(4);
@@ -472,8 +472,8 @@ describe('Admin Questions (e2e)', () => {
         {
           configuration: {
             pairs: [
-              { left: 0, right: 1 },
-              { left: 2, right: 3 },
+              { left: 0, right: 2 },
+              { left: 1, right: 3 },
             ],
             extra: true,
           },
@@ -745,17 +745,19 @@ describe('Admin Questions (e2e)', () => {
       // Supplying a consistent new set + configuration succeeds.
       const body = await updateQuestion(created.id, {
         options: options.map((option) => ({ id: option.id })),
+        // A different connection, still in the required arrangement:
+        // prompts 0-1, choices 2-3.
         configuration: {
           pairs: [
             { left: 0, right: 3 },
-            { left: 2, right: 1 },
+            { left: 1, right: 2 },
           ],
         },
       });
       expect(body.configuration).toEqual({
         pairs: [
           { left: 0, right: 3 },
-          { left: 2, right: 1 },
+          { left: 1, right: 2 },
         ],
       });
       expect(body.answerOptions as OptionBody[]).toHaveLength(4);

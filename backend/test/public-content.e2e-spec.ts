@@ -309,14 +309,14 @@ describe('Public Content (e2e)', () => {
         title: 'Phase45 match capitals?',
         options: [
           { content: 'Ukraine' },
-          { content: 'Kyiv' },
           { content: 'France' },
+          { content: 'Kyiv' },
           { content: 'Paris' },
         ],
         configuration: {
           pairs: [
-            { left: 0, right: 1 },
-            { left: 2, right: 3 },
+            { left: 0, right: 2 },
+            { left: 1, right: 3 },
           ],
         },
       },
@@ -621,8 +621,8 @@ describe('Public Content (e2e)', () => {
       const singleQ = body.items.find((q) => q.id === qSC.id);
       expect(matchingQ?.configuration).toEqual({
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       });
       expect(singleQ).not.toHaveProperty('configuration');

@@ -44,9 +44,10 @@ function randomFrom(seed: number): () => number {
  * dealt freely. That fixes all existing questions and every future one at
  * once — the authoring convention can stay as it is.
  *
- * Only the right half is shuffled, and only among itself: the client splits
- * the flat list in two by order, so a value crossing the midpoint would move
- * a choice into the prompts column.
+ * Only the choices are shuffled, and only among themselves: a value crossing
+ * into the prompt block would move a choice into the wrong column. The split
+ * point comes from the answer key (one prompt per pair), not from the middle
+ * of the list — the two columns are different sizes in every NMT task.
  *
  * The deal is seeded by session + question, which gives three things at once:
  * the order survives a refresh or reconnect (the resume view deals the same
@@ -57,17 +58,21 @@ export function shuffleMatchingOrder<T extends OrderedOption>(
   type: QuestionType,
   options: T[],
   seedKey: string,
+  promptCount: number,
 ): T[] {
-  if (type !== QuestionType.MATCHING || options.length < 4) {
+  if (
+    type !== QuestionType.MATCHING ||
+    promptCount <= 0 ||
+    promptCount >= options.length
+  ) {
     return options;
   }
 
   const ordered = [...options].sort((a, b) => a.order - b.order);
-  const half = Math.ceil(ordered.length / 2);
-  const rightOrders = ordered.slice(half).map((option) => option.order);
+  const choiceOrders = ordered.slice(promptCount).map((option) => option.order);
 
-  // Fisher-Yates over the right-hand order values.
-  const dealt = [...rightOrders];
+  // Fisher-Yates over the choice order values.
+  const dealt = [...choiceOrders];
   const random = randomFrom(seedFrom(seedKey));
   for (let i = dealt.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1));
@@ -75,6 +80,8 @@ export function shuffleMatchingOrder<T extends OrderedOption>(
   }
 
   return ordered.map((option, index) =>
-    index < half ? option : { ...option, order: dealt[index - half] },
+    index < promptCount
+      ? option
+      : { ...option, order: dealt[index - promptCount] },
   );
 }

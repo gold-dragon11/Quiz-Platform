@@ -9,6 +9,7 @@ import {
   ExplanationVisibility,
   Language,
   Prisma,
+  QuestionType,
   QuizStatus,
   QuizType,
   XPSource,
@@ -1103,12 +1104,17 @@ export class QuizService {
     question: SessionQuestionRecord,
     sessionId: string,
   ): QuizQuestionView {
+    // How many options are prompts, read from the key's pair count. The key
+    // itself never leaves the server while the session is active — only this
+    // count does, and it says nothing about which choice fits which prompt.
+    const promptCount = matchingPromptCount(question.configuration);
     return {
       id: question.id,
       type: question.type,
       title: question.translations[0]?.title ?? question.title,
       difficulty: question.difficulty,
       imageUrl: question.imageUrl,
+      ...(question.type === QuestionType.MATCHING ? { promptCount } : {}),
       answerOptions: shuffleMatchingOrder(
         question.type,
         question.answerOptions.map((option) => ({
@@ -1118,9 +1124,27 @@ export class QuizService {
           order: option.order,
         })),
         `${sessionId}:${question.id}`,
+        promptCount,
       ),
     };
   }
+}
+
+/**
+ * Number of prompts in a MATCHING key — one per pair. Zero for anything else,
+ * or for a malformed configuration, which leaves the shuffle a no-op rather
+ * than guessing a split point.
+ */
+function matchingPromptCount(configuration: Prisma.JsonValue): number {
+  if (
+    typeof configuration !== 'object' ||
+    configuration === null ||
+    Array.isArray(configuration)
+  ) {
+    return 0;
+  }
+  const pairs = (configuration as { pairs?: unknown }).pairs;
+  return Array.isArray(pairs) ? pairs.length : 0;
 }
 
 /** English rides on the base records — no translation join needed. */

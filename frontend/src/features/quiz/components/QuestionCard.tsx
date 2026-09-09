@@ -53,6 +53,7 @@ export function QuestionCard({
       ) : (
         <MatchingAnswer
           options={question.answerOptions}
+          promptCount={question.promptCount}
           assignments={pairsToAssignments(getMatchingPairs(answer))}
           disabled={disabled}
           onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}

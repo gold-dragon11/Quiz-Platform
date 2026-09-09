@@ -70,13 +70,23 @@ export function buildMatchingAnswer(pairs: MatchingPair[]): SelectedAnswer {
  * are the left prompts, the second half the right choices — the natural
  * authoring convention (options are contiguous 0..n-1 with disjoint sides).
  */
-export function splitMatchingOptions(options: QuizAnswerOption[]): {
+export function splitMatchingOptions(
+  options: QuizAnswerOption[],
+  promptCount?: number,
+): {
   left: QuizAnswerOption[];
   right: QuizAnswerOption[];
 } {
   const ordered = [...options].sort((a, b) => a.order - b.order);
-  const half = Math.ceil(ordered.length / 2);
-  return { left: ordered.slice(0, half), right: ordered.slice(half) };
+  // The server states the split point, because the columns are not the same
+  // size: an NMT matching task offers spare choices — four prompts against
+  // five choices — and halving the list would move one into the prompts.
+  // Questions authored before the count existed still divide evenly.
+  const split =
+    promptCount !== undefined && promptCount > 0 && promptCount < ordered.length
+      ? promptCount
+      : Math.ceil(ordered.length / 2);
+  return { left: ordered.slice(0, split), right: ordered.slice(split) };
 }
 
 /** True when every left prompt has a distinct right assignment. */

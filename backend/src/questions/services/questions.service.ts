@@ -690,8 +690,18 @@ export class QuestionsService {
   /**
    * Validates matching pairs against an option order set
    * (docs/02-domain/answer-option.md §9): at least two pairs; no self pair;
-   * no duplicate pair; left and right sides never overlap; every option
-   * order appears in exactly one pair.
+   * no duplicate pair; left and right sides never overlap.
+   *
+   * The prompts must be the opening block of orders — `0 … L-1` where `L` is
+   * the number of pairs — and everything from `L` on is a choice. That is
+   * what lets the delivered question say where the two columns divide without
+   * shipping the answer key with it.
+   *
+   * Choices may be left unpaired. Every NMT matching task offers more choices
+   * than prompts (4×5 in Ukrainian and history, 3×5 in mathematics, up to 6×8
+   * in English), so the spare ones are the format, not an authoring mistake.
+   * Prompts, by contrast, must all be answered: an unpaired prompt would be a
+   * question with no correct answer.
    */
   private assertValidPairs(pairs: MatchingPair[], orders: number[]): void {
     if (pairs.length < MIN_MATCHING_PAIRS) {
@@ -717,10 +727,25 @@ export class QuestionsService {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
 
-    const used = [...lefts, ...rights];
     const orderSet = new Set(orders);
-    const everyUsedExists = used.every((order) => orderSet.has(order));
-    if (!everyUsedExists || used.length !== orders.length) {
+    if ([...lefts, ...rights].some((order) => !orderSet.has(order))) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+
+    // Checked on position, not on the order value itself: incoming orders are
+    // arbitrary (10, 5, 30 …) and are normalized to 0..n-1 only afterwards.
+    // What has to hold is the arrangement — prompts first, then choices.
+    const positionOf = new Map(
+      [...orders].sort((a, b) => a - b).map((order, index) => [order, index]),
+    );
+    const promptCount = lefts.length;
+    const promptsAreLeadingBlock = lefts.every(
+      (order) => (positionOf.get(order) ?? -1) < promptCount,
+    );
+    const choicesFollowPrompts = rights.every(
+      (order) => (positionOf.get(order) ?? -1) >= promptCount,
+    );
+    if (!promptsAreLeadingBlock || !choicesFollowPrompts) {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
   }

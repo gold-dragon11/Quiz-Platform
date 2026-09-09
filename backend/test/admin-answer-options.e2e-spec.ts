@@ -156,8 +156,8 @@ describe('Admin Answer Options (e2e)', () => {
       ],
       configuration: {
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       },
       ...overrides,
@@ -256,50 +256,53 @@ describe('Admin Answer Options (e2e)', () => {
       const body = await createQuestion(
         matching({
           options: [
+            { content: 'L2', order: 20 },
+            { content: 'R1', order: 30 },
             { content: 'L1', order: 10 },
-            { content: 'R1', order: 5 },
-            { content: 'L2', order: 30 },
-            { content: 'R2', order: 20 },
+            { content: 'R2', order: 40 },
           ],
           configuration: {
             pairs: [
-              { left: 10, right: 5 },
-              { left: 30, right: 20 },
+              { left: 10, right: 30 },
+              { left: 20, right: 40 },
             ],
           },
         }),
       );
 
-      // Sorted by supplied order: R1(5)→0, L1(10)→1, R2(20)→2, L2(30)→3.
+      // Sorted by supplied order: L1(10)→0, L2(20)→1, R1(30)→2, R2(40)→3.
+      // Array position is ignored; the explicit order decides.
       expect(body.answerOptions.map((o) => [o.order, o.content])).toEqual([
-        [0, 'R1'],
-        [1, 'L1'],
-        [2, 'R2'],
-        [3, 'L2'],
+        [0, 'L1'],
+        [1, 'L2'],
+        [2, 'R1'],
+        [3, 'R2'],
       ]);
       expect(body.configuration).toEqual({
         pairs: [
-          { left: 1, right: 0 },
-          { left: 3, right: 2 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       });
     });
 
     it('lets stored MATCHING pairs follow their options through a reorder', async () => {
       const created = await createQuestion(matching());
-      const [l1, r1, l2, r2] = created.answerOptions;
+      const [l1, l2, r1, r2] = created.answerOptions;
 
-      // Reverse the array without supplying a configuration.
+      // Swap within each column. A full reversal is no longer a legal
+      // reorder: it would put the choices ahead of the prompts, and the
+      // question could not be drawn in two columns any more.
       const body = await updateQuestion(created.id, {
-        options: [{ id: r2.id }, { id: l2.id }, { id: r1.id }, { id: l1.id }],
+        options: [{ id: l2.id }, { id: l1.id }, { id: r2.id }, { id: r1.id }],
       });
 
-      // New orders: r2→0, l2→1, r1→2, l1→3. Stored pairs (l1,r1),(l2,r2)
+      // New orders: l2→0, l1→1, r2→2, r1→3. Stored pairs (l1,r1),(l2,r2)
       // must still connect the same options.
       expect(body.configuration).toEqual({
         pairs: [
-          { left: 3, right: 2 },
-          { left: 1, right: 0 },
+          { left: 1, right: 3 },
+          { left: 0, right: 2 },
         ],
       });
     });
@@ -408,15 +411,25 @@ describe('Admin Answer Options (e2e)', () => {
         },
       ],
       [
-        'an odd option count',
+        // An odd option count used to be refused here. It is now the format:
+        // every NMT matching task offers more choices than prompts, so the
+        // spare one is legal. What is still refused is a prompt block that
+        // does not open the list — the client divides the two columns at a
+        // single point and cannot draw prompts scattered among choices.
+        'prompts that are not the opening block',
         {
           options: [
             { content: 'L1' },
             { content: 'R1' },
             { content: 'L2' },
             { content: 'R2' },
-            { content: 'Odd one out' },
           ],
+          configuration: {
+            pairs: [
+              { left: 0, right: 1 },
+              { left: 2, right: 3 },
+            ],
+          },
         },
       ],
       [

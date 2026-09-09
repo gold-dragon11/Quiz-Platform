@@ -6,6 +6,8 @@ import { splitMatchingOptions } from '@/features/quiz/lib/quiz-answers';
 
 interface MatchingAnswerProps {
   options: QuizAnswerOption[];
+  /** Where the prompts end and the choices begin; see splitMatchingOptions. */
+  promptCount?: number;
   /** Left option id → right option id. */
   assignments: Record<string, string>;
   disabled?: boolean;
@@ -15,7 +17,8 @@ interface MatchingAnswerProps {
 /**
  * Matching answer input (docs/04-api/quiz.md §6). The active quiz view
  * withholds the pairing configuration, so the flat option list is split into
- * left prompts and right choices by stored order (see splitMatchingOptions).
+ * left prompts and right choices by the split point the server states (see
+ * splitMatchingOptions) — the columns are different sizes in the NMT format.
  * Each prompt gets a dropdown of the still-available right choices; the page
  * builds the `{ pairs: [{ left, right }] }` payload and autosaves it.
  *
@@ -26,11 +29,12 @@ interface MatchingAnswerProps {
  */
 export function MatchingAnswer({
   options,
+  promptCount,
   assignments,
   disabled = false,
   onChange,
 }: MatchingAnswerProps): React.JSX.Element {
-  const { left, right } = splitMatchingOptions(options);
+  const { left, right } = splitMatchingOptions(options, promptCount);
 
   const update = (leftId: string, rightId: string): void => {
     const next = { ...assignments };

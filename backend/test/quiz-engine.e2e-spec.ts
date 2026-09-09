@@ -24,6 +24,8 @@ interface QuestionView {
   title: string;
   difficulty: string | null;
   imageUrl: string | null;
+  /** MATCHING only: how many ordered options are prompts. */
+  promptCount?: number;
   answerOptions: OptionView[];
 }
 
@@ -67,6 +69,7 @@ describe('Quiz Engine (e2e)', () => {
   let secondTopicId: string;
   let matchingTopicId: string;
   let wideMatchingTopicId: string;
+  let nmtMatchingTopicId: string;
   let difficultyTopicId: string;
   let counter = 0;
 
@@ -161,16 +164,18 @@ describe('Quiz Engine (e2e)', () => {
       topicId: parentTopic,
       type: QuestionType.MATCHING,
       title: `Phase51 Match ${counter}?`,
+      // Prompts first, then choices — the shape the client can actually draw,
+      // and the shape every question in the bank is stored in.
       options: [
         { content: 'L1' },
-        { content: 'R1' },
         { content: 'L2' },
+        { content: 'R1' },
         { content: 'R2' },
       ],
       configuration: {
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       },
     }).expect(201);
@@ -202,6 +207,45 @@ describe('Quiz Engine (e2e)', () => {
         { content: 'R2' },
         { content: 'R3' },
         { content: 'R4' },
+      ],
+      configuration: {
+        pairs: [
+          { left: 0, right: 4 },
+          { left: 1, right: 5 },
+          { left: 2, right: 6 },
+          { left: 3, right: 7 },
+        ],
+      },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /**
+   * A matching question in the NMT shape: four prompts (order 0-3) against
+   * five choices (order 4-8), one of which pairs with nothing. Every matching
+   * task on the real paper offers spare choices — 4×5 in Ukrainian and
+   * history, 3×5 in mathematics — so the columns are never the same size.
+   */
+  const createNmtMatching = async (parentTopic: string): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.MATCHING,
+      title: `Phase51 NmtMatch ${counter}?`,
+      options: [
+        { content: 'P1' },
+        { content: 'P2' },
+        { content: 'P3' },
+        { content: 'P4' },
+        { content: 'C1' },
+        { content: 'C2' },
+        { content: 'C3' },
+        { content: 'C4' },
+        { content: 'SPARE' },
       ],
       configuration: {
         pairs: [
@@ -379,6 +423,9 @@ describe('Quiz Engine (e2e)', () => {
 
     wideMatchingTopicId = await makeTopic('wide-matching');
     await createWideMatching(wideMatchingTopicId);
+
+    nmtMatchingTopicId = await makeTopic('nmt-matching');
+    await createNmtMatching(nmtMatchingTopicId);
 
     // 6 beginner + 2 advanced: lopsided on purpose, like the real content
     // where the advanced tier is far smaller than the others.
@@ -1126,6 +1173,103 @@ describe('Quiz Engine (e2e)', () => {
       });
     });
 
+    /**
+     * The NMT format: more choices than prompts, with the spare ones part of
+     * the task rather than an authoring slip.
+     */
+    describe('matching with spare choices (NMT format)', () => {
+      it('states where the prompts end and keeps the spare choice out of them', async () => {
+        const { token } = await registerUser();
+        const started = await start(token, {
+          subjectId,
+          topicId: nmtMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+
+        // Four prompts, five choices — halving nine would have put a choice
+        // in the prompt column.
+        expect(question.promptCount).toBe(4);
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        expect(ordered).toHaveLength(9);
+        expect(ordered.slice(0, 4).map((o) => o.content)).toEqual([
+          'P1',
+          'P2',
+          'P3',
+          'P4',
+        ]);
+        expect(
+          ordered
+            .slice(4)
+            .map((o) => o.content)
+            .sort(),
+        ).toEqual(['C1', 'C2', 'C3', 'C4', 'SPARE']);
+      });
+
+      it('accepts the correct pairing and leaves the spare choice unused', async () => {
+        const { token } = await registerUser();
+        const started = await start(token, {
+          subjectId,
+          topicId: nmtMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+
+        const options = await prisma.answerOption.findMany({
+          where: { questionId: question.id },
+          select: { id: true, order: true },
+        });
+        const byOrder = new Map(options.map((o) => [o.order, o.id]));
+
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: {
+            pairs: [
+              { left: byOrder.get(0), right: byOrder.get(4) },
+              { left: byOrder.get(1), right: byOrder.get(5) },
+              { left: byOrder.get(2), right: byOrder.get(6) },
+              { left: byOrder.get(3), right: byOrder.get(7) },
+            ],
+          },
+        }).expect(200);
+        await complete(token, sessionId).expect(200);
+
+        const attempt = await prisma.questionAttempt.findFirstOrThrow({
+          where: { quizSessionId: sessionId, questionId: question.id },
+        });
+        expect(attempt.isCorrect).toBe(true);
+      });
+
+      it('rejects a key whose prompts are not the opening block', async () => {
+        // Prompts 0 and 2 with a choice wedged between them: the client
+        // divides the list at a single point, so a scattered prompt block
+        // cannot be drawn.
+        await adminReq('post', '/api/v1/admin/questions', {
+          topicId: nmtMatchingTopicId,
+          type: QuestionType.MATCHING,
+          title: 'Phase51 ScatteredPrompts?',
+          options: [
+            { content: 'P1' },
+            { content: 'C1' },
+            { content: 'P2' },
+            { content: 'C2' },
+          ],
+          configuration: {
+            pairs: [
+              { left: 0, right: 1 },
+              { left: 2, right: 3 },
+            ],
+          },
+        }).expect(400);
+      });
+    });
+
     it('evaluates MATCHING all-or-nothing', async () => {
       const { token } = await registerUser();
       const started = await start(token, {
@@ -1151,8 +1295,8 @@ describe('Quiz Engine (e2e)', () => {
         if (correct) {
           return {
             pairs: [
-              { left: byOrder.get(0), right: byOrder.get(1) },
-              { left: byOrder.get(2), right: byOrder.get(3) },
+              { left: byOrder.get(0), right: byOrder.get(2) },
+              { left: byOrder.get(1), right: byOrder.get(3) },
             ],
           };
         }
@@ -1160,7 +1304,7 @@ describe('Quiz Engine (e2e)', () => {
         return {
           pairs: [
             { left: byOrder.get(0), right: byOrder.get(3) },
-            { left: byOrder.get(2), right: byOrder.get(1) },
+            { left: byOrder.get(1), right: byOrder.get(2) },
           ],
         };
       };
