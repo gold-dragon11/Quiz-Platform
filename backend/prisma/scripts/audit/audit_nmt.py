@@ -53,7 +53,21 @@ def check(pack):
                 continue
             at = '%s/%s: %s' % (pack, topic['slug'], question['title'][:45])
 
-            if 'options' in question:
+            if question.get('type') == 'ORDERING':
+                sequence = question['sequence']
+                if len(sequence) != 4:
+                    problems.append('%s — %d items, the paper always gives 4'
+                                    % (at, len(sequence)))
+                if len(set(sequence)) != len(sequence):
+                    problems.append('%s — an item is repeated' % at)
+            elif question.get('type') == 'MULTIPLE_CHOICE':
+                if len(question['options']) != 7:
+                    problems.append('%s — %d options, the paper gives 7'
+                                    % (at, len(question['options'])))
+                if len(question['correct']) != 3:
+                    problems.append('%s — %d correct, the paper asks for 3'
+                                    % (at, len(question['correct'])))
+            elif 'options' in question:
                 total += 1
                 options = question['options']
                 if len(options) != 4:
@@ -95,6 +109,7 @@ def check(pack):
 
             texts = [question['title'], question.get('explanation', '')]
             texts += question.get('options', [])
+            texts += question.get('sequence', [])
             texts += [side for pair in question.get('pairs', []) for side in pair]
             texts += question.get('extraChoices', [])
             for text in texts:

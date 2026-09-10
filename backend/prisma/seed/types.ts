@@ -56,7 +56,42 @@ export interface MatchingContent {
   explanation?: string;
 }
 
-export type QuestionContent = SingleChoiceContent | MatchingContent;
+/**
+ * Put the items in the right order. `sequence` is written in the *correct*
+ * order; the loader stores it as the option order, and the delivery view deals
+ * the options shuffled so the reader never sees the answer.
+ */
+export interface OrderingContent {
+  type: 'ORDERING';
+  title: string;
+  difficulty: keyof typeof Difficulty;
+  format?: QuestionFormatContent;
+  /** At least three items, in the order that is correct. */
+  sequence: string[];
+  explanation?: string;
+}
+
+/**
+ * Several statements, of which more than one is correct — the exam asks for
+ * three out of seven. Options are stored shuffled, like single-choice ones, so
+ * the correct statements do not sit at the top of the list.
+ */
+export interface MultipleChoiceContent {
+  type: 'MULTIPLE_CHOICE';
+  title: string;
+  difficulty: keyof typeof Difficulty;
+  format?: QuestionFormatContent;
+  options: string[];
+  /** Zero-based indices of the correct options — at least two. */
+  correct: number[];
+  explanation?: string;
+}
+
+export type QuestionContent =
+  | SingleChoiceContent
+  | MatchingContent
+  | OrderingContent
+  | MultipleChoiceContent;
 
 /** One topic file: `prisma/seed/content/<subject>/topics/<slug>.json`. */
 export interface TopicContent {
@@ -83,12 +118,31 @@ export function isMatching(
   return question.type === 'MATCHING';
 }
 
+export function isOrdering(
+  question: QuestionContent,
+): question is OrderingContent {
+  return question.type === 'ORDERING';
+}
+
+export function isMultipleChoice(
+  question: QuestionContent,
+): question is MultipleChoiceContent {
+  return question.type === 'MULTIPLE_CHOICE';
+}
+
 export function questionFormat(question: QuestionContent): QuestionFormat {
   return QuestionFormat[question.format ?? 'PRACTICE'];
 }
 
 export function questionType(question: QuestionContent): QuestionType {
-  return isMatching(question)
-    ? QuestionType.MATCHING
-    : QuestionType.SINGLE_CHOICE;
+  switch (question.type) {
+    case 'MATCHING':
+      return QuestionType.MATCHING;
+    case 'ORDERING':
+      return QuestionType.ORDERING;
+    case 'MULTIPLE_CHOICE':
+      return QuestionType.MULTIPLE_CHOICE;
+    default:
+      return QuestionType.SINGLE_CHOICE;
+  }
 }

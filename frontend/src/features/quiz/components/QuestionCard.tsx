@@ -4,13 +4,21 @@ import type { QuizQuestionView, SelectedAnswer } from '@/features/quiz/types/qui
 import {
   assignmentsToPairs,
   buildMatchingAnswer,
+  buildMultipleChoiceAnswer,
+  buildOrderingAnswer,
   buildSingleChoiceAnswer,
+  getAnswerOptionIds,
   getMatchingPairs,
   getSelectedOptionId,
+  getSequence,
   pairsToAssignments,
+  positionsToSequence,
+  sequenceToPositions,
 } from '@/features/quiz/lib/quiz-answers';
 import { SingleChoiceAnswer } from '@/features/quiz/components/SingleChoiceAnswer';
 import { MatchingAnswer } from '@/features/quiz/components/MatchingAnswer';
+import { OrderingAnswer } from '@/features/quiz/components/OrderingAnswer';
+import { MultipleChoiceAnswer } from '@/features/quiz/components/MultipleChoiceAnswer';
 import { ReportQuestionButton } from '@/features/question-reports';
 
 interface QuestionCardProps {
@@ -43,20 +51,52 @@ export function QuestionCard({
         <img src={question.imageUrl} alt="" className="max-h-64 w-full rounded-lg object-contain" />
       )}
 
-      {question.type === QuestionType.SINGLE_CHOICE ? (
+      {question.type === QuestionType.SINGLE_CHOICE && (
         <SingleChoiceAnswer
           options={question.answerOptions}
           selectedId={getSelectedOptionId(answer)}
           disabled={disabled}
           onSelect={(optionId) => onAnswerChange(buildSingleChoiceAnswer(optionId))}
         />
-      ) : (
+      )}
+
+      {question.type === QuestionType.MATCHING && (
         <MatchingAnswer
           options={question.answerOptions}
           promptCount={question.promptCount}
           assignments={pairsToAssignments(getMatchingPairs(answer))}
           disabled={disabled}
           onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
+        />
+      )}
+
+      {question.type === QuestionType.ORDERING && (
+        <OrderingAnswer
+          options={question.answerOptions}
+          positions={sequenceToPositions(getSequence(answer))}
+          disabled={disabled}
+          onChange={(positions) => {
+            // Only a complete ordering is a valid payload, so a half-placed
+            // one is held in the page until the last item finds its place.
+            const sequence = positionsToSequence(positions, question.answerOptions.length);
+            onAnswerChange(
+              buildOrderingAnswer(
+                sequence ??
+                  Object.entries(positions)
+                    .sort((a, b) => a[1] - b[1])
+                    .map(([id]) => id),
+              ),
+            );
+          }}
+        />
+      )}
+
+      {question.type === QuestionType.MULTIPLE_CHOICE && (
+        <MultipleChoiceAnswer
+          options={question.answerOptions}
+          selectedIds={getAnswerOptionIds(answer)}
+          disabled={disabled}
+          onChange={(selectedIds) => onAnswerChange(buildMultipleChoiceAnswer(selectedIds))}
         />
       )}
 

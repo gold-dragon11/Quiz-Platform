@@ -34,6 +34,8 @@ const FIELD_MAP = { title: 'title', imageurl: 'imageUrl' } as const;
 const TYPE_OPTIONS: SelectOption[] = [
   { value: QuestionType.SINGLE_CHOICE, label: 'Одна відповідь' },
   { value: QuestionType.MATCHING, label: 'Відповідності' },
+  { value: QuestionType.ORDERING, label: 'Послідовність' },
+  { value: QuestionType.MULTIPLE_CHOICE, label: 'Кілька відповідей' },
 ];
 const FORMAT_OPTIONS: SelectOption[] = [
   { value: QuestionFormat.PRACTICE, label: 'Тренувальне' },
@@ -145,6 +147,8 @@ export function QuestionFormModal({
 
   const [options, setOptions] = useState<OptionRow[]>([emptyOption(), emptyOption()]);
   const [correctIndex, setCorrectIndex] = useState(0);
+  /** MULTIPLE_CHOICE: indices of the options marked correct. */
+  const [correctIndexes, setCorrectIndexes] = useState<number[]>([]);
   const [pairs, setPairs] = useState<PairRow[]>([emptyPair(), emptyPair()]);
   const [answersError, setAnswersError] = useState<string | null>(null);
 
@@ -170,6 +174,16 @@ export function QuestionFormModal({
           sorted.findIndex((o) => o.isCorrect),
         ),
       );
+    } else if (question?.type === QuestionType.ORDERING || question?.type === QuestionType.MULTIPLE_CHOICE) {
+      const sorted = [...question.answerOptions].sort((a, b) => a.order - b.order);
+      setOptions(
+        sorted.map((o) => ({
+          id: o.id,
+          content: o.content,
+          imageUrl: o.imageUrl ?? '',
+        })),
+      );
+      setCorrectIndexes(sorted.map((o, index) => (o.isCorrect ? index : -1)).filter((index) => index >= 0));
     } else if (question?.type === QuestionType.MATCHING) {
       const byOrder = new Map(question.answerOptions.map((o) => [o.order, o]));
       const configPairs = readConfigPairs(question.configuration);
@@ -189,6 +203,7 @@ export function QuestionFormModal({
     } else {
       setOptions([emptyOption(), emptyOption()]);
       setCorrectIndex(0);
+      setCorrectIndexes([]);
       setPairs([emptyPair(), emptyPair()]);
     }
   }, [open, question, reset]);
@@ -242,6 +257,49 @@ export function QuestionFormModal({
         imageUrl: isEdit ? o.imageUrl.trim() || null : o.imageUrl.trim() || undefined,
         order: i,
         isCorrect: i === correctIndex,
+      }));
+      submit(values, difficulty, built);
+      return;
+    }
+
+    if (values.type === QuestionType.ORDERING) {
+      const cleaned = options.map((o) => ({ ...o, content: o.content.trim() }));
+      if (cleaned.length < 3 || cleaned.some((o) => !o.content)) {
+        setAnswersError('Додайте щонайменше три елементи, кожен із текстом.');
+        return;
+      }
+      // The list order is the answer; no option carries a correctness flag.
+      const built: AnswerOptionInput[] = cleaned.map((o, i) => ({
+        ...(o.id ? { id: o.id } : {}),
+        content: o.content,
+        imageUrl: isEdit ? o.imageUrl.trim() || null : o.imageUrl.trim() || undefined,
+        order: i,
+      }));
+      submit(values, difficulty, built);
+      return;
+    }
+
+    if (values.type === QuestionType.MULTIPLE_CHOICE) {
+      const cleaned = options.map((o) => ({ ...o, content: o.content.trim() }));
+      if (cleaned.length < 3 || cleaned.some((o) => !o.content)) {
+        setAnswersError('Додайте щонайменше три варіанти, кожен із текстом.');
+        return;
+      }
+      const marked = correctIndexes.filter((index) => index < cleaned.length);
+      if (marked.length < 2) {
+        setAnswersError('Позначте щонайменше дві правильні відповіді.');
+        return;
+      }
+      if (marked.length === cleaned.length) {
+        setAnswersError('Залиште щонайменше один варіант неправильним.');
+        return;
+      }
+      const built: AnswerOptionInput[] = cleaned.map((o, i) => ({
+        ...(o.id ? { id: o.id } : {}),
+        content: o.content,
+        imageUrl: isEdit ? o.imageUrl.trim() || null : o.imageUrl.trim() || undefined,
+        order: i,
+        isCorrect: marked.includes(i),
       }));
       submit(values, difficulty, built);
       return;
@@ -402,15 +460,23 @@ export function QuestionFormModal({
 
         {answersError && <Alert variant="error">{answersError}</Alert>}
 
-        {type === QuestionType.SINGLE_CHOICE ? (
+        {type === QuestionType.SINGLE_CHOICE && (
           <SingleChoiceEditor
             options={options}
             correctIndex={correctIndex}
             onChange={setOptions}
             onCorrectChange={setCorrectIndex}
           />
-        ) : (
-          <MatchingEditor pairs={pairs} onChange={setPairs} />
+        )}
+        {type === QuestionType.MATCHING && <MatchingEditor pairs={pairs} onChange={setPairs} />}
+        {type === QuestionType.ORDERING && <SequenceEditor options={options} onChange={setOptions} />}
+        {type === QuestionType.MULTIPLE_CHOICE && (
+          <MultipleChoiceEditor
+            options={options}
+            correctIndexes={correctIndexes}
+            onChange={setOptions}
+            onCorrectChange={setCorrectIndexes}
+          />
         )}
       </form>
     </Modal>
@@ -471,6 +537,132 @@ function SingleChoiceEditor({
             placeholder="Посилання на зображення (необовʼязково)"
             className="bg-surface text-text-muted border-border focus:border-primary focus:ring-primary h-9 w-full rounded-lg border px-3 text-xs outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
+        </div>
+      ))}
+      {options.length < 20 && (
+        <div>
+          <Button variant="secondary" size="sm" onClick={() => onChange([...options, emptyOption()])}>
+            Додати варіант
+          </Button>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/**
+ * Ordering editor: the list order is the answer, so there is nothing to mark —
+ * the rows are simply written from earliest to latest and moved with the
+ * arrows. The learner never sees this order; the delivery view deals it.
+ */
+function SequenceEditor({
+  options,
+  onChange,
+}: {
+  options: OptionRow[];
+  onChange: (options: OptionRow[]) => void;
+}): React.JSX.Element {
+  const update = (i: number, patch: Partial<OptionRow>): void =>
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
+  const remove = (i: number): void => onChange(options.filter((_, idx) => idx !== i));
+  const move = (i: number, delta: number): void => {
+    const target = i + delta;
+    if (target < 0 || target >= options.length) {
+      return;
+    }
+    const next = [...options];
+    [next[i], next[target]] = [next[target], next[i]];
+    onChange(next);
+  };
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="text-text-secondary text-sm font-medium">
+        Елементи в правильній послідовності — від найранішого до найпізнішого
+      </legend>
+      {options.map((option, i) => (
+        <div key={i} className="border-border flex items-center gap-2 rounded-lg border p-3">
+          <span className="text-text-muted w-5 shrink-0 text-sm">{i + 1}</span>
+          <input
+            value={option.content}
+            onChange={(e) => update(i, { content: e.target.value })}
+            placeholder={`Елемент ${i + 1}`}
+            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+          />
+          <Button variant="ghost" size="sm" onClick={() => move(i, -1)} disabled={i === 0}>
+            Вище
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => move(i, 1)} disabled={i === options.length - 1}>
+            Нижче
+          </Button>
+          {options.length > 3 && (
+            <Button variant="ghost" size="sm" onClick={() => remove(i)}>
+              Прибрати
+            </Button>
+          )}
+        </div>
+      ))}
+      {options.length < 10 && (
+        <div>
+          <Button variant="secondary" size="sm" onClick={() => onChange([...options, emptyOption()])}>
+            Додати елемент
+          </Button>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/** Multiple-choice editor: several options may be marked correct at once. */
+function MultipleChoiceEditor({
+  options,
+  correctIndexes,
+  onChange,
+  onCorrectChange,
+}: {
+  options: OptionRow[];
+  correctIndexes: number[];
+  onChange: (options: OptionRow[]) => void;
+  onCorrectChange: (indexes: number[]) => void;
+}): React.JSX.Element {
+  const update = (i: number, patch: Partial<OptionRow>): void =>
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
+  const remove = (i: number): void => {
+    onChange(options.filter((_, idx) => idx !== i));
+    onCorrectChange(
+      correctIndexes.filter((index) => index !== i).map((index) => (index > i ? index - 1 : index)),
+    );
+  };
+  const toggle = (i: number): void =>
+    onCorrectChange(
+      correctIndexes.includes(i) ? correctIndexes.filter((index) => index !== i) : [...correctIndexes, i],
+    );
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="text-text-secondary text-sm font-medium">
+        Варіанти — позначте всі правильні (в НМТ їх три із семи)
+      </legend>
+      {options.map((option, i) => (
+        <div key={i} className="border-border flex items-center gap-3 rounded-lg border p-3">
+          <input
+            type="checkbox"
+            checked={correctIndexes.includes(i)}
+            onChange={() => toggle(i)}
+            aria-label={`Правильний варіант ${i + 1}`}
+            className="accent-primary size-4 shrink-0"
+          />
+          <input
+            value={option.content}
+            onChange={(e) => update(i, { content: e.target.value })}
+            placeholder={`Варіант ${i + 1}`}
+            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+          />
+          {options.length > 3 && (
+            <Button variant="ghost" size="sm" onClick={() => remove(i)}>
+              Прибрати
+            </Button>
+          )}
         </div>
       ))}
       {options.length < 20 && (

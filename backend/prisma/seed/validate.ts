@@ -1,5 +1,11 @@
 import { Difficulty, QuestionFormat } from '@prisma/client';
-import { isMatching, type QuestionContent, type TopicContent } from './types';
+import {
+  isMatching,
+  isMultipleChoice,
+  isOrdering,
+  type QuestionContent,
+  type TopicContent,
+} from './types';
 
 /**
  * Content validation mirroring the rules the Admin API enforces
@@ -15,6 +21,7 @@ const MAX_TITLE_LENGTH = 2000;
 const MAX_EXPLANATION_LENGTH = 2000;
 const MAX_OPTION_LENGTH = 500;
 const MIN_OPTIONS = 2;
+const MIN_ORDERING_ITEMS = 3;
 const MAX_OPTIONS = 20;
 
 /**
@@ -204,7 +211,34 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
     return errors;
   }
 
-  const { options, correct } = question;
+  if (isOrdering(question)) {
+    const { sequence } = question;
+    if (!Array.isArray(sequence) || sequence.length < MIN_ORDERING_ITEMS) {
+      errors.push(`${at}: ordering needs at least ${MIN_ORDERING_ITEMS} items`);
+      return errors;
+    }
+    if (sequence.length > MAX_OPTIONS) {
+      errors.push(`${at}: ordering exceeds ${MAX_OPTIONS} items`);
+    }
+    sequence.forEach((item, i) => {
+      if (!item?.trim()) {
+        errors.push(`${at}: sequence item ${i} is empty`);
+      } else if (item.length > MAX_OPTION_LENGTH) {
+        errors.push(
+          `${at}: sequence item ${i} exceeds ${MAX_OPTION_LENGTH} characters`,
+        );
+      } else {
+        errors.push(...validateFormulas(item, at, `sequence item ${i}`));
+      }
+    });
+    // Two identical items would make two different sequences both correct.
+    if (new Set(sequence.map((item) => item.trim())).size !== sequence.length) {
+      errors.push(`${at}: duplicate items in sequence`);
+    }
+    return errors;
+  }
+
+  const options: string[] = question.options;
   if (!Array.isArray(options) || options.length < MIN_OPTIONS) {
     errors.push(`${at}: needs at least ${MIN_OPTIONS} options`);
     return errors;
@@ -227,6 +261,27 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
     errors.push(`${at}: duplicate answer options`);
   }
 
+  if (isMultipleChoice(question)) {
+    const indices = question.correct;
+    if (!Array.isArray(indices) || indices.length < 2) {
+      errors.push(`${at}: multiple choice needs at least two correct options`);
+    } else if (indices.length === options.length) {
+      // "Every option is correct" is not a question, it is a list.
+      errors.push(`${at}: multiple choice needs at least one wrong option`);
+    } else if (new Set(indices).size !== indices.length) {
+      errors.push(`${at}: "correct" repeats an index`);
+    } else if (
+      indices.some(
+        (index) =>
+          !Number.isInteger(index) || index < 0 || index >= options.length,
+      )
+    ) {
+      errors.push(`${at}: "correct" must index into options`);
+    }
+    return errors;
+  }
+
+  const correct = question.correct;
   if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) {
     errors.push(`${at}: "correct" must index into options`);
   }

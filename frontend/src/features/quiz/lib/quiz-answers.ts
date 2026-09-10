@@ -111,6 +111,64 @@ export function assignmentsToPairs(assignments: Record<string, string>): Matchin
     .map(([left, right]) => ({ left, right }));
 }
 
+// --- Ordering -----------------------------------------------------------
+
+/** Reads a submitted or correct `{ sequence }` payload of option ids. */
+export function getSequence(answer: SelectedAnswer | Record<string, unknown> | null | undefined): string[] {
+  if (!answer) {
+    return [];
+  }
+  const raw = (answer as { sequence?: unknown }).sequence;
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
+
+export function buildOrderingAnswer(sequence: string[]): SelectedAnswer {
+  return { sequence };
+}
+
+/** Converts a stored sequence into the option id → position (1-based) map the UI holds. */
+export function sequenceToPositions(sequence: string[]): Record<string, number> {
+  const positions: Record<string, number> = {};
+  sequence.forEach((id, index) => {
+    positions[id] = index + 1;
+  });
+  return positions;
+}
+
+/**
+ * Converts the UI's positions back into a sequence, but only once every item
+ * has a distinct place. A half-filled ordering is not a partial answer the
+ * backend can store — it rejects a sequence that is not the full set — so
+ * nothing is sent until the reader has placed them all.
+ */
+export function positionsToSequence(positions: Record<string, number>, optionCount: number): string[] | null {
+  const entries = Object.entries(positions).filter(([, place]) => place > 0);
+  if (entries.length !== optionCount) {
+    return null;
+  }
+  if (new Set(entries.map(([, place]) => place)).size !== optionCount) {
+    return null;
+  }
+  return entries.sort((a, b) => a[1] - b[1]).map(([id]) => id);
+}
+
+// --- Multiple choice ----------------------------------------------------
+
+/** Reads a submitted or correct `{ answerOptionIds }` payload. */
+export function getAnswerOptionIds(
+  answer: SelectedAnswer | Record<string, unknown> | null | undefined,
+): string[] {
+  if (!answer) {
+    return [];
+  }
+  const raw = (answer as { answerOptionIds?: unknown }).answerOptionIds;
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
+
+export function buildMultipleChoiceAnswer(selectedIds: string[]): SelectedAnswer {
+  return { answerOptionIds: selectedIds };
+}
+
 // --- Misc ---------------------------------------------------------------
 
 /** Formats a countdown in whole seconds as m:ss. */

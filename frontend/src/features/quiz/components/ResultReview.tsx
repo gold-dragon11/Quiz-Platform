@@ -1,7 +1,13 @@
 import { MathText } from '@/shared/ui/MathText';
 import { QuestionType } from '@/shared/types/enums';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
-import { getCorrectOptionId, getMatchingPairs, getSelectedOptionId } from '@/features/quiz/lib/quiz-answers';
+import {
+  getAnswerOptionIds,
+  getCorrectOptionId,
+  getMatchingPairs,
+  getSelectedOptionId,
+  getSequence,
+} from '@/features/quiz/lib/quiz-answers';
 import { ReportQuestionButton } from '@/features/question-reports';
 
 /**
@@ -35,11 +41,10 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
                 {question.isCorrect ? 'правильно' : 'неправильно'}
               </span>
             </div>
-            {question.type === QuestionType.SINGLE_CHOICE ? (
-              <SingleChoiceReview question={question} />
-            ) : (
-              <MatchingReview question={question} />
-            )}
+            {question.type === QuestionType.SINGLE_CHOICE && <SingleChoiceReview question={question} />}
+            {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
+            {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
+            {question.type === QuestionType.MULTIPLE_CHOICE && <MultipleChoiceReview question={question} />}
             {question.explanation && <Explanation text={question.explanation} />}
             {/* The review is where a wrong key actually shows itself: the
                 learner has just been told they were wrong and can see the
@@ -122,6 +127,101 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
         );
       })}
       {!submittedId && <p className="text-text-muted mt-2 text-xs">Ви не відповіли на це питання.</p>}
+    </div>
+  );
+}
+
+/**
+ * Two columns of the same four items: the order the reader put them in and
+ * the order that was right. Each row is marked on its own, because an
+ * ordering is scored as a whole and "неправильно" on the question alone does
+ * not say which item was out of place.
+ */
+function OrderingReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element {
+  const options = optionMap(question.answerOptions);
+  const correct = getSequence(question.correctAnswer);
+  const submitted = getSequence(question.submittedAnswer);
+
+  return (
+    <div className="flex flex-col gap-4 text-sm">
+      <div className="flex flex-col gap-2">
+        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Правильна послідовність</p>
+        {correct.map((id, i) => (
+          <div
+            key={id}
+            className="border-success/40 bg-success/10 text-text-primary flex items-start gap-3 rounded-lg border px-4 py-2.5"
+          >
+            <span className="text-text-muted shrink-0">{i + 1}.</span>
+            <MathText>{contentOf(options, id)}</MathText>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col gap-2">
+        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Ваша відповідь</p>
+        {submitted.length === 0 ? (
+          <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>
+        ) : (
+          submitted.map((id, i) => {
+            const inPlace = correct[i] === id;
+            return (
+              <div
+                key={id}
+                className={`flex items-start gap-3 rounded-lg border px-4 py-2.5 ${
+                  inPlace
+                    ? 'border-success/40 bg-success/10 text-text-primary'
+                    : 'border-error/40 bg-error/10 text-text-primary'
+                }`}
+              >
+                <span className="text-text-muted shrink-0">{i + 1}.</span>
+                <MathText>{contentOf(options, id)}</MathText>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Every option listed once, marked on two axes at the same time: whether it
+ * belongs to the correct set and whether the reader picked it. That makes
+ * both kinds of mistake visible — a right statement missed and a wrong one
+ * ticked — which a list of "correct answers" alone would not.
+ */
+function MultipleChoiceReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element {
+  const correct = new Set(getAnswerOptionIds(question.correctAnswer));
+  const submitted = new Set(getAnswerOptionIds(question.submittedAnswer));
+  const ordered = [...question.answerOptions].sort((a, b) => a.order - b.order);
+
+  return (
+    <div className="flex flex-col gap-2 text-sm">
+      {ordered.map((option) => {
+        const isCorrect = correct.has(option.id);
+        const picked = submitted.has(option.id);
+        const tone = isCorrect
+          ? 'border-success/40 bg-success/10'
+          : picked
+            ? 'border-error/40 bg-error/10'
+            : 'border-border';
+        return (
+          <div
+            key={option.id}
+            className={`text-text-primary flex items-start gap-3 rounded-lg border px-4 py-2.5 ${tone}`}
+          >
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 size-4 shrink-0 rounded-sm border ${
+                picked ? 'border-transparent bg-primary' : 'border-border'
+              }`}
+            />
+            <MathText>{option.content}</MathText>
+            {isCorrect && !picked && <span className="text-success ml-auto shrink-0 text-xs">пропущено</span>}
+            {!isCorrect && picked && <span className="text-error ml-auto shrink-0 text-xs">зайве</span>}
+          </div>
+        );
+      })}
+      {submitted.size === 0 && <p className="text-text-muted mt-2 text-xs">Ви не відповіли на це питання.</p>}
     </div>
   );
 }

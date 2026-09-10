@@ -22,6 +22,7 @@ const ALLOWED_KEYS = new Set([
   'options',
   'correct',
   'pairs',
+  'sequence',
   'extraChoices',
   'explanation',
 ]);

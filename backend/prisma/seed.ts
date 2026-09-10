@@ -3,6 +3,8 @@ import { loadSubject } from './seed/load';
 import { loadMaterials, type MaterialContent } from './seed/materials';
 import {
   isMatching,
+  isMultipleChoice,
+  isOrdering,
   questionFormat,
   questionType,
   type QuestionContent,
@@ -237,6 +239,35 @@ function buildAnswers(question: QuestionContent): {
       configuration: {
         pairs: question.pairs.map((_, i) => ({ left: i, right: n + i })),
       },
+    };
+  }
+
+  if (isOrdering(question)) {
+    // The authored sequence is the answer, so it is stored as the option
+    // order untouched. Nothing is shuffled here: the delivery view deals
+    // these options per session, which is where the reader meets them.
+    return {
+      options: question.sequence.map((content, order) => ({
+        content,
+        isCorrect: false,
+        order,
+      })),
+      configuration: null,
+    };
+  }
+
+  if (isMultipleChoice(question)) {
+    const correct = new Set(question.correct);
+    const permuted = shuffled(
+      question.options.map((content, index) => ({
+        content,
+        isCorrect: correct.has(index),
+      })),
+      hash(question.title),
+    );
+    return {
+      options: permuted.map((option, order) => ({ ...option, order })),
+      configuration: null,
     };
   }
 

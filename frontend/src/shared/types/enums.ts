@@ -40,6 +40,10 @@ export type AvatarType = (typeof AvatarType)[keyof typeof AvatarType];
 export const QuestionType = {
   SINGLE_CHOICE: 'SINGLE_CHOICE',
   MATCHING: 'MATCHING',
+  /** Put the items in the right order — the exam's tasks 25–27 in history. */
+  ORDERING: 'ORDERING',
+  /** Several correct statements among many — the exam's "three of seven". */
+  MULTIPLE_CHOICE: 'MULTIPLE_CHOICE',
 } as const;
 export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType];
 

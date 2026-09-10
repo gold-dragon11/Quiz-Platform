@@ -490,6 +490,163 @@ describe('Admin Questions (e2e)', () => {
     });
   });
 
+  describe('POST /admin/questions — ORDERING', () => {
+    const orderingPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'ORDERING',
+        title: `Phase43 ordering ${counter}?`,
+        options: [
+          { content: 'earliest' },
+          { content: 'second' },
+          { content: 'third' },
+          { content: 'latest' },
+        ],
+        ...overrides,
+      };
+    };
+
+    it('stores the authored sequence as the option order', async () => {
+      const created = await createQuestion(orderingPayload());
+
+      expect(created.type).toBe('ORDERING');
+      expect(created.answerOptions.map((option) => option.content)).toEqual([
+        'earliest',
+        'second',
+        'third',
+        'latest',
+      ]);
+      expect(created.answerOptions.map((option) => option.order)).toEqual([
+        0, 1, 2, 3,
+      ]);
+      // The key is the order, so no option is flagged and there is no
+      // configuration to leak.
+      expect(created.answerOptions.every((option) => !option.isCorrect)).toBe(
+        true,
+      );
+      expect(created.configuration).toBeNull();
+    });
+
+    it('rejects isCorrect, a configuration, and too few items', async () => {
+      await createQuestion(
+        orderingPayload({
+          options: [
+            { content: 'a', isCorrect: true },
+            { content: 'b' },
+            { content: 'c' },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        orderingPayload({ configuration: { pairs: [{ left: 0, right: 1 }] } }),
+        400,
+      );
+
+      await createQuestion(
+        orderingPayload({ options: [{ content: 'a' }, { content: 'b' }] }),
+        400,
+      );
+    });
+
+    it('keeps the sequence when the option set is edited', async () => {
+      const created = await createQuestion(orderingPayload());
+      const updated = await updateQuestion(created.id, {
+        options: [
+          { id: created.answerOptions[0].id, content: 'earliest, edited' },
+          { id: created.answerOptions[1].id, content: 'second' },
+          { id: created.answerOptions[2].id, content: 'third' },
+          { id: created.answerOptions[3].id, content: 'latest' },
+        ],
+      });
+      const options = updated.answerOptions as OptionBody[];
+      expect(options.map((option) => option.content)).toEqual([
+        'earliest, edited',
+        'second',
+        'third',
+        'latest',
+      ]);
+    });
+  });
+
+  describe('POST /admin/questions — MULTIPLE_CHOICE', () => {
+    const multiPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'MULTIPLE_CHOICE',
+        title: `Phase43 multiple ${counter}?`,
+        options: [
+          { content: 'right one', isCorrect: true },
+          { content: 'right two', isCorrect: true },
+          { content: 'right three', isCorrect: true },
+          { content: 'wrong one' },
+          { content: 'wrong two' },
+        ],
+        ...overrides,
+      };
+    };
+
+    it('stores several correct options', async () => {
+      const created = await createQuestion(multiPayload());
+
+      expect(created.type).toBe('MULTIPLE_CHOICE');
+      expect(
+        created.answerOptions.filter((option) => option.isCorrect),
+      ).toHaveLength(3);
+      expect(created.configuration).toBeNull();
+    });
+
+    it('requires at least two correct options and at least one wrong', async () => {
+      await createQuestion(
+        multiPayload({
+          options: [
+            { content: 'only right', isCorrect: true },
+            { content: 'wrong one' },
+            { content: 'wrong two' },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        multiPayload({
+          options: [
+            { content: 'right one', isCorrect: true },
+            { content: 'right two', isCorrect: true },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        multiPayload({ configuration: { pairs: [{ left: 0, right: 1 }] } }),
+        400,
+      );
+    });
+
+    it('re-validates the correct set after an edit', async () => {
+      const created = await createQuestion(multiPayload());
+      await updateQuestion(
+        created.id,
+        {
+          options: created.answerOptions.map((option, index) => ({
+            id: option.id,
+            content: option.content,
+            isCorrect: index === 0,
+          })),
+        },
+        400,
+      );
+    });
+  });
+
   describe('GET /admin/questions', () => {
     it('returns the envelope with defaults, newest first, including options and configuration', async () => {
       const older = await createQuestion(singleChoicePayload());

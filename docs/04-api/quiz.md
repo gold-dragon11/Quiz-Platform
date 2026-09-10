@@ -141,6 +141,8 @@ Request body:
 - selectedAnswer — shape depends on the question type:
   - Single Choice: `{ "answerOptionId": "uuid" }`
   - Matching: `{ "pairs": [ { "left": "uuid", "right": "uuid" } ] }`
+  - Ordering: `{ "sequence": [ "uuid", … ] }` — the option ids in the order the reader put them. A partial sequence is accepted and stored (the reader places one item at a time and every click autosaves); it is simply not the key. Repeated ids and ids from another question are `400`.
+  - Multiple Choice: `{ "answerOptionIds": [ "uuid", … ] }` — correct only when the set is exactly the correct one. Three of the four right statements is wrong, as it is on the paper.
 - timeSpentSeconds (optional, analytics only — never affects scoring or XP)
 
 The backend validates session ownership (a foreign or unknown session is `404`), that the question belongs to the session's fixed set (`404` otherwise), and that the session is active (`409` otherwise — including a session whose timer has expired, which is auto-completed on access). The submitted answer must reference options that belong to the question, otherwise `400`; a well-formed but wrong answer is accepted and recorded as incorrect.
@@ -184,7 +186,7 @@ GET /api/v1/quiz/{sessionId}/result
 Returns the full post-completion **review** — available only after the session is Completed (`409` otherwise):
 
 - `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
-- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
+- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching, `{ sequence }` for Ordering, `{ answerOptionIds }` for Multiple Choice), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
 - `session` — `{ subjectId, topicId }`, where the quiz came from. Carried so the result page can offer the learning material for the topic just tested (docs/04-api/learning-materials.md §4) without a second request to rediscover which topic that was.
 
 The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.

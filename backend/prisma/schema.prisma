@@ -103,6 +103,12 @@ enum AvatarType {
 enum QuestionType {
   SINGLE_CHOICE
   MATCHING
+  /// Put the items in the right order. The stored `order` of the options is
+  /// the key, so the delivery view deals them shuffled.
+  ORDERING
+  /// Several statements, of which a fixed number are correct — the exam asks
+  /// for three out of seven.
+  MULTIPLE_CHOICE
 }
 
 /// Which specification a question was written to.

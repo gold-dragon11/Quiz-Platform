@@ -24,6 +24,7 @@ import {
   PaginatedPublicQuestions,
   PublicQuestion,
 } from '../types/public-question.type';
+import { shuffleMatchingOrder } from '../../quiz/matching-shuffle.util';
 
 /** The default locale lives on the Question row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -31,6 +32,8 @@ const DEFAULT_LOCALE = Language.ENGLISH;
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
 const MIN_MATCHING_PAIRS = 2;
+/** Two items in a sequence is a coin flip; the exam always gives four. */
+const MIN_ORDERING_OPTIONS = 3;
 
 const QUESTION_NOT_FOUND_MESSAGE = 'Питання не знайдено.';
 const TOPIC_NOT_FOUND_MESSAGE = 'Тему не знайдено.';
@@ -52,7 +55,12 @@ const MATCHING_IS_CORRECT_MESSAGE =
 const CONFIGURATION_REQUIRED_MESSAGE =
   'configuration is required for MATCHING questions.';
 const CONFIGURATION_FORBIDDEN_MESSAGE =
-  'configuration is not allowed for SINGLE_CHOICE questions.';
+  'configuration is not allowed for questions of this type.';
+const ORDERING_IS_CORRECT_MESSAGE =
+  'isCorrect is not allowed for ORDERING question options: the stored order is the key.';
+const ORDERING_MIN_OPTIONS_MESSAGE = `ORDERING questions require at least ${MIN_ORDERING_OPTIONS} items to put in sequence.`;
+const MULTIPLE_CHOICE_CORRECT_MESSAGE =
+  'MULTIPLE_CHOICE questions require at least two correct options and at least one incorrect one.';
 const CONFIGURATION_INVALID_MESSAGE =
   'configuration must pair every option order exactly once.';
 const CONFIGURATION_MIN_PAIRS_MESSAGE = `MATCHING questions require at least ${MIN_MATCHING_PAIRS} pairs.`;
@@ -79,7 +87,11 @@ interface MatchingPair {
  * - SINGLE_CHOICE — exactly one option isCorrect, no configuration;
  * - MATCHING — correctness lives in `configuration.pairs` referencing option
  *   order values; isCorrect is not accepted on options; at least two pairs,
- *   every option in exactly one pair.
+ *   every option in exactly one pair;
+ * - ORDERING — the stored option order *is* the key, so isCorrect is not
+ *   accepted and there is no configuration; at least three items;
+ * - MULTIPLE_CHOICE — at least two options isCorrect and at least one not, no
+ *   configuration.
  *
  * Persisted option orders are always normalized to a contiguous 0..n-1
  * sequence (docs/02-domain/answer-option.md §10): explicit order values
@@ -134,12 +146,22 @@ export class QuestionsService {
       title: row.translations[0]?.title ?? row.title,
       difficulty: row.difficulty,
       imageUrl: row.imageUrl,
-      answerOptions: row.answerOptions.map((option) => ({
-        id: option.id,
-        content: option.translations[0]?.content ?? option.content,
-        imageUrl: option.imageUrl,
-        order: option.order,
-      })),
+      // An ORDERING question keeps its answer in the option order, so this
+      // list is dealt before it leaves the server — otherwise browsing the
+      // topic would print the key. The deal is seeded by the question id
+      // alone: there is no session here, and the same question should look
+      // the same each time it is browsed.
+      answerOptions: shuffleMatchingOrder(
+        row.type,
+        row.answerOptions.map((option) => ({
+          id: option.id,
+          content: option.translations[0]?.content ?? option.content,
+          imageUrl: option.imageUrl,
+          order: option.order,
+        })),
+        row.id,
+        0,
+      ),
       ...(row.type === QuestionType.MATCHING
         ? { configuration: row.configuration }
         : {}),
@@ -247,6 +269,18 @@ export class QuestionsService {
     if (dto.type === QuestionType.SINGLE_CHOICE) {
       this.assertSingleChoiceRules(merged, dto.configuration !== undefined);
       options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.ORDERING) {
+      this.assertOrderingRules(
+        merged,
+        isCorrectProvided,
+        dto.configuration !== undefined,
+      );
+      // The authored order is the answer. Normalizing keeps it contiguous
+      // from zero, which is what the evaluator compares against.
+      options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.MULTIPLE_CHOICE) {
+      this.assertMultipleChoiceRules(merged, dto.configuration !== undefined);
+      options = this.normalizeOrders(merged).options;
     } else {
       this.assertMatchingOptionRules(merged, isCorrectProvided);
       if (dto.configuration === undefined) {
@@ -297,7 +331,10 @@ export class QuestionsService {
         : { explanation: dto.explanation }),
     };
 
-    if (question.type === QuestionType.SINGLE_CHOICE) {
+    // Every type but MATCHING keeps its key in the options themselves, so the
+    // update path is the same shape for all three: no configuration, merge the
+    // option set, re-check the type's own rule.
+    if (question.type !== QuestionType.MATCHING) {
       if (dto.configuration !== undefined) {
         throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
       }
@@ -311,8 +348,17 @@ export class QuestionsService {
         );
       }
 
+      const isCorrectSupplied = dto.options.some(
+        (entry) => entry.isCorrect !== undefined,
+      );
       const { merged, deleteIds } = this.mergeOptionSet(question, dto.options);
-      this.assertSingleChoiceRules(merged, false);
+      if (question.type === QuestionType.SINGLE_CHOICE) {
+        this.assertSingleChoiceRules(merged, false);
+      } else if (question.type === QuestionType.ORDERING) {
+        this.assertOrderingRules(merged, isCorrectSupplied, false);
+      } else {
+        this.assertMultipleChoiceRules(merged, false);
+      }
       const { options } = this.normalizeOrders(merged);
       return this.questionsRepository.updateWithOptions(
         id,
@@ -439,6 +485,10 @@ export class QuestionsService {
       }
       if (question.type === QuestionType.SINGLE_CHOICE) {
         this.assertSingleChoiceRules(question.answerOptions, false);
+      } else if (question.type === QuestionType.ORDERING) {
+        this.assertOrderingRules(question.answerOptions, false, false);
+      } else if (question.type === QuestionType.MULTIPLE_CHOICE) {
+        this.assertMultipleChoiceRules(question.answerOptions, false);
       } else {
         const pairs = this.parseMatchingPairs(
           question.configuration ?? undefined,
@@ -640,6 +690,45 @@ export class QuestionsService {
     const correctCount = options.filter((option) => option.isCorrect).length;
     if (correctCount !== 1) {
       throw new BadRequestException(SINGLE_CHOICE_CORRECT_MESSAGE);
+    }
+  }
+
+  /**
+   * The sequence lives in the option order, so correctness flags would be a
+   * second, contradictory key. The minimum count keeps a "sequence" from being
+   * a two-way guess.
+   */
+  private assertOrderingRules(
+    options: OptionWrite[],
+    isCorrectProvided: boolean,
+    configurationProvided: boolean,
+  ): void {
+    if (configurationProvided) {
+      throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    }
+    if (isCorrectProvided) {
+      throw new BadRequestException(ORDERING_IS_CORRECT_MESSAGE);
+    }
+    if (options.length < MIN_ORDERING_OPTIONS) {
+      throw new BadRequestException(ORDERING_MIN_OPTIONS_MESSAGE);
+    }
+  }
+
+  /**
+   * At least two correct options, or the question is a single choice wearing
+   * another type's name; and at least one incorrect one, or "select every
+   * option" is the answer.
+   */
+  private assertMultipleChoiceRules(
+    options: OptionWrite[],
+    configurationProvided: boolean,
+  ): void {
+    if (configurationProvided) {
+      throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    }
+    const correctCount = options.filter((option) => option.isCorrect).length;
+    if (correctCount < 2 || correctCount === options.length) {
+      throw new BadRequestException(MULTIPLE_CHOICE_CORRECT_MESSAGE);
     }
   }
 

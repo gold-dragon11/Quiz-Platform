@@ -26,6 +26,8 @@ const PAGE_SIZE = 10;
 const TYPE_LABEL: Record<QuestionType, string> = {
   [QuestionType.SINGLE_CHOICE]: 'Одна відповідь',
   [QuestionType.MATCHING]: 'Відповідності',
+  [QuestionType.ORDERING]: 'Послідовність',
+  [QuestionType.MULTIPLE_CHOICE]: 'Кілька відповідей',
 };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   [Difficulty.BEGINNER]: 'Початковий',

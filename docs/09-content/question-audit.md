@@ -153,18 +153,24 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 704 questions: 424 across all 21 Ukrainian topics (Власне
-висловлення is excluded — НМТ 2026 has no essay) and 280 across all 14 History
-topics. 564 single-choice, 140 matching, every one with an explanation.
+**Coverage.** 788 questions: 424 across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay) and 364 across all 14 History
+topics. By shape: 564 single-choice, 140 matching, 42 ordering, 42
+multiple-choice — every one with an explanation.
+
+The last two shapes did not exist in the schema until the history bank needed
+them: tasks 25–27 of the paper ask for a chronological sequence and 28–30 for
+three correct statements out of seven, which together are 20 % of the history
+test. `QuestionType` now carries `ORDERING` and `MULTIPLE_CHOICE`; an ordering
+question keeps its answer in the option order itself, so the delivery view
+deals those options shuffled — as it already did for matching choices — and
+the public question list deals them too, or browsing a topic would print the
+key.
 
 **Not yet covered.**
 
 - *Ukrainian, tasks 21–25* hang off a shared text, and the schema has no
   shared-stimulus entity.
-- *History, tasks 25–27* ask for a chronological sequence, and *28–30* ask for
-  three correct statements out of seven. Neither shape exists in the schema:
-  `QuestionType` has only `SINGLE_CHOICE` and `MATCHING`. Those six tasks are
-  20 % of the history paper, so the two types are the next thing to build.
 - *Images.* Several history tasks are built on a map, a photograph or a
   painting. `imageUrl` exists on a question, but the authoring format does not
   carry it and the bank has no images. Reproductions need rights: maps we can

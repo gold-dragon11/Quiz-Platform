@@ -60,6 +60,12 @@ export function shuffleMatchingOrder<T extends OrderedOption>(
   seedKey: string,
   promptCount: number,
 ): T[] {
+  // An ORDERING question keeps its answer in the option order itself, so the
+  // whole list has to be dealt — sending it as stored would print the answer.
+  if (type === QuestionType.ORDERING) {
+    return dealAll(options, seedKey);
+  }
+
   if (
     type !== QuestionType.MATCHING ||
     promptCount <= 0 ||
@@ -84,4 +90,25 @@ export function shuffleMatchingOrder<T extends OrderedOption>(
       ? option
       : { ...option, order: dealt[index - promptCount] },
   );
+}
+
+/**
+ * Deals every option a new presentation order. Used for ORDERING, where the
+ * stored order is the answer key and the reader has to reconstruct it.
+ *
+ * The deal is a fixed point often enough to matter: with four items, one deal
+ * in 24 comes back in the original order, and the reader would be right
+ * without moving anything. That is not a leak — they still cannot tell it
+ * from any other deal — so it is left alone rather than re-dealt, which would
+ * quietly bias the shuffle.
+ */
+function dealAll<T extends OrderedOption>(options: T[], seedKey: string): T[] {
+  const ordered = [...options].sort((a, b) => a.order - b.order);
+  const dealt = ordered.map((option) => option.order);
+  const random = randomFrom(seedFrom(seedKey));
+  for (let i = dealt.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [dealt[i], dealt[j]] = [dealt[j], dealt[i]];
+  }
+  return ordered.map((option, index) => ({ ...option, order: dealt[index] }));
 }

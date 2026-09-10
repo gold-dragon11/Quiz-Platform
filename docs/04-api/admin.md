@@ -273,7 +273,7 @@ Supported query parameters:
 | pageSize | 20 | integer 1–100 |
 | topicId | — | UUID |
 | subjectId | — | UUID; filters through the topic relation |
-| type | — | SINGLE_CHOICE or MATCHING |
+| type | — | SINGLE_CHOICE, MATCHING, ORDERING or MULTIPLE_CHOICE |
 | format | — | PRACTICE or NMT |
 | difficulty | — | BEGINNER, INTERMEDIATE, or ADVANCED |
 | isPublished | — | true or false |
@@ -296,7 +296,7 @@ Creates a new question with its answer options, in the default locale (English).
 Required fields:
 
 - topicId — the parent topic must exist and not be soft-deleted, otherwise `404 Not Found`;
-- type — SINGLE_CHOICE or MATCHING (Multiple Choice is future);
+- type — SINGLE_CHOICE, MATCHING, ORDERING or MULTIPLE_CHOICE;
 - title (plain text and/or raw LaTeX);
 - options — 2 to 20 answer options.
 
@@ -321,6 +321,9 @@ Correctness rules by type:
 ```
 
 A valid MATCHING configuration has at least two pairs; every option order appears in exactly one pair (so the option count is even); no self pairs, no duplicate pairs, no overlap between left and right sides; only existing orders may be referenced.
+
+- **ORDERING** — the persisted option order *is* the answer: options are stored in the sequence that is correct. `isCorrect` is not accepted (it would be a second, contradictory key) and neither is `configuration`. At least three items, because a two-item "sequence" is a coin toss. The delivery view deals these options shuffled, so a learner never receives them in the stored order — and neither does the public question list (questions.md §5).
+- **MULTIPLE_CHOICE** — at least two options have `isCorrect: true` and at least one does not; `configuration` is not allowed. The count is not fixed at three: the exam asks for three of seven, but the rule that matters is "more than one right, and not all of them".
 
 New questions always start unpublished; publishing happens through the publish endpoint (§10). `explanation` is not part of the MVP schema and is rejected. `isPublished` is likewise rejected.
 
