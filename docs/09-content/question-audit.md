@@ -141,6 +141,8 @@ that differ by one rule. Questions written to that shape are marked
 |---|---|---|---|
 | Ukrainian, practice | 660 | 73 % | 63 % |
 | Ukrainian, NMT format | 340 | 35 % | **25 %** |
+| History, practice | 570 | 77 % | 64 % |
+| History, NMT format | 224 | 43 % | **25 %** |
 
 25 % is the chance rate for four options: on the NMT bank, picking the longest
 option is worth exactly nothing. The remaining 10 percentage points are ties,
@@ -151,12 +153,23 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 424 questions across all 21 Ukrainian topics (Власне
-висловлення is excluded — НМТ 2026 has no essay). 340 single-choice, 84
-matching, every one with an explanation.
+**Coverage.** 704 questions: 424 across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay) and 280 across all 14 History
+topics. 564 single-choice, 140 matching, every one with an explanation.
 
-**Not yet covered.** The demo paper's tasks 21–25 hang off a shared text, and
-the schema has no shared-stimulus entity; those are absent from this bank.
+**Not yet covered.**
+
+- *Ukrainian, tasks 21–25* hang off a shared text, and the schema has no
+  shared-stimulus entity.
+- *History, tasks 25–27* ask for a chronological sequence, and *28–30* ask for
+  three correct statements out of seven. Neither shape exists in the schema:
+  `QuestionType` has only `SINGLE_CHOICE` and `MATCHING`. Those six tasks are
+  20 % of the history paper, so the two types are the next thing to build.
+- *Images.* Several history tasks are built on a map, a photograph or a
+  painting. `imageUrl` exists on a question, but the authoring format does not
+  carry it and the bank has no images. Reproductions need rights: maps we can
+  draw ourselves, Soviet posters are likely public domain, but paintings by
+  authors who died less than 70 years ago are not.
 
 ---
 

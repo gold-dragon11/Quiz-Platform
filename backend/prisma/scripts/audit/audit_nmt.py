@@ -24,6 +24,17 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # question is a length cue even when it is not the longest of the four.
 MAX_LENGTH_SPREAD = 25
 
+# Only rows of items and full sentences are worth comparing between questions.
+# A bare name — "гунів", "Ярослава Мудрого" — legitimately appears as an option
+# in several questions, and flagging those buries the real signal: a repeated
+# row of words or a repeated sentence, which means a question was copied.
+MIN_LENGTH_FOR_REPEAT_CHECK = 30
+
+# Century numbers are written in Roman numerals throughout the history bank,
+# so those letters are expected. Anything else Latin or CJK is a slip of the
+# keyboard that no other check would catch.
+ROMAN = re.compile(r'\b[IVXLCDM]+\b')
+
 
 def check(pack):
     topics_dir = os.path.join(ROOT, pack, 'topics')
@@ -58,6 +69,9 @@ def check(pack):
                     problems.append('%s — option lengths spread %d characters'
                                     % (at, max(lengths) - min(lengths)))
                 for option in options:
+                    if (',' not in option
+                            and len(option) < MIN_LENGTH_FOR_REPEAT_CHECK):
+                        continue
                     key = option.lower().strip()
                     if key in rows_seen and rows_seen[key] != at:
                         problems.append('%s — option row repeats: %s'
@@ -86,7 +100,7 @@ def check(pack):
             for text in texts:
                 # Latin or CJK characters in Ukrainian content are always a
                 # slip of the keyboard, and they survive every other check.
-                if re.search(r'[a-zA-Z一-鿿]', text):
+                if re.search(r'[a-zA-Z一-鿿]', ROMAN.sub('', text)):
                     problems.append('%s — foreign script: %s' % (at, text[:40]))
 
     return total, longest, strict, problems
