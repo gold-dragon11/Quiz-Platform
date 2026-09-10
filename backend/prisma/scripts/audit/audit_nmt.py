@@ -20,6 +20,12 @@ import sys
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                     '..', '..', 'seed', 'content')
 
+# Ілюстрації віддає фронтенд зі свого public-каталогу. Тут перевіряємо, що
+# файл на місці й що шлях локальний: питання, яке залежить від чужого
+# сервера, одного дня просто перестане мати сенс.
+PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                      '..', '..', '..', '..', 'frontend', 'public')
+
 # A single option that is far longer than the shortest one in the same
 # question is a length cue even when it is not the longest of the four.
 MAX_LENGTH_SPREAD = 25
@@ -103,6 +109,14 @@ def check(pack):
                 choices = [p[1] for p in pairs] + spare
                 if len(set(choices)) != len(choices):
                     problems.append('%s — a choice is repeated' % at)
+
+            image = question.get('imageUrl')
+            if image is not None:
+                if not image.startswith('/content/'):
+                    problems.append('%s — imageUrl is not a local /content/ path'
+                                    % at)
+                elif not os.path.exists(os.path.join(PUBLIC, image.lstrip('/'))):
+                    problems.append('%s — image file missing: %s' % (at, image))
 
             if not question.get('explanation'):
                 problems.append('%s — no explanation' % at)

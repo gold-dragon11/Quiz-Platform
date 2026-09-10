@@ -1,4 +1,6 @@
 import { Difficulty, QuestionFormat } from '@prisma/client';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   isMatching,
   isMultipleChoice,
@@ -22,6 +24,14 @@ const MAX_EXPLANATION_LENGTH = 2000;
 const MAX_OPTION_LENGTH = 500;
 const MIN_OPTIONS = 2;
 const MIN_ORDERING_ITEMS = 3;
+
+/**
+ * Illustrations are served from the frontend's public directory. Validating
+ * the path here — rather than discovering a typo as a broken image in a live
+ * quiz — is the whole point of having a content validator.
+ */
+const PUBLIC_DIR = join(__dirname, '..', '..', '..', 'frontend', 'public');
+const IMAGE_PREFIX = '/content/';
 const MAX_OPTIONS = 20;
 
 /**
@@ -133,6 +143,16 @@ export function validateTopic(topic: TopicContent): string[] {
         errors.push(
           ...validateFormulas(question.explanation, at, 'explanation'),
         );
+      }
+    }
+
+    if (question.imageUrl !== undefined) {
+      if (!question.imageUrl.startsWith(IMAGE_PREFIX)) {
+        errors.push(
+          `${at}: imageUrl must be a local path under ${IMAGE_PREFIX}`,
+        );
+      } else if (!existsSync(join(PUBLIC_DIR, question.imageUrl))) {
+        errors.push(`${at}: image file not found: ${question.imageUrl}`);
       }
     }
 

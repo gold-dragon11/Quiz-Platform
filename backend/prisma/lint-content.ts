@@ -23,6 +23,7 @@ const ALLOWED_KEYS = new Set([
   'correct',
   'pairs',
   'sequence',
+  'imageUrl',
   'extraChoices',
   'explanation',
 ]);

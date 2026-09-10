@@ -47,8 +47,11 @@ export function QuestionCard({
         <MathText>{question.title}</MathText>
       </h2>
 
+      {/* Карти й репродукції — це сам предмет питання, а не оздоба: на карті
+          треба розгледіти цифру біля міста. Тому висота більша, ніж була б
+          доречна для звичайної ілюстрації. */}
       {question.imageUrl && (
-        <img src={question.imageUrl} alt="" className="max-h-64 w-full rounded-lg object-contain" />
+        <img src={question.imageUrl} alt="" className="max-h-[26rem] w-full rounded-lg object-contain" />
       )}
 
       {question.type === QuestionType.SINGLE_CHOICE && (

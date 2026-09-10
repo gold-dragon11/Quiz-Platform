@@ -171,19 +171,75 @@ key.
 
 - *Ukrainian, tasks 21–25* hang off a shared text, and the schema has no
   shared-stimulus entity.
-- *Images.* Several history tasks are built on a map, a photograph or a
-  painting. `imageUrl` exists on a question, but the authoring format does not
-  carry it and the bank has no images. Reproductions need rights: maps we can
-  draw ourselves, Soviet posters are likely public domain, but paintings by
-  authors who died less than 70 years ago are not.
+- *Image options.* A few tasks put four photographs side by side ("позначте
+  фото, на якому зображено…"). The authoring format carries one image per
+  question, not one per option; those tasks are also the ones with the
+  messiest rights, so they are left out for now.
 
 ---
 
-# 6. Reproducing the checks
+# 6. Illustrations and the rights rule
+
+Twenty history questions are built on a picture — a map with numbered sites, a
+banknote, a painting. Everything under `frontend/public/content/` is either our
+own work or in the public domain. The full list, with sources, is in
+`frontend/public/content/CREDITS.md`.
+
+## Maps are drawn, not borrowed
+
+Six schematic maps are generated from **Natural Earth** geometry, which is
+public domain; the projection, styling, markers and labels are ours. That
+sidesteps rights entirely and gives something a borrowed map would not: Crimea
+is shown as part of Ukraine. Natural Earth's own files assign the peninsula to
+Russia and keep it in a separate "disputed areas" layer, so the build unions
+the polygons before drawing.
+
+Historical borders are approximated by present-day oblast outlines — no other
+data exists at that age — and corrected by hand where the approximation would
+teach something false: Bessarabia, the south of today's Odesa oblast, is drawn
+into the Romanian zone on the interwar map.
+
+## The rule for reproductions
+
+**A reproduction may be hosted only if its author died at least 70 years ago**
+— as of 2026, that means died in 1955 or earlier.
+
+Ukrainian copyright law does have an exception for illustration in teaching,
+and the state exam body relies on it. We deliberately do not. The exception is
+tied to non-commercial educational use, and this project is a portfolio now
+with monetisation planned for 2027 (see the memory note
+`portfolio-now-business-later`); a licence that expires the moment the product
+starts earning is not something to build a question bank on. Designing around
+it now costs a few questions. Discovering the problem later costs the bank.
+
+Also excluded: photographs of buildings and monuments under CC BY-SA. They are
+usable, but the licence requires crediting the author where the work is shown,
+and the app has no attribution surface yet. When it has one, they can be added.
+
+## What that leaves, and what it costs
+
+Public domain and used: Narbut's 1918 UNR banknote, Pymonenko's *Жнива* (1896),
+Vasylkivsky's *Сторожа запорозьких вольностей* (1890), Shevchenko's 1841
+self-portrait.
+
+Protected and therefore absent: Tetiana Yablonska (died 2005, protected to
+2075), Maria Prymachenko (1997, to 2067), Kateryna Bilokur (1961, to 2031).
+
+Their absence does not remove them from the bank. **A work's title, author,
+date and subject are facts, not the object of copyright**, so the questions are
+asked in words instead — "Картина Тетяни Яблонської «Хліб» (1949) є
+характерним зразком…" — and the explanation says outright that the
+reproduction is missing on purpose. A student who has seen the painting in a
+textbook answers exactly as they would on the exam; what is lost is the
+recognition-by-sight task, which is one item type out of thirty.
+
+---
+
+# 7. Reproducing the checks
 
 ```bash
 cd backend
 python3 prisma/scripts/audit/audit.py         # mechanical checks
 python3 prisma/scripts/audit/audit_math.py    # recompute arithmetic answers
-python3 prisma/scripts/audit/audit_nmt.py     # NMT-format shape and length cues
+python3 prisma/scripts/audit/audit_nmt.py     # NMT-format shape, length cues, missing images
 ```

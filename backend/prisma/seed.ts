@@ -307,6 +307,7 @@ async function seedQuestion(
   // Authored as optional; an absent note stores NULL rather than an empty
   // string, so "has no explanation" is one state in the database, not two.
   const explanation = question.explanation ?? null;
+  const imageUrl = question.imageUrl ?? null;
 
   if (!existing) {
     await prisma.question.create({
@@ -317,6 +318,7 @@ async function seedQuestion(
         title: question.title,
         difficulty,
         explanation,
+        imageUrl,
         configuration: configuration ?? undefined,
         isPublished: true,
         answerOptions: { create: options },
@@ -341,6 +343,7 @@ async function seedQuestion(
     existing.format === format &&
     existing.difficulty === difficulty &&
     existing.explanation === explanation &&
+    existing.imageUrl === imageUrl &&
     existing.isPublished &&
     existing.deletedAt === null &&
     JSON.stringify(existing.configuration ?? null) ===
@@ -362,6 +365,7 @@ async function seedQuestion(
         format,
         difficulty,
         explanation,
+        imageUrl,
         configuration: configuration ?? undefined,
         isPublished: true,
         deletedAt: null,

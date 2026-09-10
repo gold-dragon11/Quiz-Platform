@@ -15,12 +15,24 @@ import { Difficulty, QuestionFormat, QuestionType } from '@prisma/client';
  */
 export type QuestionFormatContent = keyof typeof QuestionFormat;
 
+/**
+ * An illustration shown above the question — a map, a photograph, a facsimile.
+ * The value is a path served by the frontend (`/content/…`), not an external
+ * link: a question that depends on someone else's server is one outage away
+ * from being unanswerable.
+ *
+ * Everything under `/content/` is either our own work or in the public domain;
+ * see docs/09-content/question-audit.md §6 for the rule and the reason.
+ */
+export type ImagePath = string;
+
 /** A single-choice question: exactly one of `options` is correct. */
 export interface SingleChoiceContent {
   type?: 'SINGLE_CHOICE';
   title: string;
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
+  imageUrl?: ImagePath;
   /** Answer options in presentation order (2–20 entries). */
   options: string[];
   /** Zero-based index into `options` marking the correct answer. */
@@ -43,6 +55,7 @@ export interface MatchingContent {
   title: string;
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
+  imageUrl?: ImagePath;
   /** At least two `[left, right]` pairs. */
   pairs: [string, string][];
   /**
@@ -66,6 +79,7 @@ export interface OrderingContent {
   title: string;
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
+  imageUrl?: ImagePath;
   /** At least three items, in the order that is correct. */
   sequence: string[];
   explanation?: string;
@@ -81,6 +95,7 @@ export interface MultipleChoiceContent {
   title: string;
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
+  imageUrl?: ImagePath;
   options: string[];
   /** Zero-based indices of the correct options — at least two. */
   correct: number[];
