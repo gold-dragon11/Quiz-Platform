@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { DuelStatus, Prisma, QuizStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
+import {
+  drawKeepingPassages,
+  type PassageMember,
+} from '../../quiz/passage-draw.util';
 
 const PLAYER_SELECT = {
   id: true,
@@ -137,8 +141,10 @@ export class DuelsRepository {
     firstUserId: string;
     secondUserId: string;
   }): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
-      SELECT q.id
+    // The whole pool, then a draw that keeps each passage's questions together
+    // (docs/02-domain/passage.md) — a LIMIT would cut texts at random.
+    const rows = await this.prisma.$queryRaw<PassageMember[]>(Prisma.sql`
+      SELECT q.id, q."passageId", q."passageOrder"
       FROM questions q
       JOIN topics t ON t.id = q."topicId"
       JOIN subjects s ON s.id = t."subjectId"
@@ -158,9 +164,8 @@ export class DuelsRepository {
             : Prisma.sql`AND t.id = ${params.topicId}::uuid`
         }
       ORDER BY seen.last_seen ASC NULLS FIRST, random()
-      LIMIT ${params.count}
     `);
-    return rows.map((row) => row.id);
+    return drawKeepingPassages(rows, params.count);
   }
 
   /** Challenges nobody answered, so a stale list does not accumulate. */

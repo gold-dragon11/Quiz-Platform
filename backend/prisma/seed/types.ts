@@ -46,6 +46,8 @@ export interface SingleChoiceContent {
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
+  /** Key of the passage this question is asked about — see PassageContent. */
+  passage?: string;
   /** Answer options in presentation order (2–20 entries). */
   options: OptionContent[];
   /** Zero-based index into `options` marking the correct answer. */
@@ -69,6 +71,8 @@ export interface MatchingContent {
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
+  /** Key of the passage this question is asked about — see PassageContent. */
+  passage?: string;
   /** At least two `[left, right]` pairs. */
   pairs: [string, string][];
   /**
@@ -93,6 +97,8 @@ export interface OrderingContent {
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
+  /** Key of the passage this question is asked about — see PassageContent. */
+  passage?: string;
   /** At least three items, in the order that is correct. */
   sequence: string[];
   explanation?: string;
@@ -109,6 +115,8 @@ export interface MultipleChoiceContent {
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
+  /** Key of the passage this question is asked about — see PassageContent. */
+  passage?: string;
   options: string[];
   /** Zero-based indices of the correct options — at least two. */
   correct: number[];
@@ -126,9 +134,28 @@ export interface NumericContent {
   difficulty: keyof typeof Difficulty;
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
+  /** Key of the passage this question is asked about — see PassageContent. */
+  passage?: string;
   /** The number the reader has to arrive at. */
   answer: number;
   explanation?: string;
+}
+
+/**
+ * A text several questions are asked about (docs/02-domain/passage.md),
+ * declared once in the topic file and referred to by `key`.
+ *
+ * Gaps are written as `(3) ______` — the number in brackets, then a run of
+ * underscores — and numbered from 1 in the order the questions that fill them
+ * appear in the file: a single-choice question fills one gap, a matching
+ * question laid over the text fills one per row. A text without gaps — a story
+ * followed by questions, a set of numbered adverts — simply has none.
+ */
+export interface PassageContent {
+  /** Kebab-case, unique within the topic; stored as the passage's slug. */
+  key: string;
+  title?: string;
+  content: string;
 }
 
 export type QuestionContent =
@@ -143,6 +170,7 @@ export interface TopicContent {
   slug: string;
   name: string;
   description?: string;
+  passages?: PassageContent[];
   questions: QuestionContent[];
 }
 

@@ -6,6 +6,7 @@ import {
   isMultipleChoice,
   isNumeric,
   isOrdering,
+  type PassageContent,
   type QuestionContent,
   type TopicContent,
 } from './types';
@@ -34,6 +35,11 @@ const MIN_ORDERING_ITEMS = 3;
 const PUBLIC_DIR = join(__dirname, '..', '..', '..', 'frontend', 'public');
 const IMAGE_PREFIX = '/content/';
 const MAX_OPTIONS = 20;
+
+const PASSAGE_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const MAX_PASSAGE_LENGTH = 8000;
+/** A numbered gap: `(3) ______`. See PassageContent. */
+const GAP = /\((\d{1,2})\)\s*_{3,}/g;
 
 /**
  * Inline formulas are written between `$…$` and rendered with KaTeX
@@ -102,8 +108,45 @@ export function validateTopic(topic: TopicContent): string[] {
 
   const seenTitles = new Set<string>();
 
+  const passages = new Map<string, PassageContent>();
+  (topic.passages ?? []).forEach((passage, index) => {
+    const at = `${topic.slug}.passages[${index}]`;
+    if (!passage.key || !PASSAGE_KEY.test(passage.key)) {
+      errors.push(`${at}: key must be lowercase kebab-case`);
+    } else if (passages.has(passage.key)) {
+      errors.push(`${at}: duplicate passage key "${passage.key}"`);
+    } else {
+      passages.set(passage.key, passage);
+    }
+    if (passage.title !== undefined && !passage.title.trim()) {
+      errors.push(`${at}: title is present but empty`);
+    }
+    if (!passage.content?.trim()) {
+      errors.push(`${at}: content is required`);
+    } else if (passage.content.length > MAX_PASSAGE_LENGTH) {
+      errors.push(`${at}: content exceeds ${MAX_PASSAGE_LENGTH} characters`);
+    }
+  });
+  // How many gaps the questions of each passage fill between them — one per
+  // single-choice question, one per row of a matching question over the text.
+  const gapsFilled = new Map<string, number>();
+
   topic.questions.forEach((question, index) => {
     const at = where(index);
+
+    if (question.passage !== undefined) {
+      if (!passages.has(question.passage)) {
+        errors.push(
+          `${at}: passage "${question.passage}" is not declared in this topic`,
+        );
+      } else {
+        gapsFilled.set(
+          question.passage,
+          (gapsFilled.get(question.passage) ?? 0) +
+            (isMatching(question) ? question.pairs.length : 1),
+        );
+      }
+    }
 
     if (!question.title?.trim()) {
       errors.push(`${at}: title is required`);
@@ -159,6 +202,33 @@ export function validateTopic(topic: TopicContent): string[] {
 
     errors.push(...validateAnswers(question, at));
   });
+
+  // A gap numbered out of order, or a text with more gaps than questions, is
+  // a task the reader cannot finish — and nothing at runtime would notice.
+  for (const [key, passage] of passages) {
+    const at = `${topic.slug}.passages[${key}]`;
+    const filled = gapsFilled.get(key);
+    if (filled === undefined) {
+      errors.push(`${at}: no question is asked about this passage`);
+      continue;
+    }
+    const numbers = [...passage.content.matchAll(GAP)].map((gap) =>
+      Number(gap[1]),
+    );
+    if (numbers.length === 0) {
+      continue;
+    }
+    if (numbers.some((number, i) => number !== i + 1)) {
+      errors.push(
+        `${at}: gaps must be numbered 1, 2, 3… in order, found ${numbers.join(', ')}`,
+      );
+    }
+    if (numbers.length !== filled) {
+      errors.push(
+        `${at}: ${numbers.length} gaps in the text, but its questions fill ${filled}`,
+      );
+    }
+  }
 
   return errors;
 }

@@ -26,6 +26,8 @@ interface QuestionView {
   imageUrl: string | null;
   /** MATCHING only: how many ordered options are prompts. */
   promptCount?: number;
+  passage: { id: string; title: string | null; content: string } | null;
+  passageOrder: number | null;
   answerOptions: OptionView[];
 }
 
@@ -75,6 +77,8 @@ describe('Quiz Engine (e2e)', () => {
   let orderingTopicId: string;
   let multipleChoiceTopicId: string;
   let numericTopicId: string;
+  let passageTopicId: string;
+  let passageId: string;
   let counter = 0;
   /** A well-formed uuid that belongs to no option in the bank. */
   const GHOST_OPTION_ID = '00000000-0000-0000-0000-0000000000aa';
@@ -571,6 +575,32 @@ describe('Quiz Engine (e2e)', () => {
     await createPublishedNumeric(numericTopicId, 12.5);
     await createPublishedNumeric(numericTopicId, -4);
     await createPublishedNumeric(numericTopicId, 0);
+
+    // A three-question passage whose questions are created out of order, and
+    // two questions that stand alone: the draw has to keep the passage whole,
+    // in its own order, however the pool happens to be shuffled.
+    passageTopicId = await makeTopic('passage');
+    passageId = (
+      await prisma.passage.create({
+        data: {
+          topicId: passageTopicId,
+          slug: `${SLUG_PREFIX}-story`,
+          title: 'Phase51 Story',
+          content:
+            'One gap (1) ______, a second (2) ______ and a third (3) ______.',
+        },
+      })
+    ).id;
+    for (const passageOrder of [3, 1, 2]) {
+      const id = await createPublishedSingleChoice(passageTopicId);
+      await prisma.question.update({
+        where: { id },
+        data: { passageId, passageOrder },
+      });
+    }
+    for (let i = 0; i < 2; i += 1) {
+      await createPublishedSingleChoice(passageTopicId);
+    }
 
     // 5 practice + 3 reference: the bank as it is while the NMT set is still
     // being written topic by topic.
@@ -1299,6 +1329,83 @@ describe('Quiz Engine (e2e)', () => {
       expect(new Set(reviewed.correctAnswer.answerOptionIds)).toEqual(
         new Set(right),
       );
+    });
+  });
+
+  describe('questions on a passage', () => {
+    const startOnPassageTopic = async (
+      token: string,
+      questionCount: number,
+    ): Promise<{ sessionId: string; questions: QuestionView[] }> => {
+      const started = await start(token, {
+        subjectId,
+        topicId: passageTopicId,
+        questionCount,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      return { sessionId, questions: await getQuestions(token, sessionId) };
+    };
+
+    /** The passage's questions must form one unbroken run, from its first. */
+    const expectOneRunInOrder = (questions: QuestionView[]): QuestionView[] => {
+      const onPassage = questions.filter((question) => question.passage);
+      const first = questions.indexOf(onPassage[0]);
+      expect(questions.slice(first, first + onPassage.length)).toEqual(
+        onPassage,
+      );
+      expect(onPassage.map((question) => question.passageOrder)).toEqual(
+        onPassage.map((_, i) => i + 1),
+      );
+      return onPassage;
+    };
+
+    it('delivers the text with each of its questions, together and in order', async () => {
+      const { token } = await registerUser();
+      const { questions } = await startOnPassageTopic(token, 5);
+
+      const onPassage = expectOneRunInOrder(questions);
+      expect(onPassage).toHaveLength(3);
+      for (const question of onPassage) {
+        expect(question.passage).toEqual({
+          id: passageId,
+          title: 'Phase51 Story',
+          content:
+            'One gap (1) ______, a second (2) ______ and a third (3) ______.',
+        });
+      }
+      for (const question of questions.filter((q) => !q.passage)) {
+        expect(question.passageOrder).toBeNull();
+      }
+    });
+
+    it('cuts a passage only to fill what nothing else can, from its beginning', async () => {
+      // Each new reader is dealt the pool in a fresh random order, so several
+      // sittings cover both outcomes: the whole text plus one loner, or both
+      // loners plus the text's first two questions.
+      for (let sitting = 0; sitting < 4; sitting += 1) {
+        const { token } = await registerUser();
+        const { questions } = await startOnPassageTopic(token, 4);
+
+        expect(questions).toHaveLength(4);
+        expect(expectOneRunInOrder(questions).length).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    it('shows the text again in the review', async () => {
+      const { token } = await registerUser();
+      const { sessionId } = await startOnPassageTopic(token, 5);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (review.body as { questions: QuestionView[] }).questions;
+
+      expect(
+        expectOneRunInOrder(reviewed).map((question) => question.passage?.id),
+      ).toEqual([passageId, passageId, passageId]);
     });
   });
 

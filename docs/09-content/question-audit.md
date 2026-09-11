@@ -145,6 +145,7 @@ that differ by one rule. Questions written to that shape are marked
 | History, NMT format | 246 | 45 % | **24 %** |
 | Mathematics, practice | 800 | 43 % | 10 % |
 | Mathematics, NMT format | 293 | 34 % | **4 %** |
+| English, NMT format (pilot) | 15 | 27 % | **20 %** |
 
 Two more mathematics questions have pictures as options and are left out of
 this measurement: their option text is a hidden text alternative ("ескіз 3"),
@@ -159,11 +160,20 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 1 232 questions: 424 across all 21 Ukrainian topics (Власне
+**Coverage.** 1 249 questions: 424 across all 21 Ukrainian topics (Власне
 висловлення is excluded — НМТ 2026 has no essay), 386 across all 14 History
-topics and 422 across all 20 Mathematics topics. By shape: 881 single-choice,
-202 matching, 42 ordering, 42 multiple-choice and 65 numeric — every one with
-an explanation. 42 are built on a picture: 20 in history, 22 in mathematics.
+topics, 422 across all 20 Mathematics topics, and a 17-question English pilot.
+By shape: 896 single-choice, 204 matching, 42 ordering, 42 multiple-choice and
+65 numeric — every one with an explanation. 42 are built on a picture: 20 in
+history, 22 in mathematics.
+
+**English** is the subject where every task on the paper hangs off a text, so
+it waited for `Passage` (docs/02-domain/passage.md). The pilot covers four of
+the six task shapes on four original texts: a story with five questions, a text
+with six gaps for sentence fragments, and two gapped texts with four words per
+gap — one on vocabulary, one on past tenses — plus five adverts matched against
+eight topics. The texts are written for the bank; none is taken from a
+published paper.
 
 Mathematics is the one subject where the length cue was never the problem: in
 the practice bank the correct option was strictly longest only 10 % of the
@@ -199,8 +209,9 @@ key.
 
 **Not yet covered.**
 
-- *Ukrainian, tasks 21–25* hang off a shared text, and the schema has no
-  shared-stimulus entity.
+- *Ukrainian, tasks 21–25* hang off a shared text. The entity for that now
+  exists — `Passage`, added for English (docs/02-domain/passage.md) — but these
+  five tasks are not written yet.
 - *Photographs as options.* The authoring format now takes a picture per
   option — mathematics uses it for graph sketches — but the history tasks that
   put four photographs side by side ("позначте фото, на якому зображено…") are

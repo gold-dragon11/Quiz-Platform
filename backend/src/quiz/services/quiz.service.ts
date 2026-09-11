@@ -1135,6 +1135,8 @@ export class QuizService {
       title: question.translations[0]?.title ?? question.title,
       difficulty: question.difficulty,
       imageUrl: question.imageUrl,
+      passage: question.passage,
+      passageOrder: question.passageOrder,
       ...(question.type === QuestionType.MATCHING ? { promptCount } : {}),
       answerOptions: shuffleMatchingOrder(
         question.type,

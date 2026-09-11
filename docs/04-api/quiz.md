@@ -117,6 +117,8 @@ Each question includes:
 - title (text and/or LaTeX);
 - difficulty;
 - imageUrl (optional);
+- passage — the text the question is asked about, `{ id, title, content }`, or null (docs/02-domain/passage.md). Repeated on every question of the passage, so each question can be shown on its own. Gaps in `content` are written `(3) ______`;
+- passageOrder — position within the passage, from 1 (for a gapped text, the gap this question fills), or null;
 - answerOptions — each with id, content, imageUrl, order.
 
 Question titles, answer options, and explanations may contain inline LaTeX between `$…$` (docs/02-domain/question.md §10); the API returns it verbatim and the client renders it.

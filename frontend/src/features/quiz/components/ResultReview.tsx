@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { MathText } from '@/shared/ui/MathText';
 import { QuestionType } from '@/shared/types/enums';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
@@ -10,6 +11,7 @@ import {
   getSequence,
 } from '@/features/quiz/lib/quiz-answers';
 import { ReportQuestionButton } from '@/features/question-reports';
+import { PassagePanel } from '@/features/quiz/components/PassagePanel';
 
 /**
  * Post-completion review (docs/04-api/quiz.md §8): every question with the
@@ -28,41 +30,55 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
       </h2>
       <ul className="divide-border divide-y">
         {questions.map((question, i) => (
-          <li key={question.id} className="flex flex-col gap-4 py-8">
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-text-primary whitespace-pre-wrap">
-                <span className="text-text-muted mr-2">{i + 1}.</span>
-                <MathText>{question.title}</MathText>
-              </h3>
-              <span
-                className={`shrink-0 text-xs tracking-[0.14em] uppercase ${
-                  question.isCorrect ? 'text-success' : 'text-error'
-                }`}
-              >
-                {question.isCorrect ? 'правильно' : 'неправильно'}
-              </span>
-            </div>
-            {/* A question read off a chart or a drawing cannot be checked
+          <Fragment key={question.id}>
+            {/* The text once, before the first of its questions — not five
+                copies of it between five reviewed answers. */}
+            {question.passage && question.passage.id !== questions[i - 1]?.passage?.id && (
+              <li className="py-8">
+                <details open>
+                  <summary className="text-text-muted hover:text-text-primary cursor-pointer text-xs tracking-[0.18em] uppercase">
+                    Текст до завдань
+                  </summary>
+                  <PassagePanel passage={question.passage} className="mt-5" />
+                </details>
+              </li>
+            )}
+            <li className="flex flex-col gap-4 py-8">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-text-primary whitespace-pre-wrap">
+                  <span className="text-text-muted mr-2">{i + 1}.</span>
+                  <MathText>{question.title}</MathText>
+                </h3>
+                <span
+                  className={`shrink-0 text-xs tracking-[0.14em] uppercase ${
+                    question.isCorrect ? 'text-success' : 'text-error'
+                  }`}
+                >
+                  {question.isCorrect ? 'правильно' : 'неправильно'}
+                </span>
+              </div>
+              {/* A question read off a chart or a drawing cannot be checked
                 without it: the explanation says "дотична проходить через
                 (0; −3)", and the reader needs the picture to see why. */}
-            {question.imageUrl && (
-              <img
-                src={question.imageUrl}
-                alt=""
-                className="max-h-64 w-auto self-start rounded-lg object-contain"
-              />
-            )}
-            {question.type === QuestionType.SINGLE_CHOICE && <SingleChoiceReview question={question} />}
-            {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
-            {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
-            {question.type === QuestionType.MULTIPLE_CHOICE && <MultipleChoiceReview question={question} />}
-            {question.type === QuestionType.NUMERIC && <NumericReview question={question} />}
-            {question.explanation && <Explanation text={question.explanation} />}
-            {/* The review is where a wrong key actually shows itself: the
+              {question.imageUrl && (
+                <img
+                  src={question.imageUrl}
+                  alt=""
+                  className="max-h-64 w-auto self-start rounded-lg object-contain"
+                />
+              )}
+              {question.type === QuestionType.SINGLE_CHOICE && <SingleChoiceReview question={question} />}
+              {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
+              {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
+              {question.type === QuestionType.MULTIPLE_CHOICE && <MultipleChoiceReview question={question} />}
+              {question.type === QuestionType.NUMERIC && <NumericReview question={question} />}
+              {question.explanation && <Explanation text={question.explanation} />}
+              {/* The review is where a wrong key actually shows itself: the
                 learner has just been told they were wrong and can see the
                 answer that says so. */}
-            <ReportQuestionButton questionId={question.id} className="self-start" />
-          </li>
+              <ReportQuestionButton questionId={question.id} className="self-start" />
+            </li>
+          </Fragment>
         ))}
       </ul>
     </section>

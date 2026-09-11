@@ -596,9 +596,14 @@ describe('Public Content (e2e)', () => {
         'difficulty',
         'id',
         'imageUrl',
+        'passage',
+        'passageOrder',
         'title',
         'type',
       ]);
+      // A question that stands alone says so rather than omitting the fields,
+      // so a client never has to tell "no passage" from "not sent".
+      expect(single).toMatchObject({ passage: null, passageOrder: null });
       for (const option of single.answerOptions) {
         expect(Object.keys(option).sort()).toEqual([
           'content',

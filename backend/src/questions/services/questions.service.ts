@@ -150,6 +150,8 @@ export class QuestionsService {
       title: row.translations[0]?.title ?? row.title,
       difficulty: row.difficulty,
       imageUrl: row.imageUrl,
+      passage: row.passage,
+      passageOrder: row.passageOrder,
       // An ORDERING question keeps its answer in the option order, so this
       // list is dealt before it leaves the server — otherwise browsing the
       // topic would print the key. The deal is seeded by the question id

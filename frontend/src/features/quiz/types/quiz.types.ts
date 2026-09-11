@@ -69,6 +69,16 @@ export interface QuizSessionMetadata {
   expiresAt: string | null;
 }
 
+/**
+ * A text several questions are asked about — a story, a paragraph with numbered
+ * gaps `(3) ______`, a set of short adverts (docs/02-domain/passage.md).
+ */
+export interface PassageView {
+  id: string;
+  title: string | null;
+  content: string;
+}
+
 /** A question while the quiz is ACTIVE — never carries the correct answer. */
 export interface QuizQuestionView {
   id: string;
@@ -76,6 +86,10 @@ export interface QuizQuestionView {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /** The text the question is asked about, repeated on each of its questions. */
+  passage: PassageView | null;
+  /** Position within the passage, from 1 — for a gapped text, the gap. */
+  passageOrder: number | null;
   /**
    * MATCHING only: how many of the ordered options are prompts. Absent on
    * older questions, where the two columns are the same size.
@@ -122,6 +136,8 @@ export interface QuizReviewQuestion {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  passage: PassageView | null;
+  passageOrder: number | null;
   answerOptions: QuizAnswerOption[];
   submittedAnswer: SelectedAnswer | null;
   correctAnswer: Record<string, unknown>;

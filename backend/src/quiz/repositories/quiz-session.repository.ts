@@ -10,6 +10,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
+import {
+  clusterByPassage,
+  drawKeepingPassages,
+  type PassageMember,
+} from '../passage-draw.util';
 
 /**
  * Rows older than this can no longer affect selection, so they are dropped.
@@ -54,6 +59,10 @@ export interface SessionQuestionRecord {
   /** Revealed only in the post-completion review, never while ACTIVE. */
   explanation: string | null;
   configuration: Prisma.JsonValue;
+  /** Position within `passage`, from 1; null for a question that stands alone. */
+  passageOrder: number | null;
+  /** The text the question is asked about (docs/02-domain/passage.md). */
+  passage: { id: string; title: string | null; content: string } | null;
   translations: { title: string }[];
   answerOptions: {
     id: string;
@@ -98,6 +107,10 @@ export class QuizSessionRepository {
    * and not soft-deleted), scoped to the subject and optional topic
    * (decisions D21, D23), and optionally to one difficulty level.
    * ORDER BY random() is adequate for MVP scale.
+   *
+   * The whole eligible pool is read, not a LIMIT of it: a passage has to be
+   * taken with all its questions, and how many of them survived the filters is
+   * only known once they are read (docs/02-domain/passage.md).
    */
   async selectRandomQuestionIds(params: {
     subjectId: string;
@@ -108,8 +121,8 @@ export class QuizSessionRepository {
     /** Prefer questions this learner has not seen lately (decision 15). */
     userId?: string;
   }): Promise<string[]> {
-    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
-      SELECT q.id
+    const rows = await this.prisma.$queryRaw<PassageMember[]>(Prisma.sql`
+      SELECT q.id, q."passageId", q."passageOrder"
       FROM questions q
       JOIN topics t ON t.id = q."topicId"
       JOIN subjects s ON s.id = t."subjectId"
@@ -136,10 +149,9 @@ export class QuizSessionRepository {
         seen.last_seen ASC NULLS FIRST,
         random()`
       }
-      LIMIT ${params.count}
     `);
 
-    return rows.map((row) => row.id);
+    return drawKeepingPassages(rows, params.count);
   }
 
   /**
@@ -391,6 +403,20 @@ export class QuizSessionRepository {
       questionIds: string[];
     },
   ): Promise<QuizSessionRecord> {
+    // Whatever assembled the list — a random draw, a teacher, the review
+    // schedule — a passage's questions sit together and in their own order.
+    const placements = await tx.question.findMany({
+      where: { id: { in: params.questionIds } },
+      select: { id: true, passageId: true, passageOrder: true },
+    });
+    const placementById = new Map(placements.map((row) => [row.id, row]));
+    const questionIds = clusterByPassage(
+      params.questionIds.map(
+        (id) =>
+          placementById.get(id) ?? { id, passageId: null, passageOrder: null },
+      ),
+    );
+
     const session = await tx.quizSession.create({
       data: {
         userId: params.userId,
@@ -405,7 +431,7 @@ export class QuizSessionRepository {
         status: QuizStatus.ACTIVE,
         expiresAt: params.expiresAt,
         questions: {
-          create: params.questionIds.map((questionId, index) => ({
+          create: questionIds.map((questionId, index) => ({
             questionId,
             position: index,
           })),
@@ -417,7 +443,7 @@ export class QuizSessionRepository {
     // In the same transaction as the snapshot: a session that exists without
     // its exposures would let the learner draw the same questions again the
     // moment they abandon it.
-    await this.recordExposure(tx, params.userId, params.questionIds);
+    await this.recordExposure(tx, params.userId, questionIds);
 
     return session;
   }
@@ -448,6 +474,8 @@ export class QuizSessionRepository {
             difficulty: true,
             explanation: true,
             configuration: true,
+            passageOrder: true,
+            passage: { select: { id: true, title: true, content: true } },
             translations: { where: translationsWhere, select: { title: true } },
             answerOptions: {
               orderBy: { order: 'asc' },

@@ -35,6 +35,13 @@ export function MatchingAnswer({
   onChange,
 }: MatchingAnswerProps): React.JSX.Element {
   const { left, right } = splitMatchingOptions(options, promptCount);
+  // Rows that are only a gap number — "(3)", with the text beside the
+  // question — need no half of the width. The fragment chosen for them does:
+  // squeezed into half, "but the people who lived there…" is cut off after
+  // four words and every choice starts to look the same.
+  // Matched on the gap notation itself, not on length: a short prompt such as
+  // a year in history is still a row to read, not a pointer into a text.
+  const compact = left.length > 0 && left.every((prompt) => /^\(\d{1,2}\)$/.test(prompt.content));
 
   const update = (leftId: string, rightId: string): void => {
     const next = { ...assignments };
@@ -65,14 +72,23 @@ export function MatchingAnswer({
         ];
 
         return (
-          <div key={prompt.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <div className="bg-surface border-border flex-1 rounded-xl border px-4 py-3 text-sm text-text-primary">
+          <div
+            key={prompt.id}
+            className={
+              compact ? 'flex items-center gap-3' : 'flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4'
+            }
+          >
+            <div
+              className={`bg-surface border-border rounded-xl border py-3 text-sm text-text-primary ${
+                compact ? 'w-14 shrink-0 text-center tabular-nums' : 'flex-1 px-4'
+              }`}
+            >
               {prompt.imageUrl && (
                 <img src={prompt.imageUrl} alt="" className="mb-2 max-h-16 rounded-md object-contain" />
               )}
               <MathText>{prompt.content}</MathText>
             </div>
-            <div className="sm:w-1/2">
+            <div className={compact ? 'min-w-0 flex-1' : 'sm:w-1/2'}>
               <MathSelect
                 aria-label={`Відповідність для: ${mathToPlainText(prompt.content)}`}
                 options={choiceOptions}

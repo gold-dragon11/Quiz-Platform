@@ -382,6 +382,7 @@ model Topic {
   learningMaterials LearningMaterial[]
   translations      TopicTranslation[]
   duels             Duel[]
+  passages          Passage[]
 
   @@unique([subjectId, slug])
   @@index([subjectId])
@@ -428,8 +429,16 @@ model Question {
   /// Soft delete (docs/03-database/tables.md §6): set instead of removing the
   /// row so historical Quiz Sessions stay valid.
   deletedAt     DateTime?
+  /// The text this question is asked about, when there is one — a story, a
+  /// paragraph with numbered gaps, a set of short adverts
+  /// (docs/02-domain/passage.md). Null for a question that stands alone.
+  passageId     String?        @db.Uuid
+  /// Position within the passage, from 1. For a text with numbered gaps it is
+  /// the gap this question fills.
+  passageOrder  Int?
 
   topic                Topic                 @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  passage              Passage?              @relation(fields: [passageId], references: [id], onDelete: SetNull)
   answerOptions        AnswerOption[]
   attempts             QuestionAttempt[]
   translations         QuestionTranslation[]
@@ -443,7 +452,33 @@ model Question {
   @@index([topicId])
   @@index([type])
   @@index([topicId, type])
+  @@index([passageId])
   @@map("questions")
+}
+
+/// A text several questions are asked about (docs/02-domain/passage.md).
+///
+/// The НМТ reads once and asks many times: five questions on one story, five
+/// gaps in one paragraph, six descriptions matched against eight statements.
+/// Kept apart from the question so the text is stored, shown and scrolled
+/// once — not copied into the title of every question it serves.
+model Passage {
+  id        String   @id @default(uuid()) @db.Uuid
+  topicId   String   @db.Uuid
+  /// Stable identity within the topic, like a topic's own slug. Rewording the
+  /// text keeps the key, so it stays the same passage — unlike a question,
+  /// whose identity is its title and which a rewording turns into a new row.
+  slug      String
+  title     String?
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic     Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@unique([topicId, slug])
+  @@map("passages")
 }
 
 /// Localized title for a Question (docs/03-database/indexes.md §4).

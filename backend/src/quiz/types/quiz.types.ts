@@ -1,5 +1,12 @@
 import { Difficulty, Prisma, QuizStatus, QuizType } from '@prisma/client';
 
+/** A passage as the reader sees it (docs/02-domain/passage.md). */
+export interface PassageView {
+  id: string;
+  title: string | null;
+  content: string;
+}
+
 /** Session metadata returned by start and embedded in resume. */
 export interface QuizSessionMetadata {
   sessionId: string;
@@ -38,6 +45,15 @@ export interface QuizQuestionView {
    * while a session is active.
    */
   promptCount?: number;
+  /**
+   * The text this question is asked about — a story, a paragraph with numbered
+   * gaps, a set of short adverts (docs/02-domain/passage.md) — or null. It is
+   * repeated on every question of the passage, so each question can be shown,
+   * resumed or reviewed on its own.
+   */
+  passage: PassageView | null;
+  /** Position within the passage, from 1 — for a gapped text, the gap. */
+  passageOrder: number | null;
   answerOptions: {
     id: string;
     content: string;
@@ -82,6 +98,9 @@ export interface QuizReviewQuestion {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /** See `QuizQuestionView.passage`. */
+  passage: PassageView | null;
+  passageOrder: number | null;
   answerOptions: {
     id: string;
     content: string;

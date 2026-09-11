@@ -8,6 +8,7 @@ import {
   isOrdering,
   questionFormat,
   questionType,
+  type PassageContent,
   type QuestionContent,
 } from './seed/types';
 import { estimateReadingTime } from '../src/learning-materials/learning-material.constants';
@@ -43,6 +44,14 @@ interface Counters {
   materialsCreated: number;
   materialsUpdated: number;
   materialsSkipped: number;
+  passagesCreated: number;
+  passagesUpdated: number;
+}
+
+/** Where a question sits relative to its text; both null when it stands alone. */
+interface Placement {
+  passageId: string | null;
+  passageOrder: number | null;
 }
 
 /**
@@ -165,14 +174,71 @@ async function seedSubject(
       counters.topicsCreated += 1;
     }
 
+    // Passages first: a question names its text by key, and the key only
+    // becomes an id once the passage row exists.
+    const passageIdByKey = new Map<string, string>();
+    for (const passage of topic.passages ?? []) {
+      passageIdByKey.set(
+        passage.key,
+        await seedPassage(topicRow.id, passage, counters),
+      );
+    }
+
+    // A question's position in its passage is its order among that passage's
+    // questions in the file — which is also the gap it fills, since the
+    // validator holds the numbered gaps to the same order.
+    const positions = new Map<string, number>();
     for (const question of topic.questions) {
-      await seedQuestion(topicRow.id, question, counters);
+      let placement: Placement = { passageId: null, passageOrder: null };
+      if (question.passage !== undefined) {
+        const passageOrder = (positions.get(question.passage) ?? 0) + 1;
+        positions.set(question.passage, passageOrder);
+        placement = {
+          passageId: passageIdByKey.get(question.passage) ?? null,
+          passageOrder,
+        };
+      }
+      await seedQuestion(topicRow.id, question, placement, counters);
     }
   }
 
   for (const [index, material] of materials.entries()) {
     await seedMaterial(subjectRow.id, topicIdBySlug, index, material, counters);
   }
+}
+
+/**
+ * Upserts one passage by its natural key `(topicId, slug)` and returns its id.
+ * Rewording the text keeps the key, so it edits the row in place — the
+ * questions that point at it do not move.
+ */
+async function seedPassage(
+  topicId: string,
+  passage: PassageContent,
+  counters: Counters,
+): Promise<string> {
+  const title = passage.title ?? null;
+  const existing = await prisma.passage.findUnique({
+    where: { topicId_slug: { topicId, slug: passage.key } },
+  });
+
+  if (!existing) {
+    const created = await prisma.passage.create({
+      data: { topicId, slug: passage.key, title, content: passage.content },
+      select: { id: true },
+    });
+    counters.passagesCreated += 1;
+    return created.id;
+  }
+
+  if (existing.title !== title || existing.content !== passage.content) {
+    await prisma.passage.update({
+      where: { id: existing.id },
+      data: { title, content: passage.content },
+    });
+    counters.passagesUpdated += 1;
+  }
+  return existing.id;
 }
 
 /**
@@ -306,6 +372,7 @@ function buildAnswers(question: QuestionContent): {
 async function seedQuestion(
   topicId: string,
   question: QuestionContent,
+  placement: Placement,
   counters: Counters,
 ): Promise<void> {
   const { options, configuration } = buildAnswers(question);
@@ -333,6 +400,7 @@ async function seedQuestion(
         difficulty,
         explanation,
         imageUrl,
+        ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,
         answerOptions: { create: options },
@@ -359,6 +427,8 @@ async function seedQuestion(
     existing.difficulty === difficulty &&
     existing.explanation === explanation &&
     existing.imageUrl === imageUrl &&
+    existing.passageId === placement.passageId &&
+    existing.passageOrder === placement.passageOrder &&
     existing.isPublished &&
     existing.deletedAt === null &&
     JSON.stringify(existing.configuration ?? null) ===
@@ -381,6 +451,7 @@ async function seedQuestion(
         difficulty,
         explanation,
         imageUrl,
+        ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,
         deletedAt: null,
@@ -401,6 +472,8 @@ async function main(): Promise<void> {
     materialsCreated: 0,
     materialsUpdated: 0,
     materialsSkipped: 0,
+    passagesCreated: 0,
+    passagesUpdated: 0,
   };
 
   for (const [index, pack] of SUBJECT_PACKS.entries()) {
@@ -424,6 +497,9 @@ async function main(): Promise<void> {
   for (const row of totals) {
     console.log(`  ${row.difficulty ?? 'UNSET'}: ${row._count._all}`);
   }
+  console.log(
+    `  passages  : ${counters.passagesCreated} created, ${counters.passagesUpdated} updated`,
+  );
   console.log(
     `  materials : ${counters.materialsCreated} created, ${counters.materialsUpdated} updated, ${counters.materialsSkipped} skipped`,
   );

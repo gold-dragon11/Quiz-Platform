@@ -61,6 +61,8 @@ export interface PublishedQuestionRow {
   imageUrl: string | null;
   difficulty: Difficulty | null;
   configuration: Prisma.JsonValue;
+  passageOrder: number | null;
+  passage: { id: string; title: string | null; content: string } | null;
   translations: { title: string }[];
   answerOptions: {
     id: string;
@@ -199,6 +201,8 @@ export class QuestionsRepository {
           imageUrl: true,
           difficulty: true,
           configuration: true,
+          passageOrder: true,
+          passage: { select: { id: true, title: true, content: true } },
           translations: { where: translationsWhere, select: { title: true } },
           answerOptions: {
             select: {

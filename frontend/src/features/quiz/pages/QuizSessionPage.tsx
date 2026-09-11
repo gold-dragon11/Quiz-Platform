@@ -9,11 +9,12 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Spinner } from '@/shared/ui/Spinner';
 import { isApiError } from '@/shared/utils/apply-api-error';
-import { QuizStatus } from '@/shared/types/enums';
+import { QuestionType, QuizStatus } from '@/shared/types/enums';
 import { useQuizSession, useSubmitAnswer, useCompleteQuiz } from '@/features/quiz/hooks/use-quiz';
 import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { QuestionCard } from '@/features/quiz/components/QuestionCard';
 import { QuestionStrip } from '@/features/quiz/components/QuestionStrip';
+import { PassagePanel } from '@/features/quiz/components/PassagePanel';
 import { QuizTimer } from '@/features/quiz/components/QuizTimer';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -192,7 +193,9 @@ export function QuizSessionPage(): React.JSX.Element {
   const unanswered = total - answeredCount;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-8">
+    // A question on a text needs the text beside it, so the page widens for
+    // it; everything else keeps the narrow reading column.
+    <div className={`mx-auto flex flex-col gap-8 ${current.passage ? 'max-w-6xl' : 'max-w-2xl'}`}>
       <div className="flex items-start gap-6">
         <div className="min-w-0 flex-1">
           <QuestionStrip
@@ -207,23 +210,41 @@ export function QuizSessionPage(): React.JSX.Element {
         )}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          variants={slideSwap}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={TRANSITION.fade}
-        >
-          <QuestionCard
-            question={current}
-            answer={answers[current.id]}
-            disabled={complete.isPending}
-            onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
-          />
-        </motion.div>
-      </AnimatePresence>
+      {/* The text stays put while the questions on it change: it is keyed by the
+          passage, not the question, so paging from gap 2 to gap 3 moves only
+          the marked gap and keeps the reader's place in a long text. */}
+      <div className={current.passage ? 'grid gap-8 lg:grid-cols-2 lg:gap-12' : ''}>
+        {/* The rule sits on a wrapper, a little below the scrolling text: on a
+            phone the text is cut mid-line at the bottom of its box, and a line
+            drawn straight under that half-shown row reads as a strikethrough. */}
+        {current.passage && (
+          <div className="border-border border-b pb-4 lg:sticky lg:top-6 lg:self-start lg:border-r lg:border-b-0 lg:pr-10 lg:pb-0">
+            <PassagePanel
+              key={current.passage.id}
+              passage={current.passage}
+              activeGap={current.type === QuestionType.MATCHING ? null : current.passageOrder}
+              className="max-h-[45vh] overflow-y-auto lg:max-h-[calc(100vh-10rem)]"
+            />
+          </div>
+        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.id}
+            variants={slideSwap}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={TRANSITION.fade}
+          >
+            <QuestionCard
+              question={current}
+              answer={answers[current.id]}
+              disabled={complete.isPending}
+              onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       <div className="border-border border-t pt-6">
         <div className="flex items-center justify-between gap-4">

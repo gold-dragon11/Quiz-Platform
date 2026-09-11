@@ -31,13 +31,14 @@ PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 MAX_LENGTH_SPREAD = 25
 
 # The paper's own shape, and it differs by subject: Ukrainian and history give
-# four options and match four rows against five choices, while mathematics
-# gives five options and matches three rows against five.
+# four options and match four rows against five choices, mathematics gives five
+# options and matches three rows against five, and English matches five or six
+# numbered texts or gaps against eight choices (A–H).
 SHAPES = {
-    'ukrainian-language': {'options': 4, 'rows': 4, 'choices': 5},
-    'history-of-ukraine': {'options': 4, 'rows': 4, 'choices': 5},
-    'mathematics': {'options': 5, 'rows': 3, 'choices': 5},
-    'english-language': {'options': 4, 'rows': 4, 'choices': 5},
+    'ukrainian-language': {'options': 4, 'rows': (4,), 'choices': 5},
+    'history-of-ukraine': {'options': 4, 'rows': (4,), 'choices': 5},
+    'mathematics': {'options': 5, 'rows': (3,), 'choices': 5},
+    'english-language': {'options': 4, 'rows': (5, 6), 'choices': 8},
 }
 
 # Only rows of items and full sentences are worth comparing between questions.
@@ -64,7 +65,8 @@ BARE_VALUE = re.compile(r'^-?\d+([.,]\d+)?$|^\$[^$]*\$$')
 
 
 def check(pack):
-    shape = SHAPES.get(pack, {'options': 4, 'rows': 4, 'choices': 5})
+    shape = SHAPES.get(pack, {'options': 4, 'rows': (4,), 'choices': 5})
+    english = pack == 'english-language'
     topics_dir = os.path.join(ROOT, pack, 'topics')
     if not os.path.isdir(topics_dir):
         return None
@@ -76,6 +78,7 @@ def check(pack):
             continue
         with open(os.path.join(topics_dir, name), encoding='utf8') as handle:
             topic = json.load(handle)
+        declared = {p['key'] for p in topic.get('passages', [])}
         for question in topic['questions']:
             if question.get('format') != 'NMT':
                 continue
@@ -151,9 +154,10 @@ def check(pack):
             else:
                 pairs = question['pairs']
                 spare = question.get('extraChoices', [])
-                if len(pairs) != shape['rows']:
-                    problems.append('%s — %d rows, the paper gives %d'
-                                    % (at, len(pairs), shape['rows']))
+                if len(pairs) not in shape['rows']:
+                    problems.append('%s — %d rows, the paper gives %s'
+                                    % (at, len(pairs),
+                                       ' or '.join(map(str, shape['rows']))))
                 if len(pairs) + len(spare) != shape['choices']:
                     problems.append(
                         '%s — %d choices in total, the paper gives %d'
@@ -173,6 +177,10 @@ def check(pack):
             if not question.get('explanation'):
                 problems.append('%s — no explanation' % at)
 
+            passage = question.get('passage')
+            if passage is not None and passage not in declared:
+                problems.append('%s — passage "%s" is not declared' % (at, passage))
+
             texts = [question['title'], question.get('explanation', '')]
             texts += [o['content'] if isinstance(o, dict) else o
                       for o in question.get('options', [])]
@@ -180,6 +188,15 @@ def check(pack):
             texts += [side for pair in question.get('pairs', []) for side in pair]
             texts += question.get('extraChoices', [])
             for text in texts:
+                if english:
+                    # The task is in English and its explanation in Ukrainian,
+                    # so the slip to look for is the other way round: Cyrillic
+                    # in the task itself.
+                    if text != question.get('explanation', '') and re.search(
+                            r'[Ѐ-ӿ一-鿿]', text):
+                        problems.append('%s — Cyrillic in the task: %s'
+                                        % (at, text[:40]))
+                    continue
                 # Latin or CJK characters in Ukrainian content are always a
                 # slip of the keyboard, and they survive every other check.
                 if re.search(r'[a-zA-Z一-鿿]',
