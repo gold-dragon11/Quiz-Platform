@@ -102,11 +102,28 @@ export interface MultipleChoiceContent {
   explanation?: string;
 }
 
+/**
+ * Work the answer out and write the number — the four open questions that
+ * close the mathematics paper. There are no options: the expected value is
+ * stored in the configuration, so it never reaches the client.
+ */
+export interface NumericContent {
+  type: 'NUMERIC';
+  title: string;
+  difficulty: keyof typeof Difficulty;
+  format?: QuestionFormatContent;
+  imageUrl?: ImagePath;
+  /** The number the reader has to arrive at. */
+  answer: number;
+  explanation?: string;
+}
+
 export type QuestionContent =
   | SingleChoiceContent
   | MatchingContent
   | OrderingContent
-  | MultipleChoiceContent;
+  | MultipleChoiceContent
+  | NumericContent;
 
 /** One topic file: `prisma/seed/content/<subject>/topics/<slug>.json`. */
 export interface TopicContent {
@@ -139,6 +156,12 @@ export function isOrdering(
   return question.type === 'ORDERING';
 }
 
+export function isNumeric(
+  question: QuestionContent,
+): question is NumericContent {
+  return question.type === 'NUMERIC';
+}
+
 export function isMultipleChoice(
   question: QuestionContent,
 ): question is MultipleChoiceContent {
@@ -157,6 +180,8 @@ export function questionType(question: QuestionContent): QuestionType {
       return QuestionType.ORDERING;
     case 'MULTIPLE_CHOICE':
       return QuestionType.MULTIPLE_CHOICE;
+    case 'NUMERIC':
+      return QuestionType.NUMERIC;
     default:
       return QuestionType.SINGLE_CHOICE;
   }

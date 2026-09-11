@@ -5,6 +5,7 @@ import {
   getAnswerOptionIds,
   getCorrectOptionId,
   getMatchingPairs,
+  getNumericAnswer,
   getSelectedOptionId,
   getSequence,
 } from '@/features/quiz/lib/quiz-answers';
@@ -45,6 +46,7 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
             {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
             {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
             {question.type === QuestionType.MULTIPLE_CHOICE && <MultipleChoiceReview question={question} />}
+            {question.type === QuestionType.NUMERIC && <NumericReview question={question} />}
             {question.explanation && <Explanation text={question.explanation} />}
             {/* The review is where a wrong key actually shows itself: the
                 learner has just been told they were wrong and can see the
@@ -222,6 +224,33 @@ function MultipleChoiceReview({ question }: { question: QuizReviewQuestion }): R
         );
       })}
       {submitted.size === 0 && <p className="text-text-muted mt-2 text-xs">Ви не відповіли на це питання.</p>}
+    </div>
+  );
+}
+
+/** Two numbers side by side: what was written and what was expected. */
+function NumericReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element {
+  const correct = getNumericAnswer(question.correctAnswer);
+  const submitted = getNumericAnswer(question.submittedAnswer);
+
+  return (
+    <div className="flex flex-wrap gap-3 text-sm">
+      <div className="border-success/40 bg-success/10 text-text-primary rounded-lg border px-4 py-2.5">
+        <span className="text-text-muted mr-2 text-xs uppercase">правильна</span>
+        <span className="tabular-nums">{correct}</span>
+      </div>
+      {submitted === '' ? (
+        <p className="text-text-muted self-center text-xs">Ви не відповіли на це питання.</p>
+      ) : (
+        <div
+          className={`text-text-primary rounded-lg border px-4 py-2.5 ${
+            question.isCorrect ? 'border-success/40 bg-success/10' : 'border-error/40 bg-error/10'
+          }`}
+        >
+          <span className="text-text-muted mr-2 text-xs uppercase">ваша</span>
+          <span className="tabular-nums">{submitted}</span>
+        </div>
+      )}
     </div>
   );
 }

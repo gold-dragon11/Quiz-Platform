@@ -109,6 +109,9 @@ enum QuestionType {
   /// Several statements, of which a fixed number are correct — the exam asks
   /// for three out of seven.
   MULTIPLE_CHOICE
+  /// Write the number you worked out. No options at all: the expected value
+  /// lives in `configuration.answer`, so it never reaches the client.
+  NUMERIC
 }
 
 /// Which specification a question was written to.

@@ -273,7 +273,7 @@ Supported query parameters:
 | pageSize | 20 | integer 1–100 |
 | topicId | — | UUID |
 | subjectId | — | UUID; filters through the topic relation |
-| type | — | SINGLE_CHOICE, MATCHING, ORDERING or MULTIPLE_CHOICE |
+| type | — | SINGLE_CHOICE, MATCHING, ORDERING, MULTIPLE_CHOICE or NUMERIC |
 | format | — | PRACTICE or NMT |
 | difficulty | — | BEGINNER, INTERMEDIATE, or ADVANCED |
 | isPublished | — | true or false |
@@ -296,9 +296,9 @@ Creates a new question with its answer options, in the default locale (English).
 Required fields:
 
 - topicId — the parent topic must exist and not be soft-deleted, otherwise `404 Not Found`;
-- type — SINGLE_CHOICE, MATCHING, ORDERING or MULTIPLE_CHOICE;
+- type — SINGLE_CHOICE, MATCHING, ORDERING, MULTIPLE_CHOICE or NUMERIC;
 - title (plain text and/or raw LaTeX);
-- options — 2 to 20 answer options.
+- options — 2 to 20 answer options (none at all for NUMERIC).
 
 Optional fields:
 
@@ -324,6 +324,7 @@ A valid MATCHING configuration has at least two pairs; every option order appear
 
 - **ORDERING** — the persisted option order *is* the answer: options are stored in the sequence that is correct. `isCorrect` is not accepted (it would be a second, contradictory key) and neither is `configuration`. At least three items, because a two-item "sequence" is a coin toss. The delivery view deals these options shuffled, so a learner never receives them in the stored order — and neither does the public question list (questions.md §5).
 - **MULTIPLE_CHOICE** — at least two options have `isCorrect: true` and at least one does not; `configuration` is not allowed. The count is not fixed at three: the exam asks for three of seven, but the rule that matters is "more than one right, and not all of them".
+- **NUMERIC** — no options at all: send `options: []`. `configuration` is required and must be exactly `{ "answer": <finite number> }` — an extra key would be a second instruction nobody reads. The expected value lives in the configuration so that it never reaches a learner's browser; the quiz view sends neither options nor configuration for this type. Publishing skips the option-count rule for NUMERIC and re-checks the configuration instead.
 
 New questions always start unpublished; publishing happens through the publish endpoint (§10). `explanation` is not part of the MVP schema and is rejected. `isPublished` is likewise rejected.
 

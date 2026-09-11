@@ -5,10 +5,12 @@ import {
   assignmentsToPairs,
   buildMatchingAnswer,
   buildMultipleChoiceAnswer,
+  buildNumericAnswer,
   buildOrderingAnswer,
   buildSingleChoiceAnswer,
   getAnswerOptionIds,
   getMatchingPairs,
+  getNumericAnswer,
   getSelectedOptionId,
   getSequence,
   pairsToAssignments,
@@ -19,6 +21,7 @@ import { SingleChoiceAnswer } from '@/features/quiz/components/SingleChoiceAnswe
 import { MatchingAnswer } from '@/features/quiz/components/MatchingAnswer';
 import { OrderingAnswer } from '@/features/quiz/components/OrderingAnswer';
 import { MultipleChoiceAnswer } from '@/features/quiz/components/MultipleChoiceAnswer';
+import { NumericAnswer } from '@/features/quiz/components/NumericAnswer';
 import { ReportQuestionButton } from '@/features/question-reports';
 
 interface QuestionCardProps {
@@ -91,6 +94,14 @@ export function QuestionCard({
               ),
             );
           }}
+        />
+      )}
+
+      {question.type === QuestionType.NUMERIC && (
+        <NumericAnswer
+          value={getNumericAnswer(answer)}
+          disabled={disabled}
+          onChange={(value) => onAnswerChange(buildNumericAnswer(value))}
         />
       )}
 

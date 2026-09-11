@@ -169,6 +169,30 @@ export function buildMultipleChoiceAnswer(selectedIds: string[]): SelectedAnswer
   return { answerOptionIds: selectedIds };
 }
 
+// --- Numeric ------------------------------------------------------------
+
+/**
+ * Reads a numeric answer back as the string the field shows. The server stores
+ * whatever was submitted, so a resumed session finds either the raw text the
+ * reader typed or, for the correct answer in a review, a number.
+ */
+export function getNumericAnswer(
+  answer: SelectedAnswer | Record<string, unknown> | null | undefined,
+): string {
+  if (!answer) {
+    return '';
+  }
+  const raw = (answer as { numericAnswer?: unknown }).numericAnswer;
+  if (typeof raw === 'number') {
+    return String(raw);
+  }
+  return typeof raw === 'string' ? raw : '';
+}
+
+export function buildNumericAnswer(value: string): SelectedAnswer {
+  return { numericAnswer: value };
+}
+
 // --- Misc ---------------------------------------------------------------
 
 /** Formats a countdown in whole seconds as m:ss. */

@@ -647,6 +647,75 @@ describe('Admin Questions (e2e)', () => {
     });
   });
 
+  describe('POST /admin/questions — NUMERIC', () => {
+    const numericPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'NUMERIC',
+        title: `Phase43 numeric ${counter}?`,
+        options: [],
+        configuration: { answer: 12.5 },
+        ...overrides,
+      };
+    };
+
+    it('stores the expected value and no options at all', async () => {
+      const created = await createQuestion(numericPayload());
+
+      expect(created.type).toBe('NUMERIC');
+      expect(created.answerOptions).toHaveLength(0);
+      expect(created.configuration).toEqual({ answer: 12.5 });
+    });
+
+    it('publishes despite having no options', async () => {
+      const created = await createQuestion(numericPayload());
+      const published = await publishQuestion(created.id, {
+        isPublished: true,
+      });
+      expect(published.isPublished).toBe(true);
+    });
+
+    it('rejects options, a missing answer and an answer that is not a number', async () => {
+      await createQuestion(
+        numericPayload({ options: [{ content: 'a' }, { content: 'b' }] }),
+        400,
+      );
+      await createQuestion(numericPayload({ configuration: {} }), 400);
+      await createQuestion(
+        numericPayload({ configuration: { answer: 'дванадцять' } }),
+        400,
+      );
+      // An extra key would be a second, unread instruction sitting in the key.
+      await createQuestion(
+        numericPayload({ configuration: { answer: 3, tolerance: 0.5 } }),
+        400,
+      );
+    });
+
+    it('edits the expected value without touching anything else', async () => {
+      const created = await createQuestion(numericPayload());
+      const updated = await updateQuestion(created.id, {
+        configuration: { answer: -4 },
+      });
+      expect(updated.configuration).toEqual({ answer: -4 });
+      expect(updated.answerOptions).toHaveLength(0);
+    });
+
+    it('still refuses fewer than two options for the other types', async () => {
+      // The lower bound moved out of the DTO when NUMERIC arrived; this is the
+      // check that it did not simply disappear.
+      await createQuestion(
+        singleChoicePayload({
+          options: [{ content: 'lonely', isCorrect: true }],
+        }),
+        400,
+      );
+    });
+  });
+
   describe('GET /admin/questions', () => {
     it('returns the envelope with defaults, newest first, including options and configuration', async () => {
       const older = await createQuestion(singleChoicePayload());

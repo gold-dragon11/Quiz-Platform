@@ -36,6 +36,7 @@ const TYPE_OPTIONS: SelectOption[] = [
   { value: QuestionType.MATCHING, label: 'Відповідності' },
   { value: QuestionType.ORDERING, label: 'Послідовність' },
   { value: QuestionType.MULTIPLE_CHOICE, label: 'Кілька відповідей' },
+  { value: QuestionType.NUMERIC, label: 'Числова відповідь' },
 ];
 const FORMAT_OPTIONS: SelectOption[] = [
   { value: QuestionFormat.PRACTICE, label: 'Тренувальне' },
@@ -149,6 +150,8 @@ export function QuestionFormModal({
   const [correctIndex, setCorrectIndex] = useState(0);
   /** MULTIPLE_CHOICE: indices of the options marked correct. */
   const [correctIndexes, setCorrectIndexes] = useState<number[]>([]);
+  /** NUMERIC: the expected value, held as text until it is submitted. */
+  const [numericAnswer, setNumericAnswer] = useState('');
   const [pairs, setPairs] = useState<PairRow[]>([emptyPair(), emptyPair()]);
   const [answersError, setAnswersError] = useState<string | null>(null);
 
@@ -204,6 +207,7 @@ export function QuestionFormModal({
       setOptions([emptyOption(), emptyOption()]);
       setCorrectIndex(0);
       setCorrectIndexes([]);
+      setNumericAnswer('');
       setPairs([emptyPair(), emptyPair()]);
     }
   }, [open, question, reset]);
@@ -259,6 +263,18 @@ export function QuestionFormModal({
         isCorrect: i === correctIndex,
       }));
       submit(values, difficulty, built);
+      return;
+    }
+
+    if (values.type === QuestionType.NUMERIC) {
+      const parsed = Number(numericAnswer.trim().replace(',', '.'));
+      if (numericAnswer.trim() === '' || !Number.isFinite(parsed)) {
+        setAnswersError('Укажіть числову відповідь.');
+        return;
+      }
+      // No options at all — the expected value travels in the configuration,
+      // so it never reaches a learner's browser.
+      submit(values, difficulty, [], { answer: parsed });
       return;
     }
 
@@ -460,6 +476,7 @@ export function QuestionFormModal({
 
         {answersError && <Alert variant="error">{answersError}</Alert>}
 
+        {type === QuestionType.NUMERIC && <NumericEditor value={numericAnswer} onChange={setNumericAnswer} />}
         {type === QuestionType.SINGLE_CHOICE && (
           <SingleChoiceEditor
             options={options}
@@ -546,6 +563,31 @@ function SingleChoiceEditor({
           </Button>
         </div>
       )}
+    </fieldset>
+  );
+}
+
+/** Numeric editor: one field, because the answer is one number. */
+function NumericEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}): React.JSX.Element {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-text-secondary text-sm font-medium">Правильна відповідь — число</legend>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="напр. 12,5"
+        inputMode="decimal"
+        className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-48 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+      />
+      <p className="text-text-muted text-xs">
+        Учень уводить число сам, варіантів відповіді немає. Кому й крапку зараховуємо однаково.
+      </p>
     </fieldset>
   );
 }

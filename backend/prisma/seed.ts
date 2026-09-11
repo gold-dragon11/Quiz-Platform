@@ -4,6 +4,7 @@ import { loadMaterials, type MaterialContent } from './seed/materials';
 import {
   isMatching,
   isMultipleChoice,
+  isNumeric,
   isOrdering,
   questionFormat,
   questionType,
@@ -207,7 +208,8 @@ function shuffled<T>(items: T[], seed: number): T[] {
 /** Flattens authoring content into the option rows + configuration the engine expects. */
 function buildAnswers(question: QuestionContent): {
   options: { content: string; isCorrect: boolean; order: number }[];
-  configuration: { pairs: { left: number; right: number }[] } | null;
+  configuration:
+    { pairs: { left: number; right: number }[] } | { answer: number } | null;
 } {
   if (isMatching(question)) {
     // Block layout: every prompt first (orders 0..n-1), then every choice
@@ -240,6 +242,12 @@ function buildAnswers(question: QuestionContent): {
         pairs: question.pairs.map((_, i) => ({ left: i, right: n + i })),
       },
     };
+  }
+
+  if (isNumeric(question)) {
+    // No options at all: the answer is a number, and the client must never
+    // receive it.
+    return { options: [], configuration: { answer: question.answer } };
   }
 
   if (isOrdering(question)) {

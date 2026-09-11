@@ -74,6 +74,7 @@ describe('Quiz Engine (e2e)', () => {
   let formatTopicId: string;
   let orderingTopicId: string;
   let multipleChoiceTopicId: string;
+  let numericTopicId: string;
   let counter = 0;
   /** A well-formed uuid that belongs to no option in the bank. */
   const GHOST_OPTION_ID = '00000000-0000-0000-0000-0000000000aa';
@@ -344,6 +345,26 @@ describe('Quiz Engine (e2e)', () => {
     return id;
   };
 
+  /** A NUMERIC question: no options, the value hidden in the configuration. */
+  const createPublishedNumeric = async (
+    parentTopic: string,
+    answer: number,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: 'NUMERIC',
+      title: `Phase51 Numeric ${counter}?`,
+      options: [],
+      configuration: { answer },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
   /** The stored option order — the answer key the client never receives. */
   const storedOptionIds = async (questionId: string): Promise<string[]> => {
     const options = await prisma.answerOption.findMany({
@@ -545,6 +566,11 @@ describe('Quiz Engine (e2e)', () => {
     for (let i = 0; i < 3; i += 1) {
       await createPublishedMultipleChoice(multipleChoiceTopicId);
     }
+
+    numericTopicId = await makeTopic('numeric');
+    await createPublishedNumeric(numericTopicId, 12.5);
+    await createPublishedNumeric(numericTopicId, -4);
+    await createPublishedNumeric(numericTopicId, 0);
 
     // 5 practice + 3 reference: the bank as it is while the NMT set is still
     // being written topic by topic.
@@ -1273,6 +1299,131 @@ describe('Quiz Engine (e2e)', () => {
       expect(new Set(reviewed.correctAnswer.answerOptionIds)).toEqual(
         new Set(right),
       );
+    });
+  });
+
+  describe('NUMERIC questions', () => {
+    const startNumeric = async (
+      token: string,
+      questionCount: number,
+    ): Promise<{ sessionId: string; questions: QuestionView[] }> => {
+      const started = await start(token, {
+        subjectId,
+        topicId: numericTopicId,
+        questionCount,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      return { sessionId, questions: await getQuestions(token, sessionId) };
+    };
+
+    const expectedAnswer = async (questionId: string): Promise<number> => {
+      const row = await prisma.question.findUniqueOrThrow({
+        where: { id: questionId },
+        select: { configuration: true },
+      });
+      return (row.configuration as { answer: number }).answer;
+    };
+
+    it('sends no options and no configuration', async () => {
+      const { token } = await registerUser();
+      const { questions } = await startNumeric(token, 3);
+
+      for (const question of questions) {
+        expect(question.type).toBe('NUMERIC');
+        expect(question.answerOptions).toHaveLength(0);
+      }
+      // The value is the whole answer, so it must not appear anywhere in the
+      // payload the learner receives.
+      expect(JSON.stringify(questions)).not.toContain('configuration');
+      expect(JSON.stringify(questions)).not.toContain('12.5');
+    });
+
+    it('accepts the value however it is written', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 3);
+      const forms = new Map<number, string>([
+        [12.5, '12,50'],
+        [-4, '-4'],
+        [0, ' 0 '],
+      ]);
+
+      for (const question of questions) {
+        const answer = await expectedAnswer(question.id);
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: { numericAnswer: forms.get(answer) as string },
+        }).expect(200);
+      }
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        3,
+      );
+    });
+
+    it('stores a wrong number, and text that is not a number, as wrong answers', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 3);
+
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { numericAnswer: '999' },
+      }).expect(200);
+      // Mid-typing states reach the server because every keystroke autosaves.
+      await submit(token, sessionId, {
+        questionId: questions[1].id,
+        selectedAnswer: { numericAnswer: '-' },
+      }).expect(200);
+      await submit(token, sessionId, {
+        questionId: questions[2].id,
+        selectedAnswer: { numericAnswer: '' },
+      }).expect(200);
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        0,
+      );
+    });
+
+    it('rejects a wrong answer shape with 400', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 1);
+
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { answerOptionId: GHOST_OPTION_ID },
+      }).expect(400);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { numericAnswer: { value: 12.5 } },
+      }).expect(400);
+    });
+
+    it('reveals the expected value only in the review', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 1);
+      const answer = await expectedAnswer(questions[0].id);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { numericAnswer: String(answer) },
+      }).expect(200);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (
+        review.body as {
+          questions: {
+            isCorrect: boolean;
+            correctAnswer: { numericAnswer: number };
+          }[];
+        }
+      ).questions[0];
+      expect(reviewed.isCorrect).toBe(true);
+      expect(reviewed.correctAnswer.numericAnswer).toBe(answer);
     });
   });
 

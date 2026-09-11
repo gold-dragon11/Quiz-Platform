@@ -38,6 +38,8 @@ export function evaluateAnswer(
       return evaluateOrdering(selectedAnswer, options);
     case QuestionType.MULTIPLE_CHOICE:
       return evaluateMultipleChoice(selectedAnswer, options);
+    case QuestionType.NUMERIC:
+      return evaluateNumeric(selectedAnswer, configuration);
     default:
       return evaluateMatching(selectedAnswer, options, configuration);
   }
@@ -120,6 +122,68 @@ function evaluateMultipleChoice(
   );
 }
 
+/**
+ * Reads the expected value out of `{ answer: … }`. Returns null when the
+ * configuration is malformed, which makes every submission wrong rather than
+ * throwing: a broken key is the author's mistake, and a learner mid-quiz
+ * should not meet a 500 because of it.
+ */
+function expectedNumber(configuration: Prisma.JsonValue): number | null {
+  if (
+    typeof configuration !== 'object' ||
+    configuration === null ||
+    Array.isArray(configuration)
+  ) {
+    return null;
+  }
+  const answer = (configuration as { answer?: unknown }).answer;
+  return typeof answer === 'number' && Number.isFinite(answer) ? answer : null;
+}
+
+/**
+ * Compares the number the reader wrote with the one the author stored.
+ *
+ * The comparison is on value, not on spelling: "2.50", "2.5" and "2,5" are the
+ * same answer, and the exam's own answer sheet has no way to tell them apart
+ * either. The comma is accepted because a Ukrainian keyboard produces it and
+ * the paper writes decimals that way.
+ *
+ * Text that is not a number — an empty field, a half-typed minus sign — is
+ * stored as a wrong answer rather than rejected. The reader types into this
+ * field one character at a time and every keystroke autosaves; a 400 in the
+ * middle of typing "-12.5" would be the interface arguing with them. Only a
+ * wrong *shape* is an error.
+ *
+ * The tolerance exists only to absorb binary floating point — 0.1 + 0.2 is not
+ * 0.3 in any language with doubles. It is far too small to let a wrong answer
+ * through.
+ */
+function evaluateNumeric(
+  selectedAnswer: Record<string, unknown>,
+  configuration: Prisma.JsonValue,
+): boolean {
+  const keys = Object.keys(selectedAnswer);
+  const raw = selectedAnswer.numericAnswer;
+  if (keys.length !== 1 || keys[0] !== 'numericAnswer') {
+    throw new BadRequestException(INVALID_ANSWER_MESSAGE);
+  }
+
+  let submitted: number;
+  if (typeof raw === 'number') {
+    submitted = raw;
+  } else if (typeof raw === 'string') {
+    submitted = Number(raw.trim().replace(',', '.'));
+  } else {
+    throw new BadRequestException(INVALID_ANSWER_MESSAGE);
+  }
+
+  const expected = expectedNumber(configuration);
+  if (expected === null || !Number.isFinite(submitted)) {
+    return false;
+  }
+  return Math.abs(submitted - expected) < 1e-9;
+}
+
 function evaluateSingleChoice(
   selectedAnswer: Record<string, unknown>,
   options: EvaluableOption[],
@@ -183,7 +247,8 @@ function evaluateMatching(
  * always with option **UUIDs**: SINGLE_CHOICE → `{ optionId }`, MATCHING →
  * `{ pairs: [{ left, right }] }` translated from the order-based
  * configuration, ORDERING → `{ sequence }` in the stored order, and
- * MULTIPLE_CHOICE → `{ answerOptionIds }` of every correct option.
+ * MULTIPLE_CHOICE → `{ answerOptionIds }` of every correct option, and
+ * NUMERIC → `{ numericAnswer }` read from the stored configuration.
  */
 export function correctAnswerFor(
   type: QuestionType,
@@ -208,6 +273,10 @@ export function correctAnswerFor(
         .filter((option) => option.isCorrect)
         .map((option) => option.id),
     };
+  }
+
+  if (type === QuestionType.NUMERIC) {
+    return { numericAnswer: expectedNumber(configuration) };
   }
 
   const idByOrder = new Map(options.map((option) => [option.order, option.id]));

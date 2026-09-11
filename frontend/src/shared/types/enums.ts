@@ -44,6 +44,8 @@ export const QuestionType = {
   ORDERING: 'ORDERING',
   /** Several correct statements among many — the exam's "three of seven". */
   MULTIPLE_CHOICE: 'MULTIPLE_CHOICE',
+  /** Write the number you worked out — no options are offered. */
+  NUMERIC: 'NUMERIC',
 } as const;
 export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType];
 

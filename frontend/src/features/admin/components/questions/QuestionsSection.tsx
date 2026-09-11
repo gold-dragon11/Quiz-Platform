@@ -28,6 +28,7 @@ const TYPE_LABEL: Record<QuestionType, string> = {
   [QuestionType.MATCHING]: 'Відповідності',
   [QuestionType.ORDERING]: 'Послідовність',
   [QuestionType.MULTIPLE_CHOICE]: 'Кілька відповідей',
+  [QuestionType.NUMERIC]: 'Числова відповідь',
 };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   [Difficulty.BEGINNER]: 'Початковий',

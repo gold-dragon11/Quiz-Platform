@@ -30,6 +30,16 @@ PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # question is a length cue even when it is not the longest of the four.
 MAX_LENGTH_SPREAD = 25
 
+# The paper's own shape, and it differs by subject: Ukrainian and history give
+# four options and match four rows against five choices, while mathematics
+# gives five options and matches three rows against five.
+SHAPES = {
+    'ukrainian-language': {'options': 4, 'rows': 4, 'choices': 5},
+    'history-of-ukraine': {'options': 4, 'rows': 4, 'choices': 5},
+    'mathematics': {'options': 5, 'rows': 3, 'choices': 5},
+    'english-language': {'options': 4, 'rows': 4, 'choices': 5},
+}
+
 # Only rows of items and full sentences are worth comparing between questions.
 # A bare name — "гунів", "Ярослава Мудрого" — legitimately appears as an option
 # in several questions, and flagging those buries the real signal: a repeated
@@ -41,8 +51,20 @@ MIN_LENGTH_FOR_REPEAT_CHECK = 30
 # keyboard that no other check would catch.
 ROMAN = re.compile(r'\b[IVXLCDM]+\b')
 
+# Formulas are written between dollar signs and rendered with KaTeX, so their
+# backslash commands are Latin by definition. They are cut out before the
+# script check rather than exempted from it: a stray English word *outside* a
+# formula is still worth catching in a mathematics question.
+FORMULA = re.compile(r'\$[^$]*\$')
+
+# A bare number or a bare formula is not a "row of items" — the same value
+# legitimately turns up as an option in many questions. Only prose is worth
+# comparing between questions.
+BARE_VALUE = re.compile(r'^-?\d+([.,]\d+)?$|^\$[^$]*\$$')
+
 
 def check(pack):
+    shape = SHAPES.get(pack, {'options': 4, 'rows': 4, 'choices': 5})
     topics_dir = os.path.join(ROOT, pack, 'topics')
     if not os.path.isdir(topics_dir):
         return None
@@ -73,12 +95,20 @@ def check(pack):
                 if len(question['correct']) != 3:
                     problems.append('%s — %d correct, the paper asks for 3'
                                     % (at, len(question['correct'])))
+            elif question.get('type') == 'NUMERIC':
+                answer = question.get('answer')
+                if not isinstance(answer, (int, float)):
+                    problems.append('%s — numeric answer is not a number' % at)
+                elif 'e' in repr(answer):
+                    # The answer sheet takes a decimal, not 3.05e-05.
+                    problems.append('%s — answer is in exponential form: %r'
+                                    % (at, answer))
             elif 'options' in question:
                 total += 1
                 options = question['options']
-                if len(options) != 4:
-                    problems.append('%s — %d options, expected 4'
-                                    % (at, len(options)))
+                if len(options) != shape['options']:
+                    problems.append('%s — %d options, the paper gives %d'
+                                    % (at, len(options), shape['options']))
                 lengths = [len(o) for o in options]
                 correct = len(options[question['correct']])
                 if correct == max(lengths):
@@ -89,6 +119,11 @@ def check(pack):
                     problems.append('%s — option lengths spread %d characters'
                                     % (at, max(lengths) - min(lengths)))
                 for option in options:
+                    if 'e-' in option or 'e+' in option:
+                        problems.append('%s — option in exponential form: %s'
+                                        % (at, option))
+                    if BARE_VALUE.match(option.strip()):
+                        continue
                     if (',' not in option
                             and len(option) < MIN_LENGTH_FOR_REPEAT_CHECK):
                         continue
@@ -100,12 +135,13 @@ def check(pack):
             else:
                 pairs = question['pairs']
                 spare = question.get('extraChoices', [])
-                if len(pairs) != 4:
-                    problems.append('%s — %d rows, expected 4'
-                                    % (at, len(pairs)))
-                if len(spare) != 1:
-                    problems.append('%s — %d spare choices, expected 1'
-                                    % (at, len(spare)))
+                if len(pairs) != shape['rows']:
+                    problems.append('%s — %d rows, the paper gives %d'
+                                    % (at, len(pairs), shape['rows']))
+                if len(pairs) + len(spare) != shape['choices']:
+                    problems.append(
+                        '%s — %d choices in total, the paper gives %d'
+                        % (at, len(pairs) + len(spare), shape['choices']))
                 choices = [p[1] for p in pairs] + spare
                 if len(set(choices)) != len(choices):
                     problems.append('%s — a choice is repeated' % at)
@@ -129,7 +165,8 @@ def check(pack):
             for text in texts:
                 # Latin or CJK characters in Ukrainian content are always a
                 # slip of the keyboard, and they survive every other check.
-                if re.search(r'[a-zA-Z一-鿿]', ROMAN.sub('', text)):
+                if re.search(r'[a-zA-Z一-鿿]',
+                             ROMAN.sub('', FORMULA.sub('', text))):
                     problems.append('%s — foreign script: %s' % (at, text[:40]))
 
     return total, longest, strict, problems

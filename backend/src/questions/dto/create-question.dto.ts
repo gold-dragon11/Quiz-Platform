@@ -2,7 +2,6 @@ import { Difficulty, QuestionFormat, QuestionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsEnum,
   IsNotEmpty,
@@ -68,8 +67,9 @@ export class CreateQuestionDto {
   @MaxLength(2000)
   explanation?: string;
 
+  // The lower bound is checked in the service, per type: a NUMERIC question
+  // has no options at all, while every other type needs at least two.
   @IsArray()
-  @ArrayMinSize(2)
   @ArrayMaxSize(20)
   @ValidateNested({ each: true })
   @Type(() => AnswerOptionInputDto)

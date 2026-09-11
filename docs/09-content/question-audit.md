@@ -143,6 +143,8 @@ that differ by one rule. Questions written to that shape are marked
 | Ukrainian, NMT format | 340 | 35 % | **25 %** |
 | History, practice | 570 | 77 % | 64 % |
 | History, NMT format | 224 | 43 % | **25 %** |
+| Mathematics, practice | 800 | 43 % | 10 % |
+| Mathematics, NMT format | 280 | 33 % | **4 %** |
 
 25 % is the chance rate for four options: on the NMT bank, picking the longest
 option is worth exactly nothing. The remaining 10 percentage points are ties,
@@ -153,12 +155,36 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 788 questions: 424 across all 21 Ukrainian topics (Власне
-висловлення is excluded — НМТ 2026 has no essay) and 364 across all 14 History
-topics. By shape: 564 single-choice, 140 matching, 42 ordering, 42
-multiple-choice — every one with an explanation.
+**Coverage.** 1 208 questions: 424 across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay), 384 across all 14 History
+topics and 400 across all 20 Mathematics topics. By shape: 844 single-choice,
+200 matching, 42 ordering, 42 multiple-choice and 60 numeric — every one with
+an explanation.
 
-The last two shapes did not exist in the schema until the history bank needed
+Mathematics is the one subject where the length cue was never the problem: in
+the practice bank the correct option was strictly longest only 10 % of the
+time, below chance, because a correct number is not longer than a wrong one.
+Its risk is different — a distractor that happens to equal the answer, or a
+value with a tail like `0,4285714286` that nobody could write on the answer
+sheet. The generator computes every value, rejects a row in which two options
+coincide, and rejects any option or answer with more than four decimal places.
+The first check stopped twelve rows with coinciding options before they were
+written. The second arrived late: two values with tails — `1,3333333333` and
+`7,2111025509` — had already reached saved topics, and were found by a scan of
+the saved files and rewritten.
+
+The paper's own shape differs by subject and the audit follows it: mathematics
+gives five options instead of four, matches three rows against five choices,
+and closes with four open questions answered by a number.
+
+`NUMERIC` is the fifth shape, added for mathematics: no options at all, the
+expected value in `configuration.answer`, so it never reaches the client.
+Answers are compared by value — "12,5", "12.50" and 12.5 are the same — and
+text that is not a number is stored as a wrong answer rather than rejected,
+because the reader types into the field one keystroke at a time and every
+keystroke autosaves.
+
+Ordering and multiple choice did not exist in the schema until the history bank needed
 them: tasks 25–27 of the paper ask for a chronological sequence and 28–30 for
 three correct statements out of seven, which together are 20 % of the history
 test. `QuestionType` now carries `ORDERING` and `MULTIPLE_CHOICE`; an ordering

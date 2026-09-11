@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import {
   isMatching,
   isMultipleChoice,
+  isNumeric,
   isOrdering,
   type QuestionContent,
   type TopicContent,
@@ -227,6 +228,18 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       if (rights.has(left)) {
         errors.push(`${at}: "${left}" appears on both sides`);
       }
+    }
+    return errors;
+  }
+
+  if (isNumeric(question)) {
+    // A finite number, and nothing that only looks like one: NaN or Infinity
+    // would silently make every submission wrong.
+    if (
+      typeof question.answer !== 'number' ||
+      !Number.isFinite(question.answer)
+    ) {
+      errors.push(`${at}: numeric answer must be a finite number`);
     }
     return errors;
   }

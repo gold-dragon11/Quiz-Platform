@@ -61,6 +61,10 @@ const ORDERING_IS_CORRECT_MESSAGE =
 const ORDERING_MIN_OPTIONS_MESSAGE = `ORDERING questions require at least ${MIN_ORDERING_OPTIONS} items to put in sequence.`;
 const MULTIPLE_CHOICE_CORRECT_MESSAGE =
   'MULTIPLE_CHOICE questions require at least two correct options and at least one incorrect one.';
+const NUMERIC_OPTIONS_MESSAGE =
+  'NUMERIC questions take no answer options: the expected value lives in configuration.';
+const NUMERIC_CONFIGURATION_MESSAGE =
+  'NUMERIC questions require configuration of the form { "answer": <number> }.';
 const CONFIGURATION_INVALID_MESSAGE =
   'configuration must pair every option order exactly once.';
 const CONFIGURATION_MIN_PAIRS_MESSAGE = `MATCHING questions require at least ${MIN_MATCHING_PAIRS} pairs.`;
@@ -246,6 +250,12 @@ export class QuestionsService {
       throw new BadRequestException(OPTION_IDS_AT_CREATION_MESSAGE);
     }
 
+    // The DTO no longer states a lower bound, because NUMERIC questions carry
+    // no options; every other type still needs at least two.
+    if (dto.type !== QuestionType.NUMERIC && dto.options.length < MIN_OPTIONS) {
+      throw new BadRequestException(OPTION_COUNT_MESSAGE);
+    }
+
     const effectiveOrders = this.resolveEffectiveOrders(dto.options);
     const isCorrectProvided = dto.options.some(
       (option) => option.isCorrect !== undefined,
@@ -281,6 +291,10 @@ export class QuestionsService {
     } else if (dto.type === QuestionType.MULTIPLE_CHOICE) {
       this.assertMultipleChoiceRules(merged, dto.configuration !== undefined);
       options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.NUMERIC) {
+      this.assertNumericRules(merged, dto.configuration);
+      options = [];
+      configuration = dto.configuration as Prisma.InputJsonValue;
     } else {
       this.assertMatchingOptionRules(merged, isCorrectProvided);
       if (dto.configuration === undefined) {
@@ -331,9 +345,25 @@ export class QuestionsService {
         : { explanation: dto.explanation }),
     };
 
-    // Every type but MATCHING keeps its key in the options themselves, so the
-    // update path is the same shape for all three: no configuration, merge the
-    // option set, re-check the type's own rule.
+    if (question.type === QuestionType.NUMERIC) {
+      if (dto.options !== undefined && dto.options.length > 0) {
+        throw new BadRequestException(NUMERIC_OPTIONS_MESSAGE);
+      }
+      if (dto.configuration !== undefined) {
+        this.assertNumericRules([], dto.configuration);
+        data.configuration = dto.configuration as Prisma.InputJsonValue;
+      }
+      return this.questionsRepository.updateWithOptions(
+        id,
+        data,
+        undefined,
+        [],
+      );
+    }
+
+    // Every remaining type but MATCHING keeps its key in the options
+    // themselves, so the update path is the same shape for all three: no
+    // configuration, merge the option set, re-check the type's own rule.
     if (question.type !== QuestionType.MATCHING) {
       if (dto.configuration !== undefined) {
         throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
@@ -477,13 +507,21 @@ export class QuestionsService {
 
     if (dto.isPublished) {
       const orders = question.answerOptions.map((option) => option.order);
+      // A NUMERIC question has no options at all — its answer is a number in
+      // the configuration — so the count rule does not apply to it.
       if (
-        question.answerOptions.length < MIN_OPTIONS ||
-        question.answerOptions.length > MAX_OPTIONS
+        question.type !== QuestionType.NUMERIC &&
+        (question.answerOptions.length < MIN_OPTIONS ||
+          question.answerOptions.length > MAX_OPTIONS)
       ) {
         throw new BadRequestException(OPTION_COUNT_MESSAGE);
       }
-      if (question.type === QuestionType.SINGLE_CHOICE) {
+      if (question.type === QuestionType.NUMERIC) {
+        this.assertNumericRules(
+          question.answerOptions,
+          question.configuration ?? undefined,
+        );
+      } else if (question.type === QuestionType.SINGLE_CHOICE) {
         this.assertSingleChoiceRules(question.answerOptions, false);
       } else if (question.type === QuestionType.ORDERING) {
         this.assertOrderingRules(question.answerOptions, false, false);
@@ -729,6 +767,37 @@ export class QuestionsService {
     const correctCount = options.filter((option) => option.isCorrect).length;
     if (correctCount < 2 || correctCount === options.length) {
       throw new BadRequestException(MULTIPLE_CHOICE_CORRECT_MESSAGE);
+    }
+  }
+
+  /**
+   * The whole point of this type is that the reader is not shown anything to
+   * choose from, so any option at all would defeat it — and the expected value
+   * must be a real, finite number, or nothing could ever be marked right.
+   */
+  private assertNumericRules(
+    options: { id?: string }[],
+    configuration: unknown,
+  ): void {
+    if (options.length > 0) {
+      throw new BadRequestException(NUMERIC_OPTIONS_MESSAGE);
+    }
+    if (
+      typeof configuration !== 'object' ||
+      configuration === null ||
+      Array.isArray(configuration)
+    ) {
+      throw new BadRequestException(NUMERIC_CONFIGURATION_MESSAGE);
+    }
+    const entries = Object.keys(configuration);
+    const answer = (configuration as { answer?: unknown }).answer;
+    if (
+      entries.length !== 1 ||
+      entries[0] !== 'answer' ||
+      typeof answer !== 'number' ||
+      !Number.isFinite(answer)
+    ) {
+      throw new BadRequestException(NUMERIC_CONFIGURATION_MESSAGE);
     }
   }
 
