@@ -19,6 +19,7 @@ import {
 } from '@/features/quiz/lib/quiz-answers';
 import { SingleChoiceAnswer } from '@/features/quiz/components/SingleChoiceAnswer';
 import { MatchingAnswer } from '@/features/quiz/components/MatchingAnswer';
+import { MatchingGrid } from '@/features/quiz/components/MatchingGrid';
 import { OrderingAnswer } from '@/features/quiz/components/OrderingAnswer';
 import { MultipleChoiceAnswer } from '@/features/quiz/components/MultipleChoiceAnswer';
 import { NumericAnswer } from '@/features/quiz/components/NumericAnswer';
@@ -29,6 +30,8 @@ interface QuestionCardProps {
   answer: SelectedAnswer | undefined;
   disabled?: boolean;
   onAnswerChange: (selectedAnswer: SelectedAnswer) => void;
+  /** `grid` sets matching out as the NMT answer sheet does — used in a mock sitting. */
+  matchingLayout?: 'list' | 'grid';
 }
 
 /**
@@ -41,6 +44,7 @@ export function QuestionCard({
   answer,
   disabled = false,
   onAnswerChange,
+  matchingLayout = 'list',
 }: QuestionCardProps): React.JSX.Element {
   return (
     // No card: the page is already the container, and a bordered box inside a
@@ -66,15 +70,24 @@ export function QuestionCard({
         />
       )}
 
-      {question.type === QuestionType.MATCHING && (
-        <MatchingAnswer
-          options={question.answerOptions}
-          promptCount={question.promptCount}
-          assignments={pairsToAssignments(getMatchingPairs(answer))}
-          disabled={disabled}
-          onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
-        />
-      )}
+      {question.type === QuestionType.MATCHING &&
+        (matchingLayout === 'grid' ? (
+          <MatchingGrid
+            options={question.answerOptions}
+            promptCount={question.promptCount}
+            assignments={pairsToAssignments(getMatchingPairs(answer))}
+            disabled={disabled}
+            onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
+          />
+        ) : (
+          <MatchingAnswer
+            options={question.answerOptions}
+            promptCount={question.promptCount}
+            assignments={pairsToAssignments(getMatchingPairs(answer))}
+            disabled={disabled}
+            onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
+          />
+        ))}
 
       {question.type === QuestionType.ORDERING && (
         <OrderingAnswer

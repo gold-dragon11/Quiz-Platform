@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
   Difficulty,
+  QuestionFormat,
   QuestionType,
   QuizType,
   UserRole,
@@ -11,6 +12,8 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { mockExamSpecFor } from './../src/quiz/mock-exam.config';
+import type { NmtPaper } from './../src/quiz/nmt/nmt-paper.types';
+import { DEFAULT_NMT_PAPERS, NMT_PAPERS } from './../src/quiz/nmt/nmt-papers';
 import { listenOnLoopback } from './loopback';
 
 interface SessionBody {
@@ -50,6 +53,42 @@ describe('Mock exam (e2e)', () => {
 
   const spec = mockExamSpecFor('anything');
 
+  // A three-task paper on a subject of our own, so the paper engine is tested
+  // without depending on seeded content: one point, three pairs, two points.
+  const PAPER_SLUG = `${PREFIX}-paper`;
+  const GAP_SLUG = `${PREFIX}-gap`;
+  const paperFor = (subjectSlug: string): NmtPaper => ({
+    subjectSlug,
+    title: 'Тестовий зошит',
+    minutes: 25,
+    timingNote: 'Тестова примітка.',
+    tasks: [
+      {
+        number: 1,
+        type: QuestionType.SINGLE_CHOICE,
+        maxPoints: 1,
+        scoring: 'whole',
+      },
+      {
+        number: 2,
+        type: QuestionType.MATCHING,
+        maxPoints: 3,
+        scoring: 'per-pair',
+      },
+      { number: 3, type: QuestionType.NUMERIC, maxPoints: 2, scoring: 'whole' },
+    ],
+    sections: [
+      { from: 1, to: 1, instruction: 'Оберіть одну відповідь.' },
+      { from: 2, to: 2, instruction: 'Доберіть пари.' },
+      { from: 3, to: 3, instruction: 'Запишіть число.' },
+    ],
+    scale: {
+      threshold: 2,
+      table: { 2: 100, 3: 130, 4: 150, 5: 180, 6: 200 },
+      source: 'Тестова таблиця',
+    },
+  });
+
   let app: INestApplication;
   let prisma: PrismaService;
   let subjectId: string;
@@ -57,6 +96,10 @@ describe('Mock exam (e2e)', () => {
   let topicId: string;
   let thinTopicId: string;
   let counter = 0;
+  let paperSubjectId: string;
+  let paperTopicId: string;
+  let gapSubjectId: string;
+  let gapTopicId: string;
 
   const register = async (): Promise<{ token: string; userId: string }> => {
     counter += 1;
@@ -184,10 +227,75 @@ describe('Mock exam (e2e)', () => {
     return { subjectId: subject.id, topicId: topic.id };
   };
 
+  /** An NMT-format question for one task number of the test paper. */
+  const seedTaskQuestion = async (
+    topic: string,
+    nmtTask: number,
+  ): Promise<void> => {
+    const base = {
+      topicId: topic,
+      isPublished: true,
+      format: QuestionFormat.NMT,
+      nmtTask,
+      difficulty: Difficulty.INTERMEDIATE,
+    };
+    if (nmtTask === 1) {
+      await prisma.question.create({
+        data: {
+          ...base,
+          type: QuestionType.SINGLE_CHOICE,
+          title: `task 1 ${counter++}`,
+          answerOptions: {
+            create: [
+              { content: 'Правильна', order: 0, isCorrect: true },
+              { content: 'Хибна', order: 1, isCorrect: false },
+            ],
+          },
+        },
+      });
+    } else if (nmtTask === 2) {
+      await prisma.question.create({
+        data: {
+          ...base,
+          type: QuestionType.MATCHING,
+          title: `task 2 ${counter++}`,
+          configuration: {
+            pairs: [
+              { left: 0, right: 3 },
+              { left: 1, right: 4 },
+              { left: 2, right: 5 },
+            ],
+          },
+          answerOptions: {
+            create: ['p0', 'p1', 'p2', 'c3', 'c4', 'c5', 'c6', 'c7'].map(
+              (content, order) => ({ content, order, isCorrect: false }),
+            ),
+          },
+        },
+      });
+    } else {
+      await prisma.question.create({
+        data: {
+          ...base,
+          type: QuestionType.NUMERIC,
+          title: `task 3 ${counter++}`,
+          configuration: { answer: 7.5 },
+        },
+      });
+    }
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(NMT_PAPERS)
+      .useValue([
+        ...DEFAULT_NMT_PAPERS,
+        paperFor(PAPER_SLUG),
+        paperFor(GAP_SLUG),
+      ])
+      .compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(
@@ -209,7 +317,24 @@ describe('Mock exam (e2e)', () => {
     thinSubjectId = thin.subjectId;
     thinTopicId = thin.topicId;
 
+    const paperSubject = await ensureSubject(PAPER_SLUG, 9943);
+    paperSubjectId = paperSubject.subjectId;
+    paperTopicId = paperSubject.topicId;
+    const gapSubject = await ensureSubject(GAP_SLUG, 9944);
+    gapSubjectId = gapSubject.subjectId;
+    gapTopicId = gapSubject.topicId;
+
     await removeFixtures();
+    await prisma.question.deleteMany({
+      where: { topicId: { in: [paperTopicId, gapTopicId] } },
+    });
+    for (const task of [1, 1, 2, 3]) {
+      await seedTaskQuestion(paperTopicId, task);
+    }
+    // Task 2 is missing from this one on purpose.
+    for (const task of [1, 3]) {
+      await seedTaskQuestion(gapTopicId, task);
+    }
     // Comfortably more than one paper needs, in every tier.
     await seedQuestions(topicId, spec.questionCount);
     // Nowhere near enough.
@@ -232,14 +357,13 @@ describe('Mock exam (e2e)', () => {
 
   afterAll(async () => {
     await removeFixtures();
-    await prisma.question.deleteMany({
-      where: { topicId: { in: [topicId, thinTopicId] } },
-    });
-    await prisma.topic.deleteMany({
-      where: { id: { in: [topicId, thinTopicId] } },
-    });
+    const topicIds = [topicId, thinTopicId, paperTopicId, gapTopicId];
+    await prisma.question.deleteMany({ where: { topicId: { in: topicIds } } });
+    await prisma.topic.deleteMany({ where: { id: { in: topicIds } } });
     await prisma.subject.deleteMany({
-      where: { id: { in: [subjectId, thinSubjectId] } },
+      where: {
+        id: { in: [subjectId, thinSubjectId, paperSubjectId, gapSubjectId] },
+      },
     });
     await app.close();
   });
@@ -375,6 +499,7 @@ describe('Mock exam (e2e)', () => {
       expect(response.body).toEqual({
         questionCount: spec.questionCount,
         minutes: spec.minutes,
+        paper: null,
       });
     });
 
@@ -391,6 +516,7 @@ describe('Mock exam (e2e)', () => {
       // point is that it cannot be configured.
       expect(Object.keys(response.body as object).sort()).toEqual([
         'minutes',
+        'paper',
         'questionCount',
       ]);
     });
@@ -495,7 +621,7 @@ describe('Mock exam (e2e)', () => {
       expect(response.body as AttemptBody[]).toHaveLength(0);
     });
 
-    it('never carries a converted exam score', async () => {
+    it('gives a provisional sitting no converted score', async () => {
       const learner = await register();
       const started = await startMock(learner.token).expect(201);
       await completeSession(
@@ -508,11 +634,211 @@ describe('Mock exam (e2e)', () => {
         .set('Authorization', `Bearer ${learner.token}`)
         .expect(200);
 
-      // The official conversion table is not ours to guess at; a fabricated
-      // "you would have scored 168" is worse than no number at all.
-      const serialized = JSON.stringify(response.body);
-      expect(serialized).not.toContain('scaledScore');
-      expect(serialized).not.toContain('examScore');
+      // A subject still on the provisional sitting has no paper, so there is
+      // no official table to convert with — and nothing is guessed in its place.
+      for (const attempt of response.body as AttemptBody[]) {
+        expect(attempt).toMatchObject({
+          testPoints: null,
+          maxTestPoints: null,
+          scaledScore: null,
+        });
+      }
+    });
+  });
+
+  describe('a sitting of an NMT paper', () => {
+    interface ResumeBody {
+      paper?: {
+        title: string;
+        maxTestPoints: number;
+        sections: { from: number; to: number; instruction: string }[];
+        taskNumbers: (number | null)[];
+      };
+      questions: { id: string; type: string }[];
+    }
+
+    interface ReviewBody {
+      nmt?: {
+        testPoints: number;
+        maxTestPoints: number;
+        scaledScore: number | null;
+        threshold: number;
+        tasks: { number: number; points: number; maxPoints: number }[];
+      };
+    }
+
+    const answer = (
+      token: string,
+      sessionId: string,
+      questionId: string,
+      selectedAnswer: Record<string, unknown>,
+    ) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/quiz/${sessionId}/answers`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ questionId, selectedAnswer })
+        .expect(200);
+
+    it('describes the paper in the spec: tasks, points, clock and instructions', async () => {
+      const learner = await register();
+
+      const response = await request(app.getHttpServer())
+        .get(SPEC_URL)
+        .query({ subjectId: paperSubjectId })
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        questionCount: 3,
+        minutes: 25,
+        paper: {
+          title: 'Тестовий зошит',
+          maxTestPoints: 6,
+          timingNote: 'Тестова примітка.',
+          sections: paperFor(PAPER_SLUG).sections,
+        },
+      });
+    });
+
+    it('sets one question for every task, in the order of the paper, on its clock', async () => {
+      const learner = await register();
+
+      const started = await startMock(learner.token, paperSubjectId).expect(
+        201,
+      );
+      const body = started.body as SessionBody;
+      expect(body.questionCount).toBe(3);
+      const minutes = Math.round(
+        (new Date(body.expiresAt as string).getTime() - Date.now()) / 60000,
+      );
+      expect(minutes).toBe(25);
+
+      const resumed = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${body.sessionId}`)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+      const resume = resumed.body as ResumeBody;
+
+      expect(resume.paper?.taskNumbers).toEqual([1, 2, 3]);
+      expect(resume.paper?.sections).toHaveLength(3);
+      expect(resume.questions.map((question) => question.type)).toEqual([
+        'SINGLE_CHOICE',
+        'MATCHING',
+        'NUMERIC',
+      ]);
+    });
+
+    it('refuses a sitting with a task missing, and names it', async () => {
+      const learner = await register();
+
+      const response = await startMock(learner.token, gapSubjectId).expect(409);
+
+      expect((response.body as { message: string }).message).toContain('№2');
+    });
+
+    it('scores the paper the way the exam does: a point a pair, two for a short answer', async () => {
+      const learner = await register();
+      const started = await startMock(learner.token, paperSubjectId).expect(
+        201,
+      );
+      const sessionId = (started.body as SessionBody).sessionId;
+      const rows = await prisma.quizSessionQuestion.findMany({
+        where: { quizSessionId: sessionId },
+        orderBy: { position: 'asc' },
+        select: {
+          question: {
+            select: {
+              id: true,
+              answerOptions: {
+                select: { id: true, order: true, isCorrect: true },
+              },
+            },
+          },
+        },
+      });
+      const [single, matching, numeric] = rows.map((row) => row.question);
+      const byOrder = new Map(
+        matching.answerOptions.map((option) => [option.order, option.id]),
+      );
+
+      await answer(learner.token, sessionId, single.id, {
+        answerOptionId: single.answerOptions.find((option) => option.isCorrect)
+          ?.id,
+      });
+      // Two of the three pairs right.
+      await answer(learner.token, sessionId, matching.id, {
+        pairs: [
+          { left: byOrder.get(0), right: byOrder.get(3) },
+          { left: byOrder.get(1), right: byOrder.get(4) },
+          { left: byOrder.get(2), right: byOrder.get(6) },
+        ],
+      });
+      await answer(learner.token, sessionId, numeric.id, {
+        numericAnswer: '8',
+      });
+      await completeSession(learner.token, sessionId);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+      const nmt = (review.body as ReviewBody).nmt;
+
+      expect(
+        nmt?.tasks.map((task) => [task.number, task.points, task.maxPoints]),
+      ).toEqual([
+        [1, 1, 1],
+        [2, 2, 3],
+        [3, 0, 2],
+      ]);
+      expect(nmt).toMatchObject({
+        testPoints: 3,
+        maxTestPoints: 6,
+        scaledScore: 130,
+      });
+
+      const stored = await prisma.result.findUniqueOrThrow({
+        where: { quizSessionId: sessionId },
+        select: { testPoints: true, maxTestPoints: true, scaledScore: true },
+      });
+      expect(stored).toEqual({
+        testPoints: 3,
+        maxTestPoints: 6,
+        scaledScore: 130,
+      });
+
+      const history = await request(app.getHttpServer())
+        .get(HISTORY_URL)
+        .query({ subjectId: paperSubjectId })
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+      expect(history.body as AttemptBody[]).toEqual([
+        expect.objectContaining({
+          testPoints: 3,
+          maxTestPoints: 6,
+          scaledScore: 130,
+        }),
+      ]);
+    });
+
+    it('has no 100–200 score below the threshold', async () => {
+      const learner = await register();
+      const started = await startMock(learner.token, paperSubjectId).expect(
+        201,
+      );
+      const sessionId = (started.body as SessionBody).sessionId;
+      await completeSession(learner.token, sessionId);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${learner.token}`)
+        .expect(200);
+
+      expect((review.body as ReviewBody).nmt).toMatchObject({
+        testPoints: 0,
+        scaledScore: null,
+        threshold: 2,
+      });
     });
   });
 });

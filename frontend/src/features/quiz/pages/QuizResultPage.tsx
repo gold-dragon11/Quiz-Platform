@@ -8,6 +8,7 @@ import { isApiError } from '@/shared/utils/apply-api-error';
 import { useQuizResult } from '@/features/quiz/hooks/use-quiz';
 import { ResultSummary } from '@/features/quiz/components/ResultSummary';
 import { ResultReview } from '@/features/quiz/components/ResultReview';
+import { NmtResult } from '@/features/quiz/components/NmtResult';
 import { MaterialLink } from '@/features/quiz/components/MaterialLink';
 
 /**
@@ -65,7 +66,13 @@ export function QuizResultPage(): React.JSX.Element {
       className="mx-auto flex max-w-2xl flex-col gap-8"
     >
       <motion.div variants={fadeInUp}>
-        <ResultSummary result={result.data.result} />
+        {/* A mock sitting of an NMT paper is reported the exam's way; the
+            percentage below is for practice, where there is no scale. */}
+        {result.data.nmt ? (
+          <NmtResult nmt={result.data.nmt} xpEarned={result.data.result.xpEarned} />
+        ) : (
+          <ResultSummary result={result.data.result} />
+        )}
       </motion.div>
 
       {result.data.session.topicId && (
@@ -75,7 +82,14 @@ export function QuizResultPage(): React.JSX.Element {
       )}
 
       <motion.div variants={fadeInUp}>
-        <ResultReview questions={result.data.questions} />
+        <ResultReview
+          questions={result.data.questions}
+          numbers={
+            result.data.nmt
+              ? new Map(result.data.nmt.tasks.map((task) => [task.questionId, task.number]))
+              : undefined
+          }
+        />
       </motion.div>
 
       {/* One action, at the end, where somebody who has actually read the

@@ -30,7 +30,37 @@ export function MockExamBrief({ subjectId, className = '' }: MockExamBriefProps)
     return <></>;
   }
 
-  const { questionCount, minutes } = spec.data;
+  const { questionCount, minutes, paper } = spec.data;
+
+  if (paper) {
+    return (
+      <div className={className}>
+        <FigureGrid
+          figures={[
+            {
+              value: questionCount,
+              label: pluralUk(questionCount, 'завдання', 'завдання', 'завдань'),
+              hint: 'Як у зошиті НМТ: ті самі номери, типи й порядок',
+            },
+            {
+              value: paper.maxTestPoints,
+              label: 'тестових балів',
+              hint: 'Переводяться у шкалу 100–200 за офіційною таблицею',
+            },
+            {
+              value: minutes,
+              label: pluralUk(minutes, 'хвилина', 'хвилини', 'хвилин'),
+              hint: 'Один годинник на всю роботу',
+            },
+          ]}
+        />
+        <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
+          {paper.timingNote} Відповідність оцінюється за кожну правильну пару, як на іспиті. Розбір
+          відкриється після завершення; доки робота триває, звичайна практика недоступна.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

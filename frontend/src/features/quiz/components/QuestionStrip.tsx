@@ -5,6 +5,10 @@ interface QuestionStripProps {
   /** Which questions already have an answer saved. */
   answered: boolean[];
   onJump: (index: number) => void;
+  /** Printed numbers when they are not simply 1…n — a mock sitting uses the paper's task numbers. */
+  numbers?: (number | null)[];
+  /** What one item is called: «Питання», or «Завдання» on an NMT paper. */
+  noun?: string;
 }
 
 /**
@@ -20,8 +24,16 @@ interface QuestionStripProps {
  * Numbered from one, like the paper and like the student's own screen — never
  * the zero-based index behind it.
  */
-export function QuestionStrip({ total, index, answered, onJump }: QuestionStripProps): React.JSX.Element {
+export function QuestionStrip({
+  total,
+  index,
+  answered,
+  onJump,
+  numbers,
+  noun = 'Питання',
+}: QuestionStripProps): React.JSX.Element {
   const answeredCount = answered.filter(Boolean).length;
+  const label = (position: number): number => numbers?.[position] ?? position + 1;
 
   return (
     <nav aria-label="Питання тесту">
@@ -30,7 +42,7 @@ export function QuestionStrip({ total, index, answered, onJump }: QuestionStripP
             is indistinguishable from a 3 — and it sat between two numerals,
             so «ПИТАННЯ 1 З 5» read as «1 3 5». */}
         <span className="tracking-[0.18em] uppercase">
-          Питання {index + 1} / {total}
+          {noun} {label(index)} / {total}
         </span>
         <span>
           відповіли на {answeredCount} з {total}
@@ -48,7 +60,7 @@ export function QuestionStrip({ total, index, answered, onJump }: QuestionStripP
                 type="button"
                 onClick={() => onJump(position)}
                 aria-current={isCurrent ? 'true' : undefined}
-                aria-label={`Питання ${position + 1}${isAnswered ? ', відповідь є' : ', без відповіді'}`}
+                aria-label={`${noun} ${label(position)}${isAnswered ? ', відповідь є' : ', без відповіді'}`}
                 className={`focus-visible:ring-primary h-8 w-8 text-xs tabular-nums outline-none transition-colors focus-visible:ring-2 ${
                   isCurrent
                     ? 'border-primary text-text-primary border-2 font-medium'
@@ -57,7 +69,7 @@ export function QuestionStrip({ total, index, answered, onJump }: QuestionStripP
                       : 'border-border text-text-muted hover:border-border-subtle border'
                 }`}
               >
-                {position + 1}
+                {label(position)}
               </button>
             </li>
           );

@@ -24,6 +24,13 @@ import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
+import type { NmtPaper } from '../nmt/nmt-paper.types';
+import { NmtPaperRegistry } from '../nmt/nmt-papers';
+import {
+  maxTestPoints,
+  scorePaper,
+  type NmtPaperScore,
+} from '../nmt/nmt-scoring';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
 import { shuffleMatchingOrder } from '../matching-shuffle.util';
@@ -40,6 +47,8 @@ import {
 import { ResultRepository } from '../repositories/result.repository';
 import {
   MockExamAttempt,
+  MockExamSpecView,
+  NmtPaperView,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -139,6 +148,7 @@ export class QuizService {
     private readonly statisticsService: StatisticsService,
     private readonly quizConfigService: QuizConfigService,
     private readonly mistakeReviewRepository: MistakeReviewRepository,
+    private readonly nmtPapers: NmtPaperRegistry,
   ) {}
 
   /**
@@ -257,6 +267,11 @@ export class QuizService {
       throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
     }
 
+    const paper = this.nmtPapers.forSubjectSlug(subject.slug);
+    if (paper) {
+      return this.startNmtPaper(userId, subject.id, paper);
+    }
+
     const spec = mockExamSpecFor(subject.slug);
     const questionIds: string[] = [];
 
@@ -304,6 +319,95 @@ export class QuizService {
   }
 
   /**
+   * A sitting that follows the subject's NMT paper
+   * (docs/02-domain/nmt-paper.md): one question for every task number, in the
+   * paper's order, least recently seen first — so a learner meets a different
+   * variant each time the pool allows it. A number with nothing to fill it
+   * refuses the whole sitting and names the gap: a paper with a task missing
+   * is not the paper.
+   */
+  private async startNmtPaper(
+    userId: string,
+    subjectId: string,
+    paper: NmtPaper,
+  ): Promise<QuizSessionMetadata> {
+    const questionIds: string[] = [];
+    const missing: number[] = [];
+    for (const task of paper.tasks) {
+      const questionId = await this.quizSessionRepository.selectQuestionForTask(
+        { subjectId, nmtTask: task.number, type: task.type, userId },
+      );
+      if (questionId) {
+        questionIds.push(questionId);
+      } else {
+        missing.push(task.number);
+      }
+    }
+    if (missing.length > 0) {
+      throw new ConflictException(
+        `${MOCK_EXAM_TOO_SHORT_MESSAGE} Бракує завдань №${missing.join(', ')}.`,
+      );
+    }
+
+    try {
+      const session = await this.prisma.$transaction((tx) =>
+        this.quizSessionRepository.createSessionWithQuestions(tx, {
+          userId,
+          quizId: null,
+          subjectId,
+          topicId: null,
+          mode: QuizType.MOCK_EXAM,
+          timerEnabled: true,
+          questionCount: questionIds.length,
+          expiresAt: new Date(Date.now() + paper.minutes * 60 * 1000),
+          questionIds,
+        }),
+      );
+      return this.toMetadata(session);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * The paper a mock sitting follows, or null for any other session and for a
+   * subject still on the provisional sitting.
+   */
+  private async paperFor(session: QuizSessionRecord): Promise<NmtPaper | null> {
+    if (session.mode !== QuizType.MOCK_EXAM) {
+      return null;
+    }
+    const slug = await this.quizSessionRepository.findSubjectSlug(
+      session.subjectId,
+    );
+    return slug ? this.nmtPapers.forSubjectSlug(slug) : null;
+  }
+
+  /** Scores a mock sitting by its paper's rules; null when there is no paper. */
+  private async scoreMockPaper(
+    session: QuizSessionRecord,
+    attempts: { questionId: string; selectedAnswer: Prisma.JsonValue }[],
+  ): Promise<{ paper: NmtPaper; score: NmtPaperScore } | null> {
+    const paper = await this.paperFor(session);
+    if (!paper) {
+      return null;
+    }
+    const questions = await this.quizSessionRepository.findSessionQuestions(
+      session.id,
+    );
+    const answers = new Map(
+      attempts.map((attempt) => [attempt.questionId, attempt.selectedAnswer]),
+    );
+    return { paper, score: scorePaper(paper, questions, answers) };
+  }
+
+  /**
    * The shape of a sitting in this subject, for a client that wants to say
    * what the student is about to walk into before they start.
    *
@@ -311,17 +415,33 @@ export class QuizService {
    * it is a generation detail, and publishing it would invite gaming a paper
    * whose whole point is that it is not configurable.
    */
-  async mockExamSpec(
-    subjectId: string,
-  ): Promise<{ questionCount: number; minutes: number }> {
+  async mockExamSpec(subjectId: string): Promise<MockExamSpecView> {
     const subject =
       await this.quizSessionRepository.findSubjectForMock(subjectId);
     if (!subject) {
       throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
     }
 
+    const paper = this.nmtPapers.forSubjectSlug(subject.slug);
+    if (paper) {
+      return {
+        questionCount: paper.tasks.length,
+        minutes: paper.minutes,
+        paper: {
+          title: paper.title,
+          maxTestPoints: maxTestPoints(paper),
+          timingNote: paper.timingNote,
+          sections: paper.sections,
+        },
+      };
+    }
+
     const spec = mockExamSpecFor(subject.slug);
-    return { questionCount: spec.questionCount, minutes: spec.minutes };
+    return {
+      questionCount: spec.questionCount,
+      minutes: spec.minutes,
+      paper: null,
+    };
   }
 
   /**
@@ -418,6 +538,9 @@ export class QuizService {
               correctAnswers: session.result.correctAnswers,
               totalQuestions: session.result.totalQuestions,
               accuracy: Number(session.result.accuracy),
+              testPoints: session.result.testPoints,
+              maxTestPoints: session.result.maxTestPoints,
+              scaledScore: session.result.scaledScore,
               durationSeconds: session.durationSeconds,
               completedAt: session.completedAt,
             },
@@ -762,8 +885,19 @@ export class QuizService {
       this.questionAttemptRepository.findBySession(sessionId),
     ]);
 
+    const paper = await this.paperFor(session);
+    const paperView: NmtPaperView | undefined = paper
+      ? {
+          title: paper.title,
+          maxTestPoints: maxTestPoints(paper),
+          sections: paper.sections,
+          taskNumbers: questions.map((question) => question.nmtTask),
+        }
+      : undefined;
+
     return {
       session: this.toMetadata(session),
+      ...(paperView ? { paper: paperView } : {}),
       questions: questions.map((question) =>
         this.toQuestionView(question, sessionId),
       ),
@@ -874,6 +1008,7 @@ export class QuizService {
       attempts.map((attempt) => [attempt.questionId, attempt]),
     );
     const explanationsVisible = await this.explanationsVisibleFor(session);
+    const nmt = await this.scoreMockPaper(session, attempts);
 
     const reviewQuestions: QuizReviewQuestion[] = questions.map((question) => {
       const attempt = attemptByQuestion.get(question.id);
@@ -907,6 +1042,19 @@ export class QuizService {
       },
       questions: reviewQuestions,
       session: { subjectId: session.subjectId, topicId: session.topicId },
+      ...(nmt
+        ? {
+            nmt: {
+              title: nmt.paper.title,
+              testPoints: nmt.score.testPoints,
+              maxTestPoints: nmt.score.maxTestPoints,
+              scaledScore: nmt.score.scaledScore,
+              threshold: nmt.paper.scale.threshold,
+              scaleSource: nmt.paper.scale.source,
+              tasks: nmt.score.tasks,
+            },
+          }
+        : {}),
     };
   }
 
@@ -981,6 +1129,9 @@ export class QuizService {
       ]);
       const tally = this.tally(snapshotIds.length, attempts);
       const accuracy = round2(tally.exactAccuracy);
+      // A mock sitting of an NMT paper is also scored the exam's way, in the
+      // same transaction, so its history never disagrees with its review.
+      const nmt = await this.scoreMockPaper(session, attempts);
       const awards = this.xpAwards(tally.exactAccuracy);
 
       const result = await this.resultRepository.create(tx, {
@@ -991,6 +1142,9 @@ export class QuizService {
         totalQuestions: tally.totalQuestions,
         accuracy,
         score: accuracy,
+        testPoints: nmt?.score.testPoints ?? null,
+        maxTestPoints: nmt?.score.maxTestPoints ?? null,
+        scaledScore: nmt?.score.scaledScore ?? null,
         completedAt,
       });
 

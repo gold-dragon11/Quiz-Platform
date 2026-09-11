@@ -38,6 +38,8 @@ const MAX_OPTIONS = 20;
 
 const PASSAGE_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PASSAGE_LENGTH = 8000;
+/** The longest NMT paper — English — has 32 tasks. */
+const MAX_NMT_TASK = 32;
 /** A numbered gap: `(3) ______`. See PassageContent. */
 const GAP = /\((\d{1,2})\)\s*_{3,}/g;
 
@@ -133,6 +135,21 @@ export function validateTopic(topic: TopicContent): string[] {
 
   topic.questions.forEach((question, index) => {
     const at = where(index);
+
+    if (question.nmtTask !== undefined) {
+      if (
+        !Number.isInteger(question.nmtTask) ||
+        question.nmtTask < 1 ||
+        question.nmtTask > MAX_NMT_TASK
+      ) {
+        errors.push(
+          `${at}: nmtTask must be a task number from 1 to ${MAX_NMT_TASK}`,
+        );
+      }
+      if (question.format !== 'NMT') {
+        errors.push(`${at}: nmtTask belongs only on an NMT-format question`);
+      }
+    }
 
     if (question.passage !== undefined) {
       if (!passages.has(question.passage)) {

@@ -153,7 +153,9 @@ These are deliberately unresolved and must not be guessed at in code:
 
 - the default value of the privacy toggle from decision 16;
 - concrete prices for the tiers in decision 19;
-- the official scale for converting mock-exam scores;
+- the official scale for converting mock-exam scores in subjects that do not
+  yet have an NMT paper (mathematics uses the published 2026 table —
+  docs/02-domain/nmt-paper.md §7);
 - parental consent and the retention period for the data of minors;
 - whether teachers may ever contribute their own questions (not in v1 — mixing
   authored and third-party content destroys the bank's provable originality).

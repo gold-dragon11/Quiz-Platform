@@ -28,6 +28,7 @@ const ALLOWED_KEYS = new Set([
   'extraChoices',
   'explanation',
   'passage',
+  'nmtTask',
 ]);
 
 /** Leftover editorial notes that must never reach a learner. */

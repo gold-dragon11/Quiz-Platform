@@ -63,6 +63,8 @@ export interface SessionQuestionRecord {
   passageOrder: number | null;
   /** The text the question is asked about (docs/02-domain/passage.md). */
   passage: { id: string; title: string | null; content: string } | null;
+  /** The number on the NMT paper this question fills, when it has one. */
+  nmtTask: number | null;
   translations: { title: string }[];
   answerOptions: {
     id: string;
@@ -152,6 +154,36 @@ export class QuizSessionRepository {
     `);
 
     return drawKeepingPassages(rows, params.count);
+  }
+
+  /**
+   * One question for a task number of a subject's NMT paper, least recently
+   * seen by this learner first, then at random (docs/02-domain/nmt-paper.md).
+   * Only exam-format questions of the task's own type qualify.
+   */
+  async selectQuestionForTask(params: {
+    subjectId: string;
+    nmtTask: number;
+    type: QuestionType;
+    userId: string;
+  }): Promise<string | null> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
+      SELECT q.id
+      FROM questions q
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      LEFT JOIN LATERAL (
+        SELECT MAX(e."shownAt") AS last_seen
+        FROM question_exposures e
+        WHERE e."questionId" = q.id AND e."userId" = ${params.userId}::uuid
+      ) seen ON true
+      WHERE ${eligibleQuestionFilter({ subjectId: params.subjectId, format: QuestionFormat.NMT })}
+        AND q."nmtTask" = ${params.nmtTask}
+        AND q.type = ${params.type}::"QuestionType"
+      ORDER BY seen.last_seen ASC NULLS FIRST, random()
+      LIMIT 1
+    `);
+    return rows[0]?.id ?? null;
   }
 
   /**
@@ -316,6 +348,9 @@ export class QuizSessionRepository {
         correctAnswers: number;
         totalQuestions: number;
         accuracy: Prisma.Decimal;
+        testPoints: number | null;
+        maxTestPoints: number | null;
+        scaledScore: number | null;
       } | null;
     }[]
   > {
@@ -337,6 +372,9 @@ export class QuizSessionRepository {
             correctAnswers: true,
             totalQuestions: true,
             accuracy: true,
+            testPoints: true,
+            maxTestPoints: true,
+            scaledScore: true,
           },
         },
       },
@@ -351,6 +389,15 @@ export class QuizSessionRepository {
       where: { id: subjectId, isPublished: true, deletedAt: null },
       select: { id: true, slug: true },
     });
+  }
+
+  /** A subject's slug by id, whatever its publication state. */
+  async findSubjectSlug(subjectId: string): Promise<string | null> {
+    const subject = await this.prisma.subject.findUnique({
+      where: { id: subjectId },
+      select: { slug: true },
+    });
+    return subject?.slug ?? null;
   }
 
   /** This player's unfinished half of a duel — the resume path. */
@@ -475,6 +522,7 @@ export class QuizSessionRepository {
             explanation: true,
             configuration: true,
             passageOrder: true,
+            nmtTask: true,
             passage: { select: { id: true, title: true, content: true } },
             translations: { where: translationsWhere, select: { title: true } },
             answerOptions: {

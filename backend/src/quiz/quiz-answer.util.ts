@@ -217,6 +217,45 @@ function evaluateMatching(
   options: EvaluableOption[],
   configuration: Prisma.JsonValue,
 ): boolean {
+  const submitted = readMatchingPairs(selectedAnswer, options);
+  const correct = parseConfigurationPairs(configuration);
+  return pairSetsEqual(submitted, correct);
+}
+
+/**
+ * How many prompts a matching answer pairs with their right choice — the
+ * exam's own count, a point per pair (docs/02-domain/nmt-paper.md). A prompt
+ * paired twice counts once. A malformed answer throws, as evaluation does.
+ */
+export function correctPairCount(
+  selectedAnswer: Record<string, unknown>,
+  options: EvaluableOption[],
+  configuration: Prisma.JsonValue,
+): number {
+  const correct = new Set(
+    parseConfigurationPairs(configuration).map(
+      (pair) => `${pair.left}:${pair.right}`,
+    ),
+  );
+  const counted = new Set<number>();
+  let count = 0;
+  for (const pair of readMatchingPairs(selectedAnswer, options)) {
+    if (counted.has(pair.left)) {
+      continue;
+    }
+    counted.add(pair.left);
+    if (correct.has(`${pair.left}:${pair.right}`)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** Reads `{ pairs: [{ left, right }] }` into option orders, rejecting anything else. */
+function readMatchingPairs(
+  selectedAnswer: Record<string, unknown>,
+  options: EvaluableOption[],
+): OrderPair[] {
   const keys = Object.keys(selectedAnswer);
   const pairs = selectedAnswer.pairs;
   if (keys.length !== 1 || keys[0] !== 'pairs' || !Array.isArray(pairs)) {
@@ -225,7 +264,7 @@ function evaluateMatching(
 
   const orderById = new Map(options.map((option) => [option.id, option.order]));
 
-  const submitted: OrderPair[] = pairs.map((pair): OrderPair => {
+  return pairs.map((pair): OrderPair => {
     if (typeof pair !== 'object' || pair === null || Array.isArray(pair)) {
       throw new BadRequestException(INVALID_ANSWER_MESSAGE);
     }
@@ -244,9 +283,6 @@ function evaluateMatching(
     }
     return { left: leftOrder, right: rightOrder };
   });
-
-  const correct = parseConfigurationPairs(configuration);
-  return pairSetsEqual(submitted, correct);
 }
 
 /**

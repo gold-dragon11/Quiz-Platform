@@ -2,7 +2,7 @@ import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { formatDuration, formatPercent, formatShortDate } from '@/shared/utils/format';
+import { formatDuration, formatPercent, formatShortDate, pluralUk } from '@/shared/utils/format';
 import { useMockExamHistory } from '@/features/mock-exam/hooks/use-mock-exam';
 import type { MockExamAttempt } from '@/features/mock-exam/types/mock-exam.types';
 
@@ -16,9 +16,9 @@ interface AttemptHistoryProps {
  * Past sittings, in the two readings a learner actually wants.
  *
  * The strip is the point of the feature: sittings oldest → newest, so the
- * curve is visible at a glance. That is the only claim a mock can honestly
- * make — not "you would score 168", which the platform deliberately never
- * computes, but "this is moving".
+ * curve is visible at a glance. A sitting of an NMT paper is labelled with its
+ * official score; a provisional one only with its share correct, since there
+ * is no table to convert it with.
  *
  * The list below it runs newest first, because that is the order you read a
  * history in.
@@ -86,19 +86,19 @@ function AccuracyStrip({ attempts }: { attempts: MockExamAttempt[] }): React.JSX
           above short bars reads as broken spacing rather than as the unused
           part of a 0–100 scale, which is exactly what it is. */}
       <div className="border-border relative border-t border-b">
-        <span className="text-text-muted absolute -top-2 -translate-y-full text-[10px]">100%</span>
+        <span className="text-text-muted absolute -top-2 -translate-y-full text-[10px]">
+          {ceilingLabel(attempts)}
+        </span>
         <div className="flex h-32 items-end gap-4 overflow-x-auto">
           {attempts.map((attempt) => (
             <div key={attempt.sessionId} className="flex h-full w-16 shrink-0 flex-col justify-end">
               {/* The label rides on top of its own bar rather than at the top
                   of the column: with accuracies down in the teens, a label
                   pinned to the ceiling floats far from what it measures. */}
-              <span className="text-text-secondary mb-1 text-center text-xs">
-                {formatPercent(attempt.accuracy)}
-              </span>
+              <span className="text-text-secondary mb-1 text-center text-xs">{attemptLabel(attempt)}</span>
               <div
                 className="bg-primary/70 w-full"
-                style={{ height: `${Math.max(attempt.accuracy, 1.5)}%` }}
+                style={{ height: `${Math.max(attemptShare(attempt), 1.5)}%` }}
               />
             </div>
           ))}
@@ -113,6 +113,42 @@ function AccuracyStrip({ attempts }: { attempts: MockExamAttempt[] }): React.JSX
       </div>
     </div>
   );
+}
+
+/**
+ * A sitting of an NMT paper reads as its 100–200 score — or as «нижче порогу»
+ * when it has none; a provisional sitting reads as its percentage. The bar
+ * height is always a share of the maximum, so a strip mixing the two never
+ * compares a score with a percentage.
+ */
+function attemptLabel(attempt: MockExamAttempt): string {
+  if (attempt.maxTestPoints === null) {
+    return formatPercent(attempt.accuracy);
+  }
+  return attempt.scaledScore !== null ? String(attempt.scaledScore) : 'нижче порогу';
+}
+
+/**
+ * What the top of the strip stands for. A bar labelled «145» under a ceiling
+ * marked «100%» reads as 145 per cent, so the ceiling names the maximum the
+ * bars are actually drawn against.
+ */
+function ceilingLabel(attempts: MockExamAttempt[]): string {
+  const maxima = new Set(attempts.map((attempt) => attempt.maxTestPoints));
+  if (maxima.size === 1) {
+    const [max] = maxima;
+    return max === null
+      ? '100%'
+      : `${max} ${pluralUk(max, 'тестовий бал', 'тестові бали', 'тестових балів')}`;
+  }
+  return 'максимум';
+}
+
+function attemptShare(attempt: MockExamAttempt): number {
+  if (attempt.maxTestPoints === null || attempt.maxTestPoints === 0) {
+    return attempt.accuracy;
+  }
+  return ((attempt.testPoints ?? 0) / attempt.maxTestPoints) * 100;
 }
 
 function AttemptRow({ attempt }: { attempt: MockExamAttempt }): React.JSX.Element {
@@ -132,11 +168,11 @@ function AttemptRow({ attempt }: { attempt: MockExamAttempt }): React.JSX.Elemen
           </p>
         </div>
         <div className="text-right">
-          <p className="text-text-primary font-display text-lg leading-none">
-            {formatPercent(attempt.accuracy)}
-          </p>
+          <p className="text-text-primary font-display text-lg leading-none">{attemptLabel(attempt)}</p>
           <p className="text-text-secondary mt-1 text-xs">
-            {attempt.correctAnswers} з {attempt.totalQuestions}
+            {attempt.maxTestPoints !== null
+              ? `${attempt.testPoints} з ${attempt.maxTestPoints} тестових балів`
+              : `${attempt.correctAnswers} з ${attempt.totalQuestions}`}
           </p>
         </div>
       </Link>

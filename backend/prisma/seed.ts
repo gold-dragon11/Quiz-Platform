@@ -389,6 +389,7 @@ async function seedQuestion(
   // string, so "has no explanation" is one state in the database, not two.
   const explanation = question.explanation ?? null;
   const imageUrl = question.imageUrl ?? null;
+  const nmtTask = question.nmtTask ?? null;
 
   if (!existing) {
     await prisma.question.create({
@@ -400,6 +401,7 @@ async function seedQuestion(
         difficulty,
         explanation,
         imageUrl,
+        nmtTask,
         ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,
@@ -427,6 +429,7 @@ async function seedQuestion(
     existing.difficulty === difficulty &&
     existing.explanation === explanation &&
     existing.imageUrl === imageUrl &&
+    existing.nmtTask === nmtTask &&
     existing.passageId === placement.passageId &&
     existing.passageOrder === placement.passageOrder &&
     existing.isPublished &&
@@ -451,6 +454,7 @@ async function seedQuestion(
         difficulty,
         explanation,
         imageUrl,
+        nmtTask,
         ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,

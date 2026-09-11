@@ -48,6 +48,8 @@ export interface SingleChoiceContent {
   imageUrl?: ImagePath;
   /** Key of the passage this question is asked about — see PassageContent. */
   passage?: string;
+  /** Task number on the NMT paper — see docs/02-domain/nmt-paper.md. NMT format only. */
+  nmtTask?: number;
   /** Answer options in presentation order (2–20 entries). */
   options: OptionContent[];
   /** Zero-based index into `options` marking the correct answer. */
@@ -73,6 +75,8 @@ export interface MatchingContent {
   imageUrl?: ImagePath;
   /** Key of the passage this question is asked about — see PassageContent. */
   passage?: string;
+  /** Task number on the NMT paper — see docs/02-domain/nmt-paper.md. NMT format only. */
+  nmtTask?: number;
   /** At least two `[left, right]` pairs. */
   pairs: [string, string][];
   /**
@@ -99,6 +103,8 @@ export interface OrderingContent {
   imageUrl?: ImagePath;
   /** Key of the passage this question is asked about — see PassageContent. */
   passage?: string;
+  /** Task number on the NMT paper — see docs/02-domain/nmt-paper.md. NMT format only. */
+  nmtTask?: number;
   /** At least three items, in the order that is correct. */
   sequence: string[];
   explanation?: string;
@@ -117,6 +123,8 @@ export interface MultipleChoiceContent {
   imageUrl?: ImagePath;
   /** Key of the passage this question is asked about — see PassageContent. */
   passage?: string;
+  /** Task number on the NMT paper — see docs/02-domain/nmt-paper.md. NMT format only. */
+  nmtTask?: number;
   options: string[];
   /** Zero-based indices of the correct options — at least two. */
   correct: number[];
@@ -136,6 +144,8 @@ export interface NumericContent {
   imageUrl?: ImagePath;
   /** Key of the passage this question is asked about — see PassageContent. */
   passage?: string;
+  /** Task number on the NMT paper — see docs/02-domain/nmt-paper.md. NMT format only. */
+  nmtTask?: number;
   /** The number the reader has to arrive at. */
   answer: number;
   explanation?: string;

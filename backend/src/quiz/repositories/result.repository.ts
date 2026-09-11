@@ -11,6 +11,10 @@ export interface ResultRecord {
   totalQuestions: number;
   accuracy: string;
   score: string;
+  /** Mock NMT sittings only; null for everything else. */
+  testPoints: number | null;
+  maxTestPoints: number | null;
+  scaledScore: number | null;
   completedAt: Date;
 }
 
@@ -34,6 +38,9 @@ export class ResultRepository {
       totalQuestions: number;
       accuracy: number;
       score: number;
+      testPoints?: number | null;
+      maxTestPoints?: number | null;
+      scaledScore?: number | null;
       completedAt: Date;
     },
   ): Promise<{ id: string }> {
@@ -46,6 +53,9 @@ export class ResultRepository {
         totalQuestions: params.totalQuestions,
         accuracy: params.accuracy,
         score: params.score,
+        testPoints: params.testPoints ?? null,
+        maxTestPoints: params.maxTestPoints ?? null,
+        scaledScore: params.scaledScore ?? null,
         completedAt: params.completedAt,
       },
       select: { id: true },
@@ -63,6 +73,9 @@ export class ResultRepository {
         totalQuestions: true,
         accuracy: true,
         score: true,
+        testPoints: true,
+        maxTestPoints: true,
+        scaledScore: true,
         completedAt: true,
       },
     });

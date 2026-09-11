@@ -188,6 +188,14 @@ export function QuizSessionPage(): React.JSX.Element {
 
   const total = questions.length;
   const current = questions[index];
+  // A mock sitting of an NMT paper numbers its questions as the paper does and
+  // prints the paper's instruction above each run of tasks.
+  const paper = session.data.paper;
+  const taskNumber = paper?.taskNumbers[index] ?? null;
+  const section =
+    taskNumber === null
+      ? undefined
+      : paper?.sections.find((range) => range.from <= taskNumber && taskNumber <= range.to);
   const answeredCount = questions.filter((q) => answers[q.id] !== undefined).length;
   const isLast = index === total - 1;
   const unanswered = total - answeredCount;
@@ -203,12 +211,20 @@ export function QuizSessionPage(): React.JSX.Element {
             index={index}
             answered={questions.map((question) => answers[question.id] !== undefined)}
             onJump={setIndex}
+            numbers={paper?.taskNumbers}
+            noun={paper ? 'Завдання' : undefined}
           />
         </div>
         {meta.timerEnabled && meta.expiresAt && (
           <QuizTimer expiresAt={meta.expiresAt} onExpire={handleComplete} />
         )}
       </div>
+
+      {section && (
+        <p className="border-border text-text-secondary max-w-3xl border-l pl-5 text-sm">
+          {section.instruction}
+        </p>
+      )}
 
       {/* The text stays put while the questions on it change: it is keyed by the
           passage, not the question, so paging from gap 2 to gap 3 moves only
@@ -241,6 +257,7 @@ export function QuizSessionPage(): React.JSX.Element {
               answer={answers[current.id]}
               disabled={complete.isPending}
               onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
+              matchingLayout={paper ? 'grid' : 'list'}
             />
           </motion.div>
         </AnimatePresence>

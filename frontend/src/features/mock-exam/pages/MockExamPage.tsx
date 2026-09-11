@@ -110,7 +110,8 @@ export function MockExamPage(): React.JSX.Element {
             Ваші спроби
           </h2>
           <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-            Пробна робота показує рух, а не бал: офіційної таблиці переведення платформа не вигадує.
+            Там, де пробний НМТ відтворює зошит, бал рахується за офіційною таблицею переведення 2026 року.
+            Для предметів, які ще переносимо на структуру зошита, — лише частка правильних.
           </p>
           <AttemptHistory subjectId={subjectId || undefined} className="mt-8" />
         </section>

@@ -22,7 +22,14 @@ import { PassagePanel } from '@/features/quiz/components/PassagePanel';
  * should be reading the same shapes they read a minute ago, not a different
  * component's idea of the same data.
  */
-export function ResultReview({ questions }: { questions: QuizReviewQuestion[] }): React.JSX.Element {
+export function ResultReview({
+  questions,
+  numbers,
+}: {
+  questions: QuizReviewQuestion[];
+  /** Task numbers by question id, when the session followed an NMT paper. */
+  numbers?: Map<string, number>;
+}): React.JSX.Element {
   return (
     <section>
       <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
@@ -46,7 +53,7 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
             <li className="flex flex-col gap-4 py-8">
               <div className="flex items-start justify-between gap-4">
                 <h3 className="text-text-primary whitespace-pre-wrap">
-                  <span className="text-text-muted mr-2">{i + 1}.</span>
+                  <span className="text-text-muted mr-2">{numbers?.get(question.id) ?? i + 1}.</span>
                   <MathText>{question.title}</MathText>
                 </h3>
                 <span

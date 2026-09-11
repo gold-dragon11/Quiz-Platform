@@ -64,6 +64,9 @@ XPTransaction (1)
 | totalQuestions | Integer | Yes | Total number of questions |
 | accuracy | Decimal | Yes | Accuracy percentage |
 | score | Decimal | Yes | Final score |
+| testPoints | Integer | No | NMT test points, for a mock sitting of a subject with a paper |
+| maxTestPoints | Integer | No | The paper's maximum test points |
+| scaledScore | Integer | No | Official 100–200 score; null below the threshold or without a paper |
 | completedAt | DateTime | Yes | Completion timestamp |
 | createdAt | DateTime | Yes | Creation timestamp |
 
@@ -127,6 +130,14 @@ Accuracy is stored as a percentage.
 Example:
 
 - 18 correct out of 20 questions = 90%.
+
+## NMT points
+
+A mock sitting of a subject with an NMT paper is also scored the exam's way:
+points per task by the paper's rules, their sum, and the official 100–200 score
+(docs/02-domain/nmt-paper.md). Accuracy still counts whole questions, so a
+matching task with two of three pairs right is one incorrect question and two
+test points.
 
 ---
 

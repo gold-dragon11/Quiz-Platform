@@ -104,11 +104,37 @@ export interface SavedAnswerView {
   selectedAnswer: SelectedAnswer;
 }
 
+/**
+ * The NMT paper a mock sitting follows (docs/02-domain/nmt-paper.md): its
+ * instructions above each run of tasks, and the task number of every question.
+ */
+export interface NmtPaperView {
+  title: string;
+  maxTestPoints: number;
+  sections: { from: number; to: number; instruction: string }[];
+  /** In session order. */
+  taskNumbers: (number | null)[];
+}
+
+/** A finished mock sitting scored as the exam scores it. */
+export interface NmtResultView {
+  title: string;
+  testPoints: number;
+  maxTestPoints: number;
+  /** The official 100–200 score; null below the pass threshold. */
+  scaledScore: number | null;
+  threshold: number;
+  scaleSource: string;
+  tasks: { number: number; questionId: string; points: number; maxPoints: number }[];
+}
+
 /** Full resume state (docs/04-api/quiz.md §9). */
 export interface QuizResumeView {
   session: QuizSessionMetadata;
   questions: QuizQuestionView[];
   answers: SavedAnswerView[];
+  /** Present for a mock sitting of an NMT paper. */
+  paper?: NmtPaperView;
 }
 
 // --- Result / review ----------------------------------------------------
@@ -150,6 +176,8 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /** Present for a mock sitting of an NMT paper. */
+  nmt?: NmtResultView;
   /** Where the quiz came from, so the result can link back to its material. */
   session: {
     subjectId: string;

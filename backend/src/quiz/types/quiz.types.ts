@@ -62,6 +62,49 @@ export interface QuizQuestionView {
   }[];
 }
 
+/**
+ * The NMT paper a mock sitting follows, for the screen that runs it
+ * (docs/02-domain/nmt-paper.md).
+ */
+export interface NmtPaperView {
+  title: string;
+  maxTestPoints: number;
+  /** Instructions as the paper prints them above a run of tasks. */
+  sections: { from: number; to: number; instruction: string }[];
+  /** The task number of each question, in session order. */
+  taskNumbers: (number | null)[];
+}
+
+/** A finished mock sitting scored as the exam scores it. */
+export interface NmtResultView {
+  title: string;
+  testPoints: number;
+  maxTestPoints: number;
+  /** The official 100–200 score; null below the pass threshold. */
+  scaledScore: number | null;
+  threshold: number;
+  scaleSource: string;
+  tasks: {
+    number: number;
+    questionId: string;
+    points: number;
+    maxPoints: number;
+  }[];
+}
+
+/** GET /quiz/mock-exam/spec — what a sitting in this subject will be. */
+export interface MockExamSpecView {
+  questionCount: number;
+  minutes: number;
+  /** Null while the subject still sits the provisional paper. */
+  paper: {
+    title: string;
+    maxTestPoints: number;
+    timingNote: string;
+    sections: { from: number; to: number; instruction: string }[];
+  } | null;
+}
+
 /** One saved selection echoed during resume (decision R6) — no correctness. */
 export interface SavedAnswerView {
   questionId: string;
@@ -73,6 +116,8 @@ export interface QuizResumeView {
   session: QuizSessionMetadata;
   questions: QuizQuestionView[];
   answers: SavedAnswerView[];
+  /** Present when the session is a mock sitting of an NMT paper. */
+  paper?: NmtPaperView;
 }
 
 /** The aggregate outcome of a completed quiz (docs/02-domain/result.md §4). */
@@ -117,6 +162,8 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /** Present when the session was a mock sitting of an NMT paper. */
+  nmt?: NmtResultView;
   /**
    * Where the quiz came from. Carried so the result page can offer the
    * learning material for the topic just tested, without a second request to
@@ -135,6 +182,10 @@ export interface MockExamAttempt {
   correctAnswers: number;
   totalQuestions: number;
   accuracy: number;
+  /** Mock sittings of an NMT paper only; null for provisional ones. */
+  testPoints: number | null;
+  maxTestPoints: number | null;
+  scaledScore: number | null;
   durationSeconds: number | null;
   completedAt: Date;
 }

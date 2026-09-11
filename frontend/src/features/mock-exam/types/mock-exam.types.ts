@@ -17,6 +17,14 @@ export interface MockExamAttempt {
   totalQuestions: number;
   /** 0–100, already rounded by the backend. */
   accuracy: number;
+  /**
+   * A sitting of an NMT paper is scored as the exam scores it; these stay null
+   * for subjects still on the provisional sitting.
+   */
+  testPoints: number | null;
+  maxTestPoints: number | null;
+  /** The official 100–200 score; null below the threshold or without a paper. */
+  scaledScore: number | null;
   durationSeconds: number | null;
   /** ISO timestamp. */
   completedAt: string;
@@ -32,4 +40,11 @@ export interface MockExamAttempt {
 export interface MockExamSpec {
   questionCount: number;
   minutes: number;
+  /** Null while the subject still sits the provisional paper. */
+  paper: {
+    title: string;
+    maxTestPoints: number;
+    timingNote: string;
+    sections: { from: number; to: number; instruction: string }[];
+  } | null;
 }

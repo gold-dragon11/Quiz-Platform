@@ -46,6 +46,18 @@ SHAPES = {
 # Nobody picks it for that, so these are shape-checked but kept out of the
 # length measurement, as picture options are.
 MAX_FUNCTION_WORD = 4
+# The paper itself, task by task (docs/02-domain/nmt-paper.md): every NMT
+# question names the number it is written for, and that number fixes its shape.
+# A subject listed here must have every task filled, or a mock sitting cannot be
+# assembled; the pool per task is printed so thin ones are visible as numbers.
+PAPERS = {
+    'mathematics': dict(
+        [(n, 'SINGLE_CHOICE') for n in range(1, 16)]
+        + [(n, 'MATCHING') for n in range(16, 19)]
+        + [(n, 'NUMERIC') for n in range(19, 23)]),
+}
+MIN_POOL = 12
+
 # Words only — a year or a number in history and mathematics is a value, and
 # how long it is can still tell something.
 FUNCTION_WORD = re.compile(r"[A-Za-z']{1,%d}|—" % MAX_FUNCTION_WORD)
@@ -72,6 +84,10 @@ FORMULA = re.compile(r'\$[^$]*\$')
 # comparing between questions.
 BARE_VALUE = re.compile(r'^-?\d+([.,]\d+)?$|^\$[^$]*\$$')
 
+# «лише І та ІІ», «І, ІІ та ІІІ» — the fixed answer rows of a statements task.
+# Every such task on the paper offers the same five, so they repeat by design.
+STATEMENT_ROW = re.compile(r'^(лише )?І{1,3}((, | та )І{1,3})*$')
+
 
 def check(pack):
     shape = SHAPES.get(pack, {'options': 4, 'rows': (4,), 'choices': 5})
@@ -81,6 +97,8 @@ def check(pack):
         return None
     problems, rows_seen = [], {}
     total = longest = strict = pictures = function_words = 0
+    paper = PAPERS.get(pack)
+    pools = {}
 
     for name in sorted(os.listdir(topics_dir)):
         if not name.endswith('.json'):
@@ -92,6 +110,17 @@ def check(pack):
             if question.get('format') != 'NMT':
                 continue
             at = '%s/%s: %s' % (pack, topic['slug'], question['title'][:45])
+
+            if paper is not None:
+                task = question.get('nmtTask')
+                kind = question.get('type', 'SINGLE_CHOICE')
+                if task not in paper:
+                    problems.append('%s — no task number on the paper (nmtTask=%r)' % (at, task))
+                elif paper[task] != kind:
+                    problems.append('%s — task %d is %s on the paper, not %s'
+                                    % (at, task, paper[task], kind))
+                else:
+                    pools[task] = pools.get(task, 0) + 1
 
             if question.get('type') == 'ORDERING':
                 sequence = question['sequence']
@@ -159,7 +188,7 @@ def check(pack):
                     if 'e-' in option or 'e+' in option:
                         problems.append('%s — option in exponential form: %s'
                                         % (at, option))
-                    if BARE_VALUE.match(option.strip()):
+                    if BARE_VALUE.match(option.strip()) or STATEMENT_ROW.match(option.strip()):
                         continue
                     if (',' not in option
                             and len(option) < MIN_LENGTH_FOR_REPEAT_CHECK):
@@ -221,6 +250,14 @@ def check(pack):
                              ROMAN.sub('', FORMULA.sub('', text))):
                     problems.append('%s — foreign script: %s' % (at, text[:40]))
 
+    if paper is not None:
+        thin = ['%d: %d' % (n, pools.get(n, 0)) for n in sorted(paper)
+                if pools.get(n, 0) < MIN_POOL]
+        print('%s: questions per task — %s' % (pack, ', '.join(
+            '%d:%d' % (n, pools.get(n, 0)) for n in sorted(paper))))
+        if thin:
+            problems.append('tasks with fewer than %d questions — %s'
+                            % (MIN_POOL, ', '.join(thin)))
     return total, longest, strict, problems, pictures, function_words
 
 

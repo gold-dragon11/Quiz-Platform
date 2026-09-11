@@ -25,6 +25,7 @@ import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { QuizService } from '../services/quiz.service';
 import {
   MockExamAttempt,
+  MockExamSpecView,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -57,9 +58,9 @@ export class QuizController {
 
   /**
    * GET /api/v1/quiz/mock-exam/history — past sittings, oldest first.
-   * Deliberately no converted exam score: the official conversion table is not
-   * something to invent, so this reports what happened rather than what it
-   * would have been worth.
+   * A sitting of an NMT paper carries its test points and official 100–200
+   * score; a provisional sitting carries nulls, since there is no table for it
+   * and none is invented.
    */
   @Get('mock-exam/history')
   async mockExamHistory(
@@ -71,17 +72,17 @@ export class QuizController {
 
   /**
    * GET /api/v1/quiz/mock-exam/spec — what a sitting in this subject will be:
-   * how many questions, how many minutes.
+   * how many questions, how many minutes, and the NMT paper it follows, if any.
    *
-   * Exposed rather than published as a constant the client repeats, because
-   * these numbers are provisional until the official specification is checked
-   * (see mock-exam.config.ts). A duplicated "30 questions, 60 minutes" in the
-   * UI would keep saying so long after the real numbers land here.
+   * Exposed rather than published as a constant the client repeats: the
+   * numbers come from the subject's paper (nmt/papers/) or, until it has one,
+   * from the provisional mock-exam.config.ts, and a duplicated "30 questions,
+   * 60 minutes" in the UI would outlive both.
    */
   @Get('mock-exam/spec')
   async mockExamSpec(
     @Query() query: MockExamSpecQueryDto,
-  ): Promise<{ questionCount: number; minutes: number }> {
+  ): Promise<MockExamSpecView> {
     return this.quizService.mockExamSpec(query.subjectId);
   }
 

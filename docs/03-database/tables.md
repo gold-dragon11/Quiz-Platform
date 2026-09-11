@@ -331,6 +331,8 @@ Each completed Quiz Session produces one Result.
 
 Results are immutable.
 
+`test_points`, `max_test_points` and `scaled_score` are set only for a mock sitting of a subject with an NMT paper (docs/02-domain/nmt-paper.md); `scaled_score` stays null below the paper's threshold. `questions.nmt_task` is the paper number an NMT-format question is written for (indexed; null for practice questions).
+
 ---
 
 ## xp_transactions
