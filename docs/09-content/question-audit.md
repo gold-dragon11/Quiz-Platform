@@ -145,11 +145,14 @@ that differ by one rule. Questions written to that shape are marked
 | History, NMT format | 246 | 45 % | **24 %** |
 | Mathematics, practice | 800 | 43 % | 10 % |
 | Mathematics, NMT format | 293 | 34 % | **4 %** |
-| English, NMT format (pilot) | 15 | 27 % | **20 %** |
+| English, NMT format | 330 | 32 % | **18 %** |
 
 Two more mathematics questions have pictures as options and are left out of
 this measurement: their option text is a hidden text alternative ("ескіз 3"),
-so its length says nothing.
+so its length says nothing. So are 65 English gaps whose options are all
+function words — "a", "an", "the", "—" in an article gap, or "can", "must" in a
+modal one: "the" is simply the longest of those, by a letter or two, and nobody
+picks it for that.
 
 25 % is the chance rate for four options: on the NMT bank, picking the longest
 option is worth exactly nothing. The remaining 10 percentage points are ties,
@@ -160,20 +163,35 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 1 249 questions: 424 across all 21 Ukrainian topics (Власне
+**Coverage.** 1 632 questions: 424 across all 21 Ukrainian topics (Власне
 висловлення is excluded — НМТ 2026 has no essay), 386 across all 14 History
-topics, 422 across all 20 Mathematics topics, and a 17-question English pilot.
-By shape: 896 single-choice, 204 matching, 42 ordering, 42 multiple-choice and
-65 numeric — every one with an explanation. 42 are built on a picture: 20 in
-history, 22 in mathematics.
+topics, 422 across all 20 Mathematics topics and 400 across all 20 English
+topics. By shape: 1 276 single-choice, 207 matching, 42 ordering,
+42 multiple-choice and 65 numeric — every one with an explanation. 42 are
+built on a picture: 20 in history, 22 in mathematics.
 
 **English** is the subject where every task on the paper hangs off a text, so
-it waited for `Passage` (docs/02-domain/passage.md). The pilot covers four of
-the six task shapes on four original texts: a story with five questions, a text
-with six gaps for sentence fragments, and two gapped texts with four words per
-gap — one on vocabulary, one on past tenses — plus five adverts matched against
-eight topics. The texts are written for the bank; none is taken from a
-published paper.
+it waited for `Passage` (docs/02-domain/passage.md). The bank follows the six
+task shapes of the НМТ 2026 paper on 81 original texts:
+
+- the thirteen grammar topics are written as task 6 — short texts with five
+  gaps and four forms for each, four texts to a topic;
+- vocabulary, collocations, phrasal verbs, idioms and word formation as task 5
+  — the same, with words instead of forms;
+- use of English mixes the two;
+- reading comprehension carries tasks 1–4: stories with five questions each,
+  notices and camp descriptions matched against eight statements, and texts
+  with six gaps for sentence fragments.
+
+None of the texts is taken from a published paper. The one standard applied to
+every gap was that exactly one option fits: wherever a native speaker would
+accept a second — "the fastest way" beside "the quickest", "take a decision"
+beside "make", "will start" in reported speech — that option was replaced before
+it was written, not argued about afterwards.
+
+The strictly-longest rate, 18 %, sits below chance for the same reason as in
+mathematics: in a gap, the right form of a word is not systematically longer
+than the wrong forms of the same word.
 
 Mathematics is the one subject where the length cue was never the problem: in
 the practice bank the correct option was strictly longest only 10 % of the

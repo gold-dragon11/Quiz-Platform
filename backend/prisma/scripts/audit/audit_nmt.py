@@ -41,6 +41,15 @@ SHAPES = {
     'english-language': {'options': 4, 'rows': (5, 6), 'choices': 8},
 }
 
+# Options that are all function words — "a", "an", "the", "—" in an article
+# gap — differ by a character or two, and "the" is simply the longest of them.
+# Nobody picks it for that, so these are shape-checked but kept out of the
+# length measurement, as picture options are.
+MAX_FUNCTION_WORD = 4
+# Words only — a year or a number in history and mathematics is a value, and
+# how long it is can still tell something.
+FUNCTION_WORD = re.compile(r"[A-Za-z']{1,%d}|—" % MAX_FUNCTION_WORD)
+
 # Only rows of items and full sentences are worth comparing between questions.
 # A bare name — "гунів", "Ярослава Мудрого" — legitimately appears as an option
 # in several questions, and flagging those buries the real signal: a repeated
@@ -71,7 +80,7 @@ def check(pack):
     if not os.path.isdir(topics_dir):
         return None
     problems, rows_seen = [], {}
-    total = longest = strict = pictures = 0
+    total = longest = strict = pictures = function_words = 0
 
     for name in sorted(os.listdir(topics_dir)):
         if not name.endswith('.json'):
@@ -122,6 +131,15 @@ def check(pack):
                         problems.append('%s — picture option without a local image' % at)
                     elif not os.path.exists(os.path.join(PUBLIC, image.lstrip('/'))):
                         problems.append('%s — option image missing: %s' % (at, image))
+            elif 'options' in question and all(
+                    FUNCTION_WORD.fullmatch(o) for o in question['options']):
+                function_words += 1
+                if len(question['options']) != shape['options']:
+                    problems.append('%s — %d options, the paper gives %d'
+                                    % (at, len(question['options']),
+                                       shape['options']))
+                if len(set(question['options'])) != len(question['options']):
+                    problems.append('%s — an option is repeated' % at)
             elif 'options' in question:
                 total += 1
                 options = question['options']
@@ -203,7 +221,7 @@ def check(pack):
                              ROMAN.sub('', FORMULA.sub('', text))):
                     problems.append('%s — foreign script: %s' % (at, text[:40]))
 
-    return total, longest, strict, problems, pictures
+    return total, longest, strict, problems, pictures, function_words
 
 
 def main():
@@ -214,10 +232,12 @@ def main():
         result = check(pack)
         if not result or result[0] == 0:
             continue
-        total, longest, strict, problems, pictures = result
+        total, longest, strict, problems, pictures, function_words = result
+        extra = [label % n for label, n in (
+            ('%d with picture options', pictures),
+            ('%d with function-word options', function_words)) if n]
         print('%s: %d single-choice NMT questions%s'
-              % (pack, total,
-                 ', plus %d with picture options' % pictures if pictures else ''))
+              % (pack, total, (', plus ' + ' and '.join(extra)) if extra else ''))
         print('  longest option is correct: %d (%d %%), of them strictly '
               'longest: %d (%d %%)'
               % (longest, round(longest * 100 / total),
