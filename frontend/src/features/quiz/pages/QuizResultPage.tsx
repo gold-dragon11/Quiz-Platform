@@ -69,7 +69,20 @@ export function QuizResultPage(): React.JSX.Element {
         {/* A mock sitting of an NMT paper is reported the exam's way; the
             percentage below is for practice, where there is no scale. */}
         {result.data.nmt ? (
-          <NmtResult nmt={result.data.nmt} xpEarned={result.data.result.xpEarned} />
+          <div className="flex flex-col gap-16">
+            {/* A joint block is one sitting and two exams: each paper keeps its
+                own score, threshold and table, and XP is earned once. */}
+            {result.data.nmt.papers.length > 1 && (
+              <p className="text-text-secondary -mb-8 text-sm">{result.data.nmt.title}</p>
+            )}
+            {result.data.nmt.papers.map((paper, i) => (
+              <NmtResult
+                key={paper.subjectName}
+                nmt={paper}
+                xpEarned={i === 0 ? result.data.result.xpEarned : 0}
+              />
+            ))}
+          </div>
         ) : (
           <ResultSummary result={result.data.result} />
         )}
@@ -86,7 +99,20 @@ export function QuizResultPage(): React.JSX.Element {
           questions={result.data.questions}
           numbers={
             result.data.nmt
-              ? new Map(result.data.nmt.tasks.map((task) => [task.questionId, task.number]))
+              ? new Map(
+                  result.data.nmt.papers.flatMap((paper) =>
+                    paper.tasks.map((task) => [task.questionId, task.number] as const),
+                  ),
+                )
+              : undefined
+          }
+          headings={
+            result.data.nmt && result.data.nmt.papers.length > 1
+              ? new Map(
+                  result.data.nmt.papers.flatMap((paper) =>
+                    paper.tasks.length > 0 ? [[paper.tasks[0].questionId, paper.subjectName] as const] : [],
+                  ),
+                )
               : undefined
           }
         />

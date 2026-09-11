@@ -64,9 +64,7 @@ XPTransaction (1)
 | totalQuestions | Integer | Yes | Total number of questions |
 | accuracy | Decimal | Yes | Accuracy percentage |
 | score | Decimal | Yes | Final score |
-| testPoints | Integer | No | NMT test points, for a mock sitting of a subject with a paper |
-| maxTestPoints | Integer | No | The paper's maximum test points |
-| scaledScore | Integer | No | Official 100–200 score; null below the threshold or without a paper |
+| paperScores | ResultPaperScore[] | No | Mock NMT sittings only: per paper — subject, test points, maximum, official 100–200 score (null below the threshold) |
 | completedAt | DateTime | Yes | Completion timestamp |
 | createdAt | DateTime | Yes | Creation timestamp |
 
@@ -135,7 +133,8 @@ Example:
 
 A mock sitting of a subject with an NMT paper is also scored the exam's way:
 points per task by the paper's rules, their sum, and the official 100–200 score
-(docs/02-domain/nmt-paper.md). Accuracy still counts whole questions, so a
+(docs/02-domain/nmt-paper.md), stored as one paper score per subject — two for
+a joint block. Accuracy still counts whole questions, so a
 matching task with two of three pairs right is one incorrect question and two
 test points.
 

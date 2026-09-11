@@ -29,6 +29,9 @@ PUBLIC = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # A single option that is far longer than the shortest one in the same
 # question is a length cue even when it is not the longest of the four.
 MAX_LENGTH_SPREAD = 25
+# Options this long are sentences, judged by how far the correct one leads.
+SENTENCE_OPTION = 30
+MAX_SENTENCE_LEAD = 1.15
 
 # The paper's own shape, and it differs by subject: Ukrainian and history give
 # four options and match four rows against five choices, mathematics gives five
@@ -50,13 +53,35 @@ MAX_FUNCTION_WORD = 4
 # question names the number it is written for, and that number fixes its shape.
 # A subject listed here must have every task filled, or a mock sitting cannot be
 # assembled; the pool per task is printed so thin ones are visible as numbers.
+# Each task is (type, answer options): options for a single choice, prompts
+# plus choices for matching, None for a short answer — as the draw requires.
 PAPERS = {
     'mathematics': dict(
-        [(n, 'SINGLE_CHOICE') for n in range(1, 16)]
-        + [(n, 'MATCHING') for n in range(16, 19)]
-        + [(n, 'NUMERIC') for n in range(19, 23)]),
+        [(n, ('SINGLE_CHOICE', 5)) for n in range(1, 16)]
+        + [(n, ('MATCHING', 8)) for n in range(16, 19)]
+        + [(n, ('NUMERIC', None)) for n in range(19, 23)]),
+    'ukrainian-language': dict(
+        [(n, ('SINGLE_CHOICE', 4)) for n in range(1, 11)]
+        + [(n, ('SINGLE_CHOICE', 5)) for n in range(11, 26)]
+        + [(n, ('MATCHING', 9)) for n in range(26, 31)]),
+}
+# Runs of tasks asked about one text. A sitting takes the whole run from a
+# single passage, so what has to be deep enough is the number of passages that
+# cover every task of the run, not the questions per task.
+BLOCKS = {
+    'ukrainian-language': [(21, 25)],
 }
 MIN_POOL = 12
+
+
+def option_count(question):
+    """Answer options as the database stores them, which the draw counts."""
+    kind = question.get('type', 'SINGLE_CHOICE')
+    if kind == 'NUMERIC':
+        return None
+    if kind == 'MATCHING':
+        return 2 * len(question['pairs']) + len(question.get('extraChoices', []))
+    return len(question.get('options', []))
 
 # Words only — a year or a number in history and mathematics is a value, and
 # how long it is can still tell something.
@@ -98,7 +123,11 @@ def check(pack):
     problems, rows_seen = [], {}
     total = longest = strict = pictures = function_words = 0
     paper = PAPERS.get(pack)
+    blocks = BLOCKS.get(pack, [])
+    in_block = {n for start, end in blocks for n in range(start, end + 1)}
     pools = {}
+    passage_tasks = {}
+    off_paper = 0
 
     for name in sorted(os.listdir(topics_dir)):
         if not name.endswith('.json'):
@@ -111,16 +140,33 @@ def check(pack):
                 continue
             at = '%s/%s: %s' % (pack, topic['slug'], question['title'][:45])
 
+            expected_options = shape['options']
             if paper is not None:
                 task = question.get('nmtTask')
                 kind = question.get('type', 'SINGLE_CHOICE')
-                if task not in paper:
+                if task is None:
+                    # Exam-style, but of a kind the paper has no number for —
+                    # kept for topic practice, never drawn into a sitting.
+                    off_paper += 1
+                elif task not in paper:
                     problems.append('%s — no task number on the paper (nmtTask=%r)' % (at, task))
-                elif paper[task] != kind:
+                elif paper[task][0] != kind:
                     problems.append('%s — task %d is %s on the paper, not %s'
-                                    % (at, task, paper[task], kind))
+                                    % (at, task, paper[task][0], kind))
+                elif paper[task][1] != option_count(question):
+                    problems.append('%s — task %d takes %s answer options, this has %s'
+                                    % (at, task, paper[task][1], option_count(question)))
+                elif (task in in_block) != (question.get('passage') is not None):
+                    problems.append('%s — task %d is %s on the paper'
+                                    % (at, task, 'asked about a text' if task in in_block
+                                       else 'not asked about a text'))
                 else:
                     pools[task] = pools.get(task, 0) + 1
+                    if task in in_block:
+                        passage_tasks.setdefault(
+                            (topic['slug'], question['passage']), set()).add(task)
+                if task in paper and paper[task][0] == 'SINGLE_CHOICE':
+                    expected_options = paper[task][1]
 
             if question.get('type') == 'ORDERING':
                 sequence = question['sequence']
@@ -150,10 +196,10 @@ def check(pack):
                 # ("ескіз 1"), so their length says nothing about the answer —
                 # they are checked for shape and files, not for length cues.
                 pictures += 1
-                if len(question['options']) != shape['options']:
+                if len(question['options']) != expected_options:
                     problems.append('%s — %d options, the paper gives %d'
                                     % (at, len(question['options']),
-                                       shape['options']))
+                                       expected_options))
                 for option in question['options']:
                     image = option.get('imageUrl', '') if isinstance(option, dict) else ''
                     if not isinstance(option, dict) or not image.startswith('/content/'):
@@ -163,25 +209,34 @@ def check(pack):
             elif 'options' in question and all(
                     FUNCTION_WORD.fullmatch(o) for o in question['options']):
                 function_words += 1
-                if len(question['options']) != shape['options']:
+                if len(question['options']) != expected_options:
                     problems.append('%s — %d options, the paper gives %d'
                                     % (at, len(question['options']),
-                                       shape['options']))
+                                       expected_options))
                 if len(set(question['options'])) != len(question['options']):
                     problems.append('%s — an option is repeated' % at)
             elif 'options' in question:
                 total += 1
                 options = question['options']
-                if len(options) != shape['options']:
+                if len(options) != expected_options:
                     problems.append('%s — %d options, the paper gives %d'
-                                    % (at, len(options), shape['options']))
+                                    % (at, len(options), expected_options))
                 lengths = [len(o) for o in options]
                 correct = len(options[question['correct']])
                 if correct == max(lengths):
                     longest += 1
                     if lengths.count(max(lengths)) == 1:
                         strict += 1
-                if max(lengths) - min(lengths) > MAX_LENGTH_SPREAD:
+                if min(lengths) >= SENTENCE_OPTION:
+                    # Whole sentences on the paper differ by dozens of
+                    # characters, so their spread says nothing; what gives the
+                    # answer away is the correct one standing out as longest.
+                    others = max(n for i, n in enumerate(lengths)
+                                 if i != question['correct'])
+                    if correct > others * MAX_SENTENCE_LEAD:
+                        problems.append('%s — the correct sentence is %d %% longer than any other'
+                                        % (at, round((correct / others - 1) * 100)))
+                elif max(lengths) - min(lengths) > MAX_LENGTH_SPREAD:
                     problems.append('%s — option lengths spread %d characters'
                                     % (at, max(lengths) - min(lengths)))
                 for option in options:
@@ -255,9 +310,19 @@ def check(pack):
                 if pools.get(n, 0) < MIN_POOL]
         print('%s: questions per task — %s' % (pack, ', '.join(
             '%d:%d' % (n, pools.get(n, 0)) for n in sorted(paper))))
+        if off_paper:
+            print('%s: %d NMT-format questions have no number on the paper '
+                  '(practice only)' % (pack, off_paper))
         if thin:
             problems.append('tasks with fewer than %d questions — %s'
                             % (MIN_POOL, ', '.join(thin)))
+        for start, end in blocks:
+            run = set(range(start, end + 1))
+            covering = sum(1 for tasks in passage_tasks.values() if run <= tasks)
+            print('%s: texts covering %d–%d — %d' % (pack, start, end, covering))
+            if covering < MIN_POOL:
+                problems.append('fewer than %d texts cover tasks %d–%d — %d'
+                                % (MIN_POOL, start, end, covering))
     return total, longest, strict, problems, pictures, function_words
 
 

@@ -35,7 +35,11 @@ choice, so it sits in the row with its dropdown beside it — which is what the
 paper's numbered texts and answer grid amount to.
 
 Ukrainian tasks 21–25 have the same shape as tasks 2, 5 and 6: five questions on
-sentences that once formed one text.
+sentences that once formed one text. Each sentence is a line opening with a
+shape (□ ▽ ○ △ ◇) — the paper's own marking, since the letters А–Д belong to the
+options — and the words task 23 points at are written `**like this**` and
+printed bold italic. The same marking works in any title, option or matching
+row; the seed validator rejects an unclosed pair.
 
 Before this entity existed the text was pasted into the title of every question
 that used it. That copied it five times, and, worse, a session drew those five

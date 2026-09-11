@@ -25,6 +25,7 @@ import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { QuizService } from '../services/quiz.service';
 import {
   MockExamAttempt,
+  MockExamBlockView,
   MockExamSpecView,
   QuizQuestionView,
   QuizResultSummary,
@@ -72,7 +73,8 @@ export class QuizController {
 
   /**
    * GET /api/v1/quiz/mock-exam/spec — what a sitting in this subject will be:
-   * how many questions, how many minutes, and the NMT paper it follows, if any.
+   * how many questions, how many minutes, and the NMT paper it follows, if any
+   * — or the same for a joint block.
    *
    * Exposed rather than published as a constant the client repeats: the
    * numbers come from the subject's paper (nmt/papers/) or, until it has one,
@@ -83,7 +85,16 @@ export class QuizController {
   async mockExamSpec(
     @Query() query: MockExamSpecQueryDto,
   ): Promise<MockExamSpecView> {
-    return this.quizService.mockExamSpec(query.subjectId);
+    return this.quizService.mockExamSpec(query);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/blocks — the joint NMT blocks that can be sat,
+   * listed beside the subjects on the mock exam screen.
+   */
+  @Get('mock-exam/blocks')
+  async mockExamBlocks(): Promise<MockExamBlockView[]> {
+    return this.quizService.mockExamBlocks();
   }
 
   /**

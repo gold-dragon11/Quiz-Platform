@@ -101,16 +101,21 @@ The count and the picker share one eligibility predicate in the repository, deli
 # 4b. Mock Exam
 
 ```http
-GET  /api/v1/quiz/mock-exam/spec?subjectId=…
+GET  /api/v1/quiz/mock-exam/blocks
+GET  /api/v1/quiz/mock-exam/spec?subjectId=…   (or ?block=…)
 POST /api/v1/quiz/mock-exam/start
 GET  /api/v1/quiz/mock-exam/history?subjectId=…
 ```
 
-**Spec** — `{ questionCount, minutes, paper }`. For a subject with an NMT paper (docs/02-domain/nmt-paper.md) `paper` is `{ title, maxTestPoints, timingNote, sections: [{ from, to, instruction }] }` and the count and minutes are the paper's; otherwise `paper` is `null` and the numbers come from the provisional config.
+A sitting is started for a subject or for a joint NMT block (docs/02-domain/nmt-paper.md §8) — exactly one of the two; both or neither is `400`.
 
-**Start** — body `{ subjectId }`. With a paper: one published NMT question per task number, in paper order, on the paper's clock; `409` if any number has no question, with the missing numbers in the message (`… Бракує завдань №2, 14.`). Without a paper: the provisional draw by difficulty. Responds `201` with the session metadata of §4; the one-active-session rule applies.
+**Blocks** — the blocks that can be sat now, each `{ slug, title, subjectNames }`: every subject of the block is published and has a paper.
 
-**History** — the user's completed sittings in the subject, oldest first: `sessionId`, `completedAt`, counts, `accuracy`, and `testPoints`, `maxTestPoints`, `scaledScore` — all three null for a sitting without a paper, and `scaledScore` null below the threshold.
+**Spec** — `{ questionCount, minutes, paper, block }`. For a subject with an NMT paper, `paper` is `{ title, maxTestPoints, timingNote, sections: [{ from, to, instruction }] }` and the count and minutes are the paper's; without a paper, `paper` is `null` and the numbers come from the provisional config. For a block, `paper` is `null` and `block` is `{ title, timingNote, papers: [{ subjectName, title, questionCount, maxTestPoints }] }`, with the count summed over the papers and the block's minutes. An unknown block is `404`.
+
+**Start** — body `{ subjectId }` or `{ block }`. With a paper: one published NMT question per task number, in paper order, on the paper's clock. With a block: every paper in turn on the block's clock. `409` if any number has no question, with the missing numbers in the message (`… Бракує завдань №2, 14.`, or per subject for a block). Without a paper: the provisional draw by difficulty. Responds `201` with the session metadata of §4; the one-active-session rule applies.
+
+**History** — the user's completed sittings, oldest first: `sessionId`, `subject`, `blockTitle`, `completedAt`, counts, `accuracy`, and `testPoints`, `maxTestPoints`, `scaledScore`. A sitting of papers is listed once per paper, with that subject's score — so a block appears in the history of each of its subjects, with `blockTitle` set. A provisional sitting has all three scores `null`; `scaledScore` is also `null` below a paper's threshold.
 
 ---
 
@@ -204,7 +209,7 @@ Returns the full post-completion **review** — available only after the session
 
 - `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
 - `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching, `{ sequence }` for Ordering, `{ answerOptionIds }` for Multiple Choice, `{ numericAnswer }` for Numeric), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
-- `nmt` — present only for a mock sitting of a subject with an NMT paper: `{ title, testPoints, maxTestPoints, scaledScore, threshold, scaleSource, tasks: [{ number, questionId, points, maxPoints }] }`, tasks in paper order. `scaledScore` is `null` below the threshold.
+- `nmt` — present only for a mock sitting of an NMT paper or block: `{ title, papers }`, one entry per paper `{ subjectName, title, testPoints, maxTestPoints, scaledScore, threshold, scaleSource, tasks: [{ number, questionId, points, maxPoints }] }`, tasks in paper order. `scaledScore` is `null` below the paper's threshold.
 - `session` — `{ subjectId, topicId }`, where the quiz came from. Carried so the result page can offer the learning material for the topic just tested (docs/04-api/learning-materials.md §4) without a second request to rediscover which topic that was.
 
 The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.
@@ -227,7 +232,7 @@ Returns `{ "session": ... }`, where `session` is the same session metadata shape
 GET /api/v1/quiz/{sessionId}
 ```
 
-Returns the current Quiz Session state for recovery after a refresh or reconnect: the session metadata, its questions (same withheld-answer view as §5), and the user's own already-saved selections (`answers`). Correctness, correct answers, and Matching configuration are never included. A mock sitting of a subject with an NMT paper also carries `paper`: `{ title, maxTestPoints, sections, taskNumbers }`, where `taskNumbers` gives each question's number in session order, so the screen can number tasks and print each section's instruction as the paper does.
+Returns the current Quiz Session state for recovery after a refresh or reconnect: the session metadata, its questions (same withheld-answer view as §5), and the user's own already-saved selections (`answers`). Correctness, correct answers, and Matching configuration are never included. A mock sitting of an NMT paper or block also carries `sitting`: `{ title, papers: [{ subjectName, title, maxTestPoints, sections, start, count }], taskNumbers }`. Each paper covers the session positions `start … start + count − 1`, and `taskNumbers` gives each question's number in session order, so the screen can number tasks per paper and print each section's instruction as the paper does.
 
 Used when:
 

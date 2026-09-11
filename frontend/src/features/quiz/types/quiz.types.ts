@@ -105,19 +105,27 @@ export interface SavedAnswerView {
 }
 
 /**
- * The NMT paper a mock sitting follows (docs/02-domain/nmt-paper.md): its
- * instructions above each run of tasks, and the task number of every question.
+ * What a mock sitting follows (docs/02-domain/nmt-paper.md): one subject's
+ * paper, or every paper of a joint block, each over its own run of questions.
  */
-export interface NmtPaperView {
+export interface NmtSittingView {
   title: string;
-  maxTestPoints: number;
-  sections: { from: number; to: number; instruction: string }[];
+  papers: {
+    subjectName: string;
+    title: string;
+    maxTestPoints: number;
+    sections: { from: number; to: number; instruction: string }[];
+    /** The paper's questions are positions `start` … `start + count - 1`. */
+    start: number;
+    count: number;
+  }[];
   /** In session order. */
   taskNumbers: (number | null)[];
 }
 
-/** A finished mock sitting scored as the exam scores it. */
+/** One paper of a finished mock sitting, scored as the exam scores it. */
 export interface NmtResultView {
+  subjectName: string;
   title: string;
   testPoints: number;
   maxTestPoints: number;
@@ -133,8 +141,8 @@ export interface QuizResumeView {
   session: QuizSessionMetadata;
   questions: QuizQuestionView[];
   answers: SavedAnswerView[];
-  /** Present for a mock sitting of an NMT paper. */
-  paper?: NmtPaperView;
+  /** Present for a mock sitting of an NMT paper or a joint block. */
+  sitting?: NmtSittingView;
 }
 
 // --- Result / review ----------------------------------------------------
@@ -176,8 +184,8 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
-  /** Present for a mock sitting of an NMT paper. */
-  nmt?: NmtResultView;
+  /** Present for a mock sitting of an NMT paper or a joint block: one score per paper. */
+  nmt?: { title: string; papers: NmtResultView[] };
   /** Where the quiz came from, so the result can link back to its material. */
   session: {
     subjectId: string;

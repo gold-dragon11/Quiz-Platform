@@ -15,6 +15,11 @@ import {
   drawKeepingPassages,
   type PassageMember,
 } from '../passage-draw.util';
+import type { NmtTask } from '../nmt/nmt-paper.types';
+import {
+  pickPassageBlock,
+  type PassageBlockCandidate,
+} from '../nmt/passage-block';
 
 /**
  * Rows older than this can no longer affect selection, so they are dropped.
@@ -46,6 +51,8 @@ export interface QuizSessionRecord {
   assignmentId: string | null;
   /** Set when the session is one player's half of a duel. */
   duelId: string | null;
+  /** The joint NMT block this mock sitting belongs to; null otherwise. */
+  nmtBlock: string | null;
 }
 
 /** One snapshot question with its options and per-locale translations. */
@@ -65,6 +72,8 @@ export interface SessionQuestionRecord {
   passage: { id: string; title: string | null; content: string } | null;
   /** The number on the NMT paper this question fills, when it has one. */
   nmtTask: number | null;
+  /** The question's subject: a block's papers both number tasks from 1. */
+  subjectSlug: string;
   translations: { title: string }[];
   answerOptions: {
     id: string;
@@ -76,6 +85,21 @@ export interface SessionQuestionRecord {
   }[];
 }
 
+/**
+ * A question can stand at a paper's task number only in the number's shape:
+ * tagged for it, of its type, with as many answer options as the paper prints
+ * there (none for a short answer).
+ */
+function fitsTask(task: NmtTask): Prisma.Sql {
+  return Prisma.sql`(
+    q."nmtTask" = ${task.number}
+    AND q.type = ${task.type}::"QuestionType"
+    AND (
+      SELECT COUNT(*)::int FROM answer_options o WHERE o."questionId" = q.id
+    ) = ${task.optionCount ?? 0}
+  )`;
+}
+
 const SESSION_SELECT = {
   id: true,
   userId: true,
@@ -83,6 +107,7 @@ const SESSION_SELECT = {
   topicId: true,
   assignmentId: true,
   duelId: true,
+  nmtBlock: true,
   mode: true,
   timerEnabled: true,
   questionCount: true,
@@ -159,12 +184,11 @@ export class QuizSessionRepository {
   /**
    * One question for a task number of a subject's NMT paper, least recently
    * seen by this learner first, then at random (docs/02-domain/nmt-paper.md).
-   * Only exam-format questions of the task's own type qualify.
+   * Only exam-format questions of the task's own shape qualify.
    */
   async selectQuestionForTask(params: {
     subjectId: string;
-    nmtTask: number;
-    type: QuestionType;
+    task: NmtTask;
     userId: string;
   }): Promise<string | null> {
     const rows = await this.prisma.$queryRaw<{ id: string }[]>(Prisma.sql`
@@ -178,12 +202,45 @@ export class QuizSessionRepository {
         WHERE e."questionId" = q.id AND e."userId" = ${params.userId}::uuid
       ) seen ON true
       WHERE ${eligibleQuestionFilter({ subjectId: params.subjectId, format: QuestionFormat.NMT })}
-        AND q."nmtTask" = ${params.nmtTask}
-        AND q.type = ${params.type}::"QuestionType"
+        AND ${fitsTask(params.task)}
       ORDER BY seen.last_seen ASC NULLS FIRST, random()
       LIMIT 1
     `);
     return rows[0]?.id ?? null;
+  }
+
+  /**
+   * A run of tasks asked about one text: the questions of a single passage
+   * that covers every number, the passage this learner met longest ago first
+   * (see `pickPassageBlock`). Null when no passage covers the whole run.
+   */
+  async selectPassageForTasks(params: {
+    subjectId: string;
+    tasks: NmtTask[];
+    userId: string;
+  }): Promise<string[] | null> {
+    const rows = await this.prisma.$queryRaw<
+      PassageBlockCandidate[]
+    >(Prisma.sql`
+      SELECT q.id, q."passageId", q."passageOrder", q."nmtTask",
+        seen.last_seen AS "lastSeen"
+      FROM questions q
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      LEFT JOIN LATERAL (
+        SELECT MAX(e."shownAt") AS last_seen
+        FROM question_exposures e
+        WHERE e."questionId" = q.id AND e."userId" = ${params.userId}::uuid
+      ) seen ON true
+      WHERE ${eligibleQuestionFilter({ subjectId: params.subjectId, format: QuestionFormat.NMT })}
+        AND q."passageId" IS NOT NULL
+        AND (${Prisma.join(params.tasks.map(fitsTask), ' OR ')})
+      ORDER BY random()
+    `);
+    return pickPassageBlock(
+      rows,
+      params.tasks.map((task) => task.number),
+    );
   }
 
   /**
@@ -334,13 +391,18 @@ export class QuizSessionRepository {
     });
   }
 
-  /** Completed mock sittings for one learner, oldest first. */
+  /**
+   * Completed mock sittings for one learner, oldest first. With a subject, a
+   * sitting counts when it was sat in that subject or when a block it belonged
+   * to scored a paper in it.
+   */
   async findMockExamAttempts(
     userId: string,
     subjectId?: string,
   ): Promise<
     {
       id: string;
+      nmtBlock: string | null;
       subject: { id: string; name: string };
       durationSeconds: number | null;
       completedAt: Date | null;
@@ -348,22 +410,33 @@ export class QuizSessionRepository {
         correctAnswers: number;
         totalQuestions: number;
         accuracy: Prisma.Decimal;
-        testPoints: number | null;
-        maxTestPoints: number | null;
-        scaledScore: number | null;
+        paperScores: {
+          subject: { id: string; name: string; slug: string };
+          testPoints: number;
+          maxTestPoints: number;
+          scaledScore: number | null;
+        }[];
       } | null;
     }[]
   > {
     return this.prisma.quizSession.findMany({
       where: {
         userId,
-        subjectId,
         mode: QuizType.MOCK_EXAM,
         status: QuizStatus.COMPLETED,
+        ...(subjectId === undefined
+          ? {}
+          : {
+              OR: [
+                { subjectId },
+                { result: { paperScores: { some: { subjectId } } } },
+              ],
+            }),
       },
       orderBy: { completedAt: 'asc' },
       select: {
         id: true,
+        nmtBlock: true,
         durationSeconds: true,
         completedAt: true,
         subject: { select: { id: true, name: true } },
@@ -372,9 +445,15 @@ export class QuizSessionRepository {
             correctAnswers: true,
             totalQuestions: true,
             accuracy: true,
-            testPoints: true,
-            maxTestPoints: true,
-            scaledScore: true,
+            paperScores: {
+              orderBy: { subject: { displayOrder: 'asc' } },
+              select: {
+                testPoints: true,
+                maxTestPoints: true,
+                scaledScore: true,
+                subject: { select: { id: true, name: true, slug: true } },
+              },
+            },
           },
         },
       },
@@ -384,20 +463,40 @@ export class QuizSessionRepository {
   /** The subject's slug, which selects its mock-exam specification. */
   async findSubjectForMock(
     subjectId: string,
-  ): Promise<{ id: string; slug: string } | null> {
+  ): Promise<{ id: string; slug: string; name: string } | null> {
     return this.prisma.subject.findFirst({
       where: { id: subjectId, isPublished: true, deletedAt: null },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, name: true },
     });
   }
 
-  /** A subject's slug by id, whatever its publication state. */
-  async findSubjectSlug(subjectId: string): Promise<string | null> {
-    const subject = await this.prisma.subject.findUnique({
+  /** A subject by id, whatever its publication state. */
+  async findSubjectById(
+    subjectId: string,
+  ): Promise<{ id: string; slug: string; name: string } | null> {
+    return this.prisma.subject.findUnique({
       where: { id: subjectId },
-      select: { slug: true },
+      select: { id: true, slug: true, name: true },
     });
-    return subject?.slug ?? null;
+  }
+
+  /**
+   * Subjects by slug. A block is started only over published subjects; a
+   * sitting already taken is shown whatever has happened to them since.
+   */
+  async findSubjectsBySlugs(
+    slugs: string[],
+    options: { publishedOnly?: boolean } = {},
+  ): Promise<{ id: string; slug: string; name: string }[]> {
+    return this.prisma.subject.findMany({
+      where: {
+        slug: { in: slugs },
+        ...(options.publishedOnly
+          ? { isPublished: true, deletedAt: null }
+          : {}),
+      },
+      select: { id: true, slug: true, name: true },
+    });
   }
 
   /** This player's unfinished half of a duel — the resume path. */
@@ -448,6 +547,7 @@ export class QuizSessionRepository {
       questionCount: number;
       expiresAt: Date | null;
       questionIds: string[];
+      nmtBlock?: string | null;
     },
   ): Promise<QuizSessionRecord> {
     // Whatever assembled the list — a random draw, a teacher, the review
@@ -477,6 +577,7 @@ export class QuizSessionRepository {
         questionCount: params.questionCount,
         status: QuizStatus.ACTIVE,
         expiresAt: params.expiresAt,
+        nmtBlock: params.nmtBlock ?? null,
         questions: {
           create: questionIds.map((questionId, index) => ({
             questionId,
@@ -523,6 +624,7 @@ export class QuizSessionRepository {
             configuration: true,
             passageOrder: true,
             nmtTask: true,
+            topic: { select: { subject: { select: { slug: true } } } },
             passage: { select: { id: true, title: true, content: true } },
             translations: { where: translationsWhere, select: { title: true } },
             answerOptions: {
@@ -544,7 +646,11 @@ export class QuizSessionRepository {
       },
     });
 
-    return rows.map((row) => ({ position: row.position, ...row.question }));
+    return rows.map(({ position, question: { topic, ...question } }) => ({
+      position,
+      ...question,
+      subjectSlug: topic.subject.slug,
+    }));
   }
 
   /** The snapshot question ids of a session (membership + counting). */

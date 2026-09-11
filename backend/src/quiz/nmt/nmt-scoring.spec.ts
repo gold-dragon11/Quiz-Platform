@@ -1,6 +1,8 @@
 import { QuestionType } from '@prisma/client';
 import type { NmtPaper } from './nmt-paper.types';
+import { DEFAULT_NMT_BLOCKS, DEFAULT_NMT_PAPERS } from './nmt-papers';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
+import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
 import {
   maxTestPoints,
   scaledScore,
@@ -15,20 +17,29 @@ const paper: NmtPaper = {
   minutes: 10,
   timingNote: '',
   sections: [],
+  passageBlocks: [],
   tasks: [
     {
       number: 1,
       type: QuestionType.SINGLE_CHOICE,
+      optionCount: 2,
       maxPoints: 1,
       scoring: 'whole',
     },
     {
       number: 2,
       type: QuestionType.MATCHING,
+      optionCount: 8,
       maxPoints: 3,
       scoring: 'per-pair',
     },
-    { number: 3, type: QuestionType.NUMERIC, maxPoints: 2, scoring: 'whole' },
+    {
+      number: 3,
+      type: QuestionType.NUMERIC,
+      optionCount: null,
+      maxPoints: 2,
+      scoring: 'whole',
+    },
   ],
   scale: {
     threshold: 2,
@@ -156,31 +167,115 @@ describe('scorePaper', () => {
   });
 });
 
+describe.each(DEFAULT_NMT_PAPERS.map((p) => [p.subjectSlug, p] as const))(
+  'the %s paper',
+  (_, subjectPaper) => {
+    const max = maxTestPoints(subjectPaper);
+
+    it('numbers its tasks 1…n with nothing skipped', () => {
+      expect(subjectPaper.tasks.map((task) => task.number)).toEqual(
+        subjectPaper.tasks.map((_task, i) => i + 1),
+      );
+    });
+
+    it('converts every total from the threshold up, never falling, to 200', () => {
+      let previous = 0;
+      for (let points = 0; points <= max; points += 1) {
+        const score = scaledScore(subjectPaper, points);
+        if (points < subjectPaper.scale.threshold) {
+          expect(score).toBeNull();
+          continue;
+        }
+        expect(score).not.toBeNull();
+        expect(score).toBeGreaterThan(previous);
+        previous = score ?? 0;
+      }
+      expect(scaledScore(subjectPaper, subjectPaper.scale.threshold)).toBe(100);
+      expect(scaledScore(subjectPaper, max)).toBe(200);
+    });
+
+    it('covers every task number with exactly one section instruction', () => {
+      for (const task of subjectPaper.tasks) {
+        const sections = subjectPaper.sections.filter(
+          (section) => section.from <= task.number && task.number <= section.to,
+        );
+        expect(sections).toHaveLength(1);
+      }
+    });
+
+    it('gives every choice task its option count and a short answer none', () => {
+      for (const task of subjectPaper.tasks) {
+        if (task.type === QuestionType.NUMERIC) {
+          expect(task.optionCount).toBeNull();
+        } else {
+          expect(task.optionCount).toBeGreaterThanOrEqual(4);
+        }
+      }
+    });
+
+    it('keeps each text block inside the paper, one per number', () => {
+      const numbers = subjectPaper.passageBlocks.flatMap((block) => {
+        expect(block.from).toBeLessThan(block.to);
+        return Array.from(
+          { length: block.to - block.from + 1 },
+          (_n, i) => block.from + i,
+        );
+      });
+      expect(new Set(numbers).size).toBe(numbers.length);
+      for (const number of numbers) {
+        expect(subjectPaper.tasks.some((task) => task.number === number)).toBe(
+          true,
+        );
+      }
+    });
+  },
+);
+
 describe('the mathematics paper', () => {
   it('matches the published shape: 22 tasks worth 32 points', () => {
     expect(MATHEMATICS_PAPER.tasks).toHaveLength(22);
     expect(maxTestPoints(MATHEMATICS_PAPER)).toBe(32);
   });
+});
 
-  it('converts every possible total from the threshold to the maximum', () => {
-    for (let points = 0; points <= 32; points += 1) {
-      const score = scaledScore(MATHEMATICS_PAPER, points);
-      if (points < MATHEMATICS_PAPER.scale.threshold) {
-        expect(score).toBeNull();
-      } else {
-        expect(score).toBeGreaterThanOrEqual(100);
-        expect(score).toBeLessThanOrEqual(200);
-      }
-    }
-    expect(scaledScore(MATHEMATICS_PAPER, 32)).toBe(200);
+describe('the Ukrainian paper', () => {
+  const task = (number: number) => UKRAINIAN_LANGUAGE_PAPER.tasks[number - 1];
+
+  it('matches the published shape: 30 tasks worth 45 points', () => {
+    expect(UKRAINIAN_LANGUAGE_PAPER.tasks).toHaveLength(30);
+    expect(maxTestPoints(UKRAINIAN_LANGUAGE_PAPER)).toBe(45);
   });
 
-  it('covers every task number with exactly one section instruction', () => {
-    for (const task of MATHEMATICS_PAPER.tasks) {
-      const sections = MATHEMATICS_PAPER.sections.filter(
-        (section) => section.from <= task.number && task.number <= section.to,
+  it('prints four options in 1–10, five in 11–25, four pairs in 26–30', () => {
+    expect(task(10)).toMatchObject({ type: 'SINGLE_CHOICE', optionCount: 4 });
+    expect(task(11)).toMatchObject({ type: 'SINGLE_CHOICE', optionCount: 5 });
+    expect(task(25)).toMatchObject({ type: 'SINGLE_CHOICE', optionCount: 5 });
+    expect(task(26)).toMatchObject({
+      type: 'MATCHING',
+      optionCount: 9,
+      maxPoints: 4,
+      scoring: 'per-pair',
+    });
+  });
+
+  it('asks 21–25 about one text', () => {
+    expect(UKRAINIAN_LANGUAGE_PAPER.passageBlocks).toEqual([
+      { from: 21, to: 25 },
+    ]);
+  });
+});
+
+describe('the joint blocks', () => {
+  it.each(DEFAULT_NMT_BLOCKS.map((b) => [b.slug, b] as const))(
+    '%s sets papers that exist, on the time of all of them together',
+    (_, block) => {
+      const papers = block.subjectSlugs.map((slug) =>
+        DEFAULT_NMT_PAPERS.find((candidate) => candidate.subjectSlug === slug),
       );
-      expect(sections).toHaveLength(1);
-    }
-  });
+      expect(papers.every(Boolean)).toBe(true);
+      expect(block.minutes).toBe(
+        papers.reduce((sum, candidate) => sum + (candidate?.minutes ?? 0), 0),
+      );
+    },
+  );
 });

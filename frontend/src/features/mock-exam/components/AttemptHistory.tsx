@@ -55,14 +55,21 @@ export function AttemptHistory({ subjectId, className = '' }: AttemptHistoryProp
     );
   }
 
-  const newestFirst = [...attempts].reverse();
+  // Newest sitting first, but a block's papers keep the block's own order: the
+  // rows of one sitting arrive together, and only the sittings are reversed.
+  const newestFirst = attempts
+    .map((attempt, position) => ({ attempt, position }))
+    .sort((a, b) =>
+      a.attempt.sessionId === b.attempt.sessionId ? a.position - b.position : b.position - a.position,
+    )
+    .map(({ attempt }) => attempt);
 
   return (
     <div className={className}>
       <AccuracyStrip attempts={attempts} />
       <ul className="divide-border border-border mt-10 divide-y border-t">
         {newestFirst.map((attempt) => (
-          <AttemptRow key={attempt.sessionId} attempt={attempt} />
+          <AttemptRow key={`${attempt.sessionId}:${attempt.subject.id}`} attempt={attempt} />
         ))}
       </ul>
     </div>
@@ -91,7 +98,10 @@ function AccuracyStrip({ attempts }: { attempts: MockExamAttempt[] }): React.JSX
         </span>
         <div className="flex h-32 items-end gap-4 overflow-x-auto">
           {attempts.map((attempt) => (
-            <div key={attempt.sessionId} className="flex h-full w-16 shrink-0 flex-col justify-end">
+            <div
+              key={`${attempt.sessionId}:${attempt.subject.id}`}
+              className="flex h-full w-16 shrink-0 flex-col justify-end"
+            >
               {/* The label rides on top of its own bar rather than at the top
                   of the column: with accuracies down in the teens, a label
                   pinned to the ceiling floats far from what it measures. */}
@@ -106,7 +116,10 @@ function AccuracyStrip({ attempts }: { attempts: MockExamAttempt[] }): React.JSX
       </div>
       <div className="mt-2 flex gap-4">
         {attempts.map((attempt) => (
-          <span key={attempt.sessionId} className="text-text-muted w-16 shrink-0 text-center text-[11px]">
+          <span
+            key={`${attempt.sessionId}:${attempt.subject.id}`}
+            className="text-text-muted w-16 shrink-0 text-center text-[11px]"
+          >
             {formatShortDate(attempt.completedAt).replace(/\s*\d{4}\s*р\.$/, '')}
           </span>
         ))}
@@ -162,6 +175,7 @@ function AttemptRow({ attempt }: { attempt: MockExamAttempt }): React.JSX.Elemen
           <p className="text-text-primary truncate text-sm font-medium">{attempt.subject.name}</p>
           <p className="text-text-secondary mt-1 text-xs">
             {formatShortDate(attempt.completedAt)}
+            {attempt.blockTitle && ' · у спільному блоці'}
             {attempt.durationSeconds !== null &&
               attempt.durationSeconds > 0 &&
               ` · ${formatDuration(attempt.durationSeconds)}`}

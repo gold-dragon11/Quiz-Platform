@@ -21,10 +21,11 @@ import { SettingsService } from '../../settings/services/settings.service';
 import { StatisticsService } from '../../statistics/services/statistics.service';
 import { XpAward } from '../../statistics/repositories/statistics.repository';
 import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
+import { MockExamSpecQueryDto } from '../dto/mock-exam-spec-query.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { mockExamSpecFor, questionsPerDifficulty } from '../mock-exam.config';
-import type { NmtPaper } from '../nmt/nmt-paper.types';
+import type { NmtBlock, NmtPaper } from '../nmt/nmt-paper.types';
 import { NmtPaperRegistry } from '../nmt/nmt-papers';
 import {
   maxTestPoints,
@@ -47,8 +48,9 @@ import {
 import { ResultRepository } from '../repositories/result.repository';
 import {
   MockExamAttempt,
+  MockExamBlockView,
   MockExamSpecView,
-  NmtPaperView,
+  NmtSittingView,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -72,6 +74,10 @@ const NOTHING_DUE_MESSAGE =
 const DEFAULT_REVIEW_SIZE = 10;
 const MOCK_EXAM_TOO_SHORT_MESSAGE =
   'У цьому предметі поки замало опублікованих питань для пробного тесту.';
+const MOCK_BLOCK_TOO_SHORT_MESSAGE =
+  'Для цього блоку НМТ поки бракує опублікованих завдань.';
+const MOCK_TARGET_MESSAGE = 'Оберіть предмет або блок НМТ — щось одне.';
+const BLOCK_NOT_FOUND_MESSAGE = 'Такого блоку НМТ немає.';
 const ACTIVE_SESSION_EXISTS_MESSAGE =
   'Активна сесія тесту вже існує. Завершіть її, перш ніж починати нову.';
 const ACTIVE_ASSIGNMENT_SESSION_MESSAGE =
@@ -118,6 +124,22 @@ interface StartConfig {
   difficulty: Difficulty | null;
   /** Ad-hoc only: restrict the pool to one format, or null for both. */
   format: QuestionFormat | null;
+}
+
+/** One NMT paper of a mock sitting, with the subject it is sat in. */
+interface SittingPaper {
+  paper: NmtPaper;
+  subjectId: string;
+  subjectName: string;
+}
+
+/** What a mock sitting follows: one subject's paper, or a block of papers. */
+interface Sitting {
+  title: string;
+  minutes: number;
+  papers: SittingPaper[];
+  /** The block's slug; null for a sitting of one subject. */
+  blockSlug: string | null;
 }
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
@@ -256,8 +278,15 @@ export class QuizService {
     userId: string,
     dto: StartMockExamDto,
   ): Promise<QuizSessionMetadata> {
+    if ((dto.subjectId === undefined) === (dto.block === undefined)) {
+      throw new BadRequestException(MOCK_TARGET_MESSAGE);
+    }
+    if (dto.block !== undefined) {
+      return this.startNmtBlock(userId, dto.block);
+    }
+
     const subject = await this.quizSessionRepository.findSubjectForMock(
-      dto.subjectId,
+      dto.subjectId as string,
     );
     if (!subject) {
       throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
@@ -269,7 +298,12 @@ export class QuizService {
 
     const paper = this.nmtPapers.forSubjectSlug(subject.slug);
     if (paper) {
-      return this.startNmtPaper(userId, subject.id, paper);
+      return this.startSitting(userId, {
+        title: paper.title,
+        minutes: paper.minutes,
+        papers: [{ paper, subjectId: subject.id, subjectName: subject.name }],
+        blockSlug: null,
+      });
     }
 
     const spec = mockExamSpecFor(subject.slug);
@@ -319,33 +353,63 @@ export class QuizService {
   }
 
   /**
-   * A sitting that follows the subject's NMT paper
-   * (docs/02-domain/nmt-paper.md): one question for every task number, in the
-   * paper's order, least recently seen first — so a learner meets a different
-   * variant each time the pool allows it. A number with nothing to fill it
-   * refuses the whole sitting and names the gap: a paper with a task missing
-   * is not the paper.
+   * A mock sitting of a joint NMT block (docs/02-domain/nmt-paper.md §8): every
+   * paper of the block, one after another, on the block's single clock.
    */
-  private async startNmtPaper(
+  private async startNmtBlock(
     userId: string,
-    subjectId: string,
-    paper: NmtPaper,
+    slug: string,
+  ): Promise<QuizSessionMetadata> {
+    const block = this.nmtPapers.block(slug);
+    if (!block) {
+      throw new NotFoundException(BLOCK_NOT_FOUND_MESSAGE);
+    }
+    const subjects = await this.quizSessionRepository.findSubjectsBySlugs(
+      block.subjectSlugs,
+      { publishedOnly: true },
+    );
+    const papers = this.papersOf(block, subjects);
+    if (papers.length !== block.subjectSlugs.length) {
+      throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
+    }
+    if (await this.quizSessionRepository.findActiveSelfStudy(userId)) {
+      throw new ConflictException(ACTIVE_SESSION_EXISTS_MESSAGE);
+    }
+    return this.startSitting(userId, {
+      title: block.title,
+      minutes: block.minutes,
+      papers,
+      blockSlug: block.slug,
+    });
+  }
+
+  /**
+   * Opens a sitting (docs/02-domain/nmt-paper.md §5): one question for every
+   * task number of every paper, in the papers' order, least recently seen
+   * first — so a learner meets a different variant each time the pool allows
+   * it. A number with nothing to fill it refuses the whole sitting and names
+   * the gap: a paper with a task missing is not the paper.
+   */
+  private async startSitting(
+    userId: string,
+    sitting: Sitting,
   ): Promise<QuizSessionMetadata> {
     const questionIds: string[] = [];
-    const missing: number[] = [];
-    for (const task of paper.tasks) {
-      const questionId = await this.quizSessionRepository.selectQuestionForTask(
-        { subjectId, nmtTask: task.number, type: task.type, userId },
-      );
-      if (questionId) {
-        questionIds.push(questionId);
-      } else {
-        missing.push(task.number);
+    const gaps: { subjectName: string; numbers: number[] }[] = [];
+    for (const { paper, subjectId, subjectName } of sitting.papers) {
+      const drawn = await this.drawPaper(userId, subjectId, paper);
+      questionIds.push(...drawn.questionIds);
+      if (drawn.missing.length > 0) {
+        gaps.push({ subjectName, numbers: drawn.missing });
       }
     }
-    if (missing.length > 0) {
+    if (gaps.length > 0) {
       throw new ConflictException(
-        `${MOCK_EXAM_TOO_SHORT_MESSAGE} Бракує завдань №${missing.join(', ')}.`,
+        sitting.blockSlug === null
+          ? `${MOCK_EXAM_TOO_SHORT_MESSAGE} Бракує завдань №${gaps[0].numbers.join(', ')}.`
+          : `${MOCK_BLOCK_TOO_SHORT_MESSAGE} ${gaps
+              .map((gap) => `${gap.subjectName}: №${gap.numbers.join(', ')}`)
+              .join('; ')}.`,
       );
     }
 
@@ -354,13 +418,14 @@ export class QuizService {
         this.quizSessionRepository.createSessionWithQuestions(tx, {
           userId,
           quizId: null,
-          subjectId,
+          subjectId: sitting.papers[0].subjectId,
           topicId: null,
           mode: QuizType.MOCK_EXAM,
           timerEnabled: true,
           questionCount: questionIds.length,
-          expiresAt: new Date(Date.now() + paper.minutes * 60 * 1000),
+          expiresAt: new Date(Date.now() + sitting.minutes * 60 * 1000),
           questionIds,
+          nmtBlock: sitting.blockSlug,
         }),
       );
       return this.toMetadata(session);
@@ -375,27 +440,119 @@ export class QuizService {
     }
   }
 
+  /** One paper's questions, task by task; `missing` names the empty numbers. */
+  private async drawPaper(
+    userId: string,
+    subjectId: string,
+    paper: NmtPaper,
+  ): Promise<{ questionIds: string[]; missing: number[] }> {
+    const questionIds: string[] = [];
+    const missing: number[] = [];
+    for (const task of paper.tasks) {
+      const block = paper.passageBlocks.find(
+        (run) => run.from <= task.number && task.number <= run.to,
+      );
+      if (block) {
+        // The whole run is drawn at its first number; the rest are already in.
+        if (task.number !== block.from) {
+          continue;
+        }
+        const tasks = paper.tasks.filter(
+          (member) => block.from <= member.number && member.number <= block.to,
+        );
+        const ids = await this.quizSessionRepository.selectPassageForTasks({
+          subjectId,
+          tasks,
+          userId,
+        });
+        if (ids) {
+          questionIds.push(...ids);
+        } else {
+          missing.push(...tasks.map((member) => member.number));
+        }
+        continue;
+      }
+      const questionId = await this.quizSessionRepository.selectQuestionForTask(
+        { subjectId, task, userId },
+      );
+      if (questionId) {
+        questionIds.push(questionId);
+      } else {
+        missing.push(task.number);
+      }
+    }
+    return { questionIds, missing };
+  }
+
+  /** A block's papers paired with their subjects, in the block's order. */
+  private papersOf(
+    block: NmtBlock,
+    subjects: { id: string; slug: string; name: string }[],
+  ): SittingPaper[] {
+    return block.subjectSlugs.flatMap((slug) => {
+      const paper = this.nmtPapers.forSubjectSlug(slug);
+      const subject = subjects.find((candidate) => candidate.slug === slug);
+      return paper && subject
+        ? [{ paper, subjectId: subject.id, subjectName: subject.name }]
+        : [];
+    });
+  }
+
   /**
-   * The paper a mock sitting follows, or null for any other session and for a
-   * subject still on the provisional sitting.
+   * What a mock sitting follows — one subject's paper or every paper of a
+   * block — or null for any other session and for a subject still on the
+   * provisional sitting.
    */
-  private async paperFor(session: QuizSessionRecord): Promise<NmtPaper | null> {
+  private async sittingFor(
+    session: QuizSessionRecord,
+  ): Promise<Sitting | null> {
     if (session.mode !== QuizType.MOCK_EXAM) {
       return null;
     }
-    const slug = await this.quizSessionRepository.findSubjectSlug(
+    if (session.nmtBlock !== null) {
+      const block = this.nmtPapers.block(session.nmtBlock);
+      if (!block) {
+        return null;
+      }
+      const subjects = await this.quizSessionRepository.findSubjectsBySlugs(
+        block.subjectSlugs,
+      );
+      return {
+        title: block.title,
+        minutes: block.minutes,
+        papers: this.papersOf(block, subjects),
+        blockSlug: block.slug,
+      };
+    }
+    const subject = await this.quizSessionRepository.findSubjectById(
       session.subjectId,
     );
-    return slug ? this.nmtPapers.forSubjectSlug(slug) : null;
+    const paper = subject ? this.nmtPapers.forSubjectSlug(subject.slug) : null;
+    if (!subject || !paper) {
+      return null;
+    }
+    return {
+      title: paper.title,
+      minutes: paper.minutes,
+      papers: [{ paper, subjectId: subject.id, subjectName: subject.name }],
+      blockSlug: null,
+    };
   }
 
-  /** Scores a mock sitting by its paper's rules; null when there is no paper. */
-  private async scoreMockPaper(
+  /**
+   * Scores a mock sitting paper by paper, each by its own rules; null when the
+   * sitting follows no paper. A block's questions are told apart by subject,
+   * since every paper numbers its tasks from 1.
+   */
+  private async scoreSitting(
     session: QuizSessionRecord,
     attempts: { questionId: string; selectedAnswer: Prisma.JsonValue }[],
-  ): Promise<{ paper: NmtPaper; score: NmtPaperScore } | null> {
-    const paper = await this.paperFor(session);
-    if (!paper) {
+  ): Promise<{
+    sitting: Sitting;
+    scores: (SittingPaper & { score: NmtPaperScore })[];
+  } | null> {
+    const sitting = await this.sittingFor(session);
+    if (!sitting) {
       return null;
     }
     const questions = await this.quizSessionRepository.findSessionQuestions(
@@ -404,7 +561,19 @@ export class QuizService {
     const answers = new Map(
       attempts.map((attempt) => [attempt.questionId, attempt.selectedAnswer]),
     );
-    return { paper, score: scorePaper(paper, questions, answers) };
+    return {
+      sitting,
+      scores: sitting.papers.map((entry) => ({
+        ...entry,
+        score: scorePaper(
+          entry.paper,
+          questions.filter(
+            (question) => question.subjectSlug === entry.paper.subjectSlug,
+          ),
+          answers,
+        ),
+      })),
+    };
   }
 
   /**
@@ -415,9 +584,46 @@ export class QuizService {
    * it is a generation detail, and publishing it would invite gaming a paper
    * whose whole point is that it is not configurable.
    */
-  async mockExamSpec(subjectId: string): Promise<MockExamSpecView> {
-    const subject =
-      await this.quizSessionRepository.findSubjectForMock(subjectId);
+  async mockExamSpec(query: MockExamSpecQueryDto): Promise<MockExamSpecView> {
+    if ((query.subjectId === undefined) === (query.block === undefined)) {
+      throw new BadRequestException(MOCK_TARGET_MESSAGE);
+    }
+    if (query.block !== undefined) {
+      const block = this.nmtPapers.block(query.block);
+      if (!block) {
+        throw new NotFoundException(BLOCK_NOT_FOUND_MESSAGE);
+      }
+      const subjects = await this.quizSessionRepository.findSubjectsBySlugs(
+        block.subjectSlugs,
+        { publishedOnly: true },
+      );
+      const papers = this.papersOf(block, subjects);
+      if (papers.length !== block.subjectSlugs.length) {
+        throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
+      }
+      return {
+        questionCount: papers.reduce(
+          (sum, { paper }) => sum + paper.tasks.length,
+          0,
+        ),
+        minutes: block.minutes,
+        paper: null,
+        block: {
+          title: block.title,
+          timingNote: block.timingNote,
+          papers: papers.map(({ paper, subjectName }) => ({
+            subjectName,
+            title: paper.title,
+            questionCount: paper.tasks.length,
+            maxTestPoints: maxTestPoints(paper),
+          })),
+        },
+      };
+    }
+
+    const subject = await this.quizSessionRepository.findSubjectForMock(
+      query.subjectId as string,
+    );
     if (!subject) {
       throw new NotFoundException(SUBJECT_NOT_FOUND_MESSAGE);
     }
@@ -433,6 +639,7 @@ export class QuizService {
           timingNote: paper.timingNote,
           sections: paper.sections,
         },
+        block: null,
       };
     }
 
@@ -441,7 +648,32 @@ export class QuizService {
       questionCount: spec.questionCount,
       minutes: spec.minutes,
       paper: null,
+      block: null,
     };
+  }
+
+  /**
+   * The joint NMT blocks that can be sat now: those whose every subject is
+   * published and has a paper. The client lists them beside the subjects.
+   */
+  async mockExamBlocks(): Promise<MockExamBlockView[]> {
+    const blocks = this.nmtPapers.allBlocks();
+    const subjects = await this.quizSessionRepository.findSubjectsBySlugs(
+      [...new Set(blocks.flatMap((block) => block.subjectSlugs))],
+      { publishedOnly: true },
+    );
+    return blocks.flatMap((block) => {
+      const papers = this.papersOf(block, subjects);
+      return papers.length === block.subjectSlugs.length
+        ? [
+            {
+              slug: block.slug,
+              title: block.title,
+              subjectNames: papers.map(({ subjectName }) => subjectName),
+            },
+          ]
+        : [];
+    });
   }
 
   /**
@@ -529,24 +761,54 @@ export class QuizService {
       subjectId,
     );
 
-    return sessions.flatMap((session) =>
-      session.result && session.completedAt
-        ? [
-            {
-              sessionId: session.id,
-              subject: session.subject,
-              correctAnswers: session.result.correctAnswers,
-              totalQuestions: session.result.totalQuestions,
-              accuracy: Number(session.result.accuracy),
-              testPoints: session.result.testPoints,
-              maxTestPoints: session.result.maxTestPoints,
-              scaledScore: session.result.scaledScore,
-              durationSeconds: session.durationSeconds,
-              completedAt: session.completedAt,
-            },
-          ]
-        : [],
-    );
+    return sessions.flatMap((session): MockExamAttempt[] => {
+      if (!session.result || !session.completedAt) {
+        return [];
+      }
+      const block = session.nmtBlock
+        ? this.nmtPapers.block(session.nmtBlock)
+        : null;
+      const sitting = {
+        sessionId: session.id,
+        blockTitle: block?.title ?? null,
+        correctAnswers: session.result.correctAnswers,
+        totalQuestions: session.result.totalQuestions,
+        accuracy: Number(session.result.accuracy),
+        durationSeconds: session.durationSeconds,
+        completedAt: session.completedAt,
+      };
+      // A provisional sitting has no paper scores and reads as its subject; a
+      // sitting of papers reads as one attempt per paper, so a block shows in
+      // the history of each of its subjects with that subject's own score —
+      // in the order the block sets its papers.
+      if (session.result.paperScores.length === 0) {
+        return [
+          {
+            ...sitting,
+            subject: session.subject,
+            testPoints: null,
+            maxTestPoints: null,
+            scaledScore: null,
+          },
+        ];
+      }
+      const order = (slug: string) => {
+        const index = block?.subjectSlugs.indexOf(slug) ?? -1;
+        return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+      };
+      return [...session.result.paperScores]
+        .sort((a, b) => order(a.subject.slug) - order(b.subject.slug))
+        .filter(
+          (score) => subjectId === undefined || score.subject.id === subjectId,
+        )
+        .map((score) => ({
+          ...sitting,
+          subject: { id: score.subject.id, name: score.subject.name },
+          testPoints: score.testPoints,
+          maxTestPoints: score.maxTestPoints,
+          scaledScore: score.scaledScore,
+        }));
+    });
   }
 
   /**
@@ -885,19 +1147,30 @@ export class QuizService {
       this.questionAttemptRepository.findBySession(sessionId),
     ]);
 
-    const paper = await this.paperFor(session);
-    const paperView: NmtPaperView | undefined = paper
+    const sitting = await this.sittingFor(session);
+    const sittingView: NmtSittingView | undefined = sitting
       ? {
-          title: paper.title,
-          maxTestPoints: maxTestPoints(paper),
-          sections: paper.sections,
+          title: sitting.title,
+          papers: sitting.papers.map(({ paper, subjectName }) => {
+            const positions = questions.flatMap((question, index) =>
+              question.subjectSlug === paper.subjectSlug ? [index] : [],
+            );
+            return {
+              subjectName,
+              title: paper.title,
+              maxTestPoints: maxTestPoints(paper),
+              sections: paper.sections,
+              start: positions[0] ?? 0,
+              count: positions.length,
+            };
+          }),
           taskNumbers: questions.map((question) => question.nmtTask),
         }
       : undefined;
 
     return {
       session: this.toMetadata(session),
-      ...(paperView ? { paper: paperView } : {}),
+      ...(sittingView ? { sitting: sittingView } : {}),
       questions: questions.map((question) =>
         this.toQuestionView(question, sessionId),
       ),
@@ -1008,7 +1281,7 @@ export class QuizService {
       attempts.map((attempt) => [attempt.questionId, attempt]),
     );
     const explanationsVisible = await this.explanationsVisibleFor(session);
-    const nmt = await this.scoreMockPaper(session, attempts);
+    const nmt = await this.scoreSitting(session, attempts);
 
     const reviewQuestions: QuizReviewQuestion[] = questions.map((question) => {
       const attempt = attemptByQuestion.get(question.id);
@@ -1045,13 +1318,17 @@ export class QuizService {
       ...(nmt
         ? {
             nmt: {
-              title: nmt.paper.title,
-              testPoints: nmt.score.testPoints,
-              maxTestPoints: nmt.score.maxTestPoints,
-              scaledScore: nmt.score.scaledScore,
-              threshold: nmt.paper.scale.threshold,
-              scaleSource: nmt.paper.scale.source,
-              tasks: nmt.score.tasks,
+              title: nmt.sitting.title,
+              papers: nmt.scores.map(({ paper, subjectName, score }) => ({
+                subjectName,
+                title: paper.title,
+                testPoints: score.testPoints,
+                maxTestPoints: score.maxTestPoints,
+                scaledScore: score.scaledScore,
+                threshold: paper.scale.threshold,
+                scaleSource: paper.scale.source,
+                tasks: score.tasks,
+              })),
             },
           }
         : {}),
@@ -1131,7 +1408,7 @@ export class QuizService {
       const accuracy = round2(tally.exactAccuracy);
       // A mock sitting of an NMT paper is also scored the exam's way, in the
       // same transaction, so its history never disagrees with its review.
-      const nmt = await this.scoreMockPaper(session, attempts);
+      const nmt = await this.scoreSitting(session, attempts);
       const awards = this.xpAwards(tally.exactAccuracy);
 
       const result = await this.resultRepository.create(tx, {
@@ -1142,9 +1419,12 @@ export class QuizService {
         totalQuestions: tally.totalQuestions,
         accuracy,
         score: accuracy,
-        testPoints: nmt?.score.testPoints ?? null,
-        maxTestPoints: nmt?.score.maxTestPoints ?? null,
-        scaledScore: nmt?.score.scaledScore ?? null,
+        paperScores: (nmt?.scores ?? []).map(({ subjectId, score }) => ({
+          subjectId,
+          testPoints: score.testPoints,
+          maxTestPoints: score.maxTestPoints,
+          scaledScore: score.scaledScore,
+        })),
         completedAt,
       });
 

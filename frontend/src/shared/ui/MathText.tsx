@@ -1,11 +1,12 @@
 import { Suspense, lazy } from 'react';
+import { EmphasisText } from '@/shared/ui/EmphasisText';
 
 const RenderedMath = lazy(() =>
   import('@/shared/ui/RenderedMath').then((m) => ({ default: m.RenderedMath })),
 );
 
 interface MathTextProps {
-  /** Text that may contain LaTeX between `$…$`. */
+  /** Text that may contain LaTeX between `$…$` and `**emphasis**`. */
   children: string;
   className?: string;
 }
@@ -24,7 +25,11 @@ interface MathTextProps {
  */
 export function MathText({ children, className }: MathTextProps): React.JSX.Element {
   if (!children.includes('$')) {
-    return <span className={className}>{children}</span>;
+    return (
+      <span className={className}>
+        <EmphasisText>{children}</EmphasisText>
+      </span>
+    );
   }
 
   return (

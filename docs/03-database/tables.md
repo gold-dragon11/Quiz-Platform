@@ -331,7 +331,11 @@ Each completed Quiz Session produces one Result.
 
 Results are immutable.
 
-`test_points`, `max_test_points` and `scaled_score` are set only for a mock sitting of a subject with an NMT paper (docs/02-domain/nmt-paper.md); `scaled_score` stays null below the paper's threshold. `questions.nmt_task` is the paper number an NMT-format question is written for (indexed; null for practice questions).
+## result_paper_scores
+
+One NMT paper's score in a mock sitting (docs/02-domain/nmt-paper.md §6): result, subject, test points, maximum test points and the official 100–200 score (null below the paper's threshold). One row for a sitting of one subject, one per subject for a joint block, none for any other session; unique per `(result, subject)` and cascade-deleted with the result.
+
+`quiz_sessions.nmt_block` is the slug of the joint block a mock sitting belongs to (null otherwise). `questions.nmt_task` is the paper number an NMT-format question is written for (indexed; null for practice questions).
 
 ---
 

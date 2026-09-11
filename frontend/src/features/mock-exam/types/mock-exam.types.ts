@@ -15,6 +15,8 @@ export interface MockExamAttempt {
   subject: { id: string; name: string };
   correctAnswers: number;
   totalQuestions: number;
+  /** The joint block the sitting belonged to; null for a sitting of one subject. */
+  blockTitle: string | null;
   /** 0–100, already rounded by the backend. */
   accuracy: number;
   /**
@@ -47,4 +49,20 @@ export interface MockExamSpec {
     timingNote: string;
     sections: { from: number; to: number; instruction: string }[];
   } | null;
+  /** Set when the spec is for a joint block rather than a subject. */
+  block: {
+    title: string;
+    timingNote: string;
+    papers: { subjectName: string; title: string; questionCount: number; maxTestPoints: number }[];
+  } | null;
 }
+
+/** A joint NMT block a sitting can be started for. */
+export interface MockExamBlock {
+  slug: string;
+  title: string;
+  subjectNames: string[];
+}
+
+/** What a sitting is started for: one subject, or a joint block. */
+export type MockExamTarget = { subjectId: string } | { block: string };

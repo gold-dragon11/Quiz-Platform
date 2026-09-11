@@ -11,11 +11,15 @@ export interface ResultRecord {
   totalQuestions: number;
   accuracy: string;
   score: string;
-  /** Mock NMT sittings only; null for everything else. */
-  testPoints: number | null;
-  maxTestPoints: number | null;
-  scaledScore: number | null;
   completedAt: Date;
+}
+
+/** One NMT paper's score in a mock sitting (docs/02-domain/nmt-paper.md §6). */
+export interface PaperScoreInput {
+  subjectId: string;
+  testPoints: number;
+  maxTestPoints: number;
+  scaledScore: number | null;
 }
 
 /**
@@ -38,12 +42,12 @@ export class ResultRepository {
       totalQuestions: number;
       accuracy: number;
       score: number;
-      testPoints?: number | null;
-      maxTestPoints?: number | null;
-      scaledScore?: number | null;
+      /** A mock sitting's paper scores, one per paper; empty otherwise. */
+      paperScores?: PaperScoreInput[];
       completedAt: Date;
     },
   ): Promise<{ id: string }> {
+    const paperScores = params.paperScores ?? [];
     return tx.result.create({
       data: {
         quizSessionId: params.quizSessionId,
@@ -53,10 +57,10 @@ export class ResultRepository {
         totalQuestions: params.totalQuestions,
         accuracy: params.accuracy,
         score: params.score,
-        testPoints: params.testPoints ?? null,
-        maxTestPoints: params.maxTestPoints ?? null,
-        scaledScore: params.scaledScore ?? null,
         completedAt: params.completedAt,
+        ...(paperScores.length > 0
+          ? { paperScores: { create: paperScores } }
+          : {}),
       },
       select: { id: true },
     });
@@ -73,9 +77,6 @@ export class ResultRepository {
         totalQuestions: true,
         accuracy: true,
         score: true,
-        testPoints: true,
-        maxTestPoints: true,
-        scaledScore: true,
         completedAt: true,
       },
     });

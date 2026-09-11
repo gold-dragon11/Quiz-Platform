@@ -1,5 +1,6 @@
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { EmphasisText } from '@/shared/ui/EmphasisText';
 
 interface RenderedMathProps {
   children: string;
@@ -41,7 +42,9 @@ export function RenderedMath({ children, className }: RenderedMathProps): React.
             }}
           />
         ) : (
-          <span key={index}>{segment}</span>
+          <span key={index}>
+            <EmphasisText>{segment}</EmphasisText>
+          </span>
         ),
       )}
     </span>

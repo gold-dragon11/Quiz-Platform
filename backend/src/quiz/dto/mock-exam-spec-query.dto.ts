@@ -1,8 +1,20 @@
-import { IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 
-/** Query for GET /api/v1/quiz/mock-exam/spec. */
+/** Query for GET /api/v1/quiz/mock-exam/spec: a subject or a block, one of them. */
 export class MockExamSpecQueryDto {
-  /** Required: the paper is defined per subject, so there is no "any". */
+  @ValidateIf((dto: MockExamSpecQueryDto) => dto.block === undefined)
   @IsUUID()
-  subjectId!: string;
+  subjectId?: string;
+
+  @ValidateIf((dto: MockExamSpecQueryDto) => dto.subjectId === undefined)
+  @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+  block?: string;
 }

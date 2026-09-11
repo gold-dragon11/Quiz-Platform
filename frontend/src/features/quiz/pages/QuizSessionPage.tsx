@@ -188,10 +188,12 @@ export function QuizSessionPage(): React.JSX.Element {
 
   const total = questions.length;
   const current = questions[index];
-  // A mock sitting of an NMT paper numbers its questions as the paper does and
-  // prints the paper's instruction above each run of tasks.
-  const paper = session.data.paper;
-  const taskNumber = paper?.taskNumbers[index] ?? null;
+  // A mock sitting numbers its questions as the paper does and prints the
+  // paper's instruction above each run of tasks. A joint block sets its papers
+  // one after another, each numbered from 1.
+  const sitting = session.data.sitting;
+  const paper = sitting?.papers.find((entry) => index >= entry.start && index < entry.start + entry.count);
+  const taskNumber = sitting?.taskNumbers[index] ?? null;
   const section =
     taskNumber === null
       ? undefined
@@ -211,8 +213,17 @@ export function QuizSessionPage(): React.JSX.Element {
             index={index}
             answered={questions.map((question) => answers[question.id] !== undefined)}
             onJump={setIndex}
-            numbers={paper?.taskNumbers}
-            noun={paper ? 'Завдання' : undefined}
+            numbers={sitting?.taskNumbers}
+            noun={sitting ? 'Завдання' : undefined}
+            groups={
+              sitting && sitting.papers.length > 1
+                ? sitting.papers.map((entry) => ({
+                    label: entry.subjectName,
+                    start: entry.start,
+                    count: entry.count,
+                  }))
+                : undefined
+            }
           />
         </div>
         {meta.timerEnabled && meta.expiresAt && (
@@ -257,7 +268,7 @@ export function QuizSessionPage(): React.JSX.Element {
               answer={answers[current.id]}
               disabled={complete.isPending}
               onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
-              matchingLayout={paper ? 'grid' : 'list'}
+              matchingLayout={sitting ? 'grid' : 'list'}
             />
           </motion.div>
         </AnimatePresence>

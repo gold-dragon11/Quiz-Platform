@@ -4,18 +4,22 @@ import type { NmtPaper, NmtTask } from '../nmt-paper.types';
 const singleChoice = (number: number): NmtTask => ({
   number,
   type: QuestionType.SINGLE_CHOICE,
+  optionCount: 5,
   maxPoints: 1,
   scoring: 'whole',
 });
+// Three prompts and five choices.
 const matching = (number: number): NmtTask => ({
   number,
   type: QuestionType.MATCHING,
+  optionCount: 8,
   maxPoints: 3,
   scoring: 'per-pair',
 });
 const shortAnswer = (number: number): NmtTask => ({
   number,
   type: QuestionType.NUMERIC,
+  optionCount: null,
   maxPoints: 2,
   scoring: 'whole',
 });
@@ -62,6 +66,7 @@ export const MATHEMATICS_PAPER: NmtPaper = {
         'Розв’яжіть завдання 19–22. Одержані числові відповіді запишіть у полі відповіді. Відповідь записуйте лише десятковим дробом, урахувавши положення коми. Знак «мінус» записуйте перед першою цифрою числа.',
     },
   ],
+  passageBlocks: [],
   scale: {
     threshold: 5,
     table: {

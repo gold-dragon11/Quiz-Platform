@@ -12,8 +12,13 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { mockExamSpecFor } from './../src/quiz/mock-exam.config';
-import type { NmtPaper } from './../src/quiz/nmt/nmt-paper.types';
-import { DEFAULT_NMT_PAPERS, NMT_PAPERS } from './../src/quiz/nmt/nmt-papers';
+import type { NmtBlock, NmtPaper } from './../src/quiz/nmt/nmt-paper.types';
+import {
+  DEFAULT_NMT_BLOCKS,
+  DEFAULT_NMT_PAPERS,
+  NMT_BLOCKS,
+  NMT_PAPERS,
+} from './../src/quiz/nmt/nmt-papers';
 import { listenOnLoopback } from './loopback';
 
 interface SessionBody {
@@ -40,9 +45,9 @@ interface AttemptBody {
  * clock for the whole paper rather than per question, and a history that can
  * be read as a curve.
  *
- * There is deliberately no converted exam score to test — see
- * `src/quiz/mock-exam.config.ts` for why inventing one would be worse than
- * leaving it out.
+ * A subject with an NMT paper is sat and scored by it; the papers here are
+ * small ones on subjects of the suite's own, so the engine is tested without
+ * depending on seeded content (docs/02-domain/nmt-paper.md).
  */
 describe('Mock exam (e2e)', () => {
   const PREFIX = 'mock-e2e';
@@ -66,28 +71,79 @@ describe('Mock exam (e2e)', () => {
       {
         number: 1,
         type: QuestionType.SINGLE_CHOICE,
+        optionCount: 2,
         maxPoints: 1,
         scoring: 'whole',
       },
       {
         number: 2,
         type: QuestionType.MATCHING,
+        optionCount: 8,
         maxPoints: 3,
         scoring: 'per-pair',
       },
-      { number: 3, type: QuestionType.NUMERIC, maxPoints: 2, scoring: 'whole' },
+      {
+        number: 3,
+        type: QuestionType.NUMERIC,
+        optionCount: null,
+        maxPoints: 2,
+        scoring: 'whole',
+      },
     ],
     sections: [
       { from: 1, to: 1, instruction: 'Оберіть одну відповідь.' },
       { from: 2, to: 2, instruction: 'Доберіть пари.' },
       { from: 3, to: 3, instruction: 'Запишіть число.' },
     ],
+    passageBlocks: [],
     scale: {
       threshold: 2,
       table: { 2: 100, 3: 130, 4: 150, 5: 180, 6: 200 },
       source: 'Тестова таблиця',
     },
   });
+
+  // Task 1 stands alone; 2 and 3 are asked about one text, as Ukrainian 21–25
+  // are. Every task is a two-option single choice.
+  const BLOCK_SLUG = `${PREFIX}-block`;
+  const BLOCK_GAP_SLUG = `${PREFIX}-block-gap`;
+  const blockPaperFor = (subjectSlug: string): NmtPaper => ({
+    ...paperFor(subjectSlug),
+    tasks: [1, 2, 3].map((number) => ({
+      number,
+      type: QuestionType.SINGLE_CHOICE,
+      optionCount: 2,
+      maxPoints: 1,
+      scoring: 'whole' as const,
+    })),
+    sections: [
+      { from: 1, to: 1, instruction: 'Оберіть одну відповідь.' },
+      { from: 2, to: 3, instruction: 'Прочитайте текст.' },
+    ],
+    passageBlocks: [{ from: 2, to: 3 }],
+    scale: {
+      threshold: 1,
+      table: { 1: 100, 2: 150, 3: 200 },
+      source: 'Тестова таблиця',
+    },
+  });
+
+  // A joint block of two of the papers above, and one whose second paper has a
+  // task with nothing to fill it.
+  const TEST_BLOCK: NmtBlock = {
+    slug: `${PREFIX}-joint`,
+    title: 'Тестовий блок',
+    minutes: 40,
+    timingNote: 'Спільний годинник.',
+    subjectSlugs: [PAPER_SLUG, BLOCK_SLUG],
+  };
+  const GAP_BLOCK: NmtBlock = {
+    slug: `${PREFIX}-joint-gap`,
+    title: 'Блок із прогалиною',
+    minutes: 40,
+    timingNote: 'Спільний годинник.',
+    subjectSlugs: [PAPER_SLUG, GAP_SLUG],
+  };
 
   let app: INestApplication;
   let prisma: PrismaService;
@@ -100,6 +156,10 @@ describe('Mock exam (e2e)', () => {
   let paperTopicId: string;
   let gapSubjectId: string;
   let gapTopicId: string;
+  let blockSubjectId: string;
+  let blockTopicId: string;
+  let blockGapSubjectId: string;
+  let blockGapTopicId: string;
 
   const register = async (): Promise<{ token: string; userId: string }> => {
     counter += 1;
@@ -285,6 +345,53 @@ describe('Mock exam (e2e)', () => {
     }
   };
 
+  /**
+   * A single choice for the block paper, with `optionTotal` options, standing
+   * alone or at `passageOrder` in the text with this slug (created on first
+   * use).
+   */
+  const seedBlockQuestion = async (
+    topic: string,
+    nmtTask: number,
+    optionTotal: number,
+    passage?: { slug: string; order: number },
+  ): Promise<void> => {
+    let passageId: string | null = null;
+    if (passage) {
+      const created = await prisma.passage.upsert({
+        where: { topicId_slug: { topicId: topic, slug: passage.slug } },
+        update: {},
+        create: {
+          topicId: topic,
+          slug: passage.slug,
+          content: `Текст «${passage.slug}».`,
+        },
+        select: { id: true },
+      });
+      passageId = created.id;
+    }
+    await prisma.question.create({
+      data: {
+        topicId: topic,
+        isPublished: true,
+        format: QuestionFormat.NMT,
+        nmtTask,
+        difficulty: Difficulty.INTERMEDIATE,
+        type: QuestionType.SINGLE_CHOICE,
+        title: `block ${nmtTask} ${counter++}`,
+        passageId,
+        passageOrder: passage?.order ?? null,
+        answerOptions: {
+          create: Array.from({ length: optionTotal }, (_, order) => ({
+            content: `варіант ${order}`,
+            order,
+            isCorrect: order === 0,
+          })),
+        },
+      },
+    });
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -294,7 +401,11 @@ describe('Mock exam (e2e)', () => {
         ...DEFAULT_NMT_PAPERS,
         paperFor(PAPER_SLUG),
         paperFor(GAP_SLUG),
+        blockPaperFor(BLOCK_SLUG),
+        blockPaperFor(BLOCK_GAP_SLUG),
       ])
+      .overrideProvider(NMT_BLOCKS)
+      .useValue([...DEFAULT_NMT_BLOCKS, TEST_BLOCK, GAP_BLOCK])
       .compile();
 
     app = moduleFixture.createNestApplication();
@@ -324,9 +435,25 @@ describe('Mock exam (e2e)', () => {
     gapSubjectId = gapSubject.subjectId;
     gapTopicId = gapSubject.topicId;
 
+    const block = await ensureSubject(BLOCK_SLUG, 9945);
+    blockSubjectId = block.subjectId;
+    blockTopicId = block.topicId;
+    const blockGap = await ensureSubject(BLOCK_GAP_SLUG, 9946);
+    blockGapSubjectId = blockGap.subjectId;
+    blockGapTopicId = blockGap.topicId;
+
     await removeFixtures();
+    const paperTopics = [
+      paperTopicId,
+      gapTopicId,
+      blockTopicId,
+      blockGapTopicId,
+    ];
     await prisma.question.deleteMany({
-      where: { topicId: { in: [paperTopicId, gapTopicId] } },
+      where: { topicId: { in: paperTopics } },
+    });
+    await prisma.passage.deleteMany({
+      where: { topicId: { in: paperTopics } },
     });
     for (const task of [1, 1, 2, 3]) {
       await seedTaskQuestion(paperTopicId, task);
@@ -335,6 +462,26 @@ describe('Mock exam (e2e)', () => {
     for (const task of [1, 3]) {
       await seedTaskQuestion(gapTopicId, task);
     }
+
+    // One text covers 2–3; two more cover one number each, so a run stitched
+    // from two texts would be possible if the draw allowed it. Task 1 has a
+    // question in the paper's shape and one with an option too many.
+    await seedBlockQuestion(blockTopicId, 1, 2);
+    await seedBlockQuestion(blockTopicId, 1, 3);
+    await seedBlockQuestion(blockTopicId, 2, 2, { slug: 'whole', order: 1 });
+    await seedBlockQuestion(blockTopicId, 3, 2, { slug: 'whole', order: 2 });
+    await seedBlockQuestion(blockTopicId, 2, 2, { slug: 'only-2', order: 1 });
+    await seedBlockQuestion(blockTopicId, 3, 2, { slug: 'only-3', order: 1 });
+    // Nothing here can be set: the wrong shape for 1, and no text covers 2–3.
+    await seedBlockQuestion(blockGapTopicId, 1, 3);
+    await seedBlockQuestion(blockGapTopicId, 2, 2, {
+      slug: 'only-2',
+      order: 1,
+    });
+    await seedBlockQuestion(blockGapTopicId, 3, 2, {
+      slug: 'only-3',
+      order: 1,
+    });
     // Comfortably more than one paper needs, in every tier.
     await seedQuestions(topicId, spec.questionCount);
     // Nowhere near enough.
@@ -357,12 +504,29 @@ describe('Mock exam (e2e)', () => {
 
   afterAll(async () => {
     await removeFixtures();
-    const topicIds = [topicId, thinTopicId, paperTopicId, gapTopicId];
+    const topicIds = [
+      topicId,
+      thinTopicId,
+      paperTopicId,
+      gapTopicId,
+      blockTopicId,
+      blockGapTopicId,
+    ];
     await prisma.question.deleteMany({ where: { topicId: { in: topicIds } } });
+    await prisma.passage.deleteMany({ where: { topicId: { in: topicIds } } });
     await prisma.topic.deleteMany({ where: { id: { in: topicIds } } });
     await prisma.subject.deleteMany({
       where: {
-        id: { in: [subjectId, thinSubjectId, paperSubjectId, gapSubjectId] },
+        id: {
+          in: [
+            subjectId,
+            thinSubjectId,
+            paperSubjectId,
+            gapSubjectId,
+            blockSubjectId,
+            blockGapSubjectId,
+          ],
+        },
       },
     });
     await app.close();
@@ -500,6 +664,7 @@ describe('Mock exam (e2e)', () => {
         questionCount: spec.questionCount,
         minutes: spec.minutes,
         paper: null,
+        block: null,
       });
     });
 
@@ -515,6 +680,7 @@ describe('Mock exam (e2e)', () => {
       // Publishing the weighting would invite gaming a paper whose whole
       // point is that it cannot be configured.
       expect(Object.keys(response.body as object).sort()).toEqual([
+        'block',
         'minutes',
         'paper',
         'questionCount',
@@ -638,6 +804,7 @@ describe('Mock exam (e2e)', () => {
       // no official table to convert with — and nothing is guessed in its place.
       for (const attempt of response.body as AttemptBody[]) {
         expect(attempt).toMatchObject({
+          blockTitle: null,
           testPoints: null,
           maxTestPoints: null,
           scaledScore: null,
@@ -648,10 +815,16 @@ describe('Mock exam (e2e)', () => {
 
   describe('a sitting of an NMT paper', () => {
     interface ResumeBody {
-      paper?: {
+      sitting?: {
         title: string;
-        maxTestPoints: number;
-        sections: { from: number; to: number; instruction: string }[];
+        papers: {
+          subjectName: string;
+          title: string;
+          maxTestPoints: number;
+          sections: { from: number; to: number; instruction: string }[];
+          start: number;
+          count: number;
+        }[];
         taskNumbers: (number | null)[];
       };
       questions: { id: string; type: string }[];
@@ -659,11 +832,15 @@ describe('Mock exam (e2e)', () => {
 
     interface ReviewBody {
       nmt?: {
-        testPoints: number;
-        maxTestPoints: number;
-        scaledScore: number | null;
-        threshold: number;
-        tasks: { number: number; points: number; maxPoints: number }[];
+        title: string;
+        papers: {
+          subjectName: string;
+          testPoints: number;
+          maxTestPoints: number;
+          scaledScore: number | null;
+          threshold: number;
+          tasks: { number: number; points: number; maxPoints: number }[];
+        }[];
       };
     }
 
@@ -697,6 +874,7 @@ describe('Mock exam (e2e)', () => {
           timingNote: 'Тестова примітка.',
           sections: paperFor(PAPER_SLUG).sections,
         },
+        block: null,
       });
     });
 
@@ -719,8 +897,15 @@ describe('Mock exam (e2e)', () => {
         .expect(200);
       const resume = resumed.body as ResumeBody;
 
-      expect(resume.paper?.taskNumbers).toEqual([1, 2, 3]);
-      expect(resume.paper?.sections).toHaveLength(3);
+      expect(resume.sitting?.taskNumbers).toEqual([1, 2, 3]);
+      expect(resume.sitting?.papers).toEqual([
+        expect.objectContaining({
+          subjectName: PAPER_SLUG,
+          start: 0,
+          count: 3,
+        }),
+      ]);
+      expect(resume.sitting?.papers[0].sections).toHaveLength(3);
       expect(resume.questions.map((question) => question.type)).toEqual([
         'SINGLE_CHOICE',
         'MATCHING',
@@ -782,7 +967,7 @@ describe('Mock exam (e2e)', () => {
         .get(`/api/v1/quiz/${sessionId}/result`)
         .set('Authorization', `Bearer ${learner.token}`)
         .expect(200);
-      const nmt = (review.body as ReviewBody).nmt;
+      const nmt = (review.body as ReviewBody).nmt?.papers[0];
 
       expect(
         nmt?.tasks.map((task) => [task.number, task.points, task.maxPoints]),
@@ -797,15 +982,23 @@ describe('Mock exam (e2e)', () => {
         scaledScore: 130,
       });
 
-      const stored = await prisma.result.findUniqueOrThrow({
-        where: { quizSessionId: sessionId },
-        select: { testPoints: true, maxTestPoints: true, scaledScore: true },
+      const stored = await prisma.resultPaperScore.findMany({
+        where: { result: { quizSessionId: sessionId } },
+        select: {
+          subjectId: true,
+          testPoints: true,
+          maxTestPoints: true,
+          scaledScore: true,
+        },
       });
-      expect(stored).toEqual({
-        testPoints: 3,
-        maxTestPoints: 6,
-        scaledScore: 130,
-      });
+      expect(stored).toEqual([
+        {
+          subjectId: paperSubjectId,
+          testPoints: 3,
+          maxTestPoints: 6,
+          scaledScore: 130,
+        },
+      ]);
 
       const history = await request(app.getHttpServer())
         .get(HISTORY_URL)
@@ -814,6 +1007,7 @@ describe('Mock exam (e2e)', () => {
         .expect(200);
       expect(history.body as AttemptBody[]).toEqual([
         expect.objectContaining({
+          blockTitle: null,
           testPoints: 3,
           maxTestPoints: 6,
           scaledScore: 130,
@@ -834,11 +1028,270 @@ describe('Mock exam (e2e)', () => {
         .set('Authorization', `Bearer ${learner.token}`)
         .expect(200);
 
-      expect((review.body as ReviewBody).nmt).toMatchObject({
+      expect((review.body as ReviewBody).nmt?.papers[0]).toMatchObject({
         testPoints: 0,
         scaledScore: null,
         threshold: 2,
       });
+    });
+
+    describe('in a joint block', () => {
+      const BLOCKS_URL = '/api/v1/quiz/mock-exam/blocks';
+
+      const startBlock = (token: string, body: Record<string, unknown>) =>
+        request(app.getHttpServer())
+          .post(START_URL)
+          .set('Authorization', `Bearer ${token}`)
+          .send(body);
+
+      it('is listed with its subjects, for the client to offer beside them', async () => {
+        const learner = await register();
+
+        const response = await request(app.getHttpServer())
+          .get(BLOCKS_URL)
+          .set('Authorization', `Bearer ${learner.token}`)
+          .expect(200);
+
+        expect(response.body).toEqual(
+          expect.arrayContaining([
+            {
+              slug: TEST_BLOCK.slug,
+              title: TEST_BLOCK.title,
+              subjectNames: [PAPER_SLUG, BLOCK_SLUG],
+            },
+          ]),
+        );
+      });
+
+      it('describes every paper and the shared clock in the spec', async () => {
+        const learner = await register();
+
+        const response = await request(app.getHttpServer())
+          .get(SPEC_URL)
+          .query({ block: TEST_BLOCK.slug })
+          .set('Authorization', `Bearer ${learner.token}`)
+          .expect(200);
+
+        expect(response.body).toEqual({
+          questionCount: 6,
+          minutes: 40,
+          paper: null,
+          block: {
+            title: TEST_BLOCK.title,
+            timingNote: TEST_BLOCK.timingNote,
+            papers: [
+              {
+                subjectName: PAPER_SLUG,
+                title: 'Тестовий зошит',
+                questionCount: 3,
+                maxTestPoints: 6,
+              },
+              {
+                subjectName: BLOCK_SLUG,
+                title: 'Тестовий зошит',
+                questionCount: 3,
+                maxTestPoints: 3,
+              },
+            ],
+          },
+        });
+      });
+
+      it('sets the papers one after another on one clock, each numbered from 1', async () => {
+        const learner = await register();
+
+        const started = await startBlock(learner.token, {
+          block: TEST_BLOCK.slug,
+        }).expect(201);
+        const body = started.body as SessionBody;
+        expect(body.questionCount).toBe(6);
+        expect(
+          Math.round(
+            (new Date(body.expiresAt as string).getTime() - Date.now()) / 60000,
+          ),
+        ).toBe(40);
+
+        const resumed = await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${body.sessionId}`)
+          .set('Authorization', `Bearer ${learner.token}`)
+          .expect(200);
+        const resume = resumed.body as ResumeBody;
+
+        expect(resume.sitting?.title).toBe(TEST_BLOCK.title);
+        expect(resume.sitting?.taskNumbers).toEqual([1, 2, 3, 1, 2, 3]);
+        expect(
+          resume.sitting?.papers.map((paper) => [
+            paper.subjectName,
+            paper.start,
+            paper.count,
+          ]),
+        ).toEqual([
+          [PAPER_SLUG, 0, 3],
+          [BLOCK_SLUG, 3, 3],
+        ]);
+      });
+
+      it('refuses a block with a task missing in any paper, naming the subject and the number', async () => {
+        const learner = await register();
+
+        const response = await startBlock(learner.token, {
+          block: GAP_BLOCK.slug,
+        }).expect(409);
+
+        expect((response.body as { message: string }).message).toContain(
+          `${GAP_SLUG}: №2`,
+        );
+      });
+
+      it('takes a subject or a block, never both, and only a block that exists', async () => {
+        const learner = await register();
+
+        await startBlock(learner.token, {
+          subjectId: paperSubjectId,
+          block: TEST_BLOCK.slug,
+        }).expect(400);
+        await startBlock(learner.token, { block: 'no-such-block' }).expect(404);
+      });
+
+      it('scores each paper on its own and shows the sitting in the history of both subjects', async () => {
+        const learner = await register();
+        const started = await startBlock(learner.token, {
+          block: TEST_BLOCK.slug,
+        }).expect(201);
+        const sessionId = (started.body as SessionBody).sessionId;
+        const rows = await prisma.quizSessionQuestion.findMany({
+          where: { quizSessionId: sessionId },
+          orderBy: { position: 'asc' },
+          select: {
+            question: {
+              select: {
+                id: true,
+                answerOptions: { select: { id: true, isCorrect: true } },
+              },
+            },
+          },
+        });
+        // Task 1 of each paper right, nothing else answered.
+        for (const position of [0, 3]) {
+          const { question } = rows[position];
+          await answer(learner.token, sessionId, question.id, {
+            answerOptionId: question.answerOptions.find(
+              (option) => option.isCorrect,
+            )?.id,
+          });
+        }
+        await completeSession(learner.token, sessionId);
+
+        const review = await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}/result`)
+          .set('Authorization', `Bearer ${learner.token}`)
+          .expect(200);
+        const nmt = (review.body as ReviewBody).nmt;
+
+        // The first paper's threshold is 2, the second's is 1.
+        expect(nmt?.title).toBe(TEST_BLOCK.title);
+        expect(
+          nmt?.papers.map((paper) => [
+            paper.subjectName,
+            paper.testPoints,
+            paper.scaledScore,
+          ]),
+        ).toEqual([
+          [PAPER_SLUG, 1, null],
+          [BLOCK_SLUG, 1, 100],
+        ]);
+
+        // Unfiltered, the sitting is one row per paper, in the block's order.
+        const all = await request(app.getHttpServer())
+          .get(HISTORY_URL)
+          .set('Authorization', `Bearer ${learner.token}`)
+          .expect(200);
+        expect(
+          (all.body as AttemptBody[])
+            .filter((attempt) => attempt.sessionId === sessionId)
+            .map((attempt) => attempt.subject.id),
+        ).toEqual([paperSubjectId, blockSubjectId]);
+
+        const expected = [
+          [paperSubjectId, null],
+          [blockSubjectId, 100],
+        ] as const;
+        for (const [subject, score] of expected) {
+          const history = await request(app.getHttpServer())
+            .get(HISTORY_URL)
+            .query({ subjectId: subject })
+            .set('Authorization', `Bearer ${learner.token}`)
+            .expect(200);
+          expect(history.body as AttemptBody[]).toEqual([
+            expect.objectContaining({
+              sessionId,
+              blockTitle: TEST_BLOCK.title,
+              subject: expect.objectContaining({ id: subject }) as unknown,
+              testPoints: 1,
+              scaledScore: score,
+            }),
+          ]);
+        }
+      });
+    });
+  });
+
+  describe('a run of tasks on one text', () => {
+    const sessionTasks = async (sessionId: string) =>
+      prisma.quizSessionQuestion.findMany({
+        where: { quizSessionId: sessionId },
+        orderBy: { position: 'asc' },
+        select: {
+          question: {
+            select: {
+              nmtTask: true,
+              passage: { select: { slug: true } },
+              _count: { select: { answerOptions: true } },
+            },
+          },
+        },
+      });
+
+    it('takes the whole run from one text, in the paper’s order', async () => {
+      const learner = await register();
+
+      const started = await startMock(learner.token, blockSubjectId).expect(
+        201,
+      );
+      const rows = await sessionTasks((started.body as SessionBody).sessionId);
+
+      expect(rows.map((row) => row.question.nmtTask)).toEqual([1, 2, 3]);
+      expect(rows.slice(1).map((row) => row.question.passage?.slug)).toEqual([
+        'whole',
+        'whole',
+      ]);
+    });
+
+    it('never sets a question in a shape the paper does not print there', async () => {
+      // Task 1 has a two-option question and a three-option one; only the
+      // first fits, so every sitting must take it.
+      for (let sitting = 0; sitting < 4; sitting += 1) {
+        const learner = await register();
+        const started = await startMock(learner.token, blockSubjectId).expect(
+          201,
+        );
+        const rows = await sessionTasks(
+          (started.body as SessionBody).sessionId,
+        );
+        expect(rows[0].question._count.answerOptions).toBe(2);
+      }
+    });
+
+    it('refuses a run no single text covers, and a number with nothing in its shape', async () => {
+      const learner = await register();
+
+      const response = await startMock(learner.token, blockGapSubjectId).expect(
+        409,
+      );
+
+      expect((response.body as { message: string }).message).toContain(
+        '№1, 2, 3',
+      );
     });
   });
 });

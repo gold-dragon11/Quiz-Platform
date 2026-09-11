@@ -338,6 +338,7 @@ model Subject {
   translations      SubjectTranslation[]
   groups            Group[]
   duels             Duel[]
+  resultPaperScores ResultPaperScore[]
 
   @@index([displayOrder])
   @@map("subjects")
@@ -597,6 +598,9 @@ model QuizSession {
   expiresAt       DateTime?
   completedAt     DateTime?
   durationSeconds Int?
+  /// A mock sitting of a joint NMT block (docs/02-domain/nmt-paper.md §8): the
+  /// block's slug. Null for a sitting of one subject and for everything else.
+  nmtBlock        String?
   createdAt       DateTime   @default(now())
 
   user           User                  @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -671,20 +675,36 @@ model Result {
   totalQuestions      Int
   accuracy            Decimal  @db.Decimal(5, 2)
   score               Decimal  @db.Decimal(5, 2)
-  /// Mock NMT sittings only (docs/02-domain/nmt-paper.md): test points by the
-  /// exam's own scoring — a matching pair is a point, a short answer in
-  /// mathematics is two — out of the paper's maximum, and the official
-  /// 100–200 score, null below the pass threshold. Null for any other session.
-  testPoints          Int?
-  maxTestPoints       Int?
-  scaledScore         Int?
   completedAt         DateTime
   createdAt           DateTime @default(now())
 
-  quizSession    QuizSession     @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
+  quizSession    QuizSession        @relation(fields: [quizSessionId], references: [id], onDelete: Cascade)
   xpTransactions XPTransaction[]
+  /// Mock NMT sittings only: one score per paper sat.
+  paperScores    ResultPaperScore[]
 
   @@map("results")
+}
+
+/// docs/02-domain/nmt-paper.md §6 — one NMT paper's score in a mock sitting,
+/// by the exam's own scoring: test points out of the paper's maximum and the
+/// official 100–200 score. One row for a sitting of one subject, one per
+/// subject for a joint block, none for any other session.
+model ResultPaperScore {
+  id            String @id @default(uuid()) @db.Uuid
+  resultId      String @db.Uuid
+  subjectId     String @db.Uuid
+  testPoints    Int
+  maxTestPoints Int
+  /// Null below the paper's pass threshold: the exam gives no score there.
+  scaledScore   Int?
+
+  result  Result  @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+
+  @@unique([resultId, subjectId])
+  @@index([subjectId])
+  @@map("result_paper_scores")
 }
 
 /// docs/02-domain/xp-transaction.md — immutable audit record. All references use

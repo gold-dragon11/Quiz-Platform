@@ -13,12 +13,14 @@ import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { useSubjects } from '@/features/quiz/hooks/use-content';
 import { AttemptHistory } from '@/features/mock-exam/components/AttemptHistory';
 import { MockExamBrief } from '@/features/mock-exam/components/MockExamBrief';
-import { useStartMockExam } from '@/features/mock-exam/hooks/use-mock-exam';
+import { useMockExamBlocks, useStartMockExam } from '@/features/mock-exam/hooks/use-mock-exam';
+import type { MockExamTarget } from '@/features/mock-exam/types/mock-exam.types';
 
 /**
  * `/mock-exam` (RequireAuth) — a full sitting under exam conditions.
  *
- * The whole screen has exactly one decision on it: which subject. That is the
+ * The whole screen has exactly one decision on it: which subject — or which
+ * joint block, the way the exam itself sits Ukrainian and mathematics. That is the
  * feature, not an oversight — a mock a learner can configure is practice with
  * a longer name, and the value of a sitting is precisely that the conditions
  * are not up to them.
@@ -30,17 +32,27 @@ import { useStartMockExam } from '@/features/mock-exam/hooks/use-mock-exam';
 export function MockExamPage(): React.JSX.Element {
   const navigate = useNavigate();
   const subjects = useSubjects();
+  const blocks = useMockExamBlocks();
   const startMockExam = useStartMockExam();
   const { data: user } = useCurrentUser();
-  const [subjectId, setSubjectId] = useState('');
+  const [choice, setChoice] = useState('');
 
+  // Blocks first: sitting the whole first block is what the exam day is, and a
+  // single subject is the rehearsal of one part of it.
   const options: SelectOption[] = [
-    { value: '', label: 'Оберіть предмет…' },
+    { value: '', label: 'Оберіть предмет або блок…' },
+    ...(blocks.data ?? []).map((block) => ({ value: `block:${block.slug}`, label: block.title })),
     ...(subjects.data ?? []).map((subject) => ({
       value: subject.id,
       label: subject.name,
     })),
   ];
+  const target: MockExamTarget | undefined = !choice
+    ? undefined
+    : choice.startsWith('block:')
+      ? { block: choice.slice('block:'.length) }
+      : { subjectId: choice };
+  const subjectId = target && 'subjectId' in target ? target.subjectId : undefined;
 
   const startError = startMockExam.error;
   const errorMessage = isApiError(startError)
@@ -50,10 +62,10 @@ export function MockExamPage(): React.JSX.Element {
       : null;
 
   function handleStart(): void {
-    if (!subjectId) {
+    if (!target) {
       return;
     }
-    startMockExam.mutate(subjectId, {
+    startMockExam.mutate(target, {
       onSuccess: (session) => {
         navigate(generatePath(ROUTES.quizSession, { sessionId: session.sessionId }));
       },
@@ -81,14 +93,14 @@ export function MockExamPage(): React.JSX.Element {
             <Alert variant="error">Не вдалося завантажити предмети. Оновіть сторінку.</Alert>
           ) : (
             <Select
-              label="Предмет"
+              label="Предмет або блок"
               options={options}
-              value={subjectId}
-              onChange={(event) => setSubjectId(event.target.value)}
+              value={choice}
+              onChange={(event) => setChoice(event.target.value)}
             />
           )}
         </div>
-        <Button onClick={handleStart} disabled={!subjectId} isLoading={startMockExam.isPending}>
+        <Button onClick={handleStart} disabled={!target} isLoading={startMockExam.isPending}>
           Почати роботу
         </Button>
       </div>
@@ -99,7 +111,7 @@ export function MockExamPage(): React.JSX.Element {
         </Alert>
       )}
 
-      {subjectId && <MockExamBrief subjectId={subjectId} className="mt-12" />}
+      {target && <MockExamBrief target={target} className="mt-12" />}
 
       {/* A teacher may sit a mock to see what the work actually is, but their
           own attempt history is not their progress to track — their statistics
@@ -113,7 +125,7 @@ export function MockExamPage(): React.JSX.Element {
             Там, де пробний НМТ відтворює зошит, бал рахується за офіційною таблицею переведення 2026 року.
             Для предметів, які ще переносимо на структуру зошита, — лише частка правильних.
           </p>
-          <AttemptHistory subjectId={subjectId || undefined} className="mt-8" />
+          <AttemptHistory subjectId={subjectId} className="mt-8" />
         </section>
       )}
     </div>

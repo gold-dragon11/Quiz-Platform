@@ -4,7 +4,9 @@ import { SettingsModule } from '../settings/settings.module';
 import { StatisticsModule } from '../statistics/statistics.module';
 import { QuizController } from './controllers/quiz.controller';
 import {
+  DEFAULT_NMT_BLOCKS,
   DEFAULT_NMT_PAPERS,
+  NMT_BLOCKS,
   NMT_PAPERS,
   NmtPaperRegistry,
 } from './nmt/nmt-papers';
@@ -33,6 +35,7 @@ import { QuizService } from './services/quiz.service';
     ResultRepository,
     NmtPaperRegistry,
     { provide: NMT_PAPERS, useValue: DEFAULT_NMT_PAPERS },
+    { provide: NMT_BLOCKS, useValue: DEFAULT_NMT_BLOCKS },
   ],
   // Exported for AssignmentsModule: starting homework is the same engine with
   // a frozen question list, not a second implementation of it.

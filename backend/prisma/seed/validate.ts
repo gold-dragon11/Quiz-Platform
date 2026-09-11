@@ -53,6 +53,11 @@ const GAP = /\((\d{1,2})\)\s*_{3,}/g;
  */
 function validateFormulas(text: string, at: string, field: string): string[] {
   const errors: string[] = [];
+  // `**виділене**` marks the words a task points at (EmphasisText on the
+  // client); a lone pair of asterisks would print literally.
+  if ((text.match(/\*\*/g) ?? []).length % 2 !== 0) {
+    errors.push(`${at}: ${field} has an unclosed "**" emphasis`);
+  }
   const delimiters = (text.match(/\$/g) ?? []).length;
   if (delimiters % 2 !== 0) {
     errors.push(`${at}: ${field} has an unclosed "$" formula delimiter`);
@@ -122,6 +127,9 @@ export function validateTopic(topic: TopicContent): string[] {
     }
     if (passage.title !== undefined && !passage.title.trim()) {
       errors.push(`${at}: title is present but empty`);
+    }
+    if (passage.content) {
+      errors.push(...validateFormulas(passage.content, at, 'content'));
     }
     if (!passage.content?.trim()) {
       errors.push(`${at}: content is required`);
@@ -219,6 +227,37 @@ export function validateTopic(topic: TopicContent): string[] {
 
     errors.push(...validateAnswers(question, at));
   });
+
+  // A text set as one run of paper tasks is shown in the order its questions
+  // appear, so their numbers must rise in that order; and a text numbered on
+  // some questions but not others would be set with a hole in it
+  // (docs/02-domain/nmt-paper.md §5).
+  const tasksByPassage = new Map<string, (number | undefined)[]>();
+  for (const question of topic.questions) {
+    if (question.passage !== undefined) {
+      tasksByPassage.set(question.passage, [
+        ...(tasksByPassage.get(question.passage) ?? []),
+        question.nmtTask,
+      ]);
+    }
+  }
+  for (const [key, tasks] of tasksByPassage) {
+    const at = `${topic.slug}.passages[${key}]`;
+    const numbered = tasks.filter((task): task is number => task !== undefined);
+    if (numbered.length === 0) {
+      continue;
+    }
+    if (numbered.length !== tasks.length) {
+      errors.push(
+        `${at}: either every question on the passage has an nmtTask or none does`,
+      );
+    }
+    if (numbered.some((task, i) => i > 0 && task <= numbered[i - 1])) {
+      errors.push(
+        `${at}: nmtTask must rise in the order the questions appear, found ${numbered.join(', ')}`,
+      );
+    }
+  }
 
   // A gap numbered out of order, or a text with more gaps than questions, is
   // a task the reader cannot finish — and nothing at runtime would notice.

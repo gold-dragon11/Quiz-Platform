@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { PassageView } from '@/features/quiz/types/quiz.types';
+import { EmphasisText } from '@/shared/ui/EmphasisText';
 
 /** A numbered gap as authored: `(3) ______`. */
 const GAP = /\((\d{1,2})\)\s*_{3,}/g;
@@ -68,7 +69,7 @@ function withGaps(content: string, activeGap: number | null): React.ReactNode[] 
     const start = match.index ?? 0;
     const number = Number(match[1]);
     const active = number === activeGap;
-    parts.push(content.slice(last, start));
+    parts.push(<EmphasisText key={`text-${start}`}>{content.slice(last, start)}</EmphasisText>);
     parts.push(
       <span
         key={start}
@@ -88,6 +89,6 @@ function withGaps(content: string, activeGap: number | null): React.ReactNode[] 
     );
     last = start + match[0].length;
   }
-  parts.push(content.slice(last));
+  parts.push(<EmphasisText key="text-end">{content.slice(last)}</EmphasisText>);
   return parts;
 }

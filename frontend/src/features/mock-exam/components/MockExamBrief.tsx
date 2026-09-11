@@ -2,9 +2,10 @@ import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { pluralUk } from '@/shared/utils/format';
 import { useMockExamSpec } from '@/features/mock-exam/hooks/use-mock-exam';
+import type { MockExamTarget } from '@/features/mock-exam/types/mock-exam.types';
 
 interface MockExamBriefProps {
-  subjectId: string;
+  target: MockExamTarget;
   className?: string;
 }
 
@@ -17,8 +18,8 @@ interface MockExamBriefProps {
  * this file — the paper's shape is the backend's to define, and the moment it
  * is repeated here the two start drifting apart.
  */
-export function MockExamBrief({ subjectId, className = '' }: MockExamBriefProps): React.JSX.Element {
-  const spec = useMockExamSpec(subjectId);
+export function MockExamBrief({ target, className = '' }: MockExamBriefProps): React.JSX.Element {
+  const spec = useMockExamSpec(target);
 
   if (spec.isPending) {
     return <Skeleton className={`h-32 ${className}`} />;
@@ -30,7 +31,37 @@ export function MockExamBrief({ subjectId, className = '' }: MockExamBriefProps)
     return <></>;
   }
 
-  const { questionCount, minutes, paper } = spec.data;
+  const { questionCount, minutes, paper, block } = spec.data;
+
+  if (block) {
+    return (
+      <div className={className}>
+        <FigureGrid
+          figures={[
+            {
+              value: questionCount,
+              label: pluralUk(questionCount, 'завдання', 'завдання', 'завдань'),
+              hint: block.papers.map((entry) => `${entry.subjectName} — ${entry.questionCount}`).join(', '),
+            },
+            {
+              value: block.papers.length,
+              label: pluralUk(block.papers.length, 'зошит', 'зошити', 'зошитів'),
+              hint: 'Кожен предмет оцінюється окремо, за своєю таблицею',
+            },
+            {
+              value: minutes,
+              label: pluralUk(minutes, 'хвилина', 'хвилини', 'хвилин'),
+              hint: 'Один годинник на обидва предмети',
+            },
+          ]}
+        />
+        <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
+          {block.timingNote} Розбір відкриється після завершення; доки робота триває, звичайна практика
+          недоступна.
+        </p>
+      </div>
+    );
+  }
 
   if (paper) {
     return (

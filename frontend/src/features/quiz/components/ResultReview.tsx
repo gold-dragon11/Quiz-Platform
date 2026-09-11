@@ -25,10 +25,13 @@ import { PassagePanel } from '@/features/quiz/components/PassagePanel';
 export function ResultReview({
   questions,
   numbers,
+  headings,
 }: {
   questions: QuizReviewQuestion[];
   /** Task numbers by question id, when the session followed an NMT paper. */
   numbers?: Map<string, number>;
+  /** A heading before the question with this id — each paper of a joint block. */
+  headings?: Map<string, string>;
 }): React.JSX.Element {
   return (
     <section>
@@ -38,6 +41,11 @@ export function ResultReview({
       <ul className="divide-border divide-y">
         {questions.map((question, i) => (
           <Fragment key={question.id}>
+            {headings?.has(question.id) && (
+              <li className="pt-10 pb-2 first:pt-6">
+                <h3 className="text-text-primary text-base font-medium">{headings.get(question.id)}</h3>
+              </li>
+            )}
             {/* The text once, before the first of its questions — not five
                 copies of it between five reviewed answers. */}
             {question.passage && question.passage.id !== questions[i - 1]?.passage?.id && (

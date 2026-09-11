@@ -22,7 +22,24 @@ export interface NmtPaper {
   tasks: NmtTask[];
   /** Instructions exactly as the paper prints them above a run of tasks. */
   sections: NmtSection[];
+  /** Runs of tasks the paper asks about one text. */
+  passageBlocks: NmtPassageBlock[];
   scale: NmtScale;
+}
+
+/**
+ * A joint block of the exam: several papers on one clock, as НМТ 2026 sits
+ * Ukrainian and mathematics together for 120 minutes. The papers are set one
+ * after another and scored each on its own; only the time is shared.
+ */
+export interface NmtBlock {
+  slug: string;
+  title: string;
+  minutes: number;
+  /** What the student does with the shared time, said where the clock is shown. */
+  timingNote: string;
+  /** The subjects whose papers the block sets, by slug, in order. */
+  subjectSlugs: string[];
 }
 
 export interface NmtTask {
@@ -30,8 +47,25 @@ export interface NmtTask {
   number: number;
   /** The only question type that may fill this number. */
   type: QuestionType;
+  /**
+   * How many answer options a question must have to stand at this number —
+   * four or five for a single choice, prompts plus choices for matching; null
+   * for a short answer. The paper's shape, held by the draw itself: a
+   * four-option question tagged for a five-option number is never set.
+   */
+  optionCount: number | null;
   maxPoints: number;
   scoring: NmtScoring;
+}
+
+/**
+ * Tasks `from`–`to` are asked about one text: Ukrainian 21–25 on five
+ * sentences of a scrambled paragraph. A sitting takes all of them from a
+ * single passage that has a question for every number, or none of them.
+ */
+export interface NmtPassageBlock {
+  from: number;
+  to: number;
 }
 
 /**
