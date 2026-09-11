@@ -69,7 +69,7 @@ def check(pack):
     if not os.path.isdir(topics_dir):
         return None
     problems, rows_seen = [], {}
-    total = longest = strict = 0
+    total = longest = strict = pictures = 0
 
     for name in sorted(os.listdir(topics_dir)):
         if not name.endswith('.json'):
@@ -103,6 +103,22 @@ def check(pack):
                     # The answer sheet takes a decimal, not 3.05e-05.
                     problems.append('%s — answer is in exponential form: %r'
                                     % (at, answer))
+            elif 'options' in question and any(
+                    isinstance(o, dict) for o in question['options']):
+                # Options that are pictures carry a hidden text alternative
+                # ("ескіз 1"), so their length says nothing about the answer —
+                # they are checked for shape and files, not for length cues.
+                pictures += 1
+                if len(question['options']) != shape['options']:
+                    problems.append('%s — %d options, the paper gives %d'
+                                    % (at, len(question['options']),
+                                       shape['options']))
+                for option in question['options']:
+                    image = option.get('imageUrl', '') if isinstance(option, dict) else ''
+                    if not isinstance(option, dict) or not image.startswith('/content/'):
+                        problems.append('%s — picture option without a local image' % at)
+                    elif not os.path.exists(os.path.join(PUBLIC, image.lstrip('/'))):
+                        problems.append('%s — option image missing: %s' % (at, image))
             elif 'options' in question:
                 total += 1
                 options = question['options']
@@ -158,7 +174,8 @@ def check(pack):
                 problems.append('%s — no explanation' % at)
 
             texts = [question['title'], question.get('explanation', '')]
-            texts += question.get('options', [])
+            texts += [o['content'] if isinstance(o, dict) else o
+                      for o in question.get('options', [])]
             texts += question.get('sequence', [])
             texts += [side for pair in question.get('pairs', []) for side in pair]
             texts += question.get('extraChoices', [])
@@ -169,7 +186,7 @@ def check(pack):
                              ROMAN.sub('', FORMULA.sub('', text))):
                     problems.append('%s — foreign script: %s' % (at, text[:40]))
 
-    return total, longest, strict, problems
+    return total, longest, strict, problems, pictures
 
 
 def main():
@@ -180,8 +197,10 @@ def main():
         result = check(pack)
         if not result or result[0] == 0:
             continue
-        total, longest, strict, problems = result
-        print('%s: %d single-choice NMT questions' % (pack, total))
+        total, longest, strict, problems, pictures = result
+        print('%s: %d single-choice NMT questions%s'
+              % (pack, total,
+                 ', plus %d with picture options' % pictures if pictures else ''))
         print('  longest option is correct: %d (%d %%), of them strictly '
               'longest: %d (%d %%)'
               % (longest, round(longest * 100 / total),

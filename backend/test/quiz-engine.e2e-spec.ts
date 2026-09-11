@@ -1365,18 +1365,32 @@ describe('Quiz Engine (e2e)', () => {
     it('stores a wrong number, and text that is not a number, as wrong answers', async () => {
       const { token } = await registerUser();
       const { sessionId, questions } = await startNumeric(token, 3);
+      const byAnswer = new Map<number, string>();
+      for (const question of questions) {
+        byAnswer.set(await expectedAnswer(question.id), question.id);
+      }
+      const questionWith = (answer: number): string => {
+        const id = byAnswer.get(answer);
+        if (!id) {
+          throw new Error(`the session has no question answered by ${answer}`);
+        }
+        return id;
+      };
 
       await submit(token, sessionId, {
-        questionId: questions[0].id,
+        questionId: questionWith(12.5),
         selectedAnswer: { numericAnswer: '999' },
       }).expect(200);
       // Mid-typing states reach the server because every keystroke autosaves.
       await submit(token, sessionId, {
-        questionId: questions[1].id,
+        questionId: questionWith(-4),
         selectedAnswer: { numericAnswer: '-' },
       }).expect(200);
+      // The blank goes to the question whose answer is zero on purpose:
+      // `Number('')` is 0, and a blank field once scored as correct there.
+      // Delivery order is random, so the case has to be placed, not hoped for.
       await submit(token, sessionId, {
-        questionId: questions[2].id,
+        questionId: questionWith(0),
         selectedAnswer: { numericAnswer: '' },
       }).expect(200);
 

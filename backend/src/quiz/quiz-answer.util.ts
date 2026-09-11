@@ -11,6 +11,9 @@ export interface EvaluableOption {
 const INVALID_ANSWER_MESSAGE =
   'selectedAnswer does not match the question type or references unknown options.';
 
+/** "12", "-4", "12.5", "0.25", ".5", "12." — after a comma became a point. */
+const PLAIN_DECIMAL = /^-?(?:\d+(?:\.\d*)?|\.\d+)$/;
+
 /** One matching pair keyed by option order (as stored in configuration). */
 interface OrderPair {
   left: number;
@@ -172,7 +175,11 @@ function evaluateNumeric(
   if (typeof raw === 'number') {
     submitted = raw;
   } else if (typeof raw === 'string') {
-    submitted = Number(raw.trim().replace(',', '.'));
+    // `Number('')` is 0, and so are `'   '` and `'0x0'`: read that way, an
+    // empty field scores as correct wherever the answer is zero. Only a plain
+    // decimal — the way the answer sheet is filled in — is read as a number.
+    const text = raw.trim().replace(',', '.');
+    submitted = PLAIN_DECIMAL.test(text) ? Number(text) : Number.NaN;
   } else {
     throw new BadRequestException(INVALID_ANSWER_MESSAGE);
   }

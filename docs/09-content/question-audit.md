@@ -142,9 +142,13 @@ that differ by one rule. Questions written to that shape are marked
 | Ukrainian, practice | 660 | 73 % | 63 % |
 | Ukrainian, NMT format | 340 | 35 % | **25 %** |
 | History, practice | 570 | 77 % | 64 % |
-| History, NMT format | 224 | 43 % | **25 %** |
+| History, NMT format | 246 | 45 % | **24 %** |
 | Mathematics, practice | 800 | 43 % | 10 % |
-| Mathematics, NMT format | 280 | 33 % | **4 %** |
+| Mathematics, NMT format | 293 | 34 % | **4 %** |
+
+Two more mathematics questions have pictures as options and are left out of
+this measurement: their option text is a hidden text alternative ("ескіз 3"),
+so its length says nothing.
 
 25 % is the chance rate for four options: on the NMT bank, picking the longest
 option is worth exactly nothing. The remaining 10 percentage points are ties,
@@ -155,11 +159,11 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 1 208 questions: 424 across all 21 Ukrainian topics (Власне
-висловлення is excluded — НМТ 2026 has no essay), 384 across all 14 History
-topics and 400 across all 20 Mathematics topics. By shape: 844 single-choice,
-200 matching, 42 ordering, 42 multiple-choice and 60 numeric — every one with
-an explanation.
+**Coverage.** 1 232 questions: 424 across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay), 386 across all 14 History
+topics and 422 across all 20 Mathematics topics. By shape: 881 single-choice,
+202 matching, 42 ordering, 42 multiple-choice and 65 numeric — every one with
+an explanation. 42 are built on a picture: 20 in history, 22 in mathematics.
 
 Mathematics is the one subject where the length cue was never the problem: in
 the practice bank the correct option was strictly longest only 10 % of the
@@ -197,19 +201,41 @@ key.
 
 - *Ukrainian, tasks 21–25* hang off a shared text, and the schema has no
   shared-stimulus entity.
-- *Image options.* A few tasks put four photographs side by side ("позначте
-  фото, на якому зображено…"). The authoring format carries one image per
-  question, not one per option; those tasks are also the ones with the
-  messiest rights, so they are left out for now.
+- *Photographs as options.* The authoring format now takes a picture per
+  option — mathematics uses it for graph sketches — but the history tasks that
+  put four photographs side by side ("позначте фото, на якому зображено…") are
+  also the ones with the messiest rights, so they are still left out.
 
 ---
 
 # 6. Illustrations and the rights rule
 
 Twenty history questions are built on a picture — a map with numbered sites, a
-banknote, a painting. Everything under `frontend/public/content/` is either our
-own work or in the public domain. The full list, with sources, is in
+banknote, a painting — and twenty-two mathematics questions on a figure.
+Everything under `frontend/public/content/` is either our own work or in the
+public domain. The full list, with sources, is in
 `frontend/public/content/CREDITS.md`.
+
+## Mathematics figures are generated
+
+The 26 figures — two charts, planimetry drawings, a cone and a cube, function
+graphs, a coordinate grid, ten graph sketches — are drawn by
+`prisma/scripts/figures/make.py` with no borrowed images or data. A figure and
+its question are two views of the same numbers, so the risk is that they drift
+apart: the question generator asserts every value it relies on (the tangent's
+slope from the drawn points, the arc from the drawn angle) before writing the
+key, and a changed figure has to be checked against its question.
+
+Four figures were redrawn after being looked at rather than only parsed: a tick
+label sat on the axis letter, the `x₀` mark covered the tick `2`, a curve
+label was cropped, and the `24°` label lay on the ladder itself.
+
+Graph sketches are the answer options themselves ("на якому рисунку зображено
+ескіз графіка…"), so an option may carry its own picture. The option's text is
+the image's text alternative and is not shown. It is deliberately neutral —
+"ескіз 3", not "парабола з гілками вниз" — because a descriptive alternative
+would state the answer; the cost is that a screen-reader user cannot solve
+those two questions.
 
 ## Maps are drawn, not borrowed
 
@@ -268,4 +294,5 @@ cd backend
 python3 prisma/scripts/audit/audit.py         # mechanical checks
 python3 prisma/scripts/audit/audit_math.py    # recompute arithmetic answers
 python3 prisma/scripts/audit/audit_nmt.py     # NMT-format shape, length cues, missing images
+python3 prisma/scripts/figures/make.py        # redraw the mathematics figures
 ```

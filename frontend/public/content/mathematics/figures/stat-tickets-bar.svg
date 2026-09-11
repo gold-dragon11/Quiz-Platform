@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="380" viewBox="0 0 560 380" role="img" aria-label="Діаграма кількості проданих квитків за днями">
+<rect width="560" height="380" fill="#0f0f13"/>
+<line x1="85.0" y1="310.33" x2="505.0" y2="310.33" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="316.33" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">0</text>
+<line x1="85.0" y1="293.85" x2="505.0" y2="293.85" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="277.36" x2="505.0" y2="277.36" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="283.36" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">10</text>
+<line x1="85.0" y1="260.88" x2="505.0" y2="260.88" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="244.4" x2="505.0" y2="244.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="250.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">20</text>
+<line x1="85.0" y1="227.91" x2="505.0" y2="227.91" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="211.43" x2="505.0" y2="211.43" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="217.43" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">30</text>
+<line x1="85.0" y1="194.95" x2="505.0" y2="194.95" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="178.46" x2="505.0" y2="178.46" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="184.46" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">40</text>
+<line x1="85.0" y1="161.98" x2="505.0" y2="161.98" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="145.49" x2="505.0" y2="145.49" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="151.49" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">50</text>
+<line x1="85.0" y1="129.01" x2="505.0" y2="129.01" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="112.53" x2="505.0" y2="112.53" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="118.53" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">60</text>
+<line x1="85.0" y1="96.04" x2="505.0" y2="96.04" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="79.56" x2="505.0" y2="79.56" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="85.56" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">70</text>
+<line x1="85.0" y1="63.08" x2="505.0" y2="63.08" stroke="#2b2b35" stroke-width="1"/>
+<line x1="85.0" y1="46.59" x2="505.0" y2="46.59" stroke="#3b3b47" stroke-width="1"/>
+<text x="77.5" y="52.59" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">80</text>
+<polygon points="115.0,310.33 160.0,310.33 160.0,161.98 115.0,161.98" fill="#8b5cf6" fill-opacity="0.55" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="137.5" y="336.33" font-size="18" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Пн</text>
+<polygon points="190.0,310.33 235.0,310.33 235.0,211.43 190.0,211.43" fill="#8b5cf6" fill-opacity="0.55" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="212.5" y="336.33" font-size="18" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Вт</text>
+<polygon points="265.0,310.33 310.0,310.33 310.0,129.01 265.0,129.01" fill="#8b5cf6" fill-opacity="0.55" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="287.5" y="336.33" font-size="18" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Ср</text>
+<polygon points="340.0,310.33 385.0,310.33 385.0,178.46 340.0,178.46" fill="#8b5cf6" fill-opacity="0.55" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="362.5" y="336.33" font-size="18" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Чт</text>
+<polygon points="415.0,310.33 460.0,310.33 460.0,79.56 415.0,79.56" fill="#8b5cf6" fill-opacity="0.55" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+<text x="437.5" y="336.33" font-size="18" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Пт</text>
+<line x1="85.0" y1="310.33" x2="505.0" y2="310.33" stroke="#9a9aab" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="358" viewBox="0 0 560 358" role="img" aria-label="Прямокутна трапеція ABCD">
+<rect width="560" height="358" fill="#0f0f13"/>
+<polygon points="81.76,276.31 484.96,276.31 216.16,74.98 81.76,74.98" fill="none" fill-opacity="1" stroke="#e6e6ee" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="81.8,260.3 97.8,260.3 97.8,276.3" fill="none" stroke="#e6e6ee" stroke-width="1.5"/>
+<polyline points="81.8,91.0 97.8,91.0 97.8,75.0" fill="none" stroke="#e6e6ee" stroke-width="1.5"/>
+<text x="73.76" y="296.31" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">A</text>
+<text x="492.96" y="296.31" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">D</text>
+<text x="222.16" y="68.98" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">C</text>
+<text x="73.76" y="68.98" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">B</text>
+<text x="148.96" y="62.980000000000004" font-size="20" fill="#8b5cf6" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">4</text>
+<text x="283.36" y="302.31" font-size="20" fill="#8b5cf6" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">12</text>
+<text x="69.76" y="181.64" font-size="20" fill="#8b5cf6" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">6</text>
+</svg>

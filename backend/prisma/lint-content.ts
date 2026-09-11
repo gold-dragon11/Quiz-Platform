@@ -88,7 +88,7 @@ const AN_EXCEPTIONS = /^(?:hour|honest|honour|honorary|heir|MBA|MP|NHS)/i;
 interface Question {
   title: string;
   type?: string;
-  options?: string[];
+  options?: (string | { content?: string; imageUrl?: string })[];
   correct?: number;
   pairs?: [string, string][];
   [key: string]: unknown;
@@ -227,7 +227,9 @@ function lintPack(pack: string): Report {
 
       const texts = [
         q.title,
-        ...(q.options ?? []),
+        ...(q.options ?? []).map((option) =>
+          typeof option === 'string' ? option : option.content,
+        ),
         ...(q.pairs ?? []).flat(),
       ].filter((t): t is string => typeof t === 'string');
 

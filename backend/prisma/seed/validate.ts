@@ -271,8 +271,30 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
     return errors;
   }
 
-  const options: string[] = question.options;
-  if (!Array.isArray(options) || options.length < MIN_OPTIONS) {
+  // An option is either text or a picture with a hidden text alternative; the
+  // text rules below apply to both, and a picture must also exist on disk.
+  const raw: unknown[] = Array.isArray(question.options)
+    ? question.options
+    : [];
+  const options: string[] = raw.map((option) =>
+    typeof option === 'string'
+      ? option
+      : ((option as { content?: string } | null)?.content ?? ''),
+  );
+  raw.forEach((option, i) => {
+    if (typeof option === 'string') {
+      return;
+    }
+    const imageUrl = (option as { imageUrl?: unknown } | null)?.imageUrl;
+    if (typeof imageUrl !== 'string' || !imageUrl.startsWith(IMAGE_PREFIX)) {
+      errors.push(
+        `${at}: option ${i} imageUrl must be a local path under ${IMAGE_PREFIX}`,
+      );
+    } else if (!existsSync(join(PUBLIC_DIR, imageUrl))) {
+      errors.push(`${at}: option ${i} image file not found: ${imageUrl}`);
+    }
+  });
+  if (!Array.isArray(question.options) || options.length < MIN_OPTIONS) {
     errors.push(`${at}: needs at least ${MIN_OPTIONS} options`);
     return errors;
   }

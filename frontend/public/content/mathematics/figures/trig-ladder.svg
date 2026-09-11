@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="564" viewBox="0 0 420 564" role="img" aria-label="Драбина BC, приставлена до стіни AB">
+<rect width="420" height="564" fill="#0f0f13"/>
+<line x1="119.0" y1="467.76" x2="119.0" y2="73.49" stroke="#9a9aab" stroke-width="7"/>
+<line x1="58.33" y1="467.76" x2="369.25" y2="467.76" stroke="#9a9aab" stroke-width="3"/>
+<line x1="119.0" y1="88.66" x2="285.83" y2="467.76" stroke="#8b5cf6" stroke-width="4"/>
+<polyline points="119.0,451.8 135.0,451.8 135.0,467.8" fill="none" stroke="#e6e6ee" stroke-width="1.5"/>
+<path d="M119.0,128.7 A40,40 0 0 0 135.1,125.3" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+<text x="126.58" y="221.34" font-size="20" fill="#8b5cf6" text-anchor="start" font-family="ui-sans-serif, system-ui, sans-serif">24°</text>
+<text x="107.0" y="92.66" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">B</text>
+<text x="107.0" y="489.76" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">A</text>
+<text x="291.83" y="491.76" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">C</text>
+</svg>

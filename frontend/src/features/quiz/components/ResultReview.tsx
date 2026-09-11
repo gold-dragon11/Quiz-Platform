@@ -42,6 +42,16 @@ export function ResultReview({ questions }: { questions: QuizReviewQuestion[] })
                 {question.isCorrect ? 'правильно' : 'неправильно'}
               </span>
             </div>
+            {/* A question read off a chart or a drawing cannot be checked
+                without it: the explanation says "дотична проходить через
+                (0; −3)", and the reader needs the picture to see why. */}
+            {question.imageUrl && (
+              <img
+                src={question.imageUrl}
+                alt=""
+                className="max-h-64 w-auto self-start rounded-lg object-contain"
+              />
+            )}
             {question.type === QuestionType.SINGLE_CHOICE && <SingleChoiceReview question={question} />}
             {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
             {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
@@ -115,11 +125,19 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
             >
               {LETTERS[position] ?? position + 1}
             </span>
-            <span
-              className={`pt-0.5 ${isCorrect || wrongPick ? 'text-text-primary' : 'text-text-secondary'}`}
-            >
-              <MathText>{option.content}</MathText>
-            </span>
+            {option.imageUrl ? (
+              <img
+                src={option.imageUrl}
+                alt={option.content}
+                className="h-20 w-auto rounded-md object-contain"
+              />
+            ) : (
+              <span
+                className={`pt-0.5 ${isCorrect || wrongPick ? 'text-text-primary' : 'text-text-secondary'}`}
+              >
+                <MathText>{option.content}</MathText>
+              </span>
+            )}
             {/* Colour alone is not a signal — it fails for anyone who cannot
                 tell red from green, and it fails on a projector. Each state
                 that matters says what it is. */}

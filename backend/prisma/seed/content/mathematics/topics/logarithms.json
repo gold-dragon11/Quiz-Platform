@@ -63,6 +63,7 @@
     {"title":"Установіть відповідність між логарифмічним рівнянням (1–3) та його коренем (А–Д)","difficulty":"INTERMEDIATE","type":"MATCHING","format":"NMT","pairs":[["$\\log_2 x = 5$","32"],["$\\log_x 49 = 2$","7"],["$\\log_3 x = -1$","$\\frac{1}{3}$"]],"extraChoices":["10","$-3$"],"explanation":"У другому рівнянні основа має бути додатною й відмінною від одиниці, тому $-7$ не підходить."},
     {"title":"Обчисліть $\\log_2 12 - \\log_2 3 + \\log_3 9$.","difficulty":"INTERMEDIATE","type":"NUMERIC","format":"NMT","answer":4,"explanation":"$\\log_2 4 = 2$, $\\log_3 9 = 2$, сума дорівнює 4."},
     {"title":"Розв’яжіть рівняння $\\log_5 (2x + 1) = 2$.","difficulty":"INTERMEDIATE","type":"NUMERIC","format":"NMT","answer":12.0,"explanation":"$2x + 1 = 25$, $x = 12$."},
-    {"title":"Обчисліть $3^{2\\log_3 5}$.","difficulty":"ADVANCED","type":"NUMERIC","format":"NMT","answer":25,"explanation":"$3^{2\\log_3 5} = \\left(3^{\\log_3 5}\\right)^2 = 5^2 = 25$."}
+    {"title":"Обчисліть $3^{2\\log_3 5}$.","difficulty":"ADVANCED","type":"NUMERIC","format":"NMT","answer":25,"explanation":"$3^{2\\log_3 5} = \\left(3^{\\log_3 5}\\right)^2 = 5^2 = 25$."},
+    {"title":"Графік якої функції зображено на рисунку?","difficulty":"BEGINNER","format":"NMT","options":["$y = \\log_2 x$","$y = 2^x$","$y = \\log_{\\frac{1}{2}} x$","$y = \\sqrt{x}$","$y = \\log_4 x$"],"correct":0,"explanation":"Графік зростає й проходить через точки $(1; 0)$, $(2; 1)$ і $(4; 2)$: значення 1 функція набуває при $x = 2$, тож це логарифм за основою 2.","imageUrl":"/content/mathematics/figures/fn-log2.svg"}
   ]
 }

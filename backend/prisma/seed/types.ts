@@ -26,6 +26,19 @@ export type QuestionFormatContent = keyof typeof QuestionFormat;
  */
 export type ImagePath = string;
 
+/**
+ * An answer option that is a picture — "на якому рисунку зображено ескіз
+ * графіка…". The `content` is still required: it becomes the image's text
+ * alternative and stays hidden on screen, so it must describe nothing that
+ * gives the answer away ("ескіз 1", not "парабола з гілками вниз").
+ */
+export interface ImageOption {
+  content: string;
+  imageUrl: ImagePath;
+}
+
+export type OptionContent = string | ImageOption;
+
 /** A single-choice question: exactly one of `options` is correct. */
 export interface SingleChoiceContent {
   type?: 'SINGLE_CHOICE';
@@ -34,7 +47,7 @@ export interface SingleChoiceContent {
   format?: QuestionFormatContent;
   imageUrl?: ImagePath;
   /** Answer options in presentation order (2–20 entries). */
-  options: string[];
+  options: OptionContent[];
   /** Zero-based index into `options` marking the correct answer. */
   correct: number;
   /**

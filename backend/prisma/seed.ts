@@ -207,7 +207,12 @@ function shuffled<T>(items: T[], seed: number): T[] {
 
 /** Flattens authoring content into the option rows + configuration the engine expects. */
 function buildAnswers(question: QuestionContent): {
-  options: { content: string; isCorrect: boolean; order: number }[];
+  options: {
+    content: string;
+    isCorrect: boolean;
+    order: number;
+    imageUrl?: string | null;
+  }[];
   configuration:
     { pairs: { left: number; right: number }[] } | { answer: number } | null;
 } {
@@ -284,8 +289,9 @@ function buildAnswers(question: QuestionContent): {
   // here (deterministically, keyed by the title) spreads correct answers
   // across all positions so the position itself never gives the answer away.
   const permuted = shuffled(
-    question.options.map((content, index) => ({
-      content,
+    question.options.map((option, index) => ({
+      content: typeof option === 'string' ? option : option.content,
+      imageUrl: typeof option === 'string' ? null : option.imageUrl,
       isCorrect: index === question.correct,
     })),
     hash(question.title),
@@ -343,6 +349,7 @@ async function seedQuestion(
     existing.answerOptions.every(
       (row, i) =>
         row.content === options[i].content &&
+        (row.imageUrl ?? null) === (options[i].imageUrl ?? null) &&
         row.isCorrect === options[i].isCorrect &&
         row.order === options[i].order,
     );

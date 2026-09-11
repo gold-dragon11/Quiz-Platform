@@ -45,6 +45,21 @@
 | `vasylkivsky-storozha.jpg` | «Сторожа запорозьких вольностей», 1890 | Сергій Васильківський | 1854–1917 | помер понад 70 років тому |
 | `shevchenko-selfportrait.jpg` | Автопортрет, 1841 | Тарас Шевченко | 1814–1861 | помер понад 70 років тому |
 
+## Рисунки з математики — `mathematics/figures/`
+
+Намальовані нами повністю, кодом: `backend/prisma/scripts/figures/make.py`
+будує їх з тих самих чисел, на які спираються ключі завдань. Запозичених
+зображень і даних тут немає.
+
+| Файли | Що показують |
+|---|---|
+| `stat-tickets-bar.svg`, `stat-temperature-line.svg` | стовпчикова й лінійна діаграми |
+| `trig-ladder.svg`, `plan-median.svg`, `plan-inscribed-angle.svg`, `plan-right-trapezoid.svg` | планіметричні рисунки |
+| `stereo-cone.svg`, `stereo-cube-diagonal.svg` | конус і куб |
+| `coord-points.svg`, `vectors-grid.svg` | точки й вектор на координатній сітці |
+| `fn-log2.svg`, `fn-sin.svg`, `fn-abs.svg`, `ineq-parabola.svg`, `deriv-tangent.svg`, `integral-area.svg` | графіки функцій |
+| `quad-sketch-1…5.svg`, `line-sketch-1…5.svg` | ескізи графіків для варіантів відповіді |
+
 ## Чого тут немає
 
 Творів Тетяни Яблонської, Марії Примаченко, Катерини Білокур та інших авторів
