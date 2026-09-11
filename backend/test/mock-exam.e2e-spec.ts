@@ -11,6 +11,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { mockExamSpecFor } from './../src/quiz/mock-exam.config';
+import { listenOnLoopback } from './loopback';
 
 interface SessionBody {
   sessionId: string;
@@ -197,7 +198,7 @@ describe('Mock exam (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     const full = await ensureSubject(`${PREFIX}-full`, 9940);

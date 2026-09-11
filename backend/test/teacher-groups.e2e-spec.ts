@@ -4,6 +4,7 @@ import { AccountStatus, UserRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface GroupBody {
   id: string;
@@ -114,7 +115,7 @@ describe('Groups (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     const subject = await prisma.subject.upsert({

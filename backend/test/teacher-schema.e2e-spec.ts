@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /**
  * Database invariants for the teacher side (docs/02-domain/group.md,
@@ -73,7 +74,7 @@ describe('Teacher schema (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     await removeFixtures();

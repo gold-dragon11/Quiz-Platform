@@ -5,6 +5,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { REVIEW_LADDER_DAYS } from './../src/quiz/repositories/mistake-review.repository';
+import { listenOnLoopback } from './loopback';
 
 interface SessionBody {
   sessionId: string;
@@ -200,7 +201,7 @@ describe('Mistake review (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     const subject = await prisma.subject.upsert({

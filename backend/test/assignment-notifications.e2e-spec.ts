@@ -13,6 +13,7 @@ import {
   EmailService,
 } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface Captured {
   recipient: string;
@@ -190,7 +191,7 @@ describe('Assignment notifications (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     const subject = await prisma.subject.upsert({

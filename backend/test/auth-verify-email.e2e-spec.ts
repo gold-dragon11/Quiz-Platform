@@ -9,6 +9,7 @@ import { EMAIL_VERIFICATION_PURPOSE } from './../src/auth/constants/auth.constan
 import { AppConfig } from './../src/config/configuration';
 import { EmailService } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /** One captured outbound email. */
 interface CapturedEmail {
@@ -146,7 +147,7 @@ describe('Email Verification (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
 

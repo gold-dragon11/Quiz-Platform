@@ -11,6 +11,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { DEFAULT_AVATAR_URL } from './../src/common/constants/avatar.constants';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /**
  * Registration end-to-end tests (docs/04-api/authentication.md §4).
@@ -61,7 +62,7 @@ describe('Registration (e2e)', () => {
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestAccounts();

@@ -7,6 +7,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { AppConfig } from './../src/config/configuration';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /** The token pair returned by login and refresh. */
 interface TokenPairBody {
@@ -108,7 +109,7 @@ describe('Refresh & Logout (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
 

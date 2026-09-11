@@ -17,6 +17,7 @@ import { AuthRepository } from './../src/auth/repositories/auth.repository';
 import { JwtAuthGuard } from './../src/auth/guards/jwt-auth.guard';
 import { AppConfig } from './../src/config/configuration';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /**
  * Test-only controller exercising the authorization layer. It is registered
@@ -136,7 +137,7 @@ describe('Authorization (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
 

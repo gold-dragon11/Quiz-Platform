@@ -9,6 +9,7 @@ import {
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface SessionBody {
   sessionId: string;
@@ -271,7 +272,7 @@ describe('Assignment sessions (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
     prisma = app.get(PrismaService);
 
     const maths = await ensureSubject(`${PREFIX}-maths`, 9980);
