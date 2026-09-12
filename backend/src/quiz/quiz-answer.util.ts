@@ -227,6 +227,33 @@ function evaluateMatching(
  * exam's own count, a point per pair (docs/02-domain/nmt-paper.md). A prompt
  * paired twice counts once. A malformed answer throws, as evaluation does.
  */
+/**
+ * The stored order of every option of a submitted sequence, in the order the
+ * reader put them in. Shorter than the option list when the answer is partial
+ * or unreadable, which is how partial credit tells a half-answer from a whole
+ * one (docs/02-domain/nmt-paper.md §6).
+ */
+export function readSequenceOrders(
+  selectedAnswer: Record<string, unknown>,
+  options: EvaluableOption[],
+): number[] {
+  return readOptionIds(selectedAnswer, 'sequence', options).map(
+    (option) => option.order,
+  );
+}
+
+/** How many options a multiple-choice answer ticks, and how many of them are right. */
+export function countChosen(
+  selectedAnswer: Record<string, unknown>,
+  options: EvaluableOption[],
+): { chosen: number; correct: number } {
+  const submitted = readOptionIds(selectedAnswer, 'answerOptionIds', options);
+  return {
+    chosen: submitted.length,
+    correct: submitted.filter((option) => option.isCorrect).length,
+  };
+}
+
 export function correctPairCount(
   selectedAnswer: Record<string, unknown>,
   options: EvaluableOption[],

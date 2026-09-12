@@ -64,6 +64,11 @@ PAPERS = {
         [(n, ('SINGLE_CHOICE', 4)) for n in range(1, 11)]
         + [(n, ('SINGLE_CHOICE', 5)) for n in range(11, 26)]
         + [(n, ('MATCHING', 9)) for n in range(26, 31)]),
+    'history-of-ukraine': dict(
+        [(n, ('SINGLE_CHOICE', 4)) for n in range(1, 21)]
+        + [(n, ('MATCHING', 9)) for n in range(21, 25)]
+        + [(n, ('ORDERING', 4)) for n in range(25, 28)]
+        + [(n, ('MULTIPLE_CHOICE', 7)) for n in range(28, 31)]),
 }
 # Runs of tasks asked about one text. A sitting takes the whole run from a
 # single passage, so what has to be deep enough is the number of passages that
@@ -81,6 +86,8 @@ def option_count(question):
         return None
     if kind == 'MATCHING':
         return 2 * len(question['pairs']) + len(question.get('extraChoices', []))
+    if kind == 'ORDERING':
+        return len(question['sequence'])
     return len(question.get('options', []))
 
 # Words only — a year or a number in history and mathematics is a value, and

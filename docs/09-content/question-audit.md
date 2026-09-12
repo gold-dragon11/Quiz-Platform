@@ -140,11 +140,11 @@ that differ by one rule. Questions written to that shape are marked
 | Bank | Single-choice questions | Longest option is correct | Strictly longest |
 |---|---|---|---|
 | Ukrainian, practice | 660 | 73 % | 63 % |
-| Ukrainian, NMT format | 340 | 35 % | **25 %** |
+| Ukrainian, NMT format | 564 | 37 % | **18 %** |
 | History, practice | 570 | 77 % | 64 % |
-| History, NMT format | 246 | 45 % | **24 %** |
+| History, NMT format | 302 | 44 % | **22 %** |
 | Mathematics, practice | 800 | 43 % | 10 % |
-| Mathematics, NMT format | 293 | 34 % | **4 %** |
+| Mathematics, NMT format | 323 | 36 % | **4 %** |
 | English, NMT format | 330 | 32 % | **18 %** |
 
 Two more mathematics questions have pictures as options and are left out of

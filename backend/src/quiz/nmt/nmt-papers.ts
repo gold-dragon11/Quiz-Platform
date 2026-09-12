@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { NmtBlock, NmtPaper } from './nmt-paper.types';
+import { HISTORY_OF_UKRAINE_PAPER } from './papers/history-of-ukraine.paper';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
 import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
 
@@ -11,6 +12,7 @@ import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
 export const DEFAULT_NMT_PAPERS: NmtPaper[] = [
   MATHEMATICS_PAPER,
   UKRAINIAN_LANGUAGE_PAPER,
+  HISTORY_OF_UKRAINE_PAPER,
 ];
 
 /**

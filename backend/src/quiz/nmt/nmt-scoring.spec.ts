@@ -1,6 +1,7 @@
 import { QuestionType } from '@prisma/client';
 import type { NmtPaper } from './nmt-paper.types';
 import { DEFAULT_NMT_BLOCKS, DEFAULT_NMT_PAPERS } from './nmt-papers';
+import { HISTORY_OF_UKRAINE_PAPER } from './papers/history-of-ukraine.paper';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
 import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
 import {
@@ -89,6 +90,92 @@ const numeric: ScorableQuestion = {
 };
 
 const [scTask, mtTask, nmTask] = paper.tasks;
+
+// Чотири події в правильному порядку — orders 0…3.
+const ordering: ScorableQuestion = {
+  id: 'or',
+  type: QuestionType.ORDERING,
+  nmtTask: 25,
+  configuration: null,
+  answerOptions: ['e0', 'e1', 'e2', 'e3'].map((id, order) => ({
+    id,
+    order,
+    isCorrect: false,
+  })),
+};
+const orderingTask = {
+  number: 25,
+  type: QuestionType.ORDERING,
+  optionCount: 4,
+  maxPoints: 3,
+  scoring: 'sequence' as const,
+};
+
+// Три правильні із семи.
+const threeOfSeven: ScorableQuestion = {
+  id: 'mc',
+  type: QuestionType.MULTIPLE_CHOICE,
+  nmtTask: 28,
+  configuration: null,
+  answerOptions: Array.from({ length: 7 }, (_, order) => ({
+    id: `o${order}`,
+    order,
+    isCorrect: order < 3,
+  })),
+};
+const threeOfSevenTask = {
+  number: 28,
+  type: QuestionType.MULTIPLE_CHOICE,
+  optionCount: 7,
+  maxPoints: 3,
+  scoring: 'per-correct' as const,
+};
+
+describe('a chronology', () => {
+  const points = (sequence: string[]) =>
+    taskPoints(orderingTask, ordering, { sequence });
+
+  it('pays in full only for the whole order', () => {
+    expect(points(['e0', 'e1', 'e2', 'e3'])).toBe(3);
+  });
+
+  it('pays two for both ends in place, whatever the middle', () => {
+    expect(points(['e0', 'e2', 'e1', 'e3'])).toBe(2);
+  });
+
+  it('pays one for a single end', () => {
+    expect(points(['e0', 'e2', 'e3', 'e1'])).toBe(1);
+    expect(points(['e1', 'e2', 'e0', 'e3'])).toBe(1);
+  });
+
+  it('pays nothing for neither end, or for a part of the order', () => {
+    expect(points(['e1', 'e0', 'e3', 'e2'])).toBe(0);
+    expect(points(['e0', 'e1'])).toBe(0);
+    expect(taskPoints(orderingTask, ordering, { sequence: 'nonsense' })).toBe(
+      0,
+    );
+  });
+});
+
+describe('three of seven', () => {
+  const points = (answerOptionIds: string[]) =>
+    taskPoints(threeOfSevenTask, threeOfSeven, { answerOptionIds });
+
+  it('pays a point for every right one ticked', () => {
+    expect(points(['o0', 'o1', 'o2'])).toBe(3);
+    expect(points(['o0', 'o1', 'o5'])).toBe(2);
+    expect(points(['o4', 'o5', 'o6'])).toBe(0);
+  });
+
+  it('voids a task marked more times than the paper allows', () => {
+    expect(points(['o0', 'o1', 'o2', 'o3'])).toBe(0);
+  });
+
+  it('pays for fewer marks than asked, as the sheet does', () => {
+    expect(points(['o0'])).toBe(1);
+    expect(points([])).toBe(0);
+  });
+});
 
 describe('taskPoints', () => {
   it('gives a single choice its point only when it is right', () => {
@@ -230,6 +317,27 @@ describe.each(DEFAULT_NMT_PAPERS.map((p) => [p.subjectSlug, p] as const))(
     });
   },
 );
+
+describe('the history paper', () => {
+  it('matches the published shape: 30 tasks worth 54 points', () => {
+    expect(HISTORY_OF_UKRAINE_PAPER.tasks).toHaveLength(30);
+    expect(maxTestPoints(HISTORY_OF_UKRAINE_PAPER)).toBe(54);
+  });
+
+  it('sets four kinds of task, each scored its own way', () => {
+    const kinds = HISTORY_OF_UKRAINE_PAPER.tasks.map(
+      (task) => `${task.type}:${task.scoring}:${task.maxPoints}`,
+    );
+    expect(new Set(kinds)).toEqual(
+      new Set([
+        'SINGLE_CHOICE:whole:1',
+        'MATCHING:per-pair:4',
+        'ORDERING:sequence:3',
+        'MULTIPLE_CHOICE:per-correct:3',
+      ]),
+    );
+  });
+});
 
 describe('the mathematics paper', () => {
   it('matches the published shape: 22 tasks worth 32 points', () => {

@@ -74,8 +74,13 @@ export interface NmtPassageBlock {
  * - `whole` — all of `maxPoints` for a correct answer, nothing otherwise: one
  *   point for a single choice, two for a short answer in mathematics.
  * - `per-pair` — a point for every prompt matched to its right choice.
+ * - `sequence` — everything in place earns all of `maxPoints`; otherwise only
+ *   the ends count, both of them one point short of full marks and one of them
+ *   a single point. The exam's own rule for a chronology.
+ * - `per-correct` — a point for every right option ticked. Ticking more than
+ *   the paper asks for voids the task, as an over-marked answer sheet does.
  */
-export type NmtScoring = 'whole' | 'per-pair';
+export type NmtScoring = 'whole' | 'per-pair' | 'sequence' | 'per-correct';
 
 export interface NmtSection {
   from: number;

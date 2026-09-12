@@ -1,7 +1,9 @@
 import { Prisma, QuestionType } from '@prisma/client';
 import {
   correctPairCount,
+  countChosen,
   evaluateAnswer,
+  readSequenceOrders,
   type EvaluableOption,
 } from '../quiz-answer.util';
 import type { NmtPaper, NmtTask } from './nmt-paper.types';
@@ -54,6 +56,28 @@ export function taskPoints(
           question.configuration,
         ),
       );
+    }
+    if (task.scoring === 'sequence') {
+      const orders = readSequenceOrders(selectedAnswer, question.answerOptions);
+      const size = question.answerOptions.length;
+      if (orders.length !== size) {
+        return 0;
+      }
+      if (orders.every((order, index) => order === index)) {
+        return task.maxPoints;
+      }
+      // Nothing in the middle counts: the exam pays only for the two ends.
+      const ends =
+        (orders[0] === 0 ? 1 : 0) + (orders[size - 1] === size - 1 ? 1 : 0);
+      return Math.min(task.maxPoints - 1, ends);
+    }
+    if (task.scoring === 'per-correct') {
+      const { chosen, correct } = countChosen(
+        selectedAnswer,
+        question.answerOptions,
+      );
+      // More marks than the paper asks for void the task, as on the sheet.
+      return chosen > task.maxPoints ? 0 : Math.min(task.maxPoints, correct);
     }
     return evaluateAnswer(
       question.type,

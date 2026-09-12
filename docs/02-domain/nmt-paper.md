@@ -40,7 +40,7 @@ belongs in review.
 |---|---|
 | `subjectSlug` | the subject the paper belongs to |
 | `title`, `minutes`, `timingNote` | what the brief shows; the note explains how the clock relates to the real block |
-| `tasks` | every number: `type`, `optionCount`, `maxPoints`, `scoring` (`whole` or `per-pair`) |
+| `tasks` | every number: `type`, `optionCount`, `maxPoints`, `scoring` (`whole`, `per-pair`, `sequence` or `per-correct`) |
 | `sections` | `{ from, to, instruction }` — the demo's instruction text, one per run of tasks |
 | `passageBlocks` | `{ from, to }` — runs of tasks asked about one text |
 | `scale` | `threshold`, `table` (test points → 100–200), `source` |
@@ -65,6 +65,38 @@ maximum (200) that never falls, blocks inside the paper and not overlapping.
 22 tasks, 32 test points, threshold 5. Sixty minutes: on the exam mathematics
 shares a 120-minute block with Ukrainian and the student splits it; the brief
 says so.
+
+## History of Ukraine
+
+| Numbers | Type | Points | Scoring |
+|---|---|---|---|
+| 1–20 | single choice, four options | 1 | whole |
+| 21–24 | matching, four rows × five choices | 4 | one point per correct pair |
+| 25–27 | four events in chronological order | 3 | whole order, or the two ends |
+| 28–30 | three correct of seven | 3 | one point per correct choice |
+
+30 tasks, 54 test points, threshold 9. The numbers run chronologically, from
+the stone age to the present; 21–24 differ by the kind of pair (a date and an
+event, a person or place and an event, an event and its consequence, a term and
+its meaning) rather than by period.
+
+| № | Tests | № | Tests |
+|---|---|---|---|
+| 1 | earliest times: the stone age, Trypillia, the Scythians, the Greek colonies | 11 | culture of the 19th and early 20th centuries |
+| 2 | Kyivan Rus | 12 | the First World War |
+| 3 | the Principality of Galicia-Volhynia and Mongol rule | 13 | the Ukrainian Revolution of 1917–1921 |
+| 4 | the Lithuanian and Polish period | 14 | Soviet Ukraine in the 1920s and 1930s |
+| 5 | the Cossacks before 1648 | 15 | the western lands between the wars |
+| 6 | culture of the middle ages and the early modern age | 16 | the Second World War |
+| 7 | the Hetmanate | 17 | the first postwar years |
+| 8 | the 18th century | 18 | the thaw |
+| 9 | the national movement of the 19th century | 19 | stagnation and the dissidents |
+| 10 | imperial policy, the economy and reforms | 20 | independence, from 1991 |
+
+The exam sets a picture on several of these numbers — a map, a photograph of a
+building, coins, a poster. Maps we draw ourselves; the rest are asked in words,
+because the rights rule (docs/09-content/question-audit.md §6) keeps other
+people's photographs out of the bank.
 
 ## Ukrainian
 
@@ -145,6 +177,13 @@ Each task earns points by its rule:
 - `whole` — the full `maxPoints` if the answer is correct, otherwise 0;
 - `per-pair` — one point per row matched to its correct choice, capped at
   `maxPoints`. A row paired twice counts once.
+- `sequence` — the whole order in place earns all of `maxPoints`; otherwise
+  only the ends count: both of them one point short of full marks, one of them
+  a single point. History's chronologies, scored as the exam scores them.
+- `per-correct` — a point for every right option ticked. Ticking more than the
+  paper asks for voids the task, exactly as an over-marked answer sheet does,
+  and the screen deliberately does not stop the reader from over-marking: the
+  rule is part of what a mock has to teach.
 
 A missing answer, an answer that cannot be read, or a question whose type does
 not match its number earns 0. Scoring a finished paper never throws.
@@ -206,9 +245,9 @@ points. Nothing is converted, because there is no table to convert with.
 
 # 10. Not yet
 
-- History and English papers. Each needs its own blueprint and, for history, a
-  check of how ordering and three-of-seven tasks earn partial points.
-- The second block (history with an elective subject) — once those papers
-  exist.
+- The English paper, whose every task hangs off a text: it needs passage blocks
+  of its own (§5) before it can be set.
+- The second block — history with an elective subject — once the English paper
+  exists.
 - Whether the table differs between the main and additional sessions; the 2026
   procedure publishes one.
