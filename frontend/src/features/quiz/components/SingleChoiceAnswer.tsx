@@ -1,11 +1,14 @@
 import { MathText } from '@/shared/ui/MathText';
 import type { QuizAnswerOption } from '@/features/quiz/types/quiz.types';
+import { lettersFor } from '@/features/quiz/lib/answer-letters';
 
 interface SingleChoiceAnswerProps {
   options: QuizAnswerOption[];
   selectedId: string | null;
   disabled?: boolean;
   onSelect: (optionId: string) => void;
+  /** Which alphabet labels the options — see `lettersFor`. */
+  subjectSlug?: string;
 }
 
 /**
@@ -14,21 +17,23 @@ interface SingleChoiceAnswerProps {
  * The НМТ paper labels its options А, Б, В, Г — a student reads them, hears
  * them read out, and writes them on the answer sheet. Numbering them the same
  * way costs nothing and makes the practice look like the thing it prepares
- * for; generic radio pills quietly do not.
+ * for; generic radio pills quietly do not. The English paper letters them
+ * A, B, C, D instead, which is why the alphabet follows the subject.
  *
  * Single-choice answer input (docs/04-api/quiz.md §6). Accessible radio group;
  * emits the chosen option id — the page builds the `{ answerOptionId }`
  * payload and autosaves it.
  */
-const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
 
 export function SingleChoiceAnswer({
   options,
   selectedId,
   disabled = false,
   onSelect,
+  subjectSlug,
 }: SingleChoiceAnswerProps): React.JSX.Element {
   const ordered = [...options].sort((a, b) => a.order - b.order);
+  const letters = lettersFor(subjectSlug);
 
   // Five graph sketches are compared with each other, not read one by one —
   // the paper prints them in a row for that reason. Stacked, they would take
@@ -54,7 +59,7 @@ export function SingleChoiceAnswer({
                 selected ? 'border-primary' : 'border-border hover:bg-surface-elevated'
               }`}
             >
-              <Letter position={position} selected={selected} />
+              <Letter letter={letters[position] ?? `${position + 1}`} selected={selected} />
               {/* The text is the picture's alternative and is not printed:
                   authors keep it neutral ("ескіз 1"), because a description
                   of the sketch would be the answer. */}
@@ -86,7 +91,7 @@ export function SingleChoiceAnswer({
               selected ? '' : 'hover:bg-surface-elevated'
             }`}
           >
-            <Letter position={position} selected={selected} />
+            <Letter letter={letters[position] ?? `${position + 1}`} selected={selected} />
             {option.imageUrl ? (
               <img
                 src={option.imageUrl}
@@ -105,7 +110,7 @@ export function SingleChoiceAnswer({
   );
 }
 
-function Letter({ position, selected }: { position: number; selected: boolean }): React.JSX.Element {
+function Letter({ letter, selected }: { letter: string; selected: boolean }): React.JSX.Element {
   return (
     <span
       aria-hidden="true"
@@ -113,7 +118,7 @@ function Letter({ position, selected }: { position: number; selected: boolean })
         selected ? 'bg-primary font-medium text-white' : 'border-border text-text-muted border'
       }`}
     >
-      {LETTERS[position] ?? position + 1}
+      {letter}
     </span>
   );
 }

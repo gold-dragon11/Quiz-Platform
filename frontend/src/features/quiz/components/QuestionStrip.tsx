@@ -12,8 +12,12 @@ interface QuestionStripProps {
   /** Which questions already have an answer saved. */
   answered: boolean[];
   onJump: (index: number) => void;
-  /** Printed numbers when they are not simply 1…n — a mock sitting uses the paper's task numbers. */
-  numbers?: (number | null)[];
+  /**
+   * Printed numbers when they are not simply 1…n — a mock sitting uses the
+   * paper's own, and on the English paper one task carries a run of them
+   * («1–5»), so these are what the paper prints rather than plain numbers.
+   */
+  numbers?: (string | null)[];
   /** What one item is called: «Питання», or «Завдання» on an NMT paper. */
   noun?: string;
   /**
@@ -48,7 +52,10 @@ export function QuestionStrip({
   groups,
 }: QuestionStripProps): React.JSX.Element {
   const answeredCount = answered.filter(Boolean).length;
-  const label = (position: number): number => numbers?.[position] ?? position + 1;
+  const label = (position: number): string => numbers?.[position] ?? `${position + 1}`;
+  // A task that carries a run of the answer sheet prints «11–16», which does
+  // not fit a square; the cell grows for it and stays square for a number.
+  const wide = (numbers ?? []).some((entry) => (entry?.length ?? 0) > 2);
   const rows: QuestionStripGroup[] =
     groups && groups.length > 1 ? groups : [{ label: '', start: 0, count: total }];
   const currentRow = rows.find((row) => index >= row.start && index < row.start + row.count) ?? rows[0];
@@ -84,7 +91,9 @@ export function QuestionStrip({
                     onClick={() => onJump(position)}
                     aria-current={isCurrent ? 'true' : undefined}
                     aria-label={`${row.label ? `${row.label}, ` : ''}${noun} ${label(position)}${isAnswered ? ', відповідь є' : ', без відповіді'}`}
-                    className={`focus-visible:ring-primary h-8 w-8 text-xs tabular-nums outline-none transition-colors focus-visible:ring-2 ${
+                    className={`focus-visible:ring-primary h-8 text-xs tabular-nums outline-none transition-colors focus-visible:ring-2 ${
+                      wide ? 'min-w-8 px-1.5' : 'w-8'
+                    } ${
                       isCurrent
                         ? 'border-primary text-text-primary border-2 font-medium'
                         : isAnswered

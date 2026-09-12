@@ -32,6 +32,7 @@ import {
   scorePaper,
   type NmtPaperScore,
 } from '../nmt/nmt-scoring';
+import { taskLabel } from '../nmt/task-numbering';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
 import { shuffleMatchingOrder } from '../matching-shuffle.util';
@@ -1165,6 +1166,14 @@ export class QuizService {
             };
           }),
           taskNumbers: questions.map((question) => question.nmtTask),
+          taskLabels: questions.map((question) => {
+            const task = sitting.papers
+              .find(({ paper }) => paper.subjectSlug === question.subjectSlug)
+              ?.paper.tasks.find(
+                (candidate) => candidate.number === question.nmtTask,
+              );
+            return task ? taskLabel(task) : null;
+          }),
         }
       : undefined;
 
@@ -1566,6 +1575,7 @@ export class QuizService {
     return {
       id: question.id,
       type: question.type,
+      subjectSlug: question.subjectSlug,
       title: question.translations[0]?.title ?? question.title,
       difficulty: question.difficulty,
       imageUrl: question.imageUrl,

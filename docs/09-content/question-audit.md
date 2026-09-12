@@ -145,7 +145,7 @@ that differ by one rule. Questions written to that shape are marked
 | History, NMT format | 302 | 44 % | **22 %** |
 | Mathematics, practice | 800 | 43 % | 10 % |
 | Mathematics, NMT format | 323 | 36 % | **4 %** |
-| English, NMT format | 330 | 32 % | **18 %** |
+| English, NMT format | 375 | 28 % | **16 %** |
 
 Two more mathematics questions have pictures as options and are left out of
 this measurement: their option text is a hidden text alternative ("ескіз 3"),
@@ -163,25 +163,28 @@ last row cannot be answered by elimination. The spare choice is authored as
 `extraChoices` and validated against repeating any paired item, which would
 otherwise create a second correct answer.
 
-**Coverage.** 1 632 questions: 424 across all 21 Ukrainian topics (Власне
-висловлення is excluded — НМТ 2026 has no essay), 386 across all 14 History
-topics, 422 across all 20 Mathematics topics and 400 across all 20 English
-topics. By shape: 1 276 single-choice, 207 matching, 42 ordering,
-42 multiple-choice and 65 numeric — every one with an explanation. 42 are
-built on a picture: 20 in history, 22 in mathematics.
+**Coverage.** 2 091 questions: 686 across all 21 Ukrainian topics (Власне
+висловлення is excluded — НМТ 2026 has no essay), 458 across all 14 History
+topics, 471 across all 20 Mathematics topics and 476 across all 20 English
+topics. By shape: 1 631 single-choice, 286 matching, 45 ordering,
+45 multiple-choice and 84 numeric — every one with an explanation. 54 are
+built on a picture: 20 in history, 22 in mathematics, 12 clock faces in
+Ukrainian.
 
 **English** is the subject where every task on the paper hangs off a text, so
 it waited for `Passage` (docs/02-domain/passage.md). The bank follows the six
-task shapes of the НМТ 2026 paper on 81 original texts:
+task shapes of the НМТ 2026 paper on 100 original texts:
 
 - the thirteen grammar topics are written as task 6 — short texts with five
   gaps and four forms for each, four texts to a topic;
 - vocabulary, collocations, phrasal verbs, idioms and word formation as task 5
   — the same, with words instead of forms;
 - use of English mixes the two;
-- reading comprehension carries tasks 1–4: stories with five questions each,
-  notices and camp descriptions matched against eight statements, and texts
-  with six gaps for sentence fragments.
+- reading comprehension carries tasks 1–4: twelve stories with five questions
+  each, twelve sets of short texts and twelve sets of longer descriptions
+  matched against eight statements, and twelve texts with six gaps for
+  sentence fragments — twelve of each, so a learner meets a different variant
+  of every task for a dozen sittings.
 
 None of the texts is taken from a published paper. The one standard applied to
 every gap was that exactly one option fits: wherever a native speaker would
@@ -189,7 +192,7 @@ accept a second — "the fastest way" beside "the quickest", "take a decision"
 beside "make", "will start" in reported speech — that option was replaced before
 it was written, not argued about afterwards.
 
-The strictly-longest rate, 18 %, sits below chance for the same reason as in
+The strictly-longest rate, 16 %, sits below chance for the same reason as in
 mathematics: in a gap, the right form of a word is not systematically longer
 than the wrong forms of the same word.
 

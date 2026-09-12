@@ -40,7 +40,7 @@ belongs in review.
 |---|---|
 | `subjectSlug` | the subject the paper belongs to |
 | `title`, `minutes`, `timingNote` | what the brief shows; the note explains how the clock relates to the real block |
-| `tasks` | every number: `type`, `optionCount`, `maxPoints`, `scoring` (`whole`, `per-pair`, `sequence` or `per-correct`) |
+| `tasks` | every number: `type`, `optionCount`, `covers`, `maxPoints`, `scoring` (`whole`, `per-pair`, `sequence` or `per-correct`) |
 | `sections` | `{ from, to, instruction }` — the demo's instruction text, one per run of tasks |
 | `passageBlocks` | `{ from, to }` — runs of tasks asked about one text |
 | `scale` | `threshold`, `table` (test points → 100–200), `source` |
@@ -50,9 +50,19 @@ number: four or five for a single choice, prompts plus choices for matching,
 null for a short answer. The draw checks it, so a four-option question tagged
 for a five-option number is never set.
 
-Unit tests hold every paper to its shape: tasks numbered 1…n, exactly one
-section per number, a score for every total from the threshold (100) to the
-maximum (200) that never falls, blocks inside the paper and not overlapping.
+`covers` is how many rows of the answer sheet a task fills, counting from its
+number; absent means one, which is every task but three. English matches five
+or six numbered texts against eight choices and prints that as a single task
+over a run of numbers — «Match choices (A–H) to (1–5)» — so a paper is not
+always as many questions as it has numbers, and the number after such a task
+starts where its run ends. `taskLabel` in `src/quiz/nmt/task-numbering.ts` is
+what the paper prints above one: «7», or «11–16».
+
+Unit tests hold every paper to its shape: each task starting where the one
+before it ended, the first at 1; exactly one section per number; a score for
+every total from the threshold (100) to the maximum (200) that never falls;
+blocks inside the paper, not overlapping, and never over a task that already
+covers a run.
 
 ## Mathematics
 
@@ -98,6 +108,31 @@ building, coins, a poster. Maps we draw ourselves; the rest are asked in words,
 because the rights rule (docs/09-content/question-audit.md §6) keeps other
 people's photographs out of the bank.
 
+## English
+
+| Task | Numbers | Type | Points | Scoring |
+|---|---|---|---|---|
+| 1 | 1–5 | five short texts matched against eight statements | 5 | one point per text |
+| 2 | 6–10 | single choice, four options, on one long text | 1 each | whole |
+| 3 | 11–16 | six descriptions matched against eight statements | 6 | one point per description |
+| 4 | 17–22 | six gaps in a text filled from eight fragments | 6 | one point per gap |
+| 5 | 23–27 | single choice, four options — a word for each gap | 1 each | whole |
+| 6 | 28–32 | the same, on grammar | 1 each | whole |
+
+18 questions over 32 numbers, 32 test points, threshold 5 — the lowest of the
+four papers, and the one whose table climbs fastest at the top. Sixty minutes:
+on the exam English shares a 120-minute block with history.
+
+Every task hangs off a text, which is what makes this paper different. Tasks 1
+and 3 carry their texts inside the question — each advert or description is a
+row of the matching — while 2, 5 and 6 are runs of separate questions on one
+passage (§5) and 4 is a single matching over a passage of its own. Tasks 5 and
+6 divide the same shape by what is being chosen: 23–27 a word, 28–32 a form.
+
+The bank tags a text by the topic it sits in: the six lexical topics fill
+23–27, the thirteen grammar topics 28–32, and reading-comprehension holds
+everything else.
+
 ## Ukrainian
 
 | Numbers | Type | Points | Scoring |
@@ -141,6 +176,10 @@ questions have one. The seed validator checks the range and the format; the
 audit script checks that the question's type is the paper's type for that
 number and prints the pool behind every number.
 
+A task that covers a run is tagged with the first number of that run: the
+English matching for rows 11–16 carries `nmtTask: 11`, and the shape of the
+question — six rows against eight choices — is what fills the other five.
+
 A number is not a topic. Task 12 in mathematics is an integral or a derivative;
 the questions for it live in the analysis topics, and task 3's in numbers and
 ratios. The number says where on the paper a question can stand.
@@ -160,6 +199,10 @@ met longest ago (a text counts as met when any of its questions was), never-met
 first. Its questions go in the paper's order. A run is never stitched together
 from two texts, and in the seed a passage's task numbers must rise in the order
 its questions appear and be set on all of them or none.
+
+A task that covers a run by itself needs none of this. English 17–22 is one
+matching over a gapped text: it draws like any other single question, and the
+text comes with it.
 
 If any number has no question, the sitting is refused with `409` naming the
 missing numbers. A paper with a hole is not the exam, and quietly shortening it
@@ -210,8 +253,9 @@ curve is fitted and no value is interpolated.
 
 # 8. Joint blocks
 
-НМТ 2026 sits subjects in blocks: Ukrainian and mathematics together on one
-120-minute clock, the student dividing the time between them. A block
+НМТ 2026 sits subjects in blocks of two: Ukrainian with mathematics, history
+with the elective — English here, the only elective whose paper is written —
+each pair on one 120-minute clock that the student divides between them. A block
 (`NmtBlock` in `src/quiz/nmt/nmt-papers.ts`) names its subjects in order, its
 clock and a note on the shared time; a unit test holds its clock to the sum of
 its papers'.
@@ -245,9 +289,9 @@ points. Nothing is converted, because there is no table to convert with.
 
 # 10. Not yet
 
-- The English paper, whose every task hangs off a text: it needs passage blocks
-  of its own (§5) before it can be set.
-- The second block — history with an elective subject — once the English paper
-  exists.
+- The other electives of the second block — biology, chemistry, physics,
+  geography, a foreign language other than English. Each needs its own paper
+  and a bank tagged to it; the block is then one more entry beside
+  `history-english`.
 - Whether the table differs between the main and additional sessions; the 2026
   procedure publishes one.

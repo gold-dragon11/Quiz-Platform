@@ -194,6 +194,11 @@ export function QuizSessionPage(): React.JSX.Element {
   const sitting = session.data.sitting;
   const paper = sitting?.papers.find((entry) => index >= entry.start && index < entry.start + entry.count);
   const taskNumber = sitting?.taskNumbers[index] ?? null;
+  // A task that carries a run of the answer sheet — English «11–16», «17–22» —
+  // numbers its rows and its gaps as the paper does, because its instruction
+  // names those numbers. Everywhere else a task is one row and counts from 1.
+  const taskRun = sitting?.taskLabels[index]?.split('–') ?? [];
+  const runFrom = taskRun.length === 2 ? Number(taskRun[0]) : 1;
   const section =
     taskNumber === null
       ? undefined
@@ -213,7 +218,7 @@ export function QuizSessionPage(): React.JSX.Element {
             index={index}
             answered={questions.map((question) => answers[question.id] !== undefined)}
             onJump={setIndex}
-            numbers={sitting?.taskNumbers}
+            numbers={sitting?.taskLabels}
             noun={sitting ? 'Завдання' : undefined}
             groups={
               sitting && sitting.papers.length > 1
@@ -250,6 +255,7 @@ export function QuizSessionPage(): React.JSX.Element {
               key={current.passage.id}
               passage={current.passage}
               activeGap={current.type === QuestionType.MATCHING ? null : current.passageOrder}
+              numberFrom={runFrom}
               className="max-h-[45vh] overflow-y-auto lg:max-h-[calc(100vh-10rem)]"
             />
           </div>
@@ -269,6 +275,7 @@ export function QuizSessionPage(): React.JSX.Element {
               disabled={complete.isPending}
               onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
               matchingLayout={sitting ? 'grid' : 'list'}
+              matchingRowFrom={runFrom}
             />
           </motion.div>
         </AnimatePresence>

@@ -50,9 +50,9 @@ export function NmtResult({ nmt, xpEarned }: { nmt: NmtResultView; xpEarned: num
             <li
               key={task.number}
               className="border-border flex flex-col items-center gap-1 border-r border-b py-2.5"
-              aria-label={`Завдання ${task.number}: ${task.points} з ${task.maxPoints}`}
+              aria-label={`Завдання ${task.label}: ${task.points} з ${task.maxPoints}`}
             >
-              <span className="text-text-muted text-[11px] tabular-nums">{task.number}</span>
+              <span className="text-text-muted text-[11px] tabular-nums">{task.label}</span>
               <span
                 className={`text-sm tabular-nums ${
                   task.points === 0

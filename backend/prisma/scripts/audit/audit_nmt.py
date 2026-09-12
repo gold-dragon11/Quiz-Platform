@@ -69,12 +69,26 @@ PAPERS = {
         + [(n, ('MATCHING', 9)) for n in range(21, 25)]
         + [(n, ('ORDERING', 4)) for n in range(25, 28)]
         + [(n, ('MULTIPLE_CHOICE', 7)) for n in range(28, 31)]),
+    # English numbers the answer sheet, not the questions: one matching task
+    # fills rows 1–5, another 11–16, another 17–22, and each is tagged with the
+    # first number of its run.
+    'english-language': dict(
+        [(1, ('MATCHING', 13)), (11, ('MATCHING', 14)), (17, ('MATCHING', 14))]
+        + [(n, ('SINGLE_CHOICE', 4)) for n in range(6, 11)]
+        + [(n, ('SINGLE_CHOICE', 4)) for n in range(23, 33)]),
 }
 # Runs of tasks asked about one text. A sitting takes the whole run from a
 # single passage, so what has to be deep enough is the number of passages that
 # cover every task of the run, not the questions per task.
 BLOCKS = {
     'ukrainian-language': [(21, 25)],
+    'english-language': [(6, 10), (23, 27), (28, 32)],
+}
+# Tasks asked about a text without being a run of separate questions: English
+# 17–22 is one matching over a gapped text, so the text hangs off that single
+# question rather than off a block.
+TEXT_TASKS = {
+    'english-language': {17},
 }
 MIN_POOL = 12
 
@@ -132,6 +146,7 @@ def check(pack):
     paper = PAPERS.get(pack)
     blocks = BLOCKS.get(pack, [])
     in_block = {n for start, end in blocks for n in range(start, end + 1)}
+    with_text = in_block | TEXT_TASKS.get(pack, set())
     pools = {}
     passage_tasks = {}
     off_paper = 0
@@ -163,9 +178,9 @@ def check(pack):
                 elif paper[task][1] != option_count(question):
                     problems.append('%s — task %d takes %s answer options, this has %s'
                                     % (at, task, paper[task][1], option_count(question)))
-                elif (task in in_block) != (question.get('passage') is not None):
+                elif (task in with_text) != (question.get('passage') is not None):
                     problems.append('%s — task %d is %s on the paper'
-                                    % (at, task, 'asked about a text' if task in in_block
+                                    % (at, task, 'asked about a text' if task in with_text
                                        else 'not asked about a text'))
                 else:
                     pools[task] = pools.get(task, 0) + 1

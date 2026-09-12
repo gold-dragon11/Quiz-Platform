@@ -1,9 +1,11 @@
 import { QuestionType } from '@prisma/client';
-import type { NmtPaper } from './nmt-paper.types';
+import type { NmtPaper, NmtTask } from './nmt-paper.types';
 import { DEFAULT_NMT_BLOCKS, DEFAULT_NMT_PAPERS } from './nmt-papers';
 import { HISTORY_OF_UKRAINE_PAPER } from './papers/history-of-ukraine.paper';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
+import { ENGLISH_LANGUAGE_PAPER } from './papers/english-language.paper';
 import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
+import { taskCovers, taskEnd, taskLabel } from './task-numbering';
 import {
   maxTestPoints,
   scaledScore,
@@ -259,10 +261,13 @@ describe.each(DEFAULT_NMT_PAPERS.map((p) => [p.subjectSlug, p] as const))(
   (_, subjectPaper) => {
     const max = maxTestPoints(subjectPaper);
 
-    it('numbers its tasks 1…n with nothing skipped', () => {
-      expect(subjectPaper.tasks.map((task) => task.number)).toEqual(
-        subjectPaper.tasks.map((_task, i) => i + 1),
-      );
+    it('numbers its tasks from 1, each starting where the last ended', () => {
+      let next = 1;
+      for (const task of subjectPaper.tasks) {
+        expect(task.number).toBe(next);
+        expect(taskCovers(task)).toBeGreaterThanOrEqual(1);
+        next = taskEnd(task) + 1;
+      }
     });
 
     it('converts every total from the threshold up, never falling, to 200', () => {
@@ -283,10 +288,12 @@ describe.each(DEFAULT_NMT_PAPERS.map((p) => [p.subjectSlug, p] as const))(
 
     it('covers every task number with exactly one section instruction', () => {
       for (const task of subjectPaper.tasks) {
-        const sections = subjectPaper.sections.filter(
-          (section) => section.from <= task.number && task.number <= section.to,
-        );
-        expect(sections).toHaveLength(1);
+        for (let number = task.number; number <= taskEnd(task); number += 1) {
+          const sections = subjectPaper.sections.filter(
+            (section) => section.from <= number && number <= section.to,
+          );
+          expect(sections).toHaveLength(1);
+        }
       }
     });
 
@@ -310,9 +317,14 @@ describe.each(DEFAULT_NMT_PAPERS.map((p) => [p.subjectSlug, p] as const))(
       });
       expect(new Set(numbers).size).toBe(numbers.length);
       for (const number of numbers) {
-        expect(subjectPaper.tasks.some((task) => task.number === number)).toBe(
-          true,
+        // A text block is a run of separate questions, so every number in it
+        // is a task of its own: a task that already covers a run is one
+        // question and draws its text by itself.
+        const task = subjectPaper.tasks.find(
+          (candidate) => candidate.number === number,
         );
+        expect(task).toBeDefined();
+        expect(taskCovers(task as NmtTask)).toBe(1);
       }
     });
   },
@@ -369,6 +381,50 @@ describe('the Ukrainian paper', () => {
   it('asks 21–25 about one text', () => {
     expect(UKRAINIAN_LANGUAGE_PAPER.passageBlocks).toEqual([
       { from: 21, to: 25 },
+    ]);
+  });
+});
+
+describe('the English paper', () => {
+  const task = (number: number) =>
+    ENGLISH_LANGUAGE_PAPER.tasks.find(
+      (candidate) => candidate.number === number,
+    );
+
+  it('matches the published shape: 18 questions over 32 numbers, 32 points', () => {
+    expect(ENGLISH_LANGUAGE_PAPER.tasks).toHaveLength(18);
+    expect(maxTestPoints(ENGLISH_LANGUAGE_PAPER)).toBe(32);
+    const last = ENGLISH_LANGUAGE_PAPER.tasks.at(-1) as NmtTask;
+    expect(taskEnd(last)).toBe(32);
+  });
+
+  it('sets one matching over each run of numbers, a point per row', () => {
+    expect(task(1)).toMatchObject({
+      type: 'MATCHING',
+      optionCount: 13,
+      covers: 5,
+      maxPoints: 5,
+      scoring: 'per-pair',
+    });
+    expect(task(11)).toMatchObject({
+      optionCount: 14,
+      covers: 6,
+      maxPoints: 6,
+    });
+    expect(task(17)).toMatchObject({
+      optionCount: 14,
+      covers: 6,
+      maxPoints: 6,
+    });
+    expect(taskLabel(task(11) as NmtTask)).toBe('11–16');
+    expect(taskLabel(task(6) as NmtTask)).toBe('6');
+  });
+
+  it('asks 6–10, 23–27 and 28–32 each about one text', () => {
+    expect(ENGLISH_LANGUAGE_PAPER.passageBlocks).toEqual([
+      { from: 6, to: 10 },
+      { from: 23, to: 27 },
+      { from: 28, to: 32 },
     ]);
   });
 });

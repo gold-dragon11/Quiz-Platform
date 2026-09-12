@@ -83,6 +83,8 @@ export interface PassageView {
 export interface QuizQuestionView {
   id: string;
   type: QuestionType;
+  /** The subject the question belongs to — it decides the option letters. */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
@@ -121,6 +123,11 @@ export interface NmtSittingView {
   }[];
   /** In session order. */
   taskNumbers: (number | null)[];
+  /**
+   * What the paper prints above each question — the number itself, or «1–5»
+   * where one task fills a run of the answer sheet, as English does.
+   */
+  taskLabels: (string | null)[];
 }
 
 /** One paper of a finished mock sitting, scored as the exam scores it. */
@@ -133,7 +140,14 @@ export interface NmtResultView {
   scaledScore: number | null;
   threshold: number;
   scaleSource: string;
-  tasks: { number: number; questionId: string; points: number; maxPoints: number }[];
+  tasks: {
+    number: number;
+    /** «7», or «1–5» where the task fills a run of the answer sheet. */
+    label: string;
+    questionId: string;
+    points: number;
+    maxPoints: number;
+  }[];
 }
 
 /** Full resume state (docs/04-api/quiz.md §9). */
@@ -167,6 +181,8 @@ export interface QuizResultSummary {
 export interface QuizReviewQuestion {
   id: string;
   type: QuestionType;
+  /** See `QuizQuestionView.subjectSlug`. */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;

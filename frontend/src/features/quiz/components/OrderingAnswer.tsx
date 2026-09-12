@@ -1,6 +1,7 @@
 import { MathText } from '@/shared/ui/MathText';
 import { mathToPlainText } from '@/shared/utils/math-text';
 import type { QuizAnswerOption } from '@/features/quiz/types/quiz.types';
+import { lettersFor } from '@/features/quiz/lib/answer-letters';
 
 interface OrderingAnswerProps {
   options: QuizAnswerOption[];
@@ -8,9 +9,9 @@ interface OrderingAnswerProps {
   positions: Record<string, number>;
   disabled?: boolean;
   onChange: (positions: Record<string, number>) => void;
+  /** Which alphabet labels the extracts — see `lettersFor`. */
+  subjectSlug?: string;
 }
-
-const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
 
 /**
  * Ordering answer input (docs/04-api/quiz.md §6) — the exam's tasks 25–27,
@@ -31,8 +32,10 @@ export function OrderingAnswer({
   positions,
   disabled = false,
   onChange,
+  subjectSlug,
 }: OrderingAnswerProps): React.JSX.Element {
   const ordered = [...options].sort((a, b) => a.order - b.order);
+  const letters = lettersFor(subjectSlug);
 
   const choose = (optionId: string, position: number): void => {
     const next: Record<string, number> = { ...positions };
@@ -67,7 +70,7 @@ export function OrderingAnswer({
               aria-hidden="true"
               className="text-text-muted border-border mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border text-sm"
             >
-              {LETTERS[index] ?? index + 1}
+              {letters[index] ?? index + 1}
             </span>
             <div className="text-text-secondary flex-1 text-sm">
               {option.imageUrl && (

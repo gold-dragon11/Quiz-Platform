@@ -60,6 +60,8 @@ describe('Mock exam (e2e)', () => {
 
   // A three-task paper on a subject of our own, so the paper engine is tested
   // without depending on seeded content: one point, three pairs, two points.
+  // The matching fills rows 2–4 of the answer sheet, as English task 3 fills
+  // 11–16, so the short answer that follows it is number 5 and not number 3.
   const PAPER_SLUG = `${PREFIX}-paper`;
   const GAP_SLUG = `${PREFIX}-gap`;
   const paperFor = (subjectSlug: string): NmtPaper => ({
@@ -79,11 +81,12 @@ describe('Mock exam (e2e)', () => {
         number: 2,
         type: QuestionType.MATCHING,
         optionCount: 8,
+        covers: 3,
         maxPoints: 3,
         scoring: 'per-pair',
       },
       {
-        number: 3,
+        number: 5,
         type: QuestionType.NUMERIC,
         optionCount: null,
         maxPoints: 2,
@@ -92,8 +95,8 @@ describe('Mock exam (e2e)', () => {
     ],
     sections: [
       { from: 1, to: 1, instruction: 'Оберіть одну відповідь.' },
-      { from: 2, to: 2, instruction: 'Доберіть пари.' },
-      { from: 3, to: 3, instruction: 'Запишіть число.' },
+      { from: 2, to: 4, instruction: 'Доберіть пари.' },
+      { from: 5, to: 5, instruction: 'Запишіть число.' },
     ],
     passageBlocks: [],
     scale: {
@@ -338,7 +341,7 @@ describe('Mock exam (e2e)', () => {
         data: {
           ...base,
           type: QuestionType.NUMERIC,
-          title: `task 3 ${counter++}`,
+          title: `task 5 ${counter++}`,
           configuration: { answer: 7.5 },
         },
       });
@@ -455,11 +458,11 @@ describe('Mock exam (e2e)', () => {
     await prisma.passage.deleteMany({
       where: { topicId: { in: paperTopics } },
     });
-    for (const task of [1, 1, 2, 3]) {
+    for (const task of [1, 1, 2, 5]) {
       await seedTaskQuestion(paperTopicId, task);
     }
     // Task 2 is missing from this one on purpose.
-    for (const task of [1, 3]) {
+    for (const task of [1, 5]) {
       await seedTaskQuestion(gapTopicId, task);
     }
 
@@ -826,6 +829,7 @@ describe('Mock exam (e2e)', () => {
           count: number;
         }[];
         taskNumbers: (number | null)[];
+        taskLabels: (string | null)[];
       };
       questions: { id: string; type: string }[];
     }
@@ -839,7 +843,12 @@ describe('Mock exam (e2e)', () => {
           maxTestPoints: number;
           scaledScore: number | null;
           threshold: number;
-          tasks: { number: number; points: number; maxPoints: number }[];
+          tasks: {
+            number: number;
+            label: string;
+            points: number;
+            maxPoints: number;
+          }[];
         }[];
       };
     }
@@ -897,7 +906,9 @@ describe('Mock exam (e2e)', () => {
         .expect(200);
       const resume = resumed.body as ResumeBody;
 
-      expect(resume.sitting?.taskNumbers).toEqual([1, 2, 3]);
+      expect(resume.sitting?.taskNumbers).toEqual([1, 2, 5]);
+      // The matching carries rows 2–4, so that is what the paper prints.
+      expect(resume.sitting?.taskLabels).toEqual(['1', '2–4', '5']);
       expect(resume.sitting?.papers).toEqual([
         expect.objectContaining({
           subjectName: PAPER_SLUG,
@@ -974,8 +985,10 @@ describe('Mock exam (e2e)', () => {
       ).toEqual([
         [1, 1, 1],
         [2, 2, 3],
-        [3, 0, 2],
+        [5, 0, 2],
       ]);
+      // The matching fills rows 2–4, so the review prints its run, not «2».
+      expect(nmt?.tasks.map((task) => task.label)).toEqual(['1', '2–4', '5']);
       expect(nmt).toMatchObject({
         testPoints: 3,
         maxTestPoints: 6,
@@ -1118,7 +1131,15 @@ describe('Mock exam (e2e)', () => {
         const resume = resumed.body as ResumeBody;
 
         expect(resume.sitting?.title).toBe(TEST_BLOCK.title);
-        expect(resume.sitting?.taskNumbers).toEqual([1, 2, 3, 1, 2, 3]);
+        expect(resume.sitting?.taskNumbers).toEqual([1, 2, 5, 1, 2, 3]);
+        expect(resume.sitting?.taskLabels).toEqual([
+          '1',
+          '2–4',
+          '5',
+          '1',
+          '2',
+          '3',
+        ]);
         expect(
           resume.sitting?.papers.map((paper) => [
             paper.subjectName,

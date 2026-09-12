@@ -92,6 +92,13 @@ fill, is a task nobody can finish, and nothing at runtime would notice.
 
 A text without gaps (a story, a set of numbered adverts) simply has none.
 
+Stored from 1, printed as the paper prints it. English task 4 is one matching
+over six gaps, and on the answer sheet those are rows 17–22; the screen offsets
+what it prints to match the instruction above it (`numberFrom` on
+`PassagePanel`), while the stored numbers, the `passageOrder` of each question
+and the seed's checks all stay counted from one — the same text is read outside
+any paper, where 17 would mean nothing.
+
 ---
 
 # 6. Identity and seeding

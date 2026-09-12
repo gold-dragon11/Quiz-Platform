@@ -7,6 +7,7 @@ import {
   type EvaluableOption,
 } from '../quiz-answer.util';
 import type { NmtPaper, NmtTask } from './nmt-paper.types';
+import { taskLabel } from './task-numbering';
 
 /** What scoring needs to know about a question on the paper. */
 export interface ScorableQuestion {
@@ -19,6 +20,8 @@ export interface ScorableQuestion {
 
 export interface NmtTaskScore {
   number: number;
+  /** What the paper prints above the task — «7», or «1–5» over a run. */
+  label: string;
   questionId: string;
   points: number;
   maxPoints: number;
@@ -128,6 +131,7 @@ export function scorePaper(
       return [
         {
           number: task.number,
+          label: taskLabel(task),
           questionId: question.id,
           points: taskPoints(task, question, answers.get(question.id)),
           maxPoints: task.maxPoints,

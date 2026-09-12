@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { NmtBlock, NmtPaper } from './nmt-paper.types';
+import { ENGLISH_LANGUAGE_PAPER } from './papers/english-language.paper';
 import { HISTORY_OF_UKRAINE_PAPER } from './papers/history-of-ukraine.paper';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
 import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
@@ -13,12 +14,14 @@ export const DEFAULT_NMT_PAPERS: NmtPaper[] = [
   MATHEMATICS_PAPER,
   UKRAINIAN_LANGUAGE_PAPER,
   HISTORY_OF_UKRAINE_PAPER,
+  ENGLISH_LANGUAGE_PAPER,
 ];
 
 /**
- * The joint blocks of НМТ 2026. The first block sits Ukrainian and mathematics
- * together on one 120-minute clock, in that order; the time between them is the
- * student's to divide.
+ * The joint blocks of НМТ 2026: two sittings of two papers each, every one on
+ * a single 120-minute clock that the student divides between them. The elective
+ * of the second block is English — the only one of the four whose paper is
+ * written, and the one most of these learners sit.
  */
 export const DEFAULT_NMT_BLOCKS: NmtBlock[] = [
   {
@@ -28,6 +31,14 @@ export const DEFAULT_NMT_BLOCKS: NmtBlock[] = [
     timingNote:
       'Як на НМТ: обидва зошити на одному годиннику, 120 хвилин на двох. Переходити між предметами можна будь-коли, а бали рахуються окремо для кожного.',
     subjectSlugs: ['ukrainian-language', 'mathematics'],
+  },
+  {
+    slug: 'history-english',
+    title: 'Другий блок НМТ: історія України й англійська мова',
+    minutes: 120,
+    timingNote:
+      'Як на НМТ: обидва зошити на одному годиннику, 120 хвилин на двох. Переходити між предметами можна будь-коли, а бали рахуються окремо для кожного.',
+    subjectSlugs: ['history-of-ukraine', 'english-language'],
   },
 ];
 

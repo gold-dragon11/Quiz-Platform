@@ -12,6 +12,14 @@ interface PassagePanelProps {
    * question about the text as a whole, and for a text without gaps.
    */
   activeGap?: number | null;
+  /**
+   * The number to print over the first gap. A text stores its gaps numbered
+   * from one, because it is also read outside any paper; on the English paper
+   * the same six gaps are rows 17–22 of the answer sheet, and printing 1–6
+   * under an instruction that says «(17–22)» would send the reader looking for
+   * a gap that is not there.
+   */
+  numberFrom?: number;
   className?: string;
 }
 
@@ -28,6 +36,7 @@ interface PassagePanelProps {
 export function PassagePanel({
   passage,
   activeGap = null,
+  numberFrom = 1,
   className = '',
 }: PassagePanelProps): React.JSX.Element {
   const boxRef = useRef<HTMLElement>(null);
@@ -56,19 +65,21 @@ export function PassagePanel({
     >
       {passage.title && <h3 className="text-text-primary mb-4 text-base font-medium">{passage.title}</h3>}
       <div className="text-text-secondary text-[15px] leading-7 whitespace-pre-wrap">
-        {withGaps(passage.content, activeGap)}
+        {withGaps(passage.content, activeGap, numberFrom)}
       </div>
     </article>
   );
 }
 
-function withGaps(content: string, activeGap: number | null): React.ReactNode[] {
+function withGaps(content: string, activeGap: number | null, numberFrom: number): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   let last = 0;
   for (const match of content.matchAll(GAP)) {
     const start = match.index ?? 0;
     const number = Number(match[1]);
     const active = number === activeGap;
+    // Marked and scrolled to by the stored number; printed with the paper's.
+    const printed = number + numberFrom - 1;
     parts.push(<EmphasisText key={`text-${start}`}>{content.slice(last, start)}</EmphasisText>);
     parts.push(
       <span
@@ -80,7 +91,7 @@ function withGaps(content: string, activeGap: number | null): React.ReactNode[] 
           active ? 'bg-primary/15 text-primary font-medium' : 'text-text-muted'
         }`}
       >
-        ({number})
+        ({printed})
         <span
           aria-hidden="true"
           className={`ml-1 inline-block w-10 border-b ${active ? 'border-primary' : 'border-text-muted/60'}`}

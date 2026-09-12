@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { MathText } from '@/shared/ui/MathText';
 import { QuestionType } from '@/shared/types/enums';
 import type { QuizAnswerOption, QuizReviewQuestion } from '@/features/quiz/types/quiz.types';
+import { lettersFor } from '@/features/quiz/lib/answer-letters';
 import {
   getAnswerOptionIds,
   getCorrectOptionId,
@@ -28,8 +29,11 @@ export function ResultReview({
   headings,
 }: {
   questions: QuizReviewQuestion[];
-  /** Task numbers by question id, when the session followed an NMT paper. */
-  numbers?: Map<string, number>;
+  /**
+   * What the paper prints above each question, by question id, when the
+   * session followed an NMT paper: a number, or «1–5» over a run of them.
+   */
+  numbers?: Map<string, string>;
   /** A heading before the question with this id — each paper of a joint block. */
   headings?: Map<string, string>;
 }): React.JSX.Element {
@@ -117,9 +121,6 @@ function Explanation({ text }: { text: string }): React.JSX.Element {
   );
 }
 
-/** Same letters as the session screen, and as the exam paper. */
-const LETTERS = ['А', 'Б', 'В', 'Г', 'Д', 'Е'];
-
 function optionMap(options: QuizAnswerOption[]): Map<string, QuizAnswerOption> {
   return new Map(options.map((option) => [option.id, option]));
 }
@@ -135,6 +136,7 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
   const correctId = getCorrectOptionId(question.correctAnswer);
   const submittedId = getSelectedOptionId(question.submittedAnswer);
   const ordered = [...question.answerOptions].sort((a, b) => a.order - b.order);
+  const letters = lettersFor(question.subjectSlug);
 
   return (
     <div className="flex flex-col">
@@ -154,7 +156,7 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
                     : 'border-border text-text-muted border'
               }`}
             >
-              {LETTERS[position] ?? position + 1}
+              {letters[position] ?? position + 1}
             </span>
             {option.imageUrl ? (
               <img

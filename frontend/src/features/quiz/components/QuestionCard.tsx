@@ -32,6 +32,8 @@ interface QuestionCardProps {
   onAnswerChange: (selectedAnswer: SelectedAnswer) => void;
   /** `grid` sets matching out as the NMT answer sheet does — used in a mock sitting. */
   matchingLayout?: 'list' | 'grid';
+  /** The number of the answer sheet's first row — see `MatchingGrid`. */
+  matchingRowFrom?: number;
 }
 
 /**
@@ -45,6 +47,7 @@ export function QuestionCard({
   disabled = false,
   onAnswerChange,
   matchingLayout = 'list',
+  matchingRowFrom = 1,
 }: QuestionCardProps): React.JSX.Element {
   return (
     // No card: the page is already the container, and a bordered box inside a
@@ -67,6 +70,7 @@ export function QuestionCard({
           selectedId={getSelectedOptionId(answer)}
           disabled={disabled}
           onSelect={(optionId) => onAnswerChange(buildSingleChoiceAnswer(optionId))}
+          subjectSlug={question.subjectSlug}
         />
       )}
 
@@ -78,6 +82,8 @@ export function QuestionCard({
             assignments={pairsToAssignments(getMatchingPairs(answer))}
             disabled={disabled}
             onChange={(assignments) => onAnswerChange(buildMatchingAnswer(assignmentsToPairs(assignments)))}
+            subjectSlug={question.subjectSlug}
+            rowFrom={matchingRowFrom}
           />
         ) : (
           <MatchingAnswer
@@ -94,6 +100,7 @@ export function QuestionCard({
           options={question.answerOptions}
           positions={sequenceToPositions(getSequence(answer))}
           disabled={disabled}
+          subjectSlug={question.subjectSlug}
           onChange={(positions) => {
             // Only a complete ordering is a valid payload, so a half-placed
             // one is held in the page until the last item finds its place.

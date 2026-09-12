@@ -28,6 +28,14 @@ export interface QuizSessionMetadata {
 export interface QuizQuestionView {
   id: string;
   type: string;
+  /**
+   * The subject the question belongs to. The client needs it to letter the
+   * answer options the way the subject's paper does: А–Ж everywhere, A–H in
+   * English, which prints «Match choices (A–H)» right above them. In a joint
+   * block the two papers sit in one session, so this cannot be read off the
+   * session.
+   */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
@@ -81,6 +89,11 @@ export interface NmtSittingView {
   }[];
   /** The task number of each question, in session order. */
   taskNumbers: (number | null)[];
+  /**
+   * What the paper prints above each question, in session order — the number
+   * itself, or «1–5» where one task fills a run of the answer sheet.
+   */
+  taskLabels: (string | null)[];
 }
 
 /** One paper of a finished mock sitting, scored as the exam scores it. */
@@ -95,6 +108,7 @@ export interface NmtResultView {
   scaleSource: string;
   tasks: {
     number: number;
+    label: string;
     questionId: string;
     points: number;
     maxPoints: number;
@@ -167,6 +181,8 @@ export interface QuizResultSummary {
 export interface QuizReviewQuestion {
   id: string;
   type: string;
+  /** See `QuizQuestionView.subjectSlug`. */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;

@@ -101,7 +101,7 @@ export function QuizResultPage(): React.JSX.Element {
             result.data.nmt
               ? new Map(
                   result.data.nmt.papers.flatMap((paper) =>
-                    paper.tasks.map((task) => [task.questionId, task.number] as const),
+                    paper.tasks.map((task) => [task.questionId, task.label] as const),
                   ),
                 )
               : undefined

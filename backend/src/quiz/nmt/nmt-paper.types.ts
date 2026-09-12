@@ -54,6 +54,14 @@ export interface NmtTask {
    * four-option question tagged for a five-option number is never set.
    */
   optionCount: number | null;
+  /**
+   * How many rows of the answer sheet this task fills, counting from
+   * `number`; absent means one, as it is everywhere but English. English
+   * matches five or six numbered texts against eight choices and prints that
+   * as a single task over a run of numbers — «Match choices (A–H) to (1–5)» —
+   * so the numbers after it start where its run ends.
+   */
+  covers?: number;
   maxPoints: number;
   scoring: NmtScoring;
 }
