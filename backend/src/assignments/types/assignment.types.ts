@@ -1,5 +1,16 @@
 import { ExplanationVisibility, ScoredAttempt } from '@prisma/client';
 
+/**
+ * The paper a mock exam assignment follows (decision 29), in the numbers the
+ * screens about it show: tasks as the answer sheet counts them, points, clock.
+ */
+export interface MockExamSummary {
+  title: string;
+  taskCount: number;
+  maxTestPoints: number;
+  minutes: number;
+}
+
 /** An assignment as its author sees it. */
 export interface TeacherAssignment {
   id: string;
@@ -12,6 +23,8 @@ export interface TeacherAssignment {
   scoredAttempt: ScoredAttempt;
   explanations: ExplanationVisibility;
   questionCount: number;
+  /** Set when the work is the subject's NMT paper; null for ordinary homework. */
+  mockExam: MockExamSummary | null;
   /** How many students it was issued to — frozen at issue. */
   targetCount: number;
   /** How many of them have completed it at least once. */
@@ -38,6 +51,8 @@ export interface StudentAssignment {
   openAt: Date | null;
   dueAt: Date;
   questionCount: number;
+  /** See TeacherAssignment.mockExam. */
+  mockExam: MockExamSummary | null;
   attemptsAllowed: number;
   attemptsUsed: number;
   status: AssignmentStatus;

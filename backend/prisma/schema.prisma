@@ -918,6 +918,9 @@ model Assignment {
   attemptsAllowed Int                   @default(1)
   scoredAttempt   ScoredAttempt         @default(FIRST)
   explanations    ExplanationVisibility @default(AFTER_SUBMIT)
+  /// The group subject's NMT paper instead of practice questions: one variant
+  /// drawn at issue, sat on the paper's clock and scored by its table.
+  mockExam        Boolean               @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

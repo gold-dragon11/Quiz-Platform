@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
 import { Language } from '@/shared/types/enums';
@@ -24,11 +24,35 @@ import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
  * The interface is Ukrainian-only, so the account's `preferredLanguage` is no
  * longer asked for: it is sent as UKRAINIAN. The field is optional on the
  * backend but defaults to ENGLISH there, so it has to be sent explicitly.
+ *
+ * A student's account or a teacher's is chosen here, once (decisions 17 and
+ * 18): anyone may teach, and the two are separate accounts rather than a
+ * switch. Student is the default because most people arriving are; a link
+ * meant for teachers can open the form already switched with `?as=teacher`.
  */
+
+type AccountRole = 'USER' | 'TEACHER';
+
+const ROLE_CHOICES: { value: AccountRole; label: string; subtitle: string }[] = [
+  {
+    value: 'USER',
+    label: 'Я учень',
+    subtitle: 'Безкоштовно. Далі — лист на пошту, і можна проходити тести.',
+  },
+  {
+    value: 'TEACHER',
+    label: 'Я вчитель',
+    subtitle: 'Групи, домашка й пробний НМТ для учнів. Далі — лист на пошту.',
+  },
+];
+
 export function RegisterPage(): React.JSX.Element {
   const registerMutation = useRegister();
   const resend = useResendVerification();
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [role, setRole] = useState<AccountRole>(searchParams.get('as') === 'teacher' ? 'TEACHER' : 'USER');
+  const choice = ROLE_CHOICES.find((entry) => entry.value === role) ?? ROLE_CHOICES[0];
 
   const {
     register,
@@ -52,6 +76,7 @@ export function RegisterPage(): React.JSX.Element {
         username: values.username,
         password: values.password,
         preferredLanguage: Language.UKRAINIAN,
+        role,
       },
       {
         onSuccess: () => setRegisteredEmail(values.email),
@@ -113,7 +138,7 @@ export function RegisterPage(): React.JSX.Element {
   return (
     <AuthCard
       title="Створення акаунта"
-      subtitle="Безкоштовно. Далі — лист на пошту, і можна проходити тести."
+      subtitle={choice.subtitle}
       footer={
         <p>
           Уже маєте акаунт?{' '}
@@ -124,6 +149,30 @@ export function RegisterPage(): React.JSX.Element {
       }
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        {/* Two tabs on a rule rather than two cards: the choice is one word,
+            and the form below it is the same either way. */}
+        <div
+          role="radiogroup"
+          aria-label="Тип акаунта"
+          className="border-border mb-2 grid grid-cols-2 border-b"
+        >
+          {ROLE_CHOICES.map((entry) => (
+            <button
+              key={entry.value}
+              type="button"
+              role="radio"
+              aria-checked={role === entry.value}
+              onClick={() => setRole(entry.value)}
+              className={`focus-visible:ring-primary -mb-px border-b-2 pb-3 text-sm outline-none transition-colors focus-visible:ring-2 ${
+                role === entry.value
+                  ? 'border-primary text-text-primary font-medium'
+                  : 'text-text-muted hover:text-text-secondary border-transparent'
+              }`}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
           label="Електронна пошта"

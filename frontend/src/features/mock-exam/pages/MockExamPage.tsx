@@ -82,6 +82,13 @@ export function MockExamPage(): React.JSX.Element {
 
       <ActiveQuizBanner className="mt-8" />
 
+      {user?.role === UserRole.TEACHER && (
+        <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
+          Робота така сама, як в учнів: той самий зошит, годинник і розбір. XP і рівень вам не нараховуються.
+          Щоб дати пробний групі, видайте його як домашку — усі учні отримають однаковий варіант.
+        </p>
+      )}
+
       {/* The subject sits on the same line as the action: one control, one
           button, no panel around them. A form this small in a card reads as a
           dialog that lost its window. */}
@@ -113,9 +120,9 @@ export function MockExamPage(): React.JSX.Element {
 
       {target && <MockExamBrief target={target} className="mt-12" />}
 
-      {/* A teacher may sit a mock to see what the work actually is, but their
-          own attempt history is not their progress to track — their statistics
-          screen is about their groups. */}
+      {/* A teacher sits a mock to see what the work actually is, but their
+          own attempts are not progress to track — their statistics screen is
+          about their groups, and XP is not awarded to them. */}
       {user?.role !== UserRole.TEACHER && (
         <section className="mt-20">
           <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">

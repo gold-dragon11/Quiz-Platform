@@ -70,7 +70,7 @@ Authenticated routes require a valid access token.
 | `/quiz` | Quiz selection |
 | `/quiz/:sessionId` | Active quiz session |
 | `/quiz/:sessionId/result` | Quiz results |
-| `/mock-exam` | Mock exam: start a sitting, past attempts |
+| `/mock-exam` | Mock exam: start a sitting, past attempts. Open to a teacher too (decision 29), as are the session and result screens it runs on; a teacher sees no attempt history and earns no XP |
 | `/mistake-review` | Mistakes due today, on the spaced-repetition ladder |
 | `/duels` | Duels: challenge somebody, and every duel you are in |
 | `/duels/:duelId` | One duel — invitation, paper, wait, or result |

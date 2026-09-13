@@ -94,6 +94,9 @@ export class ReviewService {
               completedAt: scored.completedAt,
               durationSeconds: scored.durationSeconds,
               late: scored.completedAt.getTime() > assignment.dueAt.getTime(),
+              testPoints: scored.paperScore?.testPoints ?? null,
+              maxTestPoints: scored.paperScore?.maxTestPoints ?? null,
+              scaledScore: scored.paperScore?.scaledScore ?? null,
             }
           : null,
       };
@@ -332,8 +335,14 @@ export class ReviewService {
       case ScoredAttempt.LAST:
         return runs[runs.length - 1];
       case ScoredAttempt.BEST:
+        // A mock is marked in test points, which is what the table reads; a
+        // run that answered more questions right is not always the better
+        // paper once partial credit counts.
         return runs.reduce((best, run) =>
-          run.accuracy > best.accuracy ? run : best,
+          (run.paperScore?.testPoints ?? run.accuracy) >
+          (best.paperScore?.testPoints ?? best.accuracy)
+            ? run
+            : best,
         );
     }
   }

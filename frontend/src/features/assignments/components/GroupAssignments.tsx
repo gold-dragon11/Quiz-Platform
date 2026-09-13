@@ -76,8 +76,10 @@ function AssignmentRow({ assignment }: { assignment: TeacherAssignment }): React
         <div className="min-w-0">
           <p className="text-text-primary truncate font-medium">{assignment.title}</p>
           <p className="text-text-muted mt-1 text-xs">
-            {assignment.questionCount} {pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')} ·
-            дедлайн {formatShortDate(assignment.dueAt)}
+            {assignment.mockExam
+              ? `пробний НМТ, ${assignment.mockExam.taskCount} ${pluralUk(assignment.mockExam.taskCount, 'завдання', 'завдання', 'завдань')}`
+              : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')}`}{' '}
+            · дедлайн {formatShortDate(assignment.dueAt)}
             {overdue && ' · минув'}
           </p>
         </div>

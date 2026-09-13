@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { LEARNER_ROLES } from '@/shared/constants/roles';
+import { LEARNER_ROLES, MOCK_EXAM_ROLES } from '@/shared/constants/roles';
 import { ROUTES } from '@/shared/constants/routes';
 import { UserRole } from '@/shared/types/enums';
 
@@ -134,19 +134,24 @@ const LEARNERS = [...LEARNER_ROLES];
  * top-right already opens both, and carrying them here too made a nine-line
  * list where two lines were about the account rather than about studying.
  *
- * «Пробний НМТ» is a learner entry. It used to have no role at all, so a
- * teacher saw it in the sidebar (though not in the bottom bar, which did
- * filter) and could sit a full mock exam — collecting XP and a level that
- * their own statistics page, which is about their groups, never shows them.
- * Every other learner action was already hidden from them; this was the one
- * hole in that rule.
+ * «Пробний НМТ» is open to a teacher as well. It was once a learner entry,
+ * because a teacher sitting a mock collected XP and a level their statistics
+ * page never shows. The backend now keeps XP out of a teacher's account, and a
+ * teacher who is about to set a mock for a group has every reason to sit it
+ * first (decision 29). It stays out of the bottom bar, which is full.
  */
 export const NAV_ITEMS: NavItem[] = [
   { to: ROUTES.dashboard, label: 'Головна', icon: icons.dashboard, section: 'overview' },
   { to: ROUTES.statistics, label: 'Статистика', icon: icons.statistics, section: 'overview' },
 
   { to: ROUTES.quiz, label: 'Тест', icon: icons.quiz, roles: LEARNERS, section: 'learn' },
-  { to: ROUTES.mockExam, label: 'Пробний НМТ', icon: icons.mockExam, roles: LEARNERS, section: 'learn' },
+  {
+    to: ROUTES.mockExam,
+    label: 'Пробний НМТ',
+    icon: icons.mockExam,
+    roles: [...MOCK_EXAM_ROLES],
+    section: 'learn',
+  },
   {
     to: ROUTES.mistakeReview,
     label: 'Повторення',

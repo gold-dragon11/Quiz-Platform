@@ -62,6 +62,17 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
       ? Math.round(scored.reduce((sum, row) => sum + (row.score?.accuracy ?? 0), 0) / scored.length)
       : null;
   const lateCount = scored.filter((row) => row.score?.late).length;
+  const mock = assignment.mockExam;
+  // A mock is averaged on the 100–200 scale over those who reached it; the
+  // rest are counted apart, because an average that folds «no score» in as a
+  // number would be a figure the exam never produces.
+  const passedScores = scored.flatMap((row) =>
+    row.score?.scaledScore == null ? [] : [row.score.scaledScore],
+  );
+  const averageScaled =
+    passedScores.length > 0
+      ? Math.round(passedScores.reduce((sum, value) => sum + value, 0) / passedScores.length)
+      : null;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -77,16 +88,24 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
           {
             value: `${assignment.submittedCount}/${assignment.targetCount}`,
             label: 'здали',
-            hint: `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')} у роботі`,
+            hint: mock
+              ? `пробний НМТ · ${mock.taskCount} ${pluralUk(mock.taskCount, 'завдання', 'завдання', 'завдань')}`
+              : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')} у роботі`,
           },
-          {
-            value: averageAccuracy === null ? '—' : formatPercent(averageAccuracy),
-            label: 'середня точність',
-            hint:
-              assignment.attemptsAllowed > 1
-                ? SCORED_LABEL[assignment.scoredAttempt]
-                : 'одна спроба на роботу',
-          },
+          mock
+            ? {
+                value: averageScaled ?? '—',
+                label: 'середній бал',
+                hint: `за шкалою 100–200 · не подолали поріг: ${scored.length - passedScores.length}`,
+              }
+            : {
+                value: averageAccuracy === null ? '—' : formatPercent(averageAccuracy),
+                label: 'середня точність',
+                hint:
+                  assignment.attemptsAllowed > 1
+                    ? SCORED_LABEL[assignment.scoredAttempt]
+                    : 'одна спроба на роботу',
+              },
           {
             value: lateCount,
             label: 'із запізненням',

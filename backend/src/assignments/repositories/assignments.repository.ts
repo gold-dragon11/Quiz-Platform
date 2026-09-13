@@ -13,6 +13,7 @@ const ASSIGNMENT_SELECT = {
   attemptsAllowed: true,
   scoredAttempt: true,
   explanations: true,
+  mockExam: true,
   createdAt: true,
   group: {
     select: {
@@ -52,6 +53,7 @@ export class AssignmentsRepository {
     attemptsAllowed: number;
     scoredAttempt: Prisma.AssignmentCreateInput['scoredAttempt'];
     explanations: Prisma.AssignmentCreateInput['explanations'];
+    mockExam: boolean;
     questionIds: string[];
     studentIds: string[];
   }): Promise<AssignmentRow> {
@@ -67,6 +69,7 @@ export class AssignmentsRepository {
           attemptsAllowed: input.attemptsAllowed,
           scoredAttempt: input.scoredAttempt,
           explanations: input.explanations,
+          mockExam: input.mockExam,
           questions: {
             create: input.questionIds.map((questionId, index) => ({
               questionId,

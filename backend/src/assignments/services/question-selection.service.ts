@@ -67,6 +67,11 @@ export class QuestionSelectionService {
         return this.resolveByDifficulty(dto, subjectId);
       case QuestionSelectionMode.MISTAKES:
         return this.resolveByMistakes(dto, subjectId, groupId);
+      case QuestionSelectionMode.MOCK_EXAM:
+        // Drawn by the quiz engine from the paper, never from here — see
+        // AssignmentsService.create. Reaching this is a wiring mistake, and
+        // an empty list refuses it rather than inventing a paper.
+        return [];
     }
   }
 

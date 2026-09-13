@@ -285,6 +285,27 @@ each paper's first task.
 
 ---
 
+# 8a. Set as homework
+
+A teacher can set a group's subject paper as homework (decision 29 in
+docs/00-overview/teacher-side-decisions.md). A group has one subject, so this is
+one paper — never a block. The variant is drawn once, when the work is issued,
+exactly as a sitting is drawn (§5), and frozen with the assignment: every
+student sits the same questions, and the scores in one group can be compared.
+
+Starting it opens an ordinary mock sitting of that paper — one clock for the
+paper's minutes, the paper's numbering and instructions, scored by its rules
+and table into `result_paper_scores`. The deadline, attempts and explanation
+rules are the assignment's. The teacher's list shows each student's 100–200
+score, or their test points below the threshold, and the average is taken only
+over those who reached the scale.
+
+A teacher may also sit any paper themselves, to see what they are setting. The
+result is shown to them, but it earns no XP and does not move the review
+ladder: those are a learner's progress.
+
+---
+
 # 9. Subjects without a paper
 
 A subject with no paper keeps the provisional sitting from

@@ -12,6 +12,12 @@ export interface CompletedRun {
   correctAnswers: number;
   totalQuestions: number;
   accuracy: number;
+  /** The paper's score when the work was a mock exam; null otherwise. */
+  paperScore: {
+    testPoints: number;
+    maxTestPoints: number;
+    scaledScore: number | null;
+  } | null;
 }
 
 /** One answer, reduced to what the aggregates need. */
@@ -60,6 +66,15 @@ export class ReviewRepository {
             correctAnswers: true,
             totalQuestions: true,
             accuracy: true,
+            // An assignment sits one subject, so a mock has one paper score.
+            paperScores: {
+              select: {
+                testPoints: true,
+                maxTestPoints: true,
+                scaledScore: true,
+              },
+              take: 1,
+            },
           },
         },
       },
@@ -79,6 +94,7 @@ export class ReviewRepository {
         correctAnswers: session.result.correctAnswers,
         totalQuestions: session.result.totalQuestions,
         accuracy: Number(session.result.accuracy),
+        paperScore: session.result.paperScores[0] ?? null,
       });
     }
     return runs;

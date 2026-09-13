@@ -82,9 +82,11 @@ function AssignmentRow({ assignment }: { assignment: StudentAssignment }): React
         >
           <p className="text-text-primary truncate font-medium">{assignment.title}</p>
           <p className="text-text-muted mt-1 text-xs">
-            {assignment.group.name} · {assignment.subject.name} · {assignment.questionCount}{' '}
-            {pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')} · до{' '}
-            {formatShortDate(assignment.dueAt)}
+            {assignment.group.name} · {assignment.subject.name} ·{' '}
+            {assignment.mockExam
+              ? `пробний НМТ, ${assignment.mockExam.taskCount} ${pluralUk(assignment.mockExam.taskCount, 'завдання', 'завдання', 'завдань')}`
+              : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')}`}{' '}
+            · до {formatShortDate(assignment.dueAt)}
           </p>
         </div>
         <div className="shrink-0 text-right">

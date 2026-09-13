@@ -14,6 +14,7 @@ import {
   QuizStatus,
   QuizType,
   XPSource,
+  UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuizConfigService } from '../../quizzes/services/quiz-config.service';
@@ -73,6 +74,9 @@ const NOTHING_DUE_MESSAGE =
   'На сьогодні повторювати нічого. Помилки повернуться за розкладом.';
 /** A review is a short sitting by design — it is a habit, not a marathon. */
 const DEFAULT_REVIEW_SIZE = 10;
+/** A mock exam set as homework needs the group subject to have a paper. */
+const NO_PAPER_MESSAGE =
+  'Для цього предмета ще немає зошита НМТ — пробний як домашку видати не можна.';
 const MOCK_EXAM_TOO_SHORT_MESSAGE =
   'У цьому предметі поки замало опублікованих питань для пробного тесту.';
 const MOCK_BLOCK_TOO_SHORT_MESSAGE =
@@ -656,6 +660,54 @@ export class QuizService {
   }
 
   /**
+   * A subject's paper in the few numbers a screen about it needs — what an
+   * assignment of a mock exam shows its teacher and its students. Null for a
+   * subject without one.
+   */
+  paperSummary(subjectSlug: string): {
+    title: string;
+    taskCount: number;
+    maxTestPoints: number;
+    minutes: number;
+  } | null {
+    const paper = this.nmtPapers.forSubjectSlug(subjectSlug);
+    return paper
+      ? {
+          title: paper.title,
+          taskCount: paperTaskCount(paper),
+          maxTestPoints: maxTestPoints(paper),
+          minutes: paper.minutes,
+        }
+      : null;
+  }
+
+  /**
+   * One variant of a subject's paper for a mock exam set as homework
+   * (decision 29), drawn the way a sitting is (docs/02-domain/nmt-paper.md
+   * §5). It is drawn once, at issue, and frozen with the assignment, so every
+   * student in the group sits the same variant and their scores compare.
+   * `teacherId` only orders the draw; a teacher has seen almost nothing, so it
+   * is close to random.
+   */
+  async drawPaperForAssignment(
+    teacherId: string,
+    subjectId: string,
+  ): Promise<string[]> {
+    const subject = await this.quizSessionRepository.findSubjectById(subjectId);
+    const paper = subject ? this.nmtPapers.forSubjectSlug(subject.slug) : null;
+    if (!paper) {
+      throw new BadRequestException(NO_PAPER_MESSAGE);
+    }
+    const drawn = await this.drawPaper(teacherId, subjectId, paper);
+    if (drawn.missing.length > 0) {
+      throw new ConflictException(
+        `${MOCK_EXAM_TOO_SHORT_MESSAGE} Бракує завдань №${drawn.missing.join(', ')}.`,
+      );
+    }
+    return drawn.questionIds;
+  }
+
+  /**
    * The joint NMT blocks that can be sat now: those whose every subject is
    * published and has a paper. The client lists them beside the subjects.
    */
@@ -887,6 +939,9 @@ export class QuizService {
    *
    * Untimed by design: the deadline is the time pressure, and a per-question
    * timer on homework would punish the student who thinks before answering.
+   * A mock exam set as homework is the exception, because the clock is the
+   * exam: it runs as a mock sitting of the subject's paper — one clock for
+   * the whole paper, scored by its table (decision 29).
    *
    * Validation of *whether* the student may start — recipient, open date,
    * attempts left — belongs to AssignmentsService, which owns those rules.
@@ -896,7 +951,9 @@ export class QuizService {
     params: {
       assignmentId: string;
       subjectId: string;
+      subjectSlug: string;
       questionIds: string[];
+      mockExam: boolean;
     },
   ): Promise<QuizSessionMetadata> {
     const resumable = await this.quizSessionRepository.findActiveForAssignment(
@@ -919,6 +976,9 @@ export class QuizService {
     // Carry the topic only when the whole paper sits in one — it feeds
     // per-topic statistics, and a mixed paper has no single honest answer.
     const topicId = await this.singleTopicOf(params.questionIds);
+    const paper = params.mockExam
+      ? this.nmtPapers.forSubjectSlug(params.subjectSlug)
+      : null;
 
     try {
       const session = await this.prisma.$transaction((tx) =>
@@ -927,11 +987,13 @@ export class QuizService {
           quizId: null,
           assignmentId: params.assignmentId,
           subjectId: params.subjectId,
-          topicId,
-          mode: QuizType.SUBJECT_QUIZ,
-          timerEnabled: false,
+          topicId: paper ? null : topicId,
+          mode: paper ? QuizType.MOCK_EXAM : QuizType.SUBJECT_QUIZ,
+          timerEnabled: paper !== null,
           questionCount: params.questionIds.length,
-          expiresAt: null,
+          expiresAt: paper
+            ? new Date(Date.now() + paper.minutes * 60 * 1000)
+            : null,
           questionIds: params.questionIds,
         }),
       );
@@ -1420,7 +1482,16 @@ export class QuizService {
       // A mock sitting of an NMT paper is also scored the exam's way, in the
       // same transaction, so its history never disagrees with its review.
       const nmt = await this.scoreSitting(session, attempts);
-      const awards = this.xpAwards(tally.exactAccuracy);
+      // A teacher sits a paper to see what their students will face
+      // (decision 29). The score is theirs to read, but XP, a level and the
+      // review ladder are a learner's progress, and a teacher's statistics
+      // are about their groups.
+      const sitter = await tx.user.findUnique({
+        where: { id: session.userId },
+        select: { role: true },
+      });
+      const learner = sitter?.role !== UserRole.TEACHER;
+      const awards = learner ? this.xpAwards(tally.exactAccuracy) : [];
 
       const result = await this.resultRepository.create(tx, {
         quizSessionId: session.id,
@@ -1443,7 +1514,7 @@ export class QuizService {
       // result: a session that counted towards statistics but left the
       // schedule untouched would keep asking about material the learner has
       // just recovered.
-      for (const attempt of attempts) {
+      for (const attempt of learner ? attempts : []) {
         if (attempt.isCorrect) {
           await this.mistakeReviewRepository.promote(
             tx,

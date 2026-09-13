@@ -15,6 +15,8 @@ export const QuestionSelectionMode = {
   DIFFICULTY: 'DIFFICULTY',
   /** Drawn from the topics this group gets wrong most often. */
   MISTAKES: 'MISTAKES',
+  /** The group subject's NMT paper: one variant for everyone, on the paper's clock. */
+  MOCK_EXAM: 'MOCK_EXAM',
 } as const;
 export type QuestionSelectionMode = (typeof QuestionSelectionMode)[keyof typeof QuestionSelectionMode];
 
@@ -37,6 +39,14 @@ export type ExplanationVisibility = (typeof ExplanationVisibility)[keyof typeof 
 /** A homework of more than fifty questions is a different thing. */
 export const MAX_QUESTIONS_PER_ASSIGNMENT = 50;
 
+/** The paper a mock exam assignment follows — tasks as the answer sheet counts them. */
+export interface MockExamSummary {
+  title: string;
+  taskCount: number;
+  maxTestPoints: number;
+  minutes: number;
+}
+
 /** An assignment as its author sees it. */
 export interface TeacherAssignment {
   id: string;
@@ -49,6 +59,8 @@ export interface TeacherAssignment {
   scoredAttempt: ScoredAttempt;
   explanations: ExplanationVisibility;
   questionCount: number;
+  /** Set when the work is the subject's NMT paper; null for ordinary homework. */
+  mockExam: MockExamSummary | null;
   /** How many students it was issued to — frozen at issue. */
   targetCount: number;
   /** How many of them have completed it at least once. */
@@ -73,6 +85,8 @@ export interface StudentAssignment {
   openAt: string | null;
   dueAt: string;
   questionCount: number;
+  /** See TeacherAssignment.mockExam. */
+  mockExam: MockExamSummary | null;
   attemptsAllowed: number;
   attemptsUsed: number;
   status: AssignmentStatus;

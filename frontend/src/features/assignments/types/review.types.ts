@@ -24,6 +24,11 @@ export interface SubmissionRow {
     completedAt: string;
     durationSeconds: number | null;
     late: boolean;
+    /** A mock exam's test points and maximum; null for ordinary homework. */
+    testPoints: number | null;
+    maxTestPoints: number | null;
+    /** The 100–200 score; null below the paper's threshold or for homework. */
+    scaledScore: number | null;
   } | null;
 }
 

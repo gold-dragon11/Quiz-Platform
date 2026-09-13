@@ -164,7 +164,9 @@ describe('Mock exam (e2e)', () => {
   let blockGapSubjectId: string;
   let blockGapTopicId: string;
 
-  const register = async (): Promise<{ token: string; userId: string }> => {
+  const register = async (
+    role: UserRole = UserRole.USER,
+  ): Promise<{ token: string; userId: string }> => {
     counter += 1;
     const email = `${PREFIX}-${counter}@example.com`;
     await request(app.getHttpServer())
@@ -177,7 +179,7 @@ describe('Mock exam (e2e)', () => {
       .expect(201);
     const user = await prisma.user.update({
       where: { email },
-      data: { accountStatus: AccountStatus.ACTIVE, role: UserRole.USER },
+      data: { accountStatus: AccountStatus.ACTIVE, role },
       select: { id: true },
     });
     const response = await request(app.getHttpServer())
@@ -261,6 +263,9 @@ describe('Mock exam (e2e)', () => {
       await prisma.quizSession.deleteMany({
         where: { userId: { in: userIds } },
       });
+      // A teacher's groups take their assignments with them; an assignment
+      // would otherwise hold its author in place.
+      await prisma.group.deleteMany({ where: { ownerId: { in: userIds } } });
     }
     await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } });
   };
@@ -1317,6 +1322,197 @@ describe('Mock exam (e2e)', () => {
       expect((response.body as { message: string }).message).toContain(
         '№1, 2, 3',
       );
+    });
+  });
+  /** Answers the first single-choice question of a session correctly. */
+  const answerOneCorrectly = async (
+    token: string,
+    sessionId: string,
+  ): Promise<void> => {
+    const resumed = await request(app.getHttpServer())
+      .get(`/api/v1/quiz/${sessionId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    const first = (
+      resumed.body as { questions: { id: string; type: string }[] }
+    ).questions.find((question) => question.type === 'SINGLE_CHOICE');
+    const right = await prisma.answerOption.findFirstOrThrow({
+      where: { questionId: first?.id, isCorrect: true },
+      select: { id: true },
+    });
+    await request(app.getHttpServer())
+      .post(`/api/v1/quiz/${sessionId}/answers`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        questionId: first?.id,
+        selectedAnswer: { answerOptionId: right.id },
+      })
+      .expect(200);
+  };
+
+  describe('a teacher sitting a paper (decision 29)', () => {
+    it('reads the score but earns no XP, unlike a learner on the same paper', async () => {
+      const teacher = await register(UserRole.TEACHER);
+      const learner = await register();
+
+      for (const sitter of [teacher, learner]) {
+        const started = await startMock(sitter.token, paperSubjectId).expect(
+          201,
+        );
+        const sessionId = (started.body as SessionBody).sessionId;
+        await answerOneCorrectly(sitter.token, sessionId);
+        await completeSession(sitter.token, sessionId);
+
+        const review = await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}/result`)
+          .set('Authorization', `Bearer ${sitter.token}`)
+          .expect(200);
+        const body = review.body as {
+          result: { xpEarned: number };
+          nmt?: { papers: { testPoints: number }[] };
+        };
+        expect(body.nmt?.papers[0].testPoints).toBe(1);
+
+        const transactions = await prisma.xPTransaction.count({
+          where: { userId: sitter.userId },
+        });
+        if (sitter === teacher) {
+          expect(body.result.xpEarned).toBe(0);
+          expect(transactions).toBe(0);
+        } else {
+          expect(transactions).toBeGreaterThan(0);
+        }
+      }
+    });
+  });
+
+  describe('a paper set as homework (decision 29)', () => {
+    const inAWeek = (): string =>
+      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    /** A teacher's group in one subject, with these students in it. */
+    const groupWith = async (
+      teacherToken: string,
+      subject: string,
+      students: { token: string }[],
+    ): Promise<string> => {
+      const created = await request(app.getHttpServer())
+        .post('/api/v1/teacher/groups')
+        .set('Authorization', `Bearer ${teacherToken}`)
+        .send({ name: 'Група', subjectId: subject })
+        .expect(201);
+      const group = created.body as { id: string; inviteCode: string };
+      for (const student of students) {
+        await request(app.getHttpServer())
+          .post('/api/v1/groups/join')
+          .set('Authorization', `Bearer ${student.token}`)
+          .send({ inviteCode: group.inviteCode })
+          .expect(200);
+      }
+      return group.id;
+    };
+
+    const issueMock = (teacherToken: string, groupId: string) =>
+      request(app.getHttpServer())
+        .post(`/api/v1/teacher/groups/${groupId}/assignments`)
+        .set('Authorization', `Bearer ${teacherToken}`)
+        .send({ title: 'Пробний', dueAt: inAWeek(), mode: 'MOCK_EXAM' });
+
+    const startAssignment = async (
+      token: string,
+      assignmentId: string,
+    ): Promise<SessionBody> =>
+      (
+        await request(app.getHttpServer())
+          .post(`/api/v1/assignments/${assignmentId}/start`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as SessionBody;
+
+    const resume = async (token: string, sessionId: string) =>
+      (
+        await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as {
+        questions: { id: string }[];
+        sitting?: { taskLabels: (string | null)[] };
+      };
+
+    it('sets one variant for the whole group, on the paper clock, scored on the scale', async () => {
+      const teacher = await register(UserRole.TEACHER);
+      const first = await register();
+      const second = await register();
+      const groupId = await groupWith(teacher.token, paperSubjectId, [
+        first,
+        second,
+      ]);
+
+      const issued = await issueMock(teacher.token, groupId).expect(201);
+      const assignment = issued.body as {
+        id: string;
+        questionCount: number;
+        mockExam: unknown;
+      };
+      expect(assignment.questionCount).toBe(3);
+      expect(assignment.mockExam).toEqual({
+        title: 'Тестовий зошит',
+        taskCount: 5,
+        maxTestPoints: 6,
+        minutes: 25,
+      });
+
+      const firstSession = await startAssignment(first.token, assignment.id);
+      const secondSession = await startAssignment(second.token, assignment.id);
+      expect(firstSession.timerEnabled).toBe(true);
+      const minutes = Math.round(
+        (new Date(firstSession.expiresAt as string).getTime() - Date.now()) /
+          60000,
+      );
+      expect(minutes).toBe(25);
+
+      const firstPaper = await resume(first.token, firstSession.sessionId);
+      const secondPaper = await resume(second.token, secondSession.sessionId);
+      // Task 1 has two questions in the pool; the variant is fixed at issue.
+      expect(secondPaper.questions.map((question) => question.id)).toEqual(
+        firstPaper.questions.map((question) => question.id),
+      );
+      expect(firstPaper.sitting?.taskLabels).toEqual(['1', '2–4', '5']);
+
+      await answerOneCorrectly(first.token, firstSession.sessionId);
+      await completeSession(first.token, firstSession.sessionId);
+
+      const submissions = await request(app.getHttpServer())
+        .get(`/api/v1/teacher/assignments/${assignment.id}/submissions`)
+        .set('Authorization', `Bearer ${teacher.token}`)
+        .expect(200);
+      const rows = submissions.body as {
+        student: { id: string };
+        status: string;
+        score: {
+          testPoints: number | null;
+          maxTestPoints: number | null;
+          scaledScore: number | null;
+        } | null;
+      }[];
+      const firstRow = rows.find((row) => row.student.id === first.userId);
+      const secondRow = rows.find((row) => row.student.id === second.userId);
+      // One point against a threshold of two: points, and no 100–200 score.
+      expect(firstRow?.score).toMatchObject({
+        testPoints: 1,
+        maxTestPoints: 6,
+        scaledScore: null,
+      });
+      expect(secondRow?.status).toBe('IN_PROGRESS');
+    });
+
+    it('refuses a subject that has no paper', async () => {
+      const teacher = await register(UserRole.TEACHER);
+      const student = await register();
+      const groupId = await groupWith(teacher.token, subjectId, [student]);
+
+      await issueMock(teacher.token, groupId).expect(400);
     });
   });
 });

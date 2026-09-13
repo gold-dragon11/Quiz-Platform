@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { LEARNER_ROLES } from '@/shared/constants/roles';
+import type { UserRole } from '@/shared/types/enums';
 import { ROUTES } from '@/shared/constants/routes';
 import { FullScreenLoader } from '@/shared/components/FullScreenLoader';
 import { ForbiddenPage } from '@/pages/error/ForbiddenPage';
@@ -20,7 +21,12 @@ import { ForbiddenPage } from '@/pages/error/ForbiddenPage';
  * is a claim the client holds, and a guard that trusts it can be edited in a
  * console.
  */
-export function RequireLearner(): React.JSX.Element {
+export function RequireLearner({
+  roles = LEARNER_ROLES,
+}: {
+  /** Who counts as sitting here; a mock exam admits a teacher too (`MOCK_EXAM_ROLES`). */
+  roles?: readonly UserRole[];
+} = {}): React.JSX.Element {
   const status = useAuthStore((state) => state.status);
   const location = useLocation();
   const { data: user, isLoading, isError } = useCurrentUser();
@@ -34,7 +40,7 @@ export function RequireLearner(): React.JSX.Element {
   if (isLoading) {
     return <FullScreenLoader />;
   }
-  if (isError || !user || !LEARNER_ROLES.some((role) => role === user.role)) {
+  if (isError || !user || !roles.some((role) => role === user.role)) {
     return <ForbiddenPage />;
   }
   return <Outlet />;

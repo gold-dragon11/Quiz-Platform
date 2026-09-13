@@ -15,6 +15,7 @@ import { pluralUk } from '@/shared/utils/format';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { useGroupRoster, useTeacherGroup } from '@/features/groups/hooks/use-groups';
 import { useTopics } from '@/features/quiz/hooks/use-content';
+import { useMockExamSpec } from '@/features/mock-exam/hooks/use-mock-exam';
 import { QuestionPicker } from '@/features/assignments/components/QuestionPicker';
 import { useCreateAssignment } from '@/features/assignments/hooks/use-assignments';
 import {
@@ -30,6 +31,7 @@ const MODE_LABEL: Record<QuestionSelectionMode, string> = {
   DIFFICULTY: 'Мікс за складністю',
   MISTAKES: 'За помилками групи',
   MANUAL: 'Вибрані питання',
+  MOCK_EXAM: 'Пробний НМТ',
 };
 
 const MODE_HINT: Record<QuestionSelectionMode, string> = {
@@ -37,6 +39,7 @@ const MODE_HINT: Record<QuestionSelectionMode, string> = {
   DIFFICULTY: 'Ви задаєте, скільки питань кожного рівня. Тему можна не звужувати.',
   MISTAKES: 'Питання з тих тем, у яких група помиляється найчастіше. Потрібні попередні результати.',
   MANUAL: 'Ви обираєте кожне питання самі — з будь-яких тем предмета.',
+  MOCK_EXAM: 'Зошит НМТ з предмета групи: один варіант для всіх, годинник і бал 100–200, як на іспиті.',
 };
 
 const SCORED_OPTIONS: SelectOption[] = [
@@ -77,6 +80,10 @@ export function NewAssignmentPage(): React.JSX.Element {
 
   const subjectId = group.data?.subject.id;
   const topics = useTopics(subjectId);
+  // Offered only where the group's subject has a paper: a «mock» of a subject
+  // without one would be a long quiz under a borrowed name.
+  const spec = useMockExamSpec(subjectId ? { subjectId } : undefined);
+  const paper = spec.data?.paper ?? null;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -125,13 +132,15 @@ export function NewAssignmentPage(): React.JSX.Element {
   const difficultyTotal = beginner + intermediate + advanced;
 
   const selectionReady =
-    mode === QuestionSelectionMode.TOPIC
-      ? Boolean(topicId) && count >= 1
-      : mode === QuestionSelectionMode.DIFFICULTY
-        ? difficultyTotal >= 1 && difficultyTotal <= MAX_QUESTIONS_PER_ASSIGNMENT
-        : mode === QuestionSelectionMode.MISTAKES
-          ? count >= 1
-          : questionIds.length >= 1;
+    mode === QuestionSelectionMode.MOCK_EXAM
+      ? paper !== null
+      : mode === QuestionSelectionMode.TOPIC
+        ? Boolean(topicId) && count >= 1
+        : mode === QuestionSelectionMode.DIFFICULTY
+          ? difficultyTotal >= 1 && difficultyTotal <= MAX_QUESTIONS_PER_ASSIGNMENT
+          : mode === QuestionSelectionMode.MISTAKES
+            ? count >= 1
+            : questionIds.length >= 1;
 
   const recipientsReady = wholeGroup || studentIds.length >= 1;
   const canSubmit = Boolean(title.trim()) && Boolean(dueAt) && selectionReady && recipientsReady;
@@ -205,25 +214,36 @@ export function NewAssignmentPage(): React.JSX.Element {
         {/* -------------------------------------------------------- склад */}
         <Section title="Склад роботи">
           <div className="flex flex-col gap-2">
-            {(Object.keys(MODE_LABEL) as QuestionSelectionMode[]).map((value) => (
-              <label key={value} className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="radio"
-                  name="mode"
-                  value={value}
-                  checked={mode === value}
-                  onChange={() => setMode(value)}
-                  className="accent-primary mt-1 h-4 w-4"
-                />
-                <span>
-                  <span className="text-text-primary block text-sm font-medium">{MODE_LABEL[value]}</span>
-                  <span className="text-text-muted block text-xs">{MODE_HINT[value]}</span>
-                </span>
-              </label>
-            ))}
+            {(Object.keys(MODE_LABEL) as QuestionSelectionMode[])
+              .filter((value) => value !== QuestionSelectionMode.MOCK_EXAM || paper !== null)
+              .map((value) => (
+                <label key={value} className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="radio"
+                    name="mode"
+                    value={value}
+                    checked={mode === value}
+                    onChange={() => setMode(value)}
+                    className="accent-primary mt-1 h-4 w-4"
+                  />
+                  <span>
+                    <span className="text-text-primary block text-sm font-medium">{MODE_LABEL[value]}</span>
+                    <span className="text-text-muted block text-xs">{MODE_HINT[value]}</span>
+                  </span>
+                </label>
+              ))}
           </div>
 
           <div className="border-border mt-6 border-l pl-5">
+            {mode === QuestionSelectionMode.MOCK_EXAM && paper && spec.data && (
+              <p className="text-text-secondary max-w-2xl text-sm">
+                {paper.title}: {paper.taskCount}{' '}
+                {pluralUk(paper.taskCount, 'завдання', 'завдання', 'завдань')}, {paper.maxTestPoints} тестових
+                балів, {spec.data.minutes} хвилин. Варіант добирається один раз, у момент видачі, — усі учні
+                пишуть однаковий, тож бали можна порівнювати.
+              </p>
+            )}
+
             {mode === QuestionSelectionMode.TOPIC && (
               <div className="flex flex-col gap-4 sm:flex-row">
                 <div className="sm:w-64">

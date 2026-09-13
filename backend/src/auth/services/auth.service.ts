@@ -129,6 +129,7 @@ export class AuthService implements OnModuleInit {
         // The interface is Ukrainian-only, so an omitted preference defaults
         // to Ukrainian rather than English.
         language: dto.preferredLanguage ?? Language.UKRAINIAN,
+        role: dto.role,
       });
     } catch (error) {
       // Two concurrent registrations can both pass the checks above and race to

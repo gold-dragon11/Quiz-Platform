@@ -31,6 +31,12 @@ export enum QuestionSelectionMode {
    * review screens exist at all.
    */
   MISTAKES = 'MISTAKES',
+  /**
+   * The group subject's NMT paper (decision 29): drawn once at issue, so every
+   * recipient sits the same variant, then sat on the paper's clock and scored
+   * by its table. Takes no count — the paper decides what is in it.
+   */
+  MOCK_EXAM = 'MOCK_EXAM',
 }
 
 /**

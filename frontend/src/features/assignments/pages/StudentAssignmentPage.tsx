@@ -71,10 +71,16 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
       <FigureGrid
         className="mt-12"
         figures={[
-          {
-            value: assignment.questionCount,
-            label: pluralUk(assignment.questionCount, 'питання', 'питання', 'питань'),
-          },
+          assignment.mockExam
+            ? {
+                value: assignment.mockExam.taskCount,
+                label: pluralUk(assignment.mockExam.taskCount, 'завдання', 'завдання', 'завдань'),
+                hint: `пробний НМТ · ${assignment.mockExam.minutes} хв на весь зошит`,
+              }
+            : {
+                value: assignment.questionCount,
+                label: pluralUk(assignment.questionCount, 'питання', 'питання', 'питань'),
+              },
           {
             value: attemptsLeft,
             label: pluralUk(attemptsLeft, 'спроба', 'спроби', 'спроб'),
@@ -106,6 +112,13 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
           <>Дедлайн — {formatShortDate(assignment.dueAt)}</>
         )}
       </p>
+
+      {assignment.mockExam && !notOpenYet && (
+        <p className="text-text-secondary mt-4 max-w-2xl pl-5 text-sm">
+          Це пробний НМТ: годинник на {assignment.mockExam.minutes} хвилин запускається, щойно почнете, і не
+          зупиняється. Бал рахується за офіційною таблицею 100–200, як на іспиті.
+        </p>
+      )}
 
       {errorMessage && (
         <Alert variant="error" className="mt-8">

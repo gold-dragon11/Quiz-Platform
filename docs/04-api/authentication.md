@@ -80,6 +80,7 @@ Required fields:
 Optional fields:
 
 - preferredLanguage (defaults to English if omitted)
+- role — `USER` or `TEACHER`, a student's account when omitted (decisions 17 and 18 in docs/00-overview/teacher-side-decisions.md: anyone may teach, and the two are separate account types). `ADMIN` is rejected with `400`; afterwards only an administrator can change the role
 
 Automatically creates:
 

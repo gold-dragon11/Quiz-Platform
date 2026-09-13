@@ -67,6 +67,8 @@ export interface CreateUserWithRelationsParams {
   username: string;
   displayName: string;
   language: Language;
+  /** Student when omitted — the schema's own default. */
+  role?: UserRole;
 }
 
 /**
@@ -373,11 +375,12 @@ export class AuthRepository {
   async createUserWithRelations(
     params: CreateUserWithRelationsParams,
   ): Promise<{ id: string }> {
-    const { email, passwordHash, username, displayName, language } = params;
+    const { email, passwordHash, username, displayName, language, role } =
+      params;
 
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: { email, passwordHash },
+        data: { email, passwordHash, ...(role ? { role } : {}) },
         select: { id: true },
       });
 

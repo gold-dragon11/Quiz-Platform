@@ -89,7 +89,23 @@ export function SubmissionList({
             </div>
 
             <div className="shrink-0 text-right">
-              {row.score ? (
+              {row.score && row.score.maxTestPoints !== null ? (
+                // A mock is read the exam's way: the 100–200 score, or the
+                // test points when the threshold was not reached.
+                <>
+                  <p className="text-text-primary font-display text-xl font-bold lining-nums">
+                    {row.score.scaledScore ?? row.score.testPoints}
+                    {row.score.scaledScore === null && (
+                      <span className="text-text-muted text-sm font-normal">/{row.score.maxTestPoints}</span>
+                    )}
+                  </p>
+                  <p className="text-text-muted mt-1 text-xs">
+                    {row.score.scaledScore === null
+                      ? 'поріг не подолано'
+                      : `${row.score.testPoints} з ${row.score.maxTestPoints} балів`}
+                  </p>
+                </>
+              ) : row.score ? (
                 <>
                   <p className="text-text-primary font-display text-xl font-bold lining-nums">
                     {row.score.correctAnswers}

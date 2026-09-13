@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { MOCK_EXAM_ROLES } from '@/shared/constants/roles';
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/shared/layouts/RootLayout';
 import { PublicLayout } from '@/shared/layouts/PublicLayout';
@@ -146,6 +147,21 @@ export const router = createBrowserRouter([
                 children: [
                   { path: ROUTES.quiz, element: page(<QuizStartPage />) },
                   {
+                    path: ROUTES.mistakeReview,
+                    element: page(<MistakeReviewPage />),
+                  },
+                  { path: ROUTES.duels, element: page(<DuelsPage />) },
+                  { path: ROUTES.duel, element: page(<DuelPage />) },
+                ],
+              },
+
+              // A mock exam, and the session and result screens it runs on:
+              // open to a teacher too, who sits a paper to see what they are
+              // about to set. The only sessions a teacher can start are mocks.
+              {
+                element: <RequireLearner roles={MOCK_EXAM_ROLES} />,
+                children: [
+                  {
                     path: ROUTES.quizSession,
                     element: page(<QuizSessionPage />),
                   },
@@ -154,12 +170,6 @@ export const router = createBrowserRouter([
                     element: page(<QuizResultPage />),
                   },
                   { path: ROUTES.mockExam, element: page(<MockExamPage />) },
-                  {
-                    path: ROUTES.mistakeReview,
-                    element: page(<MistakeReviewPage />),
-                  },
-                  { path: ROUTES.duels, element: page(<DuelsPage />) },
-                  { path: ROUTES.duel, element: page(<DuelPage />) },
                 ],
               },
 

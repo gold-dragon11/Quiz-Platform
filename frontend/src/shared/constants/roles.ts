@@ -15,3 +15,13 @@ import { UserRole } from '@/shared/types/enums';
  * gave them a full mock exam.
  */
 export const LEARNER_ROLES = [UserRole.USER, UserRole.ADMIN] as const;
+
+/**
+ * Roles that may sit a mock exam: every learner, and a teacher as well.
+ *
+ * A teacher sets work rather than doing it, but a mock is the one paper worth
+ * seeing from the inside before setting it for a group — the clock, the
+ * answer sheet, the scale. So it is open to them, and the backend keeps XP and
+ * the review ladder out of their account (decision 29).
+ */
+export const MOCK_EXAM_ROLES = [...LEARNER_ROLES, UserRole.TEACHER] as const;

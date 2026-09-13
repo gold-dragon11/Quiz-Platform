@@ -9,7 +9,10 @@ import { GroupsRepository } from '../../groups/repositories/groups.repository';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { QuizService } from '../../quiz/services/quiz.service';
 import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
-import { CreateAssignmentDto } from '../dto/create-assignment.dto';
+import {
+  CreateAssignmentDto,
+  QuestionSelectionMode,
+} from '../dto/create-assignment.dto';
 import { UpdateAssignmentDto } from '../dto/update-assignment.dto';
 import {
   AssignmentRow,
@@ -17,6 +20,7 @@ import {
 } from '../repositories/assignments.repository';
 import {
   AssignmentStatus,
+  MockExamSummary,
   StudentAssignment,
   TeacherAssignment,
 } from '../types/assignment.types';
@@ -67,11 +71,13 @@ export class AssignmentsService {
     }
     this.validateSchedule(dto.dueAt, dto.openAt);
 
-    const questionIds = await this.questionSelection.resolve(
-      dto,
-      group.subject.id,
-      groupId,
-    );
+    const mockExam = dto.mode === QuestionSelectionMode.MOCK_EXAM;
+    const questionIds = mockExam
+      ? await this.quizService.drawPaperForAssignment(
+          teacherId,
+          group.subject.id,
+        )
+      : await this.questionSelection.resolve(dto, group.subject.id, groupId);
     const studentIds = await this.resolveTargets(groupId, dto.studentIds);
 
     const assignment = await this.assignmentsRepository.createWithSnapshots({
@@ -84,6 +90,7 @@ export class AssignmentsService {
       attemptsAllowed: dto.attemptsAllowed ?? 1,
       scoredAttempt: dto.scoredAttempt ?? ScoredAttempt.FIRST,
       explanations: dto.explanations ?? ExplanationVisibility.AFTER_SUBMIT,
+      mockExam,
       questionIds,
       studentIds,
     });
@@ -224,7 +231,9 @@ export class AssignmentsService {
     return this.quizService.startFromAssignment(studentId, {
       assignmentId,
       subjectId: assignment.group.subject.id,
+      subjectSlug: assignment.group.subject.slug,
       questionIds,
+      mockExam: assignment.mockExam,
     });
   }
 
@@ -307,6 +316,13 @@ export class AssignmentsService {
     }
   }
 
+  /** The paper a mock exam assignment follows; null for ordinary homework. */
+  private mockExamOf(assignment: AssignmentRow): MockExamSummary | null {
+    return assignment.mockExam
+      ? this.quizService.paperSummary(assignment.group.subject.slug)
+      : null;
+  }
+
   private toTeacherAssignment(
     assignment: AssignmentRow,
     submittedCount: number,
@@ -322,6 +338,7 @@ export class AssignmentsService {
       scoredAttempt: assignment.scoredAttempt,
       explanations: assignment.explanations,
       questionCount: assignment._count.questions,
+      mockExam: this.mockExamOf(assignment),
       targetCount: assignment._count.targets,
       submittedCount,
       createdAt: assignment.createdAt,
@@ -351,6 +368,7 @@ export class AssignmentsService {
       openAt: assignment.openAt,
       dueAt: assignment.dueAt,
       questionCount: assignment._count.questions,
+      mockExam: this.mockExamOf(assignment),
       attemptsAllowed: assignment.attemptsAllowed,
       attemptsUsed: completed?.attempts ?? 0,
       status,

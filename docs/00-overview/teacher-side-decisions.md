@@ -107,6 +107,12 @@ never dead-end — which matters at roughly 41 questions per topic.
 | 19 | Pricing | Steps by student count | Per active student (unpredictability unsettles more than price); one flat price (a teacher with three students pays like one with thirty and never arrives) |
 | 20 | Exceeding a tier mid-month | Allowed; charged from the next cycle | Blocking — student №11 is left without homework and the product looks guilty |
 
+The choice is made at registration, as two tabs over the same form — a
+student's account by default, a teacher's when chosen or when the link carries
+`?as=teacher`. It is not offered again in settings: only an administrator
+changes a role afterwards, because switching would have to decide what happens
+to a teacher's groups or a student's memberships.
+
 Decision 17 costs something: a university student who both studies and tutors
 needs two accounts. It is reversible — membership already points at a user, so
 letting a teacher account join groups later needs no migration.
@@ -125,6 +131,7 @@ letting a teacher account join groups later needs no migration.
 | 26 | Group ranking | Computed on read | Stored and recalculated — a background job and a new class of "the ranking is stuck" bugs, for tens of rows |
 | 27 | Student who joins after an assignment was issued | Does not receive it | A live recipient list — friendlier, but it breaks decision 02 |
 | 28 | Mock exam | Its own session type | A preset — nothing new in the schema, but mock history gets lost among ordinary tests |
+| 29 | Mock exam and the teacher | A teacher may sit one, without XP or the review ladder, and set one as homework: the group subject's paper, one variant drawn at issue, sat on the paper's clock and scored by its table | Hidden from teachers (they would set a paper they had never seen); a fresh variant per student (scores in one group stop being comparable); untimed homework (the clock is the exam) |
 
 ---
 
