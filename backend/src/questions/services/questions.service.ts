@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
   Injectable,
@@ -24,7 +25,8 @@ import {
   PaginatedPublicQuestions,
   PublicQuestion,
 } from '../types/public-question.type';
-import { shuffleMatchingOrder } from '../../quiz/matching-shuffle.util';
+import type { AppConfig } from '../../config/configuration';
+import { dealOptions } from '../../quiz/option-deal.util';
 
 /** The default locale lives on the Question row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -112,6 +114,7 @@ export class QuestionsService {
     private readonly questionsRepository: QuestionsRepository,
     private readonly topicsService: TopicsService,
     private readonly settingsService: SettingsService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   /**
@@ -157,7 +160,7 @@ export class QuestionsService {
       // topic would print the key. The deal is seeded by the question id
       // alone: there is no session here, and the same question should look
       // the same each time it is browsed.
-      answerOptions: shuffleMatchingOrder(
+      answerOptions: dealOptions(
         row.type,
         row.answerOptions.map((option) => ({
           id: option.id,
@@ -167,6 +170,7 @@ export class QuestionsService {
         })),
         row.id,
         0,
+        this.config.get('jwt', { infer: true }).accessSecret,
       ),
       ...(row.type === QuestionType.MATCHING
         ? { configuration: row.configuration }

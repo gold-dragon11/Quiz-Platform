@@ -38,7 +38,7 @@ export function ResultSummary({ result }: { result: QuizResultSummary }): React.
           that actually carries information is the one between a wrong answer
           and no answer at all. */}
       <FigureGrid
-        className="mt-8"
+        rule="bottom"
         figures={[
           { value: formatNumber(result.incorrectAnswers), label: 'неправильних' },
           { value: formatNumber(result.unansweredQuestions), label: 'без відповіді' },

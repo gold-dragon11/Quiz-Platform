@@ -10,6 +10,12 @@ export interface Figure {
 interface FigureGridProps {
   figures: Figure[];
   className?: string;
+  /**
+   * `bottom` drops the rule above the row, for a grid that sits directly under
+   * a header which already ends in one. Two hairlines with an empty band
+   * between them read as a section that failed to load.
+   */
+  rule?: 'both' | 'bottom';
 }
 
 /**
@@ -27,10 +33,10 @@ interface FigureGridProps {
  * defaults are old-style — 3 and 4 drop below the baseline, 0 sits at
  * x-height — and a row of numbers has to share one baseline.
  */
-export function FigureGrid({ figures, className = '' }: FigureGridProps): React.JSX.Element {
+export function FigureGrid({ figures, className = '', rule = 'both' }: FigureGridProps): React.JSX.Element {
   return (
     <dl
-      className={`border-border grid border-y ${figures.length > 2 ? 'grid-cols-3' : 'grid-cols-2'} ${className}`}
+      className={`border-border grid ${rule === 'both' ? 'border-y' : 'border-b'} ${figures.length > 2 ? 'grid-cols-3' : 'grid-cols-2'} ${className}`}
     >
       {figures.map((figure) => (
         <div

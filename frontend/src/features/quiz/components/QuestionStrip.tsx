@@ -71,7 +71,7 @@ export function QuestionStrip({
 
   return (
     <nav aria-label="Питання тесту">
-      <div className="text-text-muted mb-3 flex items-baseline justify-between gap-4 text-xs">
+      <div className="text-text-muted mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-xs">
         {/* A slash, not «з». Uppercased and letterspaced, the Ukrainian «З»
             is indistinguishable from a 3 — and it sat between two numerals,
             so «ПИТАННЯ 1 З 5» read as «1 3 5». */}
@@ -79,7 +79,7 @@ export function QuestionStrip({
           {currentRow.label && `${currentRow.label} · `}
           {noun} {label(index)} / {currentRow.size ?? currentRow.count}
         </span>
-        <span className="shrink-0">
+        <span className="shrink-0 whitespace-nowrap">
           відповіли на {answeredCount} з {answerTotal}
         </span>
       </div>

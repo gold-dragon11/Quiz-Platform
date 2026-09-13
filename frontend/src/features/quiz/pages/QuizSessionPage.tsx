@@ -219,7 +219,10 @@ export function QuizSessionPage(): React.JSX.Element {
     // A question on a text needs the text beside it, so the page widens for
     // it; everything else keeps the narrow reading column.
     <div className={`mx-auto flex flex-col gap-8 ${current.passage ? 'max-w-6xl' : 'max-w-2xl'}`}>
-      <div className="flex items-start gap-6">
+      {/* On a phone the clock takes its own line above the strip. Sharing a
+          row left the strip about 230px, and its caption — «ІСТОРІЯ УКРАЇНИ ·
+          ЗАВДАННЯ 1 / 30» — broke over three lines beside the counter. */}
+      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:gap-6">
         <div className="min-w-0 flex-1">
           <QuestionStrip
             total={total}

@@ -83,7 +83,7 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
       />
 
       <FigureGrid
-        className="mt-12"
+        rule="bottom"
         figures={[
           {
             value: `${assignment.submittedCount}/${assignment.targetCount}`,
@@ -96,7 +96,12 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
             ? {
                 value: averageScaled ?? '—',
                 label: 'середній бал',
-                hint: `за шкалою 100–200 · не подолали поріг: ${scored.length - passedScores.length}`,
+                // Short on purpose: in a third of a phone's width a longer hint broke
+                // over four lines. The count is only news when it is not zero.
+                hint:
+                  scored.length > passedScores.length
+                    ? `нижче порогу: ${scored.length - passedScores.length}`
+                    : 'за шкалою 100–200',
               }
             : {
                 value: averageAccuracy === null ? '—' : formatPercent(averageAccuracy),

@@ -69,7 +69,7 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
       <ActiveQuizBanner className="mt-8" />
 
       <FigureGrid
-        className="mt-12"
+        rule="bottom"
         figures={[
           assignment.mockExam
             ? {

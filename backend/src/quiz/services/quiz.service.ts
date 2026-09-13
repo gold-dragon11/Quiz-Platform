@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
   ConflictException,
@@ -36,7 +37,8 @@ import {
 import { paperTaskCount, taskLabel } from '../nmt/task-numbering';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
-import { shuffleMatchingOrder } from '../matching-shuffle.util';
+import type { AppConfig } from '../../config/configuration';
+import { dealOptions } from '../option-deal.util';
 import {
   MistakeReviewRepository,
   MistakeReviewSummary,
@@ -176,6 +178,7 @@ export class QuizService {
     private readonly quizConfigService: QuizConfigService,
     private readonly mistakeReviewRepository: MistakeReviewRepository,
     private readonly nmtPapers: NmtPaperRegistry,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   /**
@@ -1635,9 +1638,10 @@ export class QuizService {
 
   /** Strips the correct answer (isCorrect, configuration) — decision D11. */
   /**
-   * One question as the client sees it. `sessionId` seeds the matching shuffle
-   * — see matching-shuffle.util — so the same session always deals the same
-   * order and the review matches what the reader answered on.
+   * One question as the client sees it. `sessionId` seeds the deal of an
+   * ordering or matching question — see option-deal.util — so the same
+   * session always deals the same layout and the review matches what the
+   * reader answered on.
    */
   private toQuestionView(
     question: SessionQuestionRecord,
@@ -1657,7 +1661,7 @@ export class QuizService {
       passage: question.passage,
       passageOrder: question.passageOrder,
       ...(question.type === QuestionType.MATCHING ? { promptCount } : {}),
-      answerOptions: shuffleMatchingOrder(
+      answerOptions: dealOptions(
         question.type,
         question.answerOptions.map((option) => ({
           id: option.id,
@@ -1667,6 +1671,7 @@ export class QuizService {
         })),
         `${sessionId}:${question.id}`,
         promptCount,
+        this.config.get('jwt', { infer: true }).accessSecret,
       ),
     };
   }
