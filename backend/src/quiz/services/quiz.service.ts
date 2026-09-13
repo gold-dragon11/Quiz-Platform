@@ -1483,9 +1483,9 @@ export class QuizService {
       // same transaction, so its history never disagrees with its review.
       const nmt = await this.scoreSitting(session, attempts);
       // A teacher sits a paper to see what their students will face
-      // (decision 29). The score is theirs to read, but XP, a level and the
-      // review ladder are a learner's progress, and a teacher's statistics
-      // are about their groups.
+      // (decision 29). The score is theirs to read, but XP, a level, the
+      // review ladder and the running totals are a learner's progress — a
+      // teacher's statistics are about their groups, so none of it moves.
       const sitter = await tx.user.findUnique({
         where: { id: session.userId },
         select: { role: true },
@@ -1530,16 +1530,18 @@ export class QuizService {
         }
       }
 
-      await this.statisticsService.applyQuizCompletion(tx, {
-        userId: session.userId,
-        quizSessionId: session.id,
-        resultId: result.id,
-        totalQuestions: tally.totalQuestions,
-        correctAnswers: tally.correctAnswers,
-        incorrectAnswers: tally.incorrectAnswers + tally.unansweredQuestions,
-        learningTimeSeconds: durationSeconds,
-        awards,
-      });
+      if (learner) {
+        await this.statisticsService.applyQuizCompletion(tx, {
+          userId: session.userId,
+          quizSessionId: session.id,
+          resultId: result.id,
+          totalQuestions: tally.totalQuestions,
+          correctAnswers: tally.correctAnswers,
+          incorrectAnswers: tally.incorrectAnswers + tally.unansweredQuestions,
+          learningTimeSeconds: durationSeconds,
+          awards,
+        });
+      }
 
       const xpEarned = awards.reduce((sum, award) => sum + award.amount, 0);
       return {

@@ -1351,7 +1351,7 @@ describe('Mock exam (e2e)', () => {
   };
 
   describe('a teacher sitting a paper (decision 29)', () => {
-    it('reads the score but earns no XP, unlike a learner on the same paper', async () => {
+    it('reads the score but earns no XP and moves no totals, unlike a learner', async () => {
       const teacher = await register(UserRole.TEACHER);
       const learner = await register();
 
@@ -1376,11 +1376,18 @@ describe('Mock exam (e2e)', () => {
         const transactions = await prisma.xPTransaction.count({
           where: { userId: sitter.userId },
         });
+        const stats = await prisma.statistics.findUnique({
+          where: { userId: sitter.userId },
+          select: { totalQuizzes: true, totalQuestions: true },
+        });
         if (sitter === teacher) {
           expect(body.result.xpEarned).toBe(0);
           expect(transactions).toBe(0);
+          // Nor do the running totals: a teacher's statistics are their groups.
+          expect(stats).toEqual({ totalQuizzes: 0, totalQuestions: 0 });
         } else {
           expect(transactions).toBeGreaterThan(0);
+          expect(stats?.totalQuizzes).toBe(1);
         }
       }
     });
