@@ -1,4 +1,4 @@
-import type { NmtTask } from './nmt-paper.types';
+import type { NmtPaper, NmtTask } from './nmt-paper.types';
 
 /**
  * How the paper numbers its tasks (docs/02-domain/nmt-paper.md §3).
@@ -17,6 +17,16 @@ export function taskCovers(task: NmtTask): number {
 /** The last number of the task's run: the same number for an ordinary task. */
 export function taskEnd(task: NmtTask): number {
   return task.number + taskCovers(task) - 1;
+}
+
+/**
+ * How many tasks the paper has, as a student counts them: the numbers on the
+ * answer sheet, not the questions on screen. English sets 18 questions and is
+ * known as a paper of 32 tasks, and saying 18 reads as if 14 were missing.
+ */
+export function paperTaskCount(paper: NmtPaper): number {
+  const last = paper.tasks.at(-1);
+  return last ? taskEnd(last) : 0;
 }
 
 /** What the paper prints above the task — «7», or «1–5» over a run. */

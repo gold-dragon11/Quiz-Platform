@@ -5,7 +5,12 @@ import { HISTORY_OF_UKRAINE_PAPER } from './papers/history-of-ukraine.paper';
 import { MATHEMATICS_PAPER } from './papers/mathematics.paper';
 import { ENGLISH_LANGUAGE_PAPER } from './papers/english-language.paper';
 import { UKRAINIAN_LANGUAGE_PAPER } from './papers/ukrainian-language.paper';
-import { taskCovers, taskEnd, taskLabel } from './task-numbering';
+import {
+  paperTaskCount,
+  taskCovers,
+  taskEnd,
+  taskLabel,
+} from './task-numbering';
 import {
   maxTestPoints,
   scaledScore,
@@ -396,6 +401,8 @@ describe('the English paper', () => {
     expect(maxTestPoints(ENGLISH_LANGUAGE_PAPER)).toBe(32);
     const last = ENGLISH_LANGUAGE_PAPER.tasks.at(-1) as NmtTask;
     expect(taskEnd(last)).toBe(32);
+    expect(paperTaskCount(ENGLISH_LANGUAGE_PAPER)).toBe(32);
+    expect(paperTaskCount(UKRAINIAN_LANGUAGE_PAPER)).toBe(30);
   });
 
   it('sets one matching over each run of numbers, a point per row', () => {

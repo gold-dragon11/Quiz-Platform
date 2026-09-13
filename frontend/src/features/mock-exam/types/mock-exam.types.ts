@@ -45,6 +45,8 @@ export interface MockExamSpec {
   /** Null while the subject still sits the provisional paper. */
   paper: {
     title: string;
+    /** Numbers on the answer sheet — what a student calls the paper's tasks. */
+    taskCount: number;
     maxTestPoints: number;
     timingNote: string;
     sections: { from: number; to: number; instruction: string }[];
@@ -53,7 +55,14 @@ export interface MockExamSpec {
   block: {
     title: string;
     timingNote: string;
-    papers: { subjectName: string; title: string; questionCount: number; maxTestPoints: number }[];
+    papers: {
+      subjectName: string;
+      title: string;
+      questionCount: number;
+      /** See `paper.taskCount`. */
+      taskCount: number;
+      maxTestPoints: number;
+    }[];
   } | null;
 }
 

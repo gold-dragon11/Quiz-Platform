@@ -122,6 +122,8 @@ export interface MockExamSpecView {
   /** Null while the subject still sits the provisional paper. */
   paper: {
     title: string;
+    /** Numbers on the answer sheet; `questionCount` is what is set on screen. */
+    taskCount: number;
     maxTestPoints: number;
     timingNote: string;
     sections: { from: number; to: number; instruction: string }[];
@@ -134,6 +136,8 @@ export interface MockExamSpecView {
       subjectName: string;
       title: string;
       questionCount: number;
+      /** See `paper.taskCount`. */
+      taskCount: number;
       maxTestPoints: number;
     }[];
   } | null;

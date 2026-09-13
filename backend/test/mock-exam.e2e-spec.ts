@@ -879,6 +879,8 @@ describe('Mock exam (e2e)', () => {
         minutes: 25,
         paper: {
           title: 'Тестовий зошит',
+          // Three questions, but the matching fills rows 2–4: five tasks.
+          taskCount: 5,
           maxTestPoints: 6,
           timingNote: 'Тестова примітка.',
           sections: paperFor(PAPER_SLUG).sections,
@@ -1097,12 +1099,14 @@ describe('Mock exam (e2e)', () => {
                 subjectName: PAPER_SLUG,
                 title: 'Тестовий зошит',
                 questionCount: 3,
+                taskCount: 5,
                 maxTestPoints: 6,
               },
               {
                 subjectName: BLOCK_SLUG,
                 title: 'Тестовий зошит',
                 questionCount: 3,
+                taskCount: 3,
                 maxTestPoints: 3,
               },
             ],

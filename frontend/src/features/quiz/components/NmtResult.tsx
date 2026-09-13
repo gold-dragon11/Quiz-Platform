@@ -2,6 +2,7 @@ import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { pluralUk } from '@/shared/utils/format';
 import type { NmtResultView } from '@/features/quiz/types/quiz.types';
 import { XpReward } from '@/features/quiz/components/XpReward';
+import { labelCovers } from '@/features/quiz/lib/answer-rows';
 
 /**
  * A mock sitting scored the way the exam scores it: the 100–200 score first,
@@ -11,9 +12,23 @@ import { XpReward } from '@/features/quiz/components/XpReward';
  * The per-task row is the useful part. "23 з 32" says how it went; a row that
  * shows task 18 at 1 of 3 and task 22 at 0 says where the next week goes.
  */
-export function NmtResult({ nmt, xpEarned }: { nmt: NmtResultView; xpEarned: number }): React.JSX.Element {
+export function NmtResult({
+  nmt,
+  xpEarned,
+  blankRows,
+}: {
+  nmt: NmtResultView;
+  xpEarned: number;
+  /** Tasks — rows of the answer sheet — left without an answer. */
+  blankRows: number;
+}): React.JSX.Element {
   const passed = nmt.scaledScore !== null;
+  const taskCount = nmt.tasks.reduce((sum, task) => sum + labelCovers(task.label), 0);
   const lostNothing = nmt.tasks.filter((task) => task.points === task.maxPoints).length;
+  // Where every task is worth exactly a point — English — tasks without loss
+  // are the test points again, and the figure beside them would repeat them.
+  // What the reader does not know yet is how much was simply left blank.
+  const pointPerTask = nmt.maxTestPoints === taskCount;
 
   return (
     <div>
@@ -36,10 +51,9 @@ export function NmtResult({ nmt, xpEarned }: { nmt: NmtResultView; xpEarned: num
         className="mt-8"
         figures={[
           { value: nmt.testPoints, label: `з ${nmt.maxTestPoints} тестових балів` },
-          {
-            value: lostNothing,
-            label: `з ${nmt.tasks.length} завдань без втрат`,
-          },
+          pointPerTask
+            ? { value: blankRows, label: `з ${taskCount} завдань без відповіді` }
+            : { value: lostNothing, label: `з ${taskCount} завдань без втрат` },
         ]}
       />
 

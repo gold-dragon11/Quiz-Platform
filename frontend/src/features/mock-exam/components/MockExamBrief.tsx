@@ -34,14 +34,17 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
   const { questionCount, minutes, paper, block } = spec.data;
 
   if (block) {
+    // Tasks as the papers number them: English is 32, although 18 questions
+    // are set, and that is the number the student knows it by.
+    const taskCount = block.papers.reduce((sum, entry) => sum + entry.taskCount, 0);
     return (
       <div className={className}>
         <FigureGrid
           figures={[
             {
-              value: questionCount,
-              label: pluralUk(questionCount, 'завдання', 'завдання', 'завдань'),
-              hint: block.papers.map((entry) => `${entry.subjectName} — ${entry.questionCount}`).join(', '),
+              value: taskCount,
+              label: pluralUk(taskCount, 'завдання', 'завдання', 'завдань'),
+              hint: block.papers.map((entry) => `${entry.subjectName} — ${entry.taskCount}`).join(', '),
             },
             {
               value: block.papers.length,
@@ -69,8 +72,8 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
         <FigureGrid
           figures={[
             {
-              value: questionCount,
-              label: pluralUk(questionCount, 'завдання', 'завдання', 'завдань'),
+              value: paper.taskCount,
+              label: pluralUk(paper.taskCount, 'завдання', 'завдання', 'завдань'),
               hint: 'Як у зошиті НМТ: ті самі номери, типи й порядок',
             },
             {

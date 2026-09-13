@@ -32,7 +32,7 @@ import {
   scorePaper,
   type NmtPaperScore,
 } from '../nmt/nmt-scoring';
-import { taskLabel } from '../nmt/task-numbering';
+import { paperTaskCount, taskLabel } from '../nmt/task-numbering';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { correctAnswerFor, evaluateAnswer } from '../quiz-answer.util';
 import { shuffleMatchingOrder } from '../matching-shuffle.util';
@@ -616,6 +616,7 @@ export class QuizService {
             subjectName,
             title: paper.title,
             questionCount: paper.tasks.length,
+            taskCount: paperTaskCount(paper),
             maxTestPoints: maxTestPoints(paper),
           })),
         },
@@ -636,6 +637,7 @@ export class QuizService {
         minutes: paper.minutes,
         paper: {
           title: paper.title,
+          taskCount: paperTaskCount(paper),
           maxTestPoints: maxTestPoints(paper),
           timingNote: paper.timingNote,
           sections: paper.sections,

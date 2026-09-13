@@ -3,6 +3,8 @@ interface QuestionStripGroup {
   /** Zero-based position of the group's first question. */
   start: number;
   count: number;
+  /** Tasks the group's paper numbers, when that is not its question count. */
+  size?: number;
 }
 
 interface QuestionStripProps {
@@ -25,6 +27,12 @@ interface QuestionStripProps {
    * papers of a joint NMT block, which both number their tasks from 1.
    */
   groups?: QuestionStripGroup[];
+  /**
+   * What the counters count, when it is not questions: a mock sitting counts
+   * rows of the answer sheet, so a half-marked matching shows its blank rows.
+   */
+  answeredCount?: number;
+  answerTotal?: number;
 }
 
 /**
@@ -50,14 +58,15 @@ export function QuestionStrip({
   numbers,
   noun = 'Питання',
   groups,
+  answeredCount = answered.filter(Boolean).length,
+  answerTotal = total,
 }: QuestionStripProps): React.JSX.Element {
-  const answeredCount = answered.filter(Boolean).length;
   const label = (position: number): string => numbers?.[position] ?? `${position + 1}`;
   // A task that carries a run of the answer sheet prints «11–16», which does
   // not fit a square; the cell grows for it and stays square for a number.
   const wide = (numbers ?? []).some((entry) => (entry?.length ?? 0) > 2);
   const rows: QuestionStripGroup[] =
-    groups && groups.length > 1 ? groups : [{ label: '', start: 0, count: total }];
+    groups && groups.length > 1 ? groups : [{ label: '', start: 0, count: total, size: answerTotal }];
   const currentRow = rows.find((row) => index >= row.start && index < row.start + row.count) ?? rows[0];
 
   return (
@@ -68,10 +77,10 @@ export function QuestionStrip({
             so «ПИТАННЯ 1 З 5» read as «1 3 5». */}
         <span className="tracking-[0.18em] uppercase">
           {currentRow.label && `${currentRow.label} · `}
-          {noun} {label(index)} / {currentRow.count}
+          {noun} {label(index)} / {currentRow.size ?? currentRow.count}
         </span>
         <span className="shrink-0">
-          відповіли на {answeredCount} з {total}
+          відповіли на {answeredCount} з {answerTotal}
         </span>
       </div>
 

@@ -58,6 +58,13 @@ always as many questions as it has numbers, and the number after such a task
 starts where its run ends. `taskLabel` in `src/quiz/nmt/task-numbering.ts` is
 what the paper prints above one: «7», or «11–16».
 
+Wherever a student is told how many tasks there are, the count is of numbers,
+not questions: the brief says 32 for English, the task strip counts answered
+rows of the answer sheet — a matching with three of its five rows marked is
+three answered, not one — and the result counts tasks the same way. Where every
+number is worth exactly one point, as in English, tasks without loss would only
+repeat the test points, so the result shows how many were left blank instead.
+
 Unit tests hold every paper to its shape: each task starting where the one
 before it ended, the first at 1; exactly one section per number; a score for
 every total from the threshold (100) to the maximum (200) that never falls;

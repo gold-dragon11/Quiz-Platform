@@ -9,6 +9,8 @@ import { useQuizResult } from '@/features/quiz/hooks/use-quiz';
 import { ResultSummary } from '@/features/quiz/components/ResultSummary';
 import { ResultReview } from '@/features/quiz/components/ResultReview';
 import { NmtResult } from '@/features/quiz/components/NmtResult';
+import { filledRows, labelCovers } from '@/features/quiz/lib/answer-rows';
+import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { MaterialLink } from '@/features/quiz/components/MaterialLink';
 
 /**
@@ -80,6 +82,15 @@ export function QuizResultPage(): React.JSX.Element {
                 key={paper.subjectName}
                 nmt={paper}
                 xpEarned={i === 0 ? result.data.result.xpEarned : 0}
+                blankRows={paper.tasks.reduce((sum, task) => {
+                  const question = result.data.questions.find((entry) => entry.id === task.questionId);
+                  const covers = labelCovers(task.label);
+                  return (
+                    sum +
+                    covers -
+                    filledRows(question?.type ?? '', question?.submittedAnswer as SelectedAnswer, covers)
+                  );
+                }, 0)}
               />
             ))}
           </div>

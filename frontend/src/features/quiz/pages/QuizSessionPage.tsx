@@ -15,6 +15,7 @@ import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { QuestionCard } from '@/features/quiz/components/QuestionCard';
 import { QuestionStrip } from '@/features/quiz/components/QuestionStrip';
 import { PassagePanel } from '@/features/quiz/components/PassagePanel';
+import { filledRows, labelCovers } from '@/features/quiz/lib/answer-rows';
 import { QuizTimer } from '@/features/quiz/components/QuizTimer';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -203,9 +204,16 @@ export function QuizSessionPage(): React.JSX.Element {
     taskNumber === null
       ? undefined
       : paper?.sections.find((range) => range.from <= taskNumber && taskNumber <= range.to);
-  const answeredCount = questions.filter((q) => answers[q.id] !== undefined).length;
+  // Counted in rows of the answer sheet: one per question, except where a
+  // task fills a run of them (docs/02-domain/nmt-paper.md §3).
+  const covers = questions.map((_, i) => labelCovers(sitting?.taskLabels[i]));
+  const filled = questions.map((q, i) => filledRows(q.type, answers[q.id], covers[i]));
+  const rowTotal = covers.reduce((sum, rows) => sum + rows, 0);
+  const answeredCount = filled.reduce((sum, rows) => sum + rows, 0);
+  const sumRows = (start: number, count: number): number =>
+    covers.slice(start, start + count).reduce((sum, rows) => sum + rows, 0);
   const isLast = index === total - 1;
-  const unanswered = total - answeredCount;
+  const unanswered = rowTotal - answeredCount;
 
   return (
     // A question on a text needs the text beside it, so the page widens for
@@ -216,7 +224,9 @@ export function QuizSessionPage(): React.JSX.Element {
           <QuestionStrip
             total={total}
             index={index}
-            answered={questions.map((question) => answers[question.id] !== undefined)}
+            answered={filled.map((rows) => rows > 0)}
+            answeredCount={answeredCount}
+            answerTotal={rowTotal}
             onJump={setIndex}
             numbers={sitting?.taskLabels}
             noun={sitting ? 'Завдання' : undefined}
@@ -226,6 +236,7 @@ export function QuizSessionPage(): React.JSX.Element {
                     label: entry.subjectName,
                     start: entry.start,
                     count: entry.count,
+                    size: sumRows(entry.start, entry.count),
                   }))
                 : undefined
             }
@@ -317,7 +328,7 @@ export function QuizSessionPage(): React.JSX.Element {
         title="Завершити тест?"
         description={
           unanswered > 0
-            ? `Без відповіді лишилось питань: ${unanswered}. Вони будуть зараховані як неправильні. Все одно завершити?`
+            ? `Без відповіді лишилось ${sitting ? 'завдань' : 'питань'}: ${unanswered}. Вони будуть зараховані як неправильні. Все одно завершити?`
             : 'Відповіді буде оцінено, і змінити їх уже не вийде.'
         }
         confirmLabel="Завершити тест"
