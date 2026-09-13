@@ -14,11 +14,19 @@ import { Prisma } from '@prisma/client';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AvailableQuestionsQueryDto } from '../dto/available-questions-query.dto';
+import { MockExamHistoryQueryDto } from '../dto/mock-exam-history-query.dto';
+import { MockExamSpecQueryDto } from '../dto/mock-exam-spec-query.dto';
+import { MistakeReviewSummary } from '../repositories/mistake-review.repository';
+import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { QuizLocaleQueryDto } from '../dto/quiz-locale-query.dto';
+import { StartMockExamDto } from '../dto/start-mock-exam.dto';
 import { StartQuizDto } from '../dto/start-quiz.dto';
 import { SubmitAnswerDto } from '../dto/submit-answer.dto';
 import { QuizService } from '../services/quiz.service';
 import {
+  MockExamAttempt,
+  MockExamBlockView,
+  MockExamSpecView,
   QuizQuestionView,
   QuizResultSummary,
   QuizResumeView,
@@ -35,6 +43,85 @@ import {
 @Controller('quiz')
 export class QuizController {
   constructor(private readonly quizService: QuizService) {}
+
+  /**
+   * POST /api/v1/quiz/mock-exam/start — a full sitting under exam conditions:
+   * a fixed paper, one clock for the whole thing, nothing to configure.
+   */
+  @Post('mock-exam/start')
+  @HttpCode(HttpStatus.CREATED)
+  async startMockExam(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartMockExamDto,
+  ): Promise<QuizSessionMetadata> {
+    return this.quizService.startMockExam(userId, dto);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/history — past sittings, oldest first.
+   * A sitting of an NMT paper carries its test points and official 100–200
+   * score; a provisional sitting carries nulls, since there is no table for it
+   * and none is invented.
+   */
+  @Get('mock-exam/history')
+  async mockExamHistory(
+    @CurrentUser('id') userId: string,
+    @Query() query: MockExamHistoryQueryDto,
+  ): Promise<MockExamAttempt[]> {
+    return this.quizService.mockExamHistory(userId, query.subjectId);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/spec — what a sitting in this subject will be:
+   * how many questions, how many minutes, and the NMT paper it follows, if any
+   * — or the same for a joint block.
+   *
+   * Exposed rather than published as a constant the client repeats: the
+   * numbers come from the subject's paper (nmt/papers/) or, until it has one,
+   * from the provisional mock-exam.config.ts, and a duplicated "30 questions,
+   * 60 minutes" in the UI would outlive both.
+   */
+  @Get('mock-exam/spec')
+  async mockExamSpec(
+    @Query() query: MockExamSpecQueryDto,
+  ): Promise<MockExamSpecView> {
+    return this.quizService.mockExamSpec(query);
+  }
+
+  /**
+   * GET /api/v1/quiz/mock-exam/blocks — the joint NMT blocks that can be sat,
+   * listed beside the subjects on the mock exam screen.
+   */
+  @Get('mock-exam/blocks')
+  async mockExamBlocks(): Promise<MockExamBlockView[]> {
+    return this.quizService.mockExamBlocks();
+  }
+
+  /**
+   * POST /api/v1/quiz/mistake-review/start — today's due mistakes, at
+   * widening intervals. Nothing due is a 409, not an empty session: an
+   * empty quiz is a bug-shaped experience.
+   */
+  @Post('mistake-review/start')
+  @HttpCode(HttpStatus.CREATED)
+  async startMistakeReview(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartMistakeReviewDto,
+  ): Promise<QuizSessionMetadata> {
+    return this.quizService.startMistakeReview(userId, dto);
+  }
+
+  /**
+   * GET /api/v1/quiz/mistake-review — how much is due today, still on the
+   * ladder, and already fixed. The last number is the one worth showing a
+   * learner: it is the only place the product says "you got better".
+   */
+  @Get('mistake-review')
+  async mistakeReviewSummary(
+    @CurrentUser('id') userId: string,
+  ): Promise<MistakeReviewSummary> {
+    return this.quizService.mistakeReviewSummary(userId);
+  }
 
   /** POST /api/v1/quiz/start — creates an ACTIVE session with its questions. */
   @Post('start')

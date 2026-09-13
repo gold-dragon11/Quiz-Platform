@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { listenOnLoopback } from './loopback';
 
 /**
  * Rate limiting (docs/06-backend/security.md, "Rate Limiting").
@@ -36,7 +37,7 @@ describe('Rate limiting (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
   });
 
   afterAll(async () => {

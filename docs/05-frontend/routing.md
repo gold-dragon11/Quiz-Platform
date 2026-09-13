@@ -70,10 +70,31 @@ Authenticated routes require a valid access token.
 | `/quiz` | Quiz selection |
 | `/quiz/:sessionId` | Active quiz session |
 | `/quiz/:sessionId/result` | Quiz results |
+| `/mock-exam` | Mock exam: start a sitting, past attempts. Open to a teacher too (decision 29), as are the session and result screens it runs on; a teacher sees no attempt history and earns no XP |
+| `/mistake-review` | Mistakes due today, on the spaced-repetition ladder |
+| `/duels` | Duels: challenge somebody, and every duel you are in |
+| `/duels/:duelId` | One duel — invitation, paper, wait, or result |
+| `/groups` | The learner's groups; joining by invite code |
+| `/assignments` | Homework across every group |
+| `/assignments/:assignmentId` | One piece of homework — what it is, and starting it |
 | `/topics/:topicId/material` | Learning material for one topic |
 | `/statistics` | Learning statistics |
 | `/profile` | User profile |
 | `/settings` | User settings |
+
+### Teacher routes
+
+Gated by the `TEACHER` role, which administrators deliberately do not satisfy —
+an administrator owns no groups.
+
+| Route | Purpose |
+|---------|---------|
+| `/teacher/groups` | The teacher's groups; creating one |
+| `/teacher/questions` | The question bank, with correct answers and explanations |
+| `/teacher/groups/:groupId` | One group — invite code, roster, assignments, analytics |
+| `/teacher/groups/:groupId/assignments/new` | Issuing homework |
+| `/teacher/groups/:groupId/students/:studentId` | One learner inside one group |
+| `/teacher/assignments/:assignmentId` | How the work went — submissions and the question breakdown |
 
 Unauthenticated users are redirected to:
 

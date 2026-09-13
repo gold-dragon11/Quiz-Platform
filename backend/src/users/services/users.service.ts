@@ -25,7 +25,7 @@ import {
 
 const PROFILE_NOT_FOUND_MESSAGE = 'Профіль не знайдено.';
 const ACCOUNT_NOT_FOUND_MESSAGE = 'Акаунт не знайдено.';
-const USERNAME_TAKEN_MESSAGE = "Це ім'я користувача вже зайняте.";
+const USERNAME_TAKEN_MESSAGE = 'Це імʼя користувача вже зайняте.';
 const UNKNOWN_AVATAR_MESSAGE = 'Невідомий стандартний аватар.';
 const AVATAR_NOT_FOUND_MESSAGE = 'Аватар не знайдено.';
 

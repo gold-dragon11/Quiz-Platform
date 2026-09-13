@@ -53,7 +53,8 @@ export function LoginPage(): React.JSX.Element {
   return (
     <AuthCard
       title="Вхід"
-      subtitle="З поверненням до L&S"
+      // No subtitle: «З поверненням до L&S» said the same thing as the toast
+      // fired one second later, and the heading needs no help.
       footer={
         <div className="flex flex-col gap-2">
           <p>

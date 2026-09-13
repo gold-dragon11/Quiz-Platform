@@ -129,6 +129,7 @@ export class AuthService implements OnModuleInit {
         // The interface is Ukrainian-only, so an omitted preference defaults
         // to Ukrainian rather than English.
         language: dto.preferredLanguage ?? Language.UKRAINIAN,
+        role: dto.role,
       });
     } catch (error) {
       // Two concurrent registrations can both pass the checks above and race to
@@ -762,7 +763,7 @@ export class AuthService implements OnModuleInit {
     }
 
     if (existingProfile) {
-      throw new ConflictException("Таке ім'я користувача вже існує.");
+      throw new ConflictException('Таке імʼя користувача вже існує.');
     }
   }
 
@@ -788,7 +789,7 @@ export class AuthService implements OnModuleInit {
       : [];
 
     if (target.includes('username')) {
-      return new ConflictException("Таке ім'я користувача вже існує.");
+      return new ConflictException('Таке імʼя користувача вже існує.');
     }
 
     if (target.includes('email')) {

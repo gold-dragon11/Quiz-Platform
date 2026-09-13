@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="414" viewBox="0 0 460 414" role="img" aria-label="Вектор a на координатній площині">
+<rect width="460" height="414" fill="#0f0f13"/>
+<line x1="46.36" y1="386.0" x2="46.36" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="92.27" y1="386.0" x2="92.27" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="138.18" y1="386.0" x2="138.18" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="184.09" y1="386.0" x2="184.09" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="230.0" y1="386.0" x2="230.0" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="275.91" y1="386.0" x2="275.91" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="321.82" y1="386.0" x2="321.82" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="367.73" y1="386.0" x2="367.73" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="413.64" y1="386.0" x2="413.64" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="367.64" x2="432.0" y2="367.64" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="321.74" x2="432.0" y2="321.74" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="275.85" x2="432.0" y2="275.85" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="229.95" x2="432.0" y2="229.95" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="184.05" x2="432.0" y2="184.05" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="138.15" x2="432.0" y2="138.15" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="92.26" x2="432.0" y2="92.26" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="46.36" x2="432.0" y2="46.36" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="321.74" x2="432.0" y2="321.74" stroke="#9a9aab" stroke-width="1.5"/>
+<line x1="92.27" y1="386.0" x2="92.27" y2="28.0" stroke="#9a9aab" stroke-width="1.5"/>
+<polygon points="432.0,321.74 422.0,316.74 422.0,326.74" fill="#9a9aab"/>
+<polygon points="92.27,28.0 87.27,38.0 97.27,38.0" fill="#9a9aab"/>
+<text x="428.0" y="345.74" font-size="20" fill="#9a9aab" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">x</text>
+<text x="102.27" y="42.0" font-size="20" fill="#9a9aab" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">y</text>
+<text x="86.27" y="339.74" font-size="16" fill="#9a9aab" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif">0</text>
+<line x1="138.18" y1="324.61" x2="138.18" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="138.18" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">1</text>
+<line x1="184.09" y1="324.61" x2="184.09" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.09" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">2</text>
+<line x1="230.0" y1="324.61" x2="230.0" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="230.0" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">3</text>
+<line x1="275.91" y1="324.61" x2="275.91" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="275.91" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">4</text>
+<line x1="321.82" y1="324.61" x2="321.82" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="321.82" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">5</text>
+<line x1="367.73" y1="324.61" x2="367.73" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="367.73" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">6</text>
+<line x1="413.64" y1="324.61" x2="413.64" y2="318.88" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="413.64" y="343.74" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">7</text>
+<line x1="89.04" y1="275.85" x2="95.5" y2="275.85" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="281.85" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">1</text>
+<line x1="89.04" y1="229.95" x2="95.5" y2="229.95" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="235.95" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">2</text>
+<line x1="89.04" y1="184.05" x2="95.5" y2="184.05" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="190.05" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">3</text>
+<line x1="89.04" y1="138.15" x2="95.5" y2="138.15" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="144.15" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">4</text>
+<line x1="89.04" y1="92.26" x2="95.5" y2="92.26" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="98.26" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">5</text>
+<line x1="89.04" y1="46.36" x2="95.5" y2="46.36" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="84.27" y="52.36" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">6</text>
+<line x1="138.18" y1="275.85" x2="321.82" y2="138.15" stroke="#8b5cf6" stroke-width="3"/>
+<polygon points="321.82,138.15 314.8,150.2 308.2,141.5" fill="#8b5cf6"/>
+<circle cx="138.18" cy="275.85" r="5" fill="#8b5cf6"/>
+<text x="220.0" y="199.0" font-size="26" fill="#8b5cf6" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">a</text>
+</svg>

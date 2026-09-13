@@ -236,7 +236,9 @@ Response includes:
 
 - language;
 - theme;
-- publicProfileEnabled.
+- publicProfileEnabled;
+- assignmentEmailsEnabled;
+- shareSelfStudyWithTutors.
 
 ---
 
@@ -252,7 +254,9 @@ Supported fields:
 
 - language (English or Ukrainian);
 - theme (Dark, the only MVP option);
-- publicProfileEnabled (boolean).
+- publicProfileEnabled (boolean);
+- assignmentEmailsEnabled (boolean);
+- shareSelfStudyWithTutors (boolean).
 
 Changing the language takes effect immediately and does not require a new login.
 

@@ -8,7 +8,7 @@ import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Input } from '@/shared/ui/Input';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { QuizType } from '@/shared/types/enums';
+import { QuizType, type AuthorableQuizMode } from '@/shared/types/enums';
 import { useSubjectsLookup, useTopicsLookup } from '@/features/admin/hooks/use-admin-lookups';
 import { useAdminQuizzes, useDeleteQuiz } from '@/features/admin/hooks/use-admin-quizzes';
 import type { QuizRecord } from '@/features/admin/types/admin.types';
@@ -18,7 +18,7 @@ import { QuizFormModal } from '@/features/admin/components/quizzes/QuizFormModal
 
 const PAGE_SIZE = 10;
 
-const MODE_LABEL: Record<QuizType, string> = {
+const MODE_LABEL: Record<AuthorableQuizMode, string> = {
   [QuizType.SUBJECT_QUIZ]: 'Subject',
   [QuizType.RANDOM_QUIZ]: 'Random',
 };
@@ -117,8 +117,8 @@ export function QuizzesSection(): React.JSX.Element {
         />
       ) : (
         <>
-          <div className="border-border overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[48rem] text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="border-border w-full border-t min-w-[48rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 font-medium">Заголовок</th>

@@ -19,16 +19,27 @@ export function formatNumber(value: number): string {
 }
 
 /**
- * Renders a percentage the backend already computed. Accepts a number or the
- * string form it returns, and appends a single `%` only when missing — never
- * double-formats.
+ * Renders a percentage the backend already computed, rounded to a whole number.
+ *
+ * The two decimals are a storage artifact — accuracy and score are
+ * `Decimal(5,2)` columns — not a display decision, and nothing on screen is
+ * decided by a hundredth of a percent. Printed raw they gave «20.00%» set in
+ * 48px Playfair, where the trailing zeros are the widest thing in the figure.
+ *
+ * Accepts a number or the string form the API returns, and appends a single
+ * `%` only when missing — never double-formats. A value that is already a
+ * percent string is passed through untouched rather than re-parsed.
  */
 export function formatPercent(value: string | number): string {
   const text = String(value).trim();
   if (text === '') {
     return '0%';
   }
-  return text.endsWith('%') ? text : `${text}%`;
+  if (text.endsWith('%')) {
+    return text;
+  }
+  const numeric = Number.parseFloat(text);
+  return Number.isFinite(numeric) ? `${Math.round(numeric)}%` : `${text}%`;
 }
 
 /**
@@ -76,7 +87,14 @@ export function pluralUk(count: number, one: string, few: string, many: string):
   return many;
 }
 
-/** Short absolute date (e.g. "20 лип. 2026 р."); echoes the input if unparseable. */
+/**
+ * Short absolute date (e.g. "20 лип. 2026 р."); echoes the input if unparseable.
+ *
+ * Note the trailing full stop — it is part of the Ukrainian abbreviation, not
+ * punctuation you may add to. Ending a sentence with this helper needs no
+ * period of its own, or the reader gets "…14 вер. 2026 р..". This has been
+ * written twice already.
+ */
 export function formatShortDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {

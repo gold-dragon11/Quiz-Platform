@@ -48,6 +48,12 @@ export class SettingsService {
       ...(dto.publicProfileEnabled === undefined
         ? {}
         : { publicProfileEnabled: dto.publicProfileEnabled }),
+      ...(dto.assignmentEmailsEnabled === undefined
+        ? {}
+        : { assignmentEmailsEnabled: dto.assignmentEmailsEnabled }),
+      ...(dto.shareSelfStudyWithTutors === undefined
+        ? {}
+        : { shareSelfStudyWithTutors: dto.shareSelfStudyWithTutors }),
     };
 
     try {

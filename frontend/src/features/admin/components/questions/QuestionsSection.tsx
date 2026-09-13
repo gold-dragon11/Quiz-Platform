@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { toast } from '@/stores/toast-store';
 import { useDebouncedValue } from '@/shared/hooks/use-debounced-value';
 import { isApiError } from '@/shared/utils/apply-api-error';
-import { Difficulty, QuestionType } from '@/shared/types/enums';
+import { Difficulty, QuestionFormat, QuestionType } from '@/shared/types/enums';
 import { Badge } from '@/shared/ui/Badge';
 import { Button } from '@/shared/ui/Button';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
@@ -26,6 +26,9 @@ const PAGE_SIZE = 10;
 const TYPE_LABEL: Record<QuestionType, string> = {
   [QuestionType.SINGLE_CHOICE]: 'Одна відповідь',
   [QuestionType.MATCHING]: 'Відповідності',
+  [QuestionType.ORDERING]: 'Послідовність',
+  [QuestionType.MULTIPLE_CHOICE]: 'Кілька відповідей',
+  [QuestionType.NUMERIC]: 'Числова відповідь',
 };
 const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   [Difficulty.BEGINNER]: 'Початковий',
@@ -33,11 +36,18 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
   [Difficulty.ADVANCED]: 'Високий',
 };
 
+const FORMAT_FILTER_OPTIONS: SelectOption[] = [
+  { value: '', label: 'Усі формати' },
+  { value: QuestionFormat.NMT, label: 'Формат НМТ' },
+  { value: QuestionFormat.PRACTICE, label: 'Тренувальні' },
+];
+
 /** Questions admin: list, filter by subject/topic, create, edit, publish, delete (§6-7, §10). */
 export function QuestionsSection(): React.JSX.Element {
   const [page, setPage] = useState(1);
   const [subjectId, setSubjectId] = useState('');
   const [topicId, setTopicId] = useState('');
+  const [format, setFormat] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const search = useDebouncedValue(searchInput.trim(), 300);
 
@@ -59,6 +69,7 @@ export function QuestionsSection(): React.JSX.Element {
     search: search || undefined,
     subjectId: subjectId || undefined,
     topicId: topicId || undefined,
+    format: (format || undefined) as QuestionFormat | undefined,
   });
   const deleteQuestion = useDeleteQuestion();
   const publishQuestion = usePublishQuestion();
@@ -128,6 +139,17 @@ export function QuestionsSection(): React.JSX.Element {
               }}
             />
           </div>
+          <div className="sm:w-40">
+            <Select
+              aria-label="Фільтр за форматом"
+              options={FORMAT_FILTER_OPTIONS}
+              value={format}
+              onChange={(e) => {
+                setFormat(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
           <div className="sm:w-52">
             <Input
               type="search"
@@ -157,15 +179,16 @@ export function QuestionsSection(): React.JSX.Element {
         <SectionError onRetry={() => void list.refetch()} />
       ) : list.data.items.length === 0 ? (
         <EmptyState
-          title={search || subjectId ? 'Нічого не знайдено' : 'Питань поки немає'}
+          title={search || subjectId || format ? 'Нічого не знайдено' : 'Питань поки немає'}
           description={
-            search || subjectId
+            search || subjectId || format
               ? 'Жодне питання не відповідає фільтрам.'
               : 'Створіть перше питання, щоб почати.'
           }
           action={
             !search &&
-            !subjectId && (
+            !subjectId &&
+            !format && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -180,8 +203,8 @@ export function QuestionsSection(): React.JSX.Element {
         />
       ) : (
         <>
-          <div className="border-border overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[52rem] text-left text-sm">
+          <div className="overflow-x-auto">
+            <table className="border-border w-full border-t min-w-[52rem] text-left text-sm">
               <thead className="text-text-muted border-border border-b text-xs uppercase">
                 <tr>
                   <th className="px-4 py-3 font-medium">Заголовок</th>
@@ -195,8 +218,13 @@ export function QuestionsSection(): React.JSX.Element {
               <tbody className="divide-border divide-y">
                 {list.data.items.map((question) => (
                   <tr key={question.id}>
-                    <td className="text-text-primary max-w-xs truncate px-4 py-3 font-medium">
-                      {question.title}
+                    <td className="text-text-primary max-w-xs px-4 py-3 font-medium">
+                      <span className="block truncate">{question.title}</span>
+                      {question.format === QuestionFormat.NMT && (
+                        <span className="text-text-muted mt-0.5 block text-[0.65rem] font-normal tracking-[0.14em] uppercase">
+                          Формат НМТ
+                        </span>
+                      )}
                     </td>
                     <td className="text-text-secondary px-4 py-3">
                       {topicsById.get(question.topicId) ?? '—'}

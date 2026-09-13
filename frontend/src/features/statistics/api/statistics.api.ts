@@ -5,12 +5,17 @@ import type {
   OverallStatistics,
   RecentActivityItem,
   SubjectStatistics,
+  TopicStatistics,
 } from '@/features/statistics/types/statistics.types';
 
 /**
  * Statistics API layer (Phase 6.6) — typed wrappers over the shared apiClient
  * for the read-only Statistics endpoints (docs/04-api/statistics.md). No
  * feature touches Axios directly. Deferred endpoints (trends) are not used.
+ *
+ * `/statistics/progress` is deliberately not wrapped: every field it returns
+ * (level, XP, completion) is already in the `/statistics` payload, and a second
+ * request for the same numbers is how two views of one fact start to disagree.
  */
 export const statisticsApi = {
   /** GET /statistics — overall statistics + level block (§4). */
@@ -22,6 +27,12 @@ export const statisticsApi = {
   /** GET /statistics/subjects — per-subject statistics; empty until a quiz is done (§5). */
   async getSubjects(): Promise<SubjectStatistics[]> {
     const { data } = await apiClient.get<SubjectStatistics[]>('/statistics/subjects');
+    return data;
+  },
+
+  /** GET /statistics/topics — per-topic statistics across every subject (§6). */
+  async getTopics(): Promise<TopicStatistics[]> {
+    const { data } = await apiClient.get<TopicStatistics[]>('/statistics/topics');
     return data;
   },
 

@@ -18,9 +18,17 @@ const ALLOWED_KEYS = new Set([
   'title',
   'difficulty',
   'type',
+  'format',
   'options',
   'correct',
   'pairs',
+  'sequence',
+  'imageUrl',
+  'answer',
+  'extraChoices',
+  'explanation',
+  'passage',
+  'nmtTask',
 ]);
 
 /** Leftover editorial notes that must never reach a learner. */
@@ -82,7 +90,7 @@ const AN_EXCEPTIONS = /^(?:hour|honest|honour|honorary|heir|MBA|MP|NHS)/i;
 interface Question {
   title: string;
   type?: string;
-  options?: string[];
+  options?: (string | { content?: string; imageUrl?: string })[];
   correct?: number;
   pairs?: [string, string][];
   [key: string]: unknown;
@@ -207,8 +215,30 @@ function lintPack(pack: string): Report {
   for (const file of readdirSync(topicsDir).sort()) {
     const topic = JSON.parse(readFileSync(join(topicsDir, file), 'utf8')) as {
       slug: string;
+      passages?: { key: string; title?: string; content: string }[];
       questions: Question[];
     };
+
+    // Passages declared in the topic file (docs/02-domain/passage.md) get the
+    // same prose checks as any question text, and the same uniqueness rule as
+    // the passages still embedded in titles.
+    for (const passage of topic.passages ?? []) {
+      const at = `${pack}/${topic.slug}.passages[${passage.key}]`;
+      for (const text of [passage.title, passage.content]) {
+        if (typeof text !== 'string') continue;
+        lintProse(text, at, out);
+        if (isEnglish) lintEnglish(text, at, out);
+      }
+      const words = countWords(passage.content);
+      if (words < 50 || words > 600) {
+        out.warnings.push(`${at}: passage is ${words} words (target 50–600)`);
+      }
+      const owner = passages.get(passage.content);
+      if (owner) {
+        out.errors.push(`${at}: passage repeats one in topic "${owner}"`);
+      }
+      passages.set(passage.content, topic.slug);
+    }
 
     topic.questions.forEach((q, i) => {
       const at = `${pack}/${topic.slug}[${i}]`;
@@ -221,7 +251,9 @@ function lintPack(pack: string): Report {
 
       const texts = [
         q.title,
-        ...(q.options ?? []),
+        ...(q.options ?? []).map((option) =>
+          typeof option === 'string' ? option : option.content,
+        ),
         ...(q.pairs ?? []).flat(),
       ].filter((t): t is string => typeof t === 'string');
 
@@ -258,7 +290,11 @@ function lintPack(pack: string): Report {
         passages.set(passage, topic.slug);
       }
 
-      for (const [left] of q.pairs ?? []) {
+      // Rows of a matching question over a passage are gap numbers — "(1)",
+      // "(2)" — and repeat by design, so they say nothing about drilling.
+      for (const [left] of typeof q.passage === 'string'
+        ? []
+        : (q.pairs ?? [])) {
         const key = left.trim().toLowerCase();
         matchingLefts.set(key, (matchingLefts.get(key) ?? 0) + 1);
       }

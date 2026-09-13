@@ -1,93 +1,74 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
-import { ProgressBar } from '@/shared/ui/ProgressBar';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { formatNumber, formatPercent } from '@/shared/utils/format';
+import { formatNumber, formatPercent, pluralUk } from '@/shared/utils/format';
 import { useSubjectStatistics } from '@/features/statistics/hooks/use-statistics';
 import { SectionError } from '@/features/statistics/components/SectionError';
 import type { SubjectStatistics } from '@/features/statistics/types/statistics.types';
 
 /**
- * Per-subject statistics (docs/01-prd/dashboard.md §7,
- * docs/04-api/statistics.md §5). The backend returns only subjects the user
- * has completed a quiz in, so an empty array renders an encouraging empty
- * state. Each card visualizes accuracy as a progress bar.
+ * The same four subjects, in the order the reader is actually good at them
+ * (docs/04-api/statistics.md §5).
+ *
+ * Previously three bordered cards in a grid, each with its own progress bar
+ * and a three-column definition list inside it — a layout that gave the
+ * strongest and the weakest subject identical prominence and buried the one
+ * number that separates them. Ruled rows sort, cards do not.
  */
 export function SubjectStatisticsSection(): React.JSX.Element {
   const subjects = useSubjectStatistics();
-  const navigate = useNavigate();
+
+  if (subjects.isPending) {
+    return <Skeleton className="h-40" />;
+  }
+
+  if (subjects.isError) {
+    return <SectionError onRetry={() => void subjects.refetch()} />;
+  }
+
+  if (subjects.data.length === 0) {
+    return (
+      <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
+        Предмет потрапляє сюди після першого пройденого з нього тесту.{' '}
+        <Link to={ROUTES.subjects} className="text-primary underline underline-offset-4">
+          До предметів
+        </Link>
+      </p>
+    );
+  }
+
+  const ranked = [...subjects.data].sort((a, b) => accuracyOf(b) - accuracyOf(a));
 
   return (
-    <section>
-      <SectionHeader title="За предметами" description="Де ви робите поступ." />
-      {subjects.isPending ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <Skeleton key={index} className="h-40 rounded-xl" />
-          ))}
-        </div>
-      ) : subjects.isError ? (
-        <Card>
-          <SectionError onRetry={() => void subjects.refetch()} />
-        </Card>
-      ) : subjects.data.length === 0 ? (
-        <Card>
-          <EmptyState
-            title="Прогресу за предметами поки немає"
-            description="Пройдіть тест з будь-якого предмета — і прогрес зʼявиться тут."
-            action={
-              <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Почати тест
-              </Button>
-            }
-          />
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.data.map((subject) => (
-            <SubjectCard key={subject.subjectId} subject={subject} />
-          ))}
-        </div>
-      )}
-    </section>
+    <ul className="divide-border border-border divide-y border-t">
+      {ranked.map((subject) => (
+        <SubjectRow key={subject.subjectId} subject={subject} />
+      ))}
+    </ul>
   );
 }
 
-function parseAccuracy(accuracy: string): number {
-  const value = Number.parseFloat(accuracy);
+function accuracyOf(subject: SubjectStatistics): number {
+  const value = Number.parseFloat(subject.averageAccuracy);
   return Number.isFinite(value) ? value : 0;
 }
 
-function SubjectCard({ subject }: { subject: SubjectStatistics }): React.JSX.Element {
+function SubjectRow({ subject }: { subject: SubjectStatistics }): React.JSX.Element {
   return (
-    <div className="bg-surface border-border flex flex-col gap-4 rounded-xl border p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-text-primary truncate font-medium">{subject.subjectName}</h3>
-        <span className="text-text-secondary shrink-0 text-sm font-medium">
+    <li className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-6">
+      <div className="min-w-0">
+        <p className="text-text-primary font-display text-xl font-bold sm:text-2xl">{subject.subjectName}</p>
+        <p className="text-text-muted mt-2 text-sm">
+          {formatNumber(subject.completedQuizzes)}{' '}
+          {pluralUk(subject.completedQuizzes, 'тест', 'тести', 'тестів')} ·{' '}
+          {formatNumber(subject.totalQuestions)}{' '}
+          {pluralUk(subject.totalQuestions, 'питання', 'питання', 'питань')} ·{' '}
           {formatNumber(subject.earnedXP)} XP
-        </span>
+        </p>
       </div>
-
-      <ProgressBar value={parseAccuracy(subject.averageAccuracy)} label={`${subject.subjectName} accuracy`} />
-
-      <dl className="grid grid-cols-3 gap-3 text-sm">
-        <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Тести</dt>
-          <dd className="text-text-secondary">{formatNumber(subject.completedQuizzes)}</dd>
-        </div>
-        <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Питання</dt>
-          <dd className="text-text-secondary">{formatNumber(subject.totalQuestions)}</dd>
-        </div>
-        <div className="flex flex-col">
-          <dt className="text-text-muted text-xs">Точність</dt>
-          <dd className="text-text-secondary">{formatPercent(subject.averageAccuracy)}</dd>
-        </div>
-      </dl>
-    </div>
+      <p className="text-text-primary font-display shrink-0 text-2xl font-bold lining-nums sm:text-3xl">
+        {formatPercent(subject.averageAccuracy)}
+      </p>
+    </li>
   );
 }

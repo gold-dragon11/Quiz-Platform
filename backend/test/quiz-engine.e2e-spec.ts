@@ -10,6 +10,7 @@ import {
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface OptionView {
   id: string;
@@ -24,6 +25,10 @@ interface QuestionView {
   title: string;
   difficulty: string | null;
   imageUrl: string | null;
+  /** MATCHING only: how many ordered options are prompts. */
+  promptCount?: number;
+  passage: { id: string; title: string | null; content: string } | null;
+  passageOrder: number | null;
   answerOptions: OptionView[];
 }
 
@@ -66,8 +71,18 @@ describe('Quiz Engine (e2e)', () => {
   let topicId: string;
   let secondTopicId: string;
   let matchingTopicId: string;
+  let wideMatchingTopicId: string;
+  let nmtMatchingTopicId: string;
   let difficultyTopicId: string;
+  let formatTopicId: string;
+  let orderingTopicId: string;
+  let multipleChoiceTopicId: string;
+  let numericTopicId: string;
+  let passageTopicId: string;
+  let passageId: string;
   let counter = 0;
+  /** A well-formed uuid that belongs to no option in the bank. */
+  const GHOST_OPTION_ID = '00000000-0000-0000-0000-0000000000aa';
 
   // Registers a fresh ACTIVE user, returns { token, userId }.
   const registerUser = async (): Promise<{ token: string; userId: string }> => {
@@ -152,6 +167,30 @@ describe('Quiz Engine (e2e)', () => {
     return id;
   };
 
+  // Same again but with an authoring format, for the format filter.
+  const createPublishedInFormat = async (
+    parentTopic: string,
+    format: string,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.SINGLE_CHOICE,
+      title: `Phase51 ${format} ${counter}?`,
+      format,
+      options: [
+        { content: 'A', isCorrect: true },
+        { content: 'B' },
+        { content: 'C' },
+      ],
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
   const createPublishedMatching = async (
     parentTopic: string,
   ): Promise<string> => {
@@ -160,16 +199,18 @@ describe('Quiz Engine (e2e)', () => {
       topicId: parentTopic,
       type: QuestionType.MATCHING,
       title: `Phase51 Match ${counter}?`,
+      // Prompts first, then choices — the shape the client can actually draw,
+      // and the shape every question in the bank is stored in.
       options: [
         { content: 'L1' },
-        { content: 'R1' },
         { content: 'L2' },
+        { content: 'R1' },
         { content: 'R2' },
       ],
       configuration: {
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       },
     }).expect(201);
@@ -178,6 +219,173 @@ describe('Quiz Engine (e2e)', () => {
       isPublished: true,
     }).expect(200);
     return id;
+  };
+
+  /**
+   * A matching question shaped like the real bank: four prompts (order 0-3)
+   * followed by four choices (order 4-7), keyed straight down — 0→4, 1→5,
+   * 2→6, 3→7. Every one of the 630 published matching questions is stored
+   * exactly this way, which is why the delivered order has to be dealt.
+   */
+  const createWideMatching = async (parentTopic: string): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.MATCHING,
+      title: `Phase51 WideMatch ${counter}?`,
+      options: [
+        { content: 'L1' },
+        { content: 'L2' },
+        { content: 'L3' },
+        { content: 'L4' },
+        { content: 'R1' },
+        { content: 'R2' },
+        { content: 'R3' },
+        { content: 'R4' },
+      ],
+      configuration: {
+        pairs: [
+          { left: 0, right: 4 },
+          { left: 1, right: 5 },
+          { left: 2, right: 6 },
+          { left: 3, right: 7 },
+        ],
+      },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /**
+   * A matching question in the NMT shape: four prompts (order 0-3) against
+   * five choices (order 4-8), one of which pairs with nothing. Every matching
+   * task on the real paper offers spare choices — 4×5 in Ukrainian and
+   * history, 3×5 in mathematics — so the columns are never the same size.
+   */
+  const createNmtMatching = async (parentTopic: string): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: QuestionType.MATCHING,
+      title: `Phase51 NmtMatch ${counter}?`,
+      options: [
+        { content: 'P1' },
+        { content: 'P2' },
+        { content: 'P3' },
+        { content: 'P4' },
+        { content: 'C1' },
+        { content: 'C2' },
+        { content: 'C3' },
+        { content: 'C4' },
+        { content: 'SPARE' },
+      ],
+      configuration: {
+        pairs: [
+          { left: 0, right: 4 },
+          { left: 1, right: 5 },
+          { left: 2, right: 6 },
+          { left: 3, right: 7 },
+        ],
+      },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /**
+   * An ORDERING question: four items authored in the correct sequence. The
+   * stored order is the key, so the delivery view has to deal them.
+   */
+  const createPublishedOrdering = async (
+    parentTopic: string,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: 'ORDERING',
+      title: `Phase51 Order ${counter}?`,
+      options: [
+        { content: `first ${counter}` },
+        { content: `second ${counter}` },
+        { content: `third ${counter}` },
+        { content: `fourth ${counter}` },
+      ],
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /** A MULTIPLE_CHOICE question in the exam's shape: three correct of seven. */
+  const createPublishedMultipleChoice = async (
+    parentTopic: string,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: 'MULTIPLE_CHOICE',
+      title: `Phase51 Multi ${counter}?`,
+      options: [
+        { content: `right A ${counter}`, isCorrect: true },
+        { content: `wrong B ${counter}` },
+        { content: `right C ${counter}`, isCorrect: true },
+        { content: `wrong D ${counter}` },
+        { content: `right E ${counter}`, isCorrect: true },
+        { content: `wrong F ${counter}` },
+        { content: `wrong G ${counter}` },
+      ],
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /** A NUMERIC question: no options, the value hidden in the configuration. */
+  const createPublishedNumeric = async (
+    parentTopic: string,
+    answer: number,
+  ): Promise<string> => {
+    counter += 1;
+    const created = await adminReq('post', '/api/v1/admin/questions', {
+      topicId: parentTopic,
+      type: 'NUMERIC',
+      title: `Phase51 Numeric ${counter}?`,
+      options: [],
+      configuration: { answer },
+    }).expect(201);
+    const id = (created.body as { id: string }).id;
+    await adminReq('patch', `/api/v1/admin/questions/${id}/publish`, {
+      isPublished: true,
+    }).expect(200);
+    return id;
+  };
+
+  /** The stored option order — the answer key the client never receives. */
+  const storedOptionIds = async (questionId: string): Promise<string[]> => {
+    const options = await prisma.answerOption.findMany({
+      where: { questionId },
+      orderBy: { order: 'asc' },
+      select: { id: true },
+    });
+    return options.map((option) => option.id);
+  };
+
+  const correctOptionIds = async (questionId: string): Promise<string[]> => {
+    const options = await prisma.answerOption.findMany({
+      where: { questionId, isCorrect: true },
+      select: { id: true },
+    });
+    return options.map((option) => option.id);
   };
 
   const start = (token: string, body: Record<string, unknown>): request.Test =>
@@ -278,7 +486,7 @@ describe('Quiz Engine (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestData();
@@ -338,6 +546,12 @@ describe('Quiz Engine (e2e)', () => {
     await createPublishedMatching(matchingTopicId);
     await createPublishedMatching(matchingTopicId);
 
+    wideMatchingTopicId = await makeTopic('wide-matching');
+    await createWideMatching(wideMatchingTopicId);
+
+    nmtMatchingTopicId = await makeTopic('nmt-matching');
+    await createNmtMatching(nmtMatchingTopicId);
+
     // 6 beginner + 2 advanced: lopsided on purpose, like the real content
     // where the advanced tier is far smaller than the others.
     difficultyTopicId = await makeTopic('difficulty');
@@ -346,6 +560,57 @@ describe('Quiz Engine (e2e)', () => {
     }
     for (let i = 0; i < 2; i += 1) {
       await createPublishedAtDifficulty(difficultyTopicId, 'ADVANCED');
+    }
+
+    orderingTopicId = await makeTopic('ordering');
+    for (let i = 0; i < 3; i += 1) {
+      await createPublishedOrdering(orderingTopicId);
+    }
+
+    multipleChoiceTopicId = await makeTopic('multiple-choice');
+    for (let i = 0; i < 3; i += 1) {
+      await createPublishedMultipleChoice(multipleChoiceTopicId);
+    }
+
+    numericTopicId = await makeTopic('numeric');
+    await createPublishedNumeric(numericTopicId, 12.5);
+    await createPublishedNumeric(numericTopicId, -4);
+    await createPublishedNumeric(numericTopicId, 0);
+
+    // A three-question passage whose questions are created out of order, and
+    // two questions that stand alone: the draw has to keep the passage whole,
+    // in its own order, however the pool happens to be shuffled.
+    passageTopicId = await makeTopic('passage');
+    passageId = (
+      await prisma.passage.create({
+        data: {
+          topicId: passageTopicId,
+          slug: `${SLUG_PREFIX}-story`,
+          title: 'Phase51 Story',
+          content:
+            'One gap (1) ______, a second (2) ______ and a third (3) ______.',
+        },
+      })
+    ).id;
+    for (const passageOrder of [3, 1, 2]) {
+      const id = await createPublishedSingleChoice(passageTopicId);
+      await prisma.question.update({
+        where: { id },
+        data: { passageId, passageOrder },
+      });
+    }
+    for (let i = 0; i < 2; i += 1) {
+      await createPublishedSingleChoice(passageTopicId);
+    }
+
+    // 5 practice + 3 reference: the bank as it is while the NMT set is still
+    // being written topic by topic.
+    formatTopicId = await makeTopic('format');
+    for (let i = 0; i < 5; i += 1) {
+      await createPublishedInFormat(formatTopicId, 'PRACTICE');
+    }
+    for (let i = 0; i < 3; i += 1) {
+      await createPublishedInFormat(formatTopicId, 'NMT');
     }
   });
 
@@ -698,6 +963,592 @@ describe('Quiz Engine (e2e)', () => {
     });
   });
 
+  describe('format filter', () => {
+    const available = async (
+      token: string,
+      query: Record<string, string>,
+    ): Promise<number> => {
+      const response = await request(app.getHttpServer())
+        .get('/api/v1/quiz/available')
+        .query(query)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      return (response.body as { available: number }).available;
+    };
+
+    it('counts both formats when none is given, and each on its own', async () => {
+      const { token } = await registerUser();
+      expect(
+        await available(token, { subjectId, topicId: formatTopicId }),
+      ).toBe(8);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: formatTopicId,
+          format: 'NMT',
+        }),
+      ).toBe(3);
+      expect(
+        await available(token, {
+          subjectId,
+          topicId: formatTopicId,
+          format: 'PRACTICE',
+        }),
+      ).toBe(5);
+    });
+
+    it('draws only questions of the requested format', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+        format: 'NMT',
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      // Only three NMT questions exist in this topic, so drawing three of them
+      // proves the filter excluded the five practice ones. Their titles carry
+      // the format, which the client never sees on the question itself.
+      const questions = await getQuestions(token, sessionId);
+      expect(questions).toHaveLength(3);
+      expect(questions.every((q) => q.title.includes('NMT'))).toBe(true);
+    });
+
+    it('refuses more than the format holds, and says which pool ran out', async () => {
+      const { token } = await registerUser();
+      const response = await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 5,
+        timerEnabled: false,
+        format: 'NMT',
+      }).expect(409);
+
+      expect((response.body as { message: string }).message).toBe(
+        'Завдань формату НМТ у цій темі поки бракує. Оберіть меншу кількість або звичайне тренування.',
+      );
+    });
+
+    it('rejects format combined with onlyMistakes, with quizId, and unknown values', async () => {
+      const { token } = await registerUser();
+      await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        format: 'NMT',
+        onlyMistakes: true,
+      }).expect(400);
+
+      await start(token, {
+        quizId: '00000000-0000-0000-0000-000000000000',
+        format: 'NMT',
+      }).expect(400);
+
+      await start(token, {
+        subjectId,
+        topicId: formatTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+        format: 'ZNO',
+      }).expect(400);
+    });
+  });
+
+  describe('ORDERING questions', () => {
+    it('deals the items in a different order than they are stored', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const questions = await getQuestions(token, sessionId);
+
+      // Across three questions at least one has to come back re-dealt. A
+      // single question could legitimately be dealt back into its own order
+      // (one deal in 24 for four items), so asserting on one would be flaky.
+      let anyReordered = false;
+      for (const question of questions) {
+        const stored = await storedOptionIds(question.id);
+        const delivered = [...question.answerOptions]
+          .sort((a, b) => a.order - b.order)
+          .map((option) => option.id);
+        expect(new Set(delivered)).toEqual(new Set(stored));
+        if (delivered.join() !== stored.join()) {
+          anyReordered = true;
+        }
+      }
+      expect(anyReordered).toBe(true);
+    });
+
+    it('deals the same order again on resume', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+
+      const first = await getQuestions(token, sessionId);
+      const second = await getQuestions(token, sessionId);
+      expect(second.map((q) => q.answerOptions.map((o) => o.order))).toEqual(
+        first.map((q) => q.answerOptions.map((o) => o.order)),
+      );
+    });
+
+    it('accepts the stored sequence and rejects a wrong one', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 2,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const questions = await getQuestions(token, sessionId);
+
+      const right = await storedOptionIds(questions[0].id);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { sequence: right },
+      }).expect(200);
+
+      const swapped = await storedOptionIds(questions[1].id);
+      [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+      await submit(token, sessionId, {
+        questionId: questions[1].id,
+        selectedAnswer: { sequence: swapped },
+      }).expect(200);
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        1,
+      );
+    });
+
+    it('stores a half-placed sequence as a wrong answer, not an error', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 1,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const [question] = await getQuestions(token, sessionId);
+      const stored = await storedOptionIds(question.id);
+
+      // The reader places two of the four items and the page autosaves.
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { sequence: stored.slice(0, 2) },
+      }).expect(200);
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        0,
+      );
+    });
+
+    it('rejects a malformed sequence with 400', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 1,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const [question] = await getQuestions(token, sessionId);
+      const stored = await storedOptionIds(question.id);
+
+      // The same item twice.
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: {
+          sequence: [stored[0], stored[0], stored[1], stored[2]],
+        },
+      }).expect(400);
+
+      // An option from another question.
+      const other = await storedOptionIds(
+        (await getQuestions(token, sessionId))[0].id,
+      );
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { sequence: [...stored.slice(1), GHOST_OPTION_ID] },
+      }).expect(400);
+      expect(other.length).toBe(4);
+    });
+
+    it('shows the correct sequence in the review, never during the quiz', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: orderingTopicId,
+        questionCount: 1,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const [question] = await getQuestions(token, sessionId);
+      expect(JSON.stringify(question)).not.toContain('isCorrect');
+
+      const stored = await storedOptionIds(question.id);
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { sequence: stored },
+      }).expect(200);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (
+        review.body as {
+          questions: { correctAnswer: { sequence: string[] } }[];
+        }
+      ).questions[0];
+      expect(reviewed.correctAnswer.sequence).toEqual(stored);
+    });
+  });
+
+  describe('MULTIPLE_CHOICE questions', () => {
+    it('accepts exactly the correct set and nothing else', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: multipleChoiceTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const questions = await getQuestions(token, sessionId);
+      expect(questions[0].answerOptions).toHaveLength(7);
+
+      const all = await correctOptionIds(questions[0].id);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { answerOptionIds: all },
+      }).expect(200);
+
+      // Two of the three right statements is wrong, as on the exam.
+      const partial = (await correctOptionIds(questions[1].id)).slice(0, 2);
+      await submit(token, sessionId, {
+        questionId: questions[1].id,
+        selectedAnswer: { answerOptionIds: partial },
+      }).expect(200);
+
+      // Three right ones plus a wrong one is wrong too.
+      const stored = await storedOptionIds(questions[2].id);
+      const right = await correctOptionIds(questions[2].id);
+      const wrong = stored.find((id) => !right.includes(id));
+      await submit(token, sessionId, {
+        questionId: questions[2].id,
+        selectedAnswer: { answerOptionIds: [...right, wrong as string] },
+      }).expect(200);
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        1,
+      );
+    });
+
+    it('never sends isCorrect while the session is active', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: multipleChoiceTopicId,
+        questionCount: 3,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const questions = await getQuestions(token, sessionId);
+      expect(JSON.stringify(questions)).not.toContain('isCorrect');
+    });
+
+    it('rejects a repeated or foreign option id with 400', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: multipleChoiceTopicId,
+        questionCount: 1,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const [question] = await getQuestions(token, sessionId);
+      const right = await correctOptionIds(question.id);
+
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { answerOptionIds: [right[0], right[0]] },
+      }).expect(400);
+
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { answerOptionIds: [right[0], GHOST_OPTION_ID] },
+      }).expect(400);
+    });
+
+    it('lists every correct option in the review', async () => {
+      const { token } = await registerUser();
+      const started = await start(token, {
+        subjectId,
+        topicId: multipleChoiceTopicId,
+        questionCount: 1,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      const [question] = await getQuestions(token, sessionId);
+      const right = await correctOptionIds(question.id);
+      await submit(token, sessionId, {
+        questionId: question.id,
+        selectedAnswer: { answerOptionIds: right },
+      }).expect(200);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (
+        review.body as {
+          questions: {
+            isCorrect: boolean;
+            correctAnswer: { answerOptionIds: string[] };
+          }[];
+        }
+      ).questions[0];
+      expect(reviewed.isCorrect).toBe(true);
+      expect(new Set(reviewed.correctAnswer.answerOptionIds)).toEqual(
+        new Set(right),
+      );
+    });
+  });
+
+  describe('questions on a passage', () => {
+    const startOnPassageTopic = async (
+      token: string,
+      questionCount: number,
+    ): Promise<{ sessionId: string; questions: QuestionView[] }> => {
+      const started = await start(token, {
+        subjectId,
+        topicId: passageTopicId,
+        questionCount,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      return { sessionId, questions: await getQuestions(token, sessionId) };
+    };
+
+    /** The passage's questions must form one unbroken run, from its first. */
+    const expectOneRunInOrder = (questions: QuestionView[]): QuestionView[] => {
+      const onPassage = questions.filter((question) => question.passage);
+      const first = questions.indexOf(onPassage[0]);
+      expect(questions.slice(first, first + onPassage.length)).toEqual(
+        onPassage,
+      );
+      expect(onPassage.map((question) => question.passageOrder)).toEqual(
+        onPassage.map((_, i) => i + 1),
+      );
+      return onPassage;
+    };
+
+    it('delivers the text with each of its questions, together and in order', async () => {
+      const { token } = await registerUser();
+      const { questions } = await startOnPassageTopic(token, 5);
+
+      const onPassage = expectOneRunInOrder(questions);
+      expect(onPassage).toHaveLength(3);
+      for (const question of onPassage) {
+        expect(question.passage).toEqual({
+          id: passageId,
+          title: 'Phase51 Story',
+          content:
+            'One gap (1) ______, a second (2) ______ and a third (3) ______.',
+        });
+      }
+      for (const question of questions.filter((q) => !q.passage)) {
+        expect(question.passageOrder).toBeNull();
+      }
+    });
+
+    it('cuts a passage only to fill what nothing else can, from its beginning', async () => {
+      // Each new reader is dealt the pool in a fresh random order, so several
+      // sittings cover both outcomes: the whole text plus one loner, or both
+      // loners plus the text's first two questions.
+      for (let sitting = 0; sitting < 4; sitting += 1) {
+        const { token } = await registerUser();
+        const { questions } = await startOnPassageTopic(token, 4);
+
+        expect(questions).toHaveLength(4);
+        expect(expectOneRunInOrder(questions).length).toBeGreaterThanOrEqual(2);
+      }
+    });
+
+    it('shows the text again in the review', async () => {
+      const { token } = await registerUser();
+      const { sessionId } = await startOnPassageTopic(token, 5);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (review.body as { questions: QuestionView[] }).questions;
+
+      expect(
+        expectOneRunInOrder(reviewed).map((question) => question.passage?.id),
+      ).toEqual([passageId, passageId, passageId]);
+    });
+  });
+
+  describe('NUMERIC questions', () => {
+    const startNumeric = async (
+      token: string,
+      questionCount: number,
+    ): Promise<{ sessionId: string; questions: QuestionView[] }> => {
+      const started = await start(token, {
+        subjectId,
+        topicId: numericTopicId,
+        questionCount,
+        timerEnabled: false,
+      }).expect(201);
+      const sessionId = (started.body as SessionMeta).sessionId;
+      return { sessionId, questions: await getQuestions(token, sessionId) };
+    };
+
+    const expectedAnswer = async (questionId: string): Promise<number> => {
+      const row = await prisma.question.findUniqueOrThrow({
+        where: { id: questionId },
+        select: { configuration: true },
+      });
+      return (row.configuration as { answer: number }).answer;
+    };
+
+    it('sends no options and no configuration', async () => {
+      const { token } = await registerUser();
+      const { questions } = await startNumeric(token, 3);
+
+      for (const question of questions) {
+        expect(question.type).toBe('NUMERIC');
+        expect(question.answerOptions).toHaveLength(0);
+      }
+      // The value is the whole answer, so it must not appear anywhere in the
+      // payload the learner receives.
+      expect(JSON.stringify(questions)).not.toContain('configuration');
+      expect(JSON.stringify(questions)).not.toContain('12.5');
+    });
+
+    it('accepts the value however it is written', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 3);
+      const forms = new Map<number, string>([
+        [12.5, '12,50'],
+        [-4, '-4'],
+        [0, ' 0 '],
+      ]);
+
+      for (const question of questions) {
+        const answer = await expectedAnswer(question.id);
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: { numericAnswer: forms.get(answer) as string },
+        }).expect(200);
+      }
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        3,
+      );
+    });
+
+    it('stores a wrong number, and text that is not a number, as wrong answers', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 3);
+      const byAnswer = new Map<number, string>();
+      for (const question of questions) {
+        byAnswer.set(await expectedAnswer(question.id), question.id);
+      }
+      const questionWith = (answer: number): string => {
+        const id = byAnswer.get(answer);
+        if (!id) {
+          throw new Error(`the session has no question answered by ${answer}`);
+        }
+        return id;
+      };
+
+      await submit(token, sessionId, {
+        questionId: questionWith(12.5),
+        selectedAnswer: { numericAnswer: '999' },
+      }).expect(200);
+      // Mid-typing states reach the server because every keystroke autosaves.
+      await submit(token, sessionId, {
+        questionId: questionWith(-4),
+        selectedAnswer: { numericAnswer: '-' },
+      }).expect(200);
+      // The blank goes to the question whose answer is zero on purpose:
+      // `Number('')` is 0, and a blank field once scored as correct there.
+      // Delivery order is random, so the case has to be placed, not hoped for.
+      await submit(token, sessionId, {
+        questionId: questionWith(0),
+        selectedAnswer: { numericAnswer: '' },
+      }).expect(200);
+
+      const finished = await complete(token, sessionId).expect(200);
+      expect((finished.body as { correctAnswers: number }).correctAnswers).toBe(
+        0,
+      );
+    });
+
+    it('rejects a wrong answer shape with 400', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 1);
+
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { answerOptionId: GHOST_OPTION_ID },
+      }).expect(400);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { numericAnswer: { value: 12.5 } },
+      }).expect(400);
+    });
+
+    it('reveals the expected value only in the review', async () => {
+      const { token } = await registerUser();
+      const { sessionId, questions } = await startNumeric(token, 1);
+      const answer = await expectedAnswer(questions[0].id);
+      await submit(token, sessionId, {
+        questionId: questions[0].id,
+        selectedAnswer: { numericAnswer: String(answer) },
+      }).expect(200);
+      await complete(token, sessionId).expect(200);
+
+      const review = await request(app.getHttpServer())
+        .get(`/api/v1/quiz/${sessionId}/result`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+      const reviewed = (
+        review.body as {
+          questions: {
+            isCorrect: boolean;
+            correctAnswer: { numericAnswer: number };
+          }[];
+        }
+      ).questions[0];
+      expect(reviewed.isCorrect).toBe(true);
+      expect(reviewed.correctAnswer.numericAnswer).toBe(answer);
+    });
+  });
+
   describe('answer delivery never leaks the key', () => {
     it('omits isCorrect and configuration from questions and resume', async () => {
       const { token } = await registerUser();
@@ -969,6 +1820,218 @@ describe('Quiz Engine (e2e)', () => {
       expect(xp[0].amount).toBe(25);
     });
 
+    /**
+     * Every matching question in the bank is keyed 0→4, 1→5, 2→6, 3→7, so
+     * pairing the columns straight down scored full marks without reading a
+     * word. The choices are therefore dealt at delivery; these cover the four
+     * things that has to keep true.
+     */
+    describe('matching choices are dealt, not listed in key order', () => {
+      const rightIdsOf = (question: QuestionView): string[] => {
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        return ordered.slice(Math.ceil(ordered.length / 2)).map((o) => o.id);
+      };
+
+      const startWide = async (
+        token: string,
+      ): Promise<{ sessionId: string; question: QuestionView }> => {
+        const started = await start(token, {
+          subjectId,
+          topicId: wideMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+        return { sessionId, question };
+      };
+
+      it('keeps the prompts and the choices on their own sides', async () => {
+        const { token } = await registerUser();
+        const { question } = await startWide(token);
+
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        // The client splits the flat list in half by order, so a dealt value
+        // must never cross the midpoint.
+        expect(ordered.slice(0, 4).map((o) => o.content)).toEqual([
+          'L1',
+          'L2',
+          'L3',
+          'L4',
+        ]);
+        expect(
+          ordered
+            .slice(4)
+            .map((o) => o.content)
+            .sort(),
+        ).toEqual(['R1', 'R2', 'R3', 'R4']);
+        expect(ordered.map((o) => o.order)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+      });
+
+      it('still accepts the correct pairing', async () => {
+        const { token } = await registerUser();
+        const { sessionId, question } = await startWide(token);
+
+        const options = await prisma.answerOption.findMany({
+          where: { questionId: question.id },
+          select: { id: true, order: true },
+        });
+        const byOrder = new Map(options.map((o) => [o.order, o.id]));
+
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: {
+            pairs: [
+              { left: byOrder.get(0), right: byOrder.get(4) },
+              { left: byOrder.get(1), right: byOrder.get(5) },
+              { left: byOrder.get(2), right: byOrder.get(6) },
+              { left: byOrder.get(3), right: byOrder.get(7) },
+            ],
+          },
+        }).expect(200);
+        await complete(token, sessionId).expect(200);
+
+        const attempt = await prisma.questionAttempt.findFirstOrThrow({
+          where: { quizSessionId: sessionId, questionId: question.id },
+        });
+        expect(attempt.isCorrect).toBe(true);
+      });
+
+      it('deals the same order on resume and in the review', async () => {
+        const { token } = await registerUser();
+        const { sessionId, question } = await startWide(token);
+        const dealt = rightIdsOf(question);
+
+        const [again] = await getQuestions(token, sessionId);
+        expect(rightIdsOf(again)).toEqual(dealt);
+
+        // Completed without answering: the review still has to show the same
+        // cards the reader was looking at.
+        await complete(token, sessionId).expect(200);
+
+        const review = await request(app.getHttpServer())
+          .get(`/api/v1/quiz/${sessionId}/result`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200);
+        const reviewed = (review.body as { questions: QuestionView[] })
+          .questions[0];
+        expect(rightIdsOf(reviewed)).toEqual(dealt);
+      });
+
+      it('does not deal every session the same way', async () => {
+        // Seeded per session, so six deals landing on one order would mean the
+        // shuffle is not running. With 4! orders that is (1/24)^5 by chance.
+        const seen = new Set<string>();
+        for (let i = 0; i < 6; i += 1) {
+          const { token } = await registerUser();
+          const { question } = await startWide(token);
+          seen.add(rightIdsOf(question).join());
+        }
+        expect(seen.size).toBeGreaterThan(1);
+      });
+    });
+
+    /**
+     * The NMT format: more choices than prompts, with the spare ones part of
+     * the task rather than an authoring slip.
+     */
+    describe('matching with spare choices (NMT format)', () => {
+      it('states where the prompts end and keeps the spare choice out of them', async () => {
+        const { token } = await registerUser();
+        const started = await start(token, {
+          subjectId,
+          topicId: nmtMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+
+        // Four prompts, five choices — halving nine would have put a choice
+        // in the prompt column.
+        expect(question.promptCount).toBe(4);
+        const ordered = [...question.answerOptions].sort(
+          (a, b) => a.order - b.order,
+        );
+        expect(ordered).toHaveLength(9);
+        expect(ordered.slice(0, 4).map((o) => o.content)).toEqual([
+          'P1',
+          'P2',
+          'P3',
+          'P4',
+        ]);
+        expect(
+          ordered
+            .slice(4)
+            .map((o) => o.content)
+            .sort(),
+        ).toEqual(['C1', 'C2', 'C3', 'C4', 'SPARE']);
+      });
+
+      it('accepts the correct pairing and leaves the spare choice unused', async () => {
+        const { token } = await registerUser();
+        const started = await start(token, {
+          subjectId,
+          topicId: nmtMatchingTopicId,
+          questionCount: 1,
+          timerEnabled: false,
+        }).expect(201);
+        const sessionId = (started.body as SessionMeta).sessionId;
+        const [question] = await getQuestions(token, sessionId);
+
+        const options = await prisma.answerOption.findMany({
+          where: { questionId: question.id },
+          select: { id: true, order: true },
+        });
+        const byOrder = new Map(options.map((o) => [o.order, o.id]));
+
+        await submit(token, sessionId, {
+          questionId: question.id,
+          selectedAnswer: {
+            pairs: [
+              { left: byOrder.get(0), right: byOrder.get(4) },
+              { left: byOrder.get(1), right: byOrder.get(5) },
+              { left: byOrder.get(2), right: byOrder.get(6) },
+              { left: byOrder.get(3), right: byOrder.get(7) },
+            ],
+          },
+        }).expect(200);
+        await complete(token, sessionId).expect(200);
+
+        const attempt = await prisma.questionAttempt.findFirstOrThrow({
+          where: { quizSessionId: sessionId, questionId: question.id },
+        });
+        expect(attempt.isCorrect).toBe(true);
+      });
+
+      it('rejects a key whose prompts are not the opening block', async () => {
+        // Prompts 0 and 2 with a choice wedged between them: the client
+        // divides the list at a single point, so a scattered prompt block
+        // cannot be drawn.
+        await adminReq('post', '/api/v1/admin/questions', {
+          topicId: nmtMatchingTopicId,
+          type: QuestionType.MATCHING,
+          title: 'Phase51 ScatteredPrompts?',
+          options: [
+            { content: 'P1' },
+            { content: 'C1' },
+            { content: 'P2' },
+            { content: 'C2' },
+          ],
+          configuration: {
+            pairs: [
+              { left: 0, right: 1 },
+              { left: 2, right: 3 },
+            ],
+          },
+        }).expect(400);
+      });
+    });
+
     it('evaluates MATCHING all-or-nothing', async () => {
       const { token } = await registerUser();
       const started = await start(token, {
@@ -994,8 +2057,8 @@ describe('Quiz Engine (e2e)', () => {
         if (correct) {
           return {
             pairs: [
-              { left: byOrder.get(0), right: byOrder.get(1) },
-              { left: byOrder.get(2), right: byOrder.get(3) },
+              { left: byOrder.get(0), right: byOrder.get(2) },
+              { left: byOrder.get(1), right: byOrder.get(3) },
             ],
           };
         }
@@ -1003,7 +2066,7 @@ describe('Quiz Engine (e2e)', () => {
         return {
           pairs: [
             { left: byOrder.get(0), right: byOrder.get(3) },
-            { left: byOrder.get(2), right: byOrder.get(1) },
+            { left: byOrder.get(1), right: byOrder.get(2) },
           ],
         };
       };

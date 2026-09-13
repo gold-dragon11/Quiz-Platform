@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="359" viewBox="0 0 460 359" role="img" aria-label="Трикутник ABC з медіаною CM">
+<rect width="460" height="359" fill="#0f0f13"/>
+<polygon points="70.53,283.16 389.47,283.16 176.84,70.53" fill="none" fill-opacity="1" stroke="#e6e6ee" stroke-width="2" stroke-linejoin="round"/>
+<polyline points="176.84,70.53 230.0,283.16" fill="none" stroke="#8b5cf6" stroke-width="2.5" stroke-dasharray="7 6"/>
+<line x1="146.01" y1="292.73" x2="154.52" y2="273.59" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="305.48" y1="292.73" x2="313.99" y2="273.59" stroke="#e6e6ee" stroke-width="2"/>
+<text x="64.53" y="305.16" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">A</text>
+<text x="395.47" y="305.16" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">B</text>
+<text x="176.84" y="60.53" font-size="22" fill="#e6e6ee" text-anchor="middle" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">C</text>
+<text x="230.0" y="309.16" font-size="22" fill="#8b5cf6" text-anchor="middle" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">M</text>
+</svg>

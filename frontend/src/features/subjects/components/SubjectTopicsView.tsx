@@ -1,13 +1,9 @@
-import { motion } from 'framer-motion';
 import { generatePath, useNavigate } from 'react-router-dom';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { ROUTES } from '@/shared/constants/routes';
-import { fadeInUp, staggerContainer, staggerDense } from '@/shared/constants/motion';
-import { pluralUk } from '@/shared/utils/format';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
+import { useIsLearner } from '@/shared/hooks/use-is-learner';
 import type { PublicSubject, PublicTopic } from '@/features/subjects/types/subjects.types';
 import { SectionError } from '@/features/subjects/components/SectionError';
 import { useSubjectMaterials } from '@/features/learning-materials';
@@ -27,6 +23,16 @@ interface SubjectTopicsViewProps {
  * do nothing until the reader scrolled past every other subject. Here the
  * subject list is gone and its topics take its place, with a back control as
  * the only way out — the same shape as a native drill-down.
+ *
+ * The topics themselves are rows, not cards. As cards each one carried the
+ * same pair of filled buttons, so a screen of twenty topics was forty buttons
+ * of equal weight and the reader had to read the labels to find out that half
+ * of them did the same thing. On a row the two actions can differ in weight:
+ * the test is the point of the screen, the conspectus is a link beside it.
+ *
+ * The test actions are shown only to accounts that can sit one. A teacher
+ * browses subjects for the material their groups will read, but `/quiz` is
+ * closed to them, so every one of these buttons would have led to a 403.
  */
 export function SubjectTopicsView({
   subject,
@@ -34,132 +40,119 @@ export function SubjectTopicsView({
   onBack,
   onStartQuiz,
 }: SubjectTopicsViewProps): React.JSX.Element {
-  const navigate = useNavigate();
   const topicCount = topics?.data?.length ?? null;
+  const isLearner = useIsLearner();
 
   // One request per subject tells us which topics have a material, so each
-  // card can decide whether to offer it without asking per topic. A failure
-  // here simply leaves the buttons out — the topics themselves still work.
+  // row can decide whether to offer it without asking per topic. A failure
+  // here simply leaves the link out — the topics themselves still work.
   const materials = useSubjectMaterials(subject.id);
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-      className="flex flex-col gap-8"
-    >
-      <motion.div variants={fadeInUp}>
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-text-muted hover:text-text-primary focus-visible:ring-primary focus-visible:ring-offset-background -ml-2 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-        >
-          <svg
-            width={18}
-            height={18}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M19 12H5" />
-            <path d="m12 19-7-7 7-7" />
-          </svg>
-          Усі предмети
-        </button>
-      </motion.div>
+    <div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="text-text-muted hover:text-text-primary focus-visible:ring-primary focus-visible:ring-offset-background -ml-1 inline-flex items-center gap-2 rounded text-xs tracking-[0.18em] uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
+      >
+        <span aria-hidden="true">←</span> Усі предмети
+      </button>
 
-      <motion.header variants={fadeInUp} className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <span
-            aria-hidden="true"
-            className="bg-surface-elevated flex size-14 shrink-0 items-center justify-center rounded-xl text-2xl font-semibold"
-            style={{ color: subject.color ?? undefined }}
-          >
-            {subject.icon || subject.name.charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-text-primary text-2xl font-semibold sm:text-3xl">{subject.name}</h1>
-            {topicCount !== null && (
-              <p className="text-text-muted mt-0.5 text-sm">
-                {topicCount} {pluralUk(topicCount, 'тема', 'теми', 'тем')}
-              </p>
-            )}
-          </div>
+      <header className="border-border mt-6 border-b pb-8">
+        <h1 className="text-text-primary font-display text-4xl font-bold tracking-[-0.01em] sm:text-5xl">
+          {subject.name}
+        </h1>
+        {subject.description && (
+          <p className="text-text-secondary mt-4 max-w-2xl text-base text-pretty sm:text-lg">
+            {subject.description}
+          </p>
+        )}
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+          {isLearner && <Button onClick={() => onStartQuiz(subject.id)}>Тест з усього предмета</Button>}
+          {topicCount !== null && topicCount > 0 && (
+            <p className="text-text-muted text-sm">
+              {isLearner ? 'або оберіть окрему тему — їх тут ' : 'Тем у предметі — '}
+              {topicCount}
+            </p>
+          )}
         </div>
+      </header>
 
-        {subject.description && <p className="text-text-secondary max-w-3xl">{subject.description}</p>}
-
-        <div>
-          <Button onClick={() => onStartQuiz(subject.id)}>Почати тест з предмета</Button>
-        </div>
-      </motion.header>
-
-      <motion.section variants={fadeInUp} className="border-border flex flex-col gap-5 border-t pt-8">
-        <h2 className="text-text-primary text-lg font-semibold">Теми</h2>
+      <section className="mt-12">
+        <h2 className="text-text-muted mb-5 text-xs tracking-[0.18em] uppercase">Теми</h2>
 
         {!topics || topics.isPending ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="border-border flex flex-col border-t">
             {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-xl" />
+              <div key={i} className="border-border border-b py-6">
+                <Skeleton className="h-5 w-64" />
+              </div>
             ))}
           </div>
         ) : topics.isError ? (
-          <Card>
-            <SectionError message="Не вдалося завантажити теми." onRetry={() => void topics.refetch()} />
-          </Card>
+          <SectionError message="Не вдалося завантажити теми." onRetry={() => void topics.refetch()} />
         ) : topics.data.length === 0 ? (
-          <Card>
-            <EmptyState
-              title="Тем поки немає"
-              description="У цьому предметі поки немає тем для тестування."
-            />
-          </Card>
+          <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
+            У цьому предметі поки немає тем. Тест з усього предмета вище все одно працює.
+          </p>
         ) : (
-          <motion.div
-            variants={staggerDense}
-            initial="initial"
-            animate="animate"
-            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-          >
-            {topics.data.map((topic) => {
-              const material = materials.data?.get(topic.id);
-              return (
-                <motion.div
-                  key={topic.id}
-                  variants={fadeInUp}
-                  className="border-border bg-surface flex flex-col gap-3 rounded-xl border p-5"
-                >
-                  <div className="flex-1">
-                    <h3 className="text-text-primary font-medium">{topic.name}</h3>
-                    {topic.description && (
-                      <p className="text-text-muted mt-1 line-clamp-3 text-sm">{topic.description}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => onStartQuiz(subject.id, topic.id)}>
-                      Почати тест
-                    </Button>
-                    {material && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => navigate(generatePath(ROUTES.topicMaterial, { topicId: topic.id }))}
-                      >
-                        Матеріал
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+          <ul className="divide-border border-border divide-y border-t">
+            {topics.data.map((topic) => (
+              <TopicRow
+                key={topic.id}
+                topic={topic}
+                hasMaterial={materials.data?.has(topic.id) ?? false}
+                canTest={isLearner}
+                onStartQuiz={() => onStartQuiz(subject.id, topic.id)}
+              />
+            ))}
+          </ul>
         )}
-      </motion.section>
-    </motion.div>
+      </section>
+    </div>
+  );
+}
+
+function TopicRow({
+  topic,
+  hasMaterial,
+  canTest,
+  onStartQuiz,
+}: {
+  topic: PublicTopic;
+  hasMaterial: boolean;
+  canTest: boolean;
+  onStartQuiz: () => void;
+}): React.JSX.Element {
+  const navigate = useNavigate();
+
+  return (
+    <li className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 py-6">
+      <div className="min-w-0 flex-1">
+        <h3 className="text-text-primary">{topic.name}</h3>
+        {topic.description && <p className="text-text-muted mt-1 max-w-xl text-sm">{topic.description}</p>}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-6">
+        {hasMaterial && (
+          <button
+            type="button"
+            onClick={() => navigate(generatePath(ROUTES.topicMaterial, { topicId: topic.id }))}
+            className="text-text-secondary hover:text-text-primary text-sm underline underline-offset-4 transition-colors"
+          >
+            Конспект
+          </button>
+        )}
+        {canTest && (
+          <button
+            type="button"
+            onClick={onStartQuiz}
+            className="text-primary text-sm underline underline-offset-4"
+          >
+            Пройти тест
+          </button>
+        )}
+      </div>
+    </li>
   );
 }

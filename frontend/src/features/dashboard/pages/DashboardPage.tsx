@@ -1,43 +1,81 @@
-import { motion } from 'framer-motion';
-import { fadeInUp, staggerContainer } from '@/shared/constants/motion';
-import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
-import { WelcomeHero } from '@/features/dashboard/components/WelcomeHero';
-import { SubjectStatisticsSection } from '@/features/dashboard/components/SubjectStatisticsSection';
-import { RecentActivitySection } from '@/features/dashboard/components/RecentActivitySection';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/shared/constants/routes';
+import { PageHeader } from '@/shared/ui/PageHeader';
+import { Skeleton } from '@/shared/ui/Skeleton';
+import { UserRole } from '@/shared/types/enums';
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
+import { TeacherOverview } from '@/features/dashboard/components/TeacherOverview';
+import { TodayList } from '@/features/dashboard/components/TodayList';
+
+/** "7 вересня" — the date as a person says it, for the eyebrow. */
+function todayLabel(): string {
+  return new Date().toLocaleDateString('uk-UA', { day: 'numeric', month: 'long' });
+}
 
 /**
- * `/dashboard` (RequireAuth) — the first real application screen. Composes the
- * dashboard sections described in docs/01-prd/dashboard.md over the existing
- * Statistics API. Each section owns its own data fetching (parallel React
- * Query requests) and its own loading / empty / error state; the page only
- * lays them out and orchestrates a staggered entrance (decision F12 motion).
- * Responsive by construction — single column on mobile, grids expand up.
+ * `/dashboard` (RequireAuth) — one route, two jobs, chosen by role.
  *
- * The quick-actions row and the overall-statistics tiles were removed: the
- * first repeated the sidebar link for link, and the second repeated the four
- * tiles already shown on /statistics.
+ * For a learner it answers "what should I do now" and nothing else. It used to
+ * answer "how am I doing", with level, XP, per-subject progress and recent
+ * activity — every one of which the statistics page already showed. Two
+ * screens showing the same thing is what a list of sections produces when
+ * nobody asks what either screen is for.
+ *
+ * For a teacher it answers "what do my groups owe me". They do not sit tests,
+ * so a learner's dashboard showed them four zeroes.
  */
 export function DashboardPage(): React.JSX.Element {
+  const { data: user, isPending } = useCurrentUser();
+
+  if (isPending || !user) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <Skeleton className="h-32" />
+        <Skeleton className="mt-10 h-40" />
+      </div>
+    );
+  }
+
+  const name = user.profile?.displayName ?? user.profile?.username ?? null;
+  const isTeacher = user.role === UserRole.TEACHER;
+
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-      className="mx-auto flex max-w-6xl flex-col gap-8"
-    >
-      <motion.div variants={fadeInUp}>
-        <WelcomeHero />
-      </motion.div>
-      {/* No motion wrapper: a null render must produce zero DOM nodes, or
-          the flex `gap-8` above would leave a phantom gap when there is no
-          active session to show. */}
-      <ActiveQuizBanner />
-      <motion.div variants={fadeInUp}>
-        <SubjectStatisticsSection />
-      </motion.div>
-      <motion.div variants={fadeInUp}>
-        <RecentActivitySection />
-      </motion.div>
-    </motion.div>
+    <div className="mx-auto max-w-4xl">
+      <PageHeader
+        eyebrow={todayLabel()}
+        title={isTeacher ? 'Ваші групи' : 'Що робити'}
+        lead={
+          isTeacher
+            ? 'Групи, які ви ведете, і що по них зараз відкрито.'
+            : name
+              ? `Вітаю, ${name}. Ось усе, що чекає на вас — і нічого зайвого.`
+              : 'Усе, що чекає на вас — і нічого зайвого.'
+        }
+      />
+
+      {/* No rule of its own: the page header already ends in one, and two
+          hairlines a gap apart read as an empty table row. */}
+      <section className="mt-8">{isTeacher ? <TeacherOverview /> : <TodayList userId={user.id} />}</section>
+
+      <p className="text-text-muted mt-16 text-sm">
+        {isTeacher ? (
+          <>
+            Уся історія груп і розбір робіт —{' '}
+            <Link to={ROUTES.teacherGroups} className="text-text-secondary underline underline-offset-4">
+              у розділі «Групи»
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            Цифри — рівень, точність, прогрес за предметами —{' '}
+            <Link to={ROUTES.statistics} className="text-text-secondary underline underline-offset-4">
+              на сторінці статистики
+            </Link>
+            .
+          </>
+        )}
+      </p>
+    </div>
   );
 }

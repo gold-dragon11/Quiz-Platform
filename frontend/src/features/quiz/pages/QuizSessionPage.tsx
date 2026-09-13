@@ -5,17 +5,17 @@ import { ROUTES } from '@/shared/constants/routes';
 import { slideSwap, TRANSITION } from '@/shared/constants/motion';
 import { toast } from '@/stores/toast-store';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
-import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { Spinner } from '@/shared/ui/Spinner';
 import { isApiError } from '@/shared/utils/apply-api-error';
-import { QuizStatus } from '@/shared/types/enums';
+import { QuestionType, QuizStatus } from '@/shared/types/enums';
 import { useQuizSession, useSubmitAnswer, useCompleteQuiz } from '@/features/quiz/hooks/use-quiz';
 import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { QuestionCard } from '@/features/quiz/components/QuestionCard';
-import { QuizProgress } from '@/features/quiz/components/QuizProgress';
+import { QuestionStrip } from '@/features/quiz/components/QuestionStrip';
+import { PassagePanel } from '@/features/quiz/components/PassagePanel';
+import { filledRows, labelCovers } from '@/features/quiz/lib/answer-rows';
 import { QuizTimer } from '@/features/quiz/components/QuizTimer';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -27,6 +27,12 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
  * navigation, shows the timer when enabled, and completes the quiz. Reconnects
  * reload via the resume query; an already-completed session redirects to the
  * result.
+ *
+ * Finishing is available from any question, not only the last one. It used to
+ * appear solely in place of «Далі» on the final card, so a reader who had
+ * answered everything and was re-checking question three had to page all the
+ * way to the end to hand the work in — and the question strip above exists
+ * precisely so nobody has to page anywhere.
  */
 export function QuizSessionPage(): React.JSX.Element {
   const { sessionId = '' } = useParams();
@@ -128,26 +134,31 @@ export function QuizSessionPage(): React.JSX.Element {
     const notFound = isApiError(session.error) && session.error.status === 404;
     return (
       <div className="mx-auto max-w-2xl">
-        <Card>
+        <p className="border-error text-text-secondary max-w-xl border-l pl-5 text-sm">
           {notFound ? (
-            <EmptyState
-              title="Тест недоступний"
-              description="Такої сесії тесту не існує або вона більше недоступна."
-              action={
-                <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                  До тестів
-                </Button>
-              }
-            />
+            <>
+              Такої сесії тесту не існує або вона більше недоступна.{' '}
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.quiz)}
+                className="text-primary underline underline-offset-4"
+              >
+                Почати новий
+              </button>
+            </>
           ) : (
-            <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <p className="text-text-muted text-sm">Не вдалося завантажити цю сесію тесту.</p>
-              <Button variant="secondary" size="sm" onClick={() => void session.refetch()}>
+            <>
+              Не вдалося завантажити цю сесію тесту.{' '}
+              <button
+                type="button"
+                onClick={() => void session.refetch()}
+                className="text-primary underline underline-offset-4"
+              >
                 Спробувати ще раз
-              </Button>
-            </div>
+              </button>
+            </>
           )}
-        </Card>
+        </p>
       </div>
     );
   }
@@ -162,69 +173,156 @@ export function QuizSessionPage(): React.JSX.Element {
   if (questions.length === 0) {
     return (
       <div className="mx-auto max-w-2xl">
-        <Card>
-          <EmptyState
-            title="Питань немає"
-            description="У цьому тесті немає питань для показу."
-            action={
-              <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                До тестів
-              </Button>
-            }
-          />
-        </Card>
+        <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
+          У цій сесії немає жодного питання — показувати нічого.{' '}
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.quiz)}
+            className="text-primary underline underline-offset-4"
+          >
+            Почати новий тест
+          </button>
+        </p>
       </div>
     );
   }
 
   const total = questions.length;
   const current = questions[index];
-  const answeredCount = questions.filter((q) => answers[q.id] !== undefined).length;
+  // A mock sitting numbers its questions as the paper does and prints the
+  // paper's instruction above each run of tasks. A joint block sets its papers
+  // one after another, each numbered from 1.
+  const sitting = session.data.sitting;
+  const paper = sitting?.papers.find((entry) => index >= entry.start && index < entry.start + entry.count);
+  const taskNumber = sitting?.taskNumbers[index] ?? null;
+  // A task that carries a run of the answer sheet — English «11–16», «17–22» —
+  // numbers its rows and its gaps as the paper does, because its instruction
+  // names those numbers. Everywhere else a task is one row and counts from 1.
+  const taskRun = sitting?.taskLabels[index]?.split('–') ?? [];
+  const runFrom = taskRun.length === 2 ? Number(taskRun[0]) : 1;
+  const section =
+    taskNumber === null
+      ? undefined
+      : paper?.sections.find((range) => range.from <= taskNumber && taskNumber <= range.to);
+  // Counted in rows of the answer sheet: one per question, except where a
+  // task fills a run of them (docs/02-domain/nmt-paper.md §3).
+  const covers = questions.map((_, i) => labelCovers(sitting?.taskLabels[i]));
+  const filled = questions.map((q, i) => filledRows(q.type, answers[q.id], covers[i]));
+  const rowTotal = covers.reduce((sum, rows) => sum + rows, 0);
+  const answeredCount = filled.reduce((sum, rows) => sum + rows, 0);
+  const sumRows = (start: number, count: number): number =>
+    covers.slice(start, start + count).reduce((sum, rows) => sum + rows, 0);
   const isLast = index === total - 1;
-  const unanswered = total - answeredCount;
+  const unanswered = rowTotal - answeredCount;
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <QuizProgress index={index} total={total} answeredCount={answeredCount} />
+    // A question on a text needs the text beside it, so the page widens for
+    // it; everything else keeps the narrow reading column.
+    <div className={`mx-auto flex flex-col gap-8 ${current.passage ? 'max-w-6xl' : 'max-w-2xl'}`}>
+      {/* On a phone the clock takes its own line above the strip. Sharing a
+          row left the strip about 230px, and its caption — «ІСТОРІЯ УКРАЇНИ ·
+          ЗАВДАННЯ 1 / 30» — broke over three lines beside the counter. */}
+      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="min-w-0 flex-1">
+          <QuestionStrip
+            total={total}
+            index={index}
+            answered={filled.map((rows) => rows > 0)}
+            answeredCount={answeredCount}
+            answerTotal={rowTotal}
+            onJump={setIndex}
+            numbers={sitting?.taskLabels}
+            noun={sitting ? 'Завдання' : undefined}
+            groups={
+              sitting && sitting.papers.length > 1
+                ? sitting.papers.map((entry) => ({
+                    label: entry.subjectName,
+                    start: entry.start,
+                    count: entry.count,
+                    size: sumRows(entry.start, entry.count),
+                  }))
+                : undefined
+            }
+          />
         </div>
         {meta.timerEnabled && meta.expiresAt && (
           <QuizTimer expiresAt={meta.expiresAt} onExpire={handleComplete} />
         )}
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={current.id}
-          variants={slideSwap}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          transition={TRANSITION.fade}
-        >
-          <QuestionCard
-            question={current}
-            answer={answers[current.id]}
-            disabled={complete.isPending}
-            onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
-          />
-        </motion.div>
-      </AnimatePresence>
+      {section && (
+        <p className="border-border text-text-secondary max-w-3xl border-l pl-5 text-sm">
+          {section.instruction}
+        </p>
+      )}
 
-      <div className="flex items-center justify-between gap-4">
-        <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
-          Назад
-        </Button>
+      {/* The text stays put while the questions on it change: it is keyed by the
+          passage, not the question, so paging from gap 2 to gap 3 moves only
+          the marked gap and keeps the reader's place in a long text. */}
+      <div className={current.passage ? 'grid gap-8 lg:grid-cols-2 lg:gap-12' : ''}>
+        {/* The rule sits on a wrapper, a little below the scrolling text: on a
+            phone the text is cut mid-line at the bottom of its box, and a line
+            drawn straight under that half-shown row reads as a strikethrough. */}
+        {current.passage && (
+          <div className="border-border border-b pb-4 lg:sticky lg:top-6 lg:self-start lg:border-r lg:border-b-0 lg:pr-10 lg:pb-0">
+            <PassagePanel
+              key={current.passage.id}
+              passage={current.passage}
+              activeGap={current.type === QuestionType.MATCHING ? null : current.passageOrder}
+              numberFrom={runFrom}
+              className="max-h-[45vh] overflow-y-auto lg:max-h-[calc(100vh-10rem)]"
+            />
+          </div>
+        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={current.id}
+            variants={slideSwap}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={TRANSITION.fade}
+          >
+            <QuestionCard
+              question={current}
+              answer={answers[current.id]}
+              disabled={complete.isPending}
+              onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
+              matchingLayout={sitting ? 'grid' : 'list'}
+              matchingRowFrom={runFrom}
+            />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-        <SaveIndicator status={saveStatus} />
-
-        {isLast ? (
-          <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
-            Завершити тест
+      <div className="border-border border-t pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <Button variant="ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0}>
+            Назад
           </Button>
-        ) : (
-          <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Далі</Button>
+
+          <SaveIndicator status={saveStatus} />
+
+          {isLast ? (
+            <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
+              Завершити тест
+            </Button>
+          ) : (
+            <Button onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}>Далі</Button>
+          )}
+        </div>
+
+        {/* Available from anywhere, quietly: the reader who is done but standing
+            on question three should not have to page to the end to hand in. */}
+        {!isLast && (
+          <button
+            type="button"
+            onClick={() => setConfirmOpen(true)}
+            disabled={complete.isPending}
+            className="text-text-muted hover:text-text-primary mt-5 text-sm underline underline-offset-4 transition-colors disabled:opacity-60"
+          >
+            Завершити тест зараз
+          </button>
         )}
       </div>
 
@@ -233,7 +331,7 @@ export function QuizSessionPage(): React.JSX.Element {
         title="Завершити тест?"
         description={
           unanswered > 0
-            ? `Без відповіді лишилось питань: ${unanswered}. Вони будуть зараховані як неправильні. Все одно завершити?`
+            ? `Без відповіді лишилось ${sitting ? 'завдань' : 'питань'}: ${unanswered}. Вони будуть зараховані як неправильні. Все одно завершити?`
             : 'Відповіді буде оцінено, і змінити їх уже не вийде.'
         }
         confirmLabel="Завершити тест"
@@ -265,16 +363,16 @@ function SaveIndicator({ status }: { status: SaveStatus }): React.JSX.Element | 
 
 function SessionSkeleton(): React.JSX.Element {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <Skeleton className="h-6 w-full" />
-      <Card className="flex flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <Skeleton className="h-6 w-3/4" />
         <div className="flex flex-col gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-xl" />
           ))}
         </div>
-      </Card>
+      </div>
       <div className="flex justify-between">
         <Skeleton className="h-11 w-24" />
         <Skeleton className="h-11 w-28" />

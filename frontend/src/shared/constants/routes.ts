@@ -18,10 +18,25 @@ export const ROUTES = {
   quiz: '/quiz',
   quizSession: '/quiz/:sessionId',
   quizResult: '/quiz/:sessionId/result',
+  mockExam: '/mock-exam',
+  mistakeReview: '/mistake-review',
+  groups: '/groups',
+  assignments: '/assignments',
+  assignment: '/assignments/:assignmentId',
+  duels: '/duels',
+  duel: '/duels/:duelId',
   topicMaterial: '/topics/:topicId/material',
   statistics: '/statistics',
   profile: '/profile',
   settings: '/settings',
+
+  // Teacher
+  teacherGroups: '/teacher/groups',
+  teacherQuestions: '/teacher/questions',
+  teacherGroup: '/teacher/groups/:groupId',
+  teacherAssignmentNew: '/teacher/groups/:groupId/assignments/new',
+  teacherAssignment: '/teacher/assignments/:assignmentId',
+  teacherStudent: '/teacher/groups/:groupId/students/:studentId',
 
   // Administrator
   admin: '/admin',

@@ -22,4 +22,22 @@ export class UpdateSettingsDto {
   )
   @IsBoolean()
   publicProfileEnabled?: boolean;
+
+  /** Email about new homework and approaching deadlines (decision 25). */
+  @ValidateIf(
+    (dto: UpdateSettingsDto) => dto.assignmentEmailsEnabled !== undefined,
+  )
+  @IsBoolean()
+  assignmentEmailsEnabled?: boolean;
+
+  /**
+   * Whether tutors see a summary of this learner's own practice
+   * (decisions 04 and 16). Individual sessions are never shared, whatever this
+   * is set to.
+   */
+  @ValidateIf(
+    (dto: UpdateSettingsDto) => dto.shareSelfStudyWithTutors !== undefined,
+  )
+  @IsBoolean()
+  shareSelfStudyWithTutors?: boolean;
 }

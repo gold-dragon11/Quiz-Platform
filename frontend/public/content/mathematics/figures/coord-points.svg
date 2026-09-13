@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="512" viewBox="0 0 460 512" role="img" aria-label="Точки A і B на координатній площині">
+<rect width="460" height="512" fill="#0f0f13"/>
+<line x1="42.96" y1="484.0" x2="42.96" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="80.37" y1="484.0" x2="80.37" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="117.78" y1="484.0" x2="117.78" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="155.19" y1="484.0" x2="155.19" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="192.59" y1="484.0" x2="192.59" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="230.0" y1="484.0" x2="230.0" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="267.41" y1="484.0" x2="267.41" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="304.81" y1="484.0" x2="304.81" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="342.22" y1="484.0" x2="342.22" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="379.63" y1="484.0" x2="379.63" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="417.04" y1="484.0" x2="417.04" y2="28.0" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="461.57" x2="432.0" y2="461.57" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="424.2" x2="432.0" y2="424.2" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="386.82" x2="432.0" y2="386.82" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="349.44" x2="432.0" y2="349.44" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="312.07" x2="432.0" y2="312.07" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="274.69" x2="432.0" y2="274.69" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="237.31" x2="432.0" y2="237.31" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="199.93" x2="432.0" y2="199.93" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="162.56" x2="432.0" y2="162.56" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="125.18" x2="432.0" y2="125.18" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="87.8" x2="432.0" y2="87.8" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="50.43" x2="432.0" y2="50.43" stroke="#2b2b35" stroke-width="1"/>
+<line x1="28.0" y1="424.2" x2="432.0" y2="424.2" stroke="#9a9aab" stroke-width="1.5"/>
+<line x1="192.59" y1="484.0" x2="192.59" y2="28.0" stroke="#9a9aab" stroke-width="1.5"/>
+<polygon points="432.0,424.2 422.0,419.2 422.0,429.2" fill="#9a9aab"/>
+<polygon points="192.59,28.0 187.59,38.0 197.59,38.0" fill="#9a9aab"/>
+<text x="428.0" y="448.2" font-size="20" fill="#9a9aab" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">x</text>
+<text x="202.59" y="42.0" font-size="20" fill="#9a9aab" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">y</text>
+<text x="186.59" y="442.2" font-size="16" fill="#9a9aab" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif">0</text>
+<line x1="42.96" y1="427.84" x2="42.96" y2="420.55" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="42.96" y="446.2" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">-4</text>
+<line x1="117.78" y1="427.84" x2="117.78" y2="420.55" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="117.78" y="446.2" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">-2</text>
+<line x1="267.41" y1="427.84" x2="267.41" y2="420.55" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="267.41" y="446.2" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">2</text>
+<line x1="342.22" y1="427.84" x2="342.22" y2="420.55" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="342.22" y="446.2" font-size="16" fill="#9a9aab" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">4</text>
+<line x1="189.36" y1="349.44" x2="195.82" y2="349.44" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.59" y="355.44" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">2</text>
+<line x1="189.36" y1="274.69" x2="195.82" y2="274.69" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.59" y="280.69" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">4</text>
+<line x1="189.36" y1="199.93" x2="195.82" y2="199.93" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.59" y="205.93" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">6</text>
+<line x1="189.36" y1="125.18" x2="195.82" y2="125.18" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.59" y="131.18" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">8</text>
+<line x1="189.36" y1="50.43" x2="195.82" y2="50.43" stroke="#9a9aab" stroke-width="1.5"/>
+<text x="184.59" y="56.43" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">10</text>
+<line x1="117.78" y1="386.82" x2="342.22" y2="87.8" stroke="#8b5cf6" stroke-width="2.5"/>
+<circle cx="117.78" cy="386.82" r="6" fill="#8b5cf6"/>
+<circle cx="342.22" cy="87.8" r="6" fill="#8b5cf6"/>
+<text x="107.78" y="380.82" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">A</text>
+<text x="352.22" y="93.8" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">B</text>
+</svg>

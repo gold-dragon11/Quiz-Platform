@@ -80,6 +80,7 @@ Required fields:
 Optional fields:
 
 - preferredLanguage (defaults to English if omitted)
+- role — `USER` or `TEACHER`, a student's account when omitted (decisions 17 and 18 in docs/00-overview/teacher-side-decisions.md: anyone may teach, and the two are separate account types). `ADMIN` is rejected with `400`; afterwards only an administrator can change the role
 
 Automatically creates:
 
@@ -315,7 +316,7 @@ The response is the authenticated user's session summary — the account togethe
 | Account | id, email, role, accountStatus, emailVerified, createdAt |
 | Profile | username, displayName, bio |
 | Avatar | type, imageUrl |
-| Settings | language, theme, publicProfileEnabled |
+| Settings | language, theme, publicProfileEnabled, assignmentEmailsEnabled, shareSelfStudyWithTutors |
 
 Learning progress is **not** included. Level, XP, and other metrics are retrieved from the Statistics API.
 

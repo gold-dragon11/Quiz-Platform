@@ -1,5 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { Difficulty, Language, Prisma, QuestionType } from '@prisma/client';
+import {
+  Difficulty,
+  Language,
+  Prisma,
+  QuestionFormat,
+  QuestionType,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { SortOrder } from '../../subjects/dto/list-subjects-query.dto';
 import type { QuestionSortField } from '../dto/list-questions-query.dto';
@@ -23,6 +29,7 @@ export interface QuestionRecord {
   id: string;
   topicId: string;
   type: QuestionType;
+  format: QuestionFormat;
   title: string;
   imageUrl: string | null;
   difficulty: Difficulty | null;
@@ -54,6 +61,8 @@ export interface PublishedQuestionRow {
   imageUrl: string | null;
   difficulty: Difficulty | null;
   configuration: Prisma.JsonValue;
+  passageOrder: number | null;
+  passage: { id: string; title: string | null; content: string } | null;
   translations: { title: string }[];
   answerOptions: {
     id: string;
@@ -85,6 +94,7 @@ const QUESTION_SELECT = {
   id: true,
   topicId: true,
   type: true,
+  format: true,
   title: true,
   imageUrl: true,
   difficulty: true,
@@ -112,6 +122,7 @@ export class QuestionsRepository {
     topicId?: string;
     subjectId?: string;
     type?: QuestionType;
+    format?: QuestionFormat;
     difficulty?: Difficulty;
     isPublished?: boolean;
     search?: string;
@@ -125,6 +136,7 @@ export class QuestionsRepository {
         ? {}
         : { topic: { subjectId: params.subjectId } }),
       ...(params.type === undefined ? {} : { type: params.type }),
+      ...(params.format === undefined ? {} : { format: params.format }),
       ...(params.difficulty === undefined
         ? {}
         : { difficulty: params.difficulty }),
@@ -189,6 +201,8 @@ export class QuestionsRepository {
           imageUrl: true,
           difficulty: true,
           configuration: true,
+          passageOrder: true,
+          passage: { select: { id: true, title: true, content: true } },
           translations: { where: translationsWhere, select: { title: true } },
           answerOptions: {
             select: {
@@ -217,6 +231,7 @@ export class QuestionsRepository {
   async createWithOptions(data: {
     topicId: string;
     type: QuestionType;
+    format?: QuestionFormat;
     title: string;
     imageUrl?: string;
     difficulty?: Difficulty;
@@ -228,6 +243,7 @@ export class QuestionsRepository {
       data: {
         topicId: data.topicId,
         type: data.type,
+        format: data.format,
         title: data.title,
         imageUrl: data.imageUrl,
         difficulty: data.difficulty,

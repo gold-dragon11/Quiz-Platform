@@ -3,17 +3,23 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
+import { CatalogueModule } from './catalogue/catalogue.module';
 import { LocalizedThrottlerGuard } from './common/guards/localized-throttler.guard';
 import { AppConfigModule } from './config/config.module';
 import { AppConfig } from './config/configuration';
+import { DuelsModule } from './duels/duels.module';
 import { HealthModule } from './health/health.module';
 import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { QuestionReportsModule } from './question-reports/question-reports.module';
 import { QuestionsModule } from './questions/questions.module';
 import { QuizModule } from './quiz/quiz.module';
 import { QuizzesModule } from './quizzes/quizzes.module';
 import { SettingsModule } from './settings/settings.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { AssignmentsModule } from './assignments/assignments.module';
+import { GroupsModule } from './groups/groups.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { TopicsModule } from './topics/topics.module';
 import { UsersModule } from './users/users.module';
@@ -43,10 +49,16 @@ import { UsersModule } from './users/users.module';
     PrismaModule,
     HealthModule,
     AuthModule,
+    CatalogueModule,
     SubjectsModule,
     TopicsModule,
     QuestionsModule,
+    QuestionReportsModule,
+    DuelsModule,
+    NotificationsModule,
     LearningMaterialsModule,
+    GroupsModule,
+    AssignmentsModule,
     QuizModule,
     QuizzesModule,
     StatisticsModule,

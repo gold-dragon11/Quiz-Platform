@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="360" viewBox="0 0 560 360" role="img" aria-label="Графік температури повітря за тиждень">
+<rect width="560" height="360" fill="#0f0f13"/>
+<line x1="81.48" y1="286.4" x2="496.3" y2="286.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="75.56" y="292.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">0</text>
+<line x1="81.48" y1="230.4" x2="496.3" y2="230.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="75.56" y="236.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">5</text>
+<line x1="81.48" y1="174.4" x2="496.3" y2="174.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="75.56" y="180.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">10</text>
+<line x1="81.48" y1="118.4" x2="496.3" y2="118.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="75.56" y="124.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">15</text>
+<line x1="81.48" y1="62.4" x2="496.3" y2="62.4" stroke="#3b3b47" stroke-width="1"/>
+<text x="75.56" y="68.4" font-size="16" fill="#9a9aab" text-anchor="end" font-family="ui-sans-serif, system-ui, sans-serif">20</text>
+<polyline points="111.11,152.0 170.37,118.4 229.63,185.6 288.89,129.6 348.15,84.8 407.41,107.2 466.67,163.2" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="111.11" cy="152.0" r="5" fill="#8b5cf6"/>
+<text x="111.11" y="140.0" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">12</text>
+<text x="111.11" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Пн</text>
+<circle cx="170.37" cy="118.4" r="5" fill="#8b5cf6"/>
+<text x="170.37" y="106.4" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">15</text>
+<text x="170.37" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Вт</text>
+<circle cx="229.63" cy="185.6" r="5" fill="#8b5cf6"/>
+<text x="229.63" y="173.6" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">9</text>
+<text x="229.63" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Ср</text>
+<circle cx="288.89" cy="129.6" r="5" fill="#8b5cf6"/>
+<text x="288.89" y="117.6" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">14</text>
+<text x="288.89" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Чт</text>
+<circle cx="348.15" cy="84.8" r="5" fill="#8b5cf6"/>
+<text x="348.15" y="72.8" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">18</text>
+<text x="348.15" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Пт</text>
+<circle cx="407.41" cy="107.2" r="5" fill="#8b5cf6"/>
+<text x="407.41" y="95.2" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">16</text>
+<text x="407.41" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Сб</text>
+<circle cx="466.67" cy="163.2" r="5" fill="#8b5cf6"/>
+<text x="466.67" y="151.2" font-size="16" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">11</text>
+<text x="466.67" y="310.4" font-size="17" fill="#e6e6ee" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">Нд</text>
+</svg>

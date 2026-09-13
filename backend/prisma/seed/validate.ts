@@ -1,5 +1,15 @@
-import { Difficulty } from '@prisma/client';
-import { isMatching, type QuestionContent, type TopicContent } from './types';
+import { Difficulty, QuestionFormat } from '@prisma/client';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  isMatching,
+  isMultipleChoice,
+  isNumeric,
+  isOrdering,
+  type PassageContent,
+  type QuestionContent,
+  type TopicContent,
+} from './types';
 
 /**
  * Content validation mirroring the rules the Admin API enforces
@@ -15,7 +25,23 @@ const MAX_TITLE_LENGTH = 2000;
 const MAX_EXPLANATION_LENGTH = 2000;
 const MAX_OPTION_LENGTH = 500;
 const MIN_OPTIONS = 2;
+const MIN_ORDERING_ITEMS = 3;
+
+/**
+ * Illustrations are served from the frontend's public directory. Validating
+ * the path here — rather than discovering a typo as a broken image in a live
+ * quiz — is the whole point of having a content validator.
+ */
+const PUBLIC_DIR = join(__dirname, '..', '..', '..', 'frontend', 'public');
+const IMAGE_PREFIX = '/content/';
 const MAX_OPTIONS = 20;
+
+const PASSAGE_KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const MAX_PASSAGE_LENGTH = 8000;
+/** The longest NMT paper — English — has 32 tasks. */
+const MAX_NMT_TASK = 32;
+/** A numbered gap: `(3) ______`. See PassageContent. */
+const GAP = /\((\d{1,2})\)\s*_{3,}/g;
 
 /**
  * Inline formulas are written between `$…$` and rendered with KaTeX
@@ -27,6 +53,11 @@ const MAX_OPTIONS = 20;
  */
 function validateFormulas(text: string, at: string, field: string): string[] {
   const errors: string[] = [];
+  // `**виділене**` marks the words a task points at (EmphasisText on the
+  // client); a lone pair of asterisks would print literally.
+  if ((text.match(/\*\*/g) ?? []).length % 2 !== 0) {
+    errors.push(`${at}: ${field} has an unclosed "**" emphasis`);
+  }
   const delimiters = (text.match(/\$/g) ?? []).length;
   if (delimiters % 2 !== 0) {
     errors.push(`${at}: ${field} has an unclosed "$" formula delimiter`);
@@ -84,8 +115,63 @@ export function validateTopic(topic: TopicContent): string[] {
 
   const seenTitles = new Set<string>();
 
+  const passages = new Map<string, PassageContent>();
+  (topic.passages ?? []).forEach((passage, index) => {
+    const at = `${topic.slug}.passages[${index}]`;
+    if (!passage.key || !PASSAGE_KEY.test(passage.key)) {
+      errors.push(`${at}: key must be lowercase kebab-case`);
+    } else if (passages.has(passage.key)) {
+      errors.push(`${at}: duplicate passage key "${passage.key}"`);
+    } else {
+      passages.set(passage.key, passage);
+    }
+    if (passage.title !== undefined && !passage.title.trim()) {
+      errors.push(`${at}: title is present but empty`);
+    }
+    if (passage.content) {
+      errors.push(...validateFormulas(passage.content, at, 'content'));
+    }
+    if (!passage.content?.trim()) {
+      errors.push(`${at}: content is required`);
+    } else if (passage.content.length > MAX_PASSAGE_LENGTH) {
+      errors.push(`${at}: content exceeds ${MAX_PASSAGE_LENGTH} characters`);
+    }
+  });
+  // How many gaps the questions of each passage fill between them — one per
+  // single-choice question, one per row of a matching question over the text.
+  const gapsFilled = new Map<string, number>();
+
   topic.questions.forEach((question, index) => {
     const at = where(index);
+
+    if (question.nmtTask !== undefined) {
+      if (
+        !Number.isInteger(question.nmtTask) ||
+        question.nmtTask < 1 ||
+        question.nmtTask > MAX_NMT_TASK
+      ) {
+        errors.push(
+          `${at}: nmtTask must be a task number from 1 to ${MAX_NMT_TASK}`,
+        );
+      }
+      if (question.format !== 'NMT') {
+        errors.push(`${at}: nmtTask belongs only on an NMT-format question`);
+      }
+    }
+
+    if (question.passage !== undefined) {
+      if (!passages.has(question.passage)) {
+        errors.push(
+          `${at}: passage "${question.passage}" is not declared in this topic`,
+        );
+      } else {
+        gapsFilled.set(
+          question.passage,
+          (gapsFilled.get(question.passage) ?? 0) +
+            (isMatching(question) ? question.pairs.length : 1),
+        );
+      }
+    }
 
     if (!question.title?.trim()) {
       errors.push(`${at}: title is required`);
@@ -109,6 +195,10 @@ export function validateTopic(topic: TopicContent): string[] {
       errors.push(`${at}: unknown difficulty "${question.difficulty}"`);
     }
 
+    if (question.format !== undefined && !(question.format in QuestionFormat)) {
+      errors.push(`${at}: unknown format "${question.format}"`);
+    }
+
     // Mirrors the Admin API's own limit, so seeded content can never be
     // something an administrator could not have typed into the form.
     if (question.explanation !== undefined) {
@@ -125,8 +215,76 @@ export function validateTopic(topic: TopicContent): string[] {
       }
     }
 
+    if (question.imageUrl !== undefined) {
+      if (!question.imageUrl.startsWith(IMAGE_PREFIX)) {
+        errors.push(
+          `${at}: imageUrl must be a local path under ${IMAGE_PREFIX}`,
+        );
+      } else if (!existsSync(join(PUBLIC_DIR, question.imageUrl))) {
+        errors.push(`${at}: image file not found: ${question.imageUrl}`);
+      }
+    }
+
     errors.push(...validateAnswers(question, at));
   });
+
+  // A text set as one run of paper tasks is shown in the order its questions
+  // appear, so their numbers must rise in that order; and a text numbered on
+  // some questions but not others would be set with a hole in it
+  // (docs/02-domain/nmt-paper.md §5).
+  const tasksByPassage = new Map<string, (number | undefined)[]>();
+  for (const question of topic.questions) {
+    if (question.passage !== undefined) {
+      tasksByPassage.set(question.passage, [
+        ...(tasksByPassage.get(question.passage) ?? []),
+        question.nmtTask,
+      ]);
+    }
+  }
+  for (const [key, tasks] of tasksByPassage) {
+    const at = `${topic.slug}.passages[${key}]`;
+    const numbered = tasks.filter((task): task is number => task !== undefined);
+    if (numbered.length === 0) {
+      continue;
+    }
+    if (numbered.length !== tasks.length) {
+      errors.push(
+        `${at}: either every question on the passage has an nmtTask or none does`,
+      );
+    }
+    if (numbered.some((task, i) => i > 0 && task <= numbered[i - 1])) {
+      errors.push(
+        `${at}: nmtTask must rise in the order the questions appear, found ${numbered.join(', ')}`,
+      );
+    }
+  }
+
+  // A gap numbered out of order, or a text with more gaps than questions, is
+  // a task the reader cannot finish — and nothing at runtime would notice.
+  for (const [key, passage] of passages) {
+    const at = `${topic.slug}.passages[${key}]`;
+    const filled = gapsFilled.get(key);
+    if (filled === undefined) {
+      errors.push(`${at}: no question is asked about this passage`);
+      continue;
+    }
+    const numbers = [...passage.content.matchAll(GAP)].map((gap) =>
+      Number(gap[1]),
+    );
+    if (numbers.length === 0) {
+      continue;
+    }
+    if (numbers.some((number, i) => number !== i + 1)) {
+      errors.push(
+        `${at}: gaps must be numbered 1, 2, 3… in order, found ${numbers.join(', ')}`,
+      );
+    }
+    if (numbers.length !== filled) {
+      errors.push(
+        `${at}: ${numbers.length} gaps in the text, but its questions fill ${filled}`,
+      );
+    }
+  }
 
   return errors;
 }
@@ -140,7 +298,8 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       errors.push(`${at}: matching needs at least 2 pairs`);
       return errors;
     }
-    if (pairs.length * 2 > MAX_OPTIONS) {
+    const spare = question.extraChoices ?? [];
+    if (pairs.length * 2 + spare.length > MAX_OPTIONS) {
       errors.push(`${at}: matching exceeds ${MAX_OPTIONS} options`);
     }
 
@@ -169,6 +328,27 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
       rights.add(right);
     });
 
+    // A spare choice is only a distractor if it is distinguishable from every
+    // real one: repeat a paired choice and two options become equally correct.
+    spare.forEach((choice, i) => {
+      if (!choice?.trim()) {
+        errors.push(`${at}: extra choice ${i} is empty`);
+        return;
+      }
+      errors.push(...validateFormulas(choice, at, `extra choice ${i}`));
+      if (choice.length > MAX_OPTION_LENGTH) {
+        errors.push(
+          `${at}: extra choice ${i} exceeds ${MAX_OPTION_LENGTH} characters`,
+        );
+      }
+      if (rights.has(choice) || lefts.has(choice)) {
+        errors.push(`${at}: extra choice "${choice}" repeats a paired item`);
+      }
+      if (spare.indexOf(choice) !== i) {
+        errors.push(`${at}: duplicate extra choice "${choice}"`);
+      }
+    });
+
     // A value appearing on both sides makes the intended pairing ambiguous.
     for (const left of lefts) {
       if (rights.has(left)) {
@@ -178,8 +358,69 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
     return errors;
   }
 
-  const { options, correct } = question;
-  if (!Array.isArray(options) || options.length < MIN_OPTIONS) {
+  if (isNumeric(question)) {
+    // A finite number, and nothing that only looks like one: NaN or Infinity
+    // would silently make every submission wrong.
+    if (
+      typeof question.answer !== 'number' ||
+      !Number.isFinite(question.answer)
+    ) {
+      errors.push(`${at}: numeric answer must be a finite number`);
+    }
+    return errors;
+  }
+
+  if (isOrdering(question)) {
+    const { sequence } = question;
+    if (!Array.isArray(sequence) || sequence.length < MIN_ORDERING_ITEMS) {
+      errors.push(`${at}: ordering needs at least ${MIN_ORDERING_ITEMS} items`);
+      return errors;
+    }
+    if (sequence.length > MAX_OPTIONS) {
+      errors.push(`${at}: ordering exceeds ${MAX_OPTIONS} items`);
+    }
+    sequence.forEach((item, i) => {
+      if (!item?.trim()) {
+        errors.push(`${at}: sequence item ${i} is empty`);
+      } else if (item.length > MAX_OPTION_LENGTH) {
+        errors.push(
+          `${at}: sequence item ${i} exceeds ${MAX_OPTION_LENGTH} characters`,
+        );
+      } else {
+        errors.push(...validateFormulas(item, at, `sequence item ${i}`));
+      }
+    });
+    // Two identical items would make two different sequences both correct.
+    if (new Set(sequence.map((item) => item.trim())).size !== sequence.length) {
+      errors.push(`${at}: duplicate items in sequence`);
+    }
+    return errors;
+  }
+
+  // An option is either text or a picture with a hidden text alternative; the
+  // text rules below apply to both, and a picture must also exist on disk.
+  const raw: unknown[] = Array.isArray(question.options)
+    ? question.options
+    : [];
+  const options: string[] = raw.map((option) =>
+    typeof option === 'string'
+      ? option
+      : ((option as { content?: string } | null)?.content ?? ''),
+  );
+  raw.forEach((option, i) => {
+    if (typeof option === 'string') {
+      return;
+    }
+    const imageUrl = (option as { imageUrl?: unknown } | null)?.imageUrl;
+    if (typeof imageUrl !== 'string' || !imageUrl.startsWith(IMAGE_PREFIX)) {
+      errors.push(
+        `${at}: option ${i} imageUrl must be a local path under ${IMAGE_PREFIX}`,
+      );
+    } else if (!existsSync(join(PUBLIC_DIR, imageUrl))) {
+      errors.push(`${at}: option ${i} image file not found: ${imageUrl}`);
+    }
+  });
+  if (!Array.isArray(question.options) || options.length < MIN_OPTIONS) {
     errors.push(`${at}: needs at least ${MIN_OPTIONS} options`);
     return errors;
   }
@@ -201,6 +442,27 @@ function validateAnswers(question: QuestionContent, at: string): string[] {
     errors.push(`${at}: duplicate answer options`);
   }
 
+  if (isMultipleChoice(question)) {
+    const indices = question.correct;
+    if (!Array.isArray(indices) || indices.length < 2) {
+      errors.push(`${at}: multiple choice needs at least two correct options`);
+    } else if (indices.length === options.length) {
+      // "Every option is correct" is not a question, it is a list.
+      errors.push(`${at}: multiple choice needs at least one wrong option`);
+    } else if (new Set(indices).size !== indices.length) {
+      errors.push(`${at}: "correct" repeats an index`);
+    } else if (
+      indices.some(
+        (index) =>
+          !Number.isInteger(index) || index < 0 || index >= options.length,
+      )
+    ) {
+      errors.push(`${at}: "correct" must index into options`);
+    }
+    return errors;
+  }
+
+  const correct = question.correct;
   if (!Number.isInteger(correct) || correct < 0 || correct >= options.length) {
     errors.push(`${at}: "correct" must index into options`);
   }

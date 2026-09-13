@@ -80,6 +80,7 @@ XPTransaction (1)
 | expiresAt | DateTime | No | Timer deadline; set at creation when the timer is enabled (60s × questionCount), null otherwise |
 | completedAt | DateTime | No | Quiz completion time |
 | durationSeconds | Integer | No | Total session duration (server-computed at completion) |
+| nmtBlock | String | No | Slug of the joint NMT block a mock sitting belongs to (docs/02-domain/nmt-paper.md §8); null otherwise |
 | createdAt | DateTime | Yes | Creation timestamp |
 
 The fixed question set is captured at creation in a dedicated `QuizSessionQuestion` snapshot (one row per question, with its position). The snapshot stores question ids and order only — question content stays in the question rows, which persist through soft deletion, preserving historical accuracy.

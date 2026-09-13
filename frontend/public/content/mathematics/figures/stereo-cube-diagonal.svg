@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="384" viewBox="0 0 400 384" role="img" aria-label="Куб з ребром a і його діагональ">
+<rect width="400" height="384" fill="#0f0f13"/>
+<polygon points="90.55,293.52 246.91,293.52 246.91,137.33 90.55,137.33" fill="none" fill-opacity="1" stroke="#e6e6ee" stroke-width="2" stroke-linejoin="round"/>
+<line x1="246.91" y1="293.52" x2="317.27" y2="238.86" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="246.91" y1="137.33" x2="317.27" y2="82.67" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="90.55" y1="137.33" x2="160.91" y2="82.67" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="317.27" y1="238.86" x2="317.27" y2="82.67" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="317.27" y1="82.67" x2="160.91" y2="82.67" stroke="#e6e6ee" stroke-width="2"/>
+<polyline points="160.91,82.67 160.91,238.86 317.27,238.86" fill="none" stroke="#9a9aab" stroke-width="1.5" stroke-dasharray="7 6"/>
+<polyline points="90.55,293.52 160.91,238.86" fill="none" stroke="#9a9aab" stroke-width="1.5" stroke-dasharray="7 6"/>
+<line x1="90.55" y1="293.52" x2="317.27" y2="82.67" stroke="#8b5cf6" stroke-width="3"/>
+<text x="168.73" y="319.52" font-size="20" fill="#e6e6ee" text-anchor="middle" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">a = 2</text>
+</svg>

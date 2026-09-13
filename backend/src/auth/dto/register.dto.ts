@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -14,6 +15,10 @@ import {
   normalizeEmail,
   trim,
 } from '../../common/transformers/normalize.transformer';
+import {
+  ASSIGNABLE_ROLES,
+  type AssignableRole,
+} from '../../users/assignable-roles';
 import { IsValidPassword } from '../decorators/is-valid-password.decorator';
 
 /**
@@ -48,4 +53,11 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(Language)
   preferredLanguage?: Language;
+
+  // Decisions 17 and 18: an account is a student's or a teacher's from the
+  // start, and anyone may choose to teach. Omitted means a student. The same
+  // list an administrator assigns from, so administrator is never on offer.
+  @IsOptional()
+  @IsIn(ASSIGNABLE_ROLES)
+  role?: AssignableRole;
 }

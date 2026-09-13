@@ -14,6 +14,14 @@ export interface ResultRecord {
   completedAt: Date;
 }
 
+/** One NMT paper's score in a mock sitting (docs/02-domain/nmt-paper.md §6). */
+export interface PaperScoreInput {
+  subjectId: string;
+  testPoints: number;
+  maxTestPoints: number;
+  scaledScore: number | null;
+}
+
 /**
  * Persistence for quiz results (docs/02-domain/result.md). A result is created
  * exactly once per session, inside the completion transaction; the unique
@@ -34,9 +42,12 @@ export class ResultRepository {
       totalQuestions: number;
       accuracy: number;
       score: number;
+      /** A mock sitting's paper scores, one per paper; empty otherwise. */
+      paperScores?: PaperScoreInput[];
       completedAt: Date;
     },
   ): Promise<{ id: string }> {
+    const paperScores = params.paperScores ?? [];
     return tx.result.create({
       data: {
         quizSessionId: params.quizSessionId,
@@ -47,6 +58,9 @@ export class ResultRepository {
         accuracy: params.accuracy,
         score: params.score,
         completedAt: params.completedAt,
+        ...(paperScores.length > 0
+          ? { paperScores: { create: paperScores } }
+          : {}),
       },
       select: { id: true },
     });

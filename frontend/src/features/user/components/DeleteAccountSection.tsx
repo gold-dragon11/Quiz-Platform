@@ -5,7 +5,6 @@ import { clearSession } from '@/lib/api-client';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
 import { Checkbox } from '@/shared/ui/Checkbox';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 import { isApiError } from '@/shared/utils/apply-api-error';
@@ -44,23 +43,21 @@ export function DeleteAccountSection(): React.JSX.Element {
   };
 
   return (
-    <Card className="border-error/40">
-      <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-error text-lg font-semibold">Небезпечна зона</h2>
-        <p className="text-text-secondary text-sm">
-          Видалення акаунта є остаточним і не підлягає скасуванню. Ваша електронна адреса та ім'я користувача
-          залишаються назавжди зарезервованими й не можуть бути використані знову. Історія навчання
-          зберігається, але доступ до неї ви втратите.
-        </p>
-      </div>
+    <section>
+      <h2 className="text-error text-xs tracking-[0.18em] uppercase">Видалення акаунта</h2>
+      <p className="text-text-secondary mt-4 max-w-xl text-sm">
+        Дію не можна скасувати. Ваша електронна адреса та імʼя користувача лишаються зарезервованими назавжди
+        — зареєструватися з ними знову не вийде. Історія навчання зберігається, але доступу до неї у вас
+        більше не буде.
+      </p>
 
-      <div className="flex flex-col gap-4">
+      <div className="border-error/40 mt-8 flex flex-col gap-5 border-t pt-8">
         <Checkbox
           label="Я розумію, що цю дію не можна скасувати."
           checked={acknowledged}
           onChange={(event) => setAcknowledged(event.target.checked)}
         />
-        <div className="flex justify-end">
+        <div>
           <Button variant="danger" disabled={!acknowledged} onClick={() => setDialogOpen(true)}>
             Видалити мій акаунт
           </Button>
@@ -82,6 +79,6 @@ export function DeleteAccountSection(): React.JSX.Element {
           }
         }}
       />
-    </Card>
+    </section>
   );
 }

@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import {
   BadRequestException,
   Injectable,
@@ -9,6 +10,7 @@ import { TopicsService } from '../../topics/services/topics.service';
 import { AnswerOptionInputDto } from '../dto/answer-option-input.dto';
 import { CreateQuestionDto } from '../dto/create-question.dto';
 import { ListQuestionsQueryDto } from '../dto/list-questions-query.dto';
+import { ListTeacherQuestionsQueryDto } from '../dto/list-teacher-questions-query.dto';
 import { PublishQuestionDto } from '../dto/publish-question.dto';
 import { UpdateQuestionDto } from '../dto/update-question.dto';
 import {
@@ -23,6 +25,8 @@ import {
   PaginatedPublicQuestions,
   PublicQuestion,
 } from '../types/public-question.type';
+import type { AppConfig } from '../../config/configuration';
+import { dealOptions } from '../../quiz/option-deal.util';
 
 /** The default locale lives on the Question row itself, not in a translation. */
 const DEFAULT_LOCALE = Language.ENGLISH;
@@ -30,6 +34,8 @@ const DEFAULT_LOCALE = Language.ENGLISH;
 const MIN_OPTIONS = 2;
 const MAX_OPTIONS = 20;
 const MIN_MATCHING_PAIRS = 2;
+/** Two items in a sequence is a coin flip; the exam always gives four. */
+const MIN_ORDERING_OPTIONS = 3;
 
 const QUESTION_NOT_FOUND_MESSAGE = 'Питання не знайдено.';
 const TOPIC_NOT_FOUND_MESSAGE = 'Тему не знайдено.';
@@ -51,7 +57,16 @@ const MATCHING_IS_CORRECT_MESSAGE =
 const CONFIGURATION_REQUIRED_MESSAGE =
   'configuration is required for MATCHING questions.';
 const CONFIGURATION_FORBIDDEN_MESSAGE =
-  'configuration is not allowed for SINGLE_CHOICE questions.';
+  'configuration is not allowed for questions of this type.';
+const ORDERING_IS_CORRECT_MESSAGE =
+  'isCorrect is not allowed for ORDERING question options: the stored order is the key.';
+const ORDERING_MIN_OPTIONS_MESSAGE = `ORDERING questions require at least ${MIN_ORDERING_OPTIONS} items to put in sequence.`;
+const MULTIPLE_CHOICE_CORRECT_MESSAGE =
+  'MULTIPLE_CHOICE questions require at least two correct options and at least one incorrect one.';
+const NUMERIC_OPTIONS_MESSAGE =
+  'NUMERIC questions take no answer options: the expected value lives in configuration.';
+const NUMERIC_CONFIGURATION_MESSAGE =
+  'NUMERIC questions require configuration of the form { "answer": <number> }.';
 const CONFIGURATION_INVALID_MESSAGE =
   'configuration must pair every option order exactly once.';
 const CONFIGURATION_MIN_PAIRS_MESSAGE = `MATCHING questions require at least ${MIN_MATCHING_PAIRS} pairs.`;
@@ -78,7 +93,11 @@ interface MatchingPair {
  * - SINGLE_CHOICE — exactly one option isCorrect, no configuration;
  * - MATCHING — correctness lives in `configuration.pairs` referencing option
  *   order values; isCorrect is not accepted on options; at least two pairs,
- *   every option in exactly one pair.
+ *   every option in exactly one pair;
+ * - ORDERING — the stored option order *is* the key, so isCorrect is not
+ *   accepted and there is no configuration; at least three items;
+ * - MULTIPLE_CHOICE — at least two options isCorrect and at least one not, no
+ *   configuration.
  *
  * Persisted option orders are always normalized to a contiguous 0..n-1
  * sequence (docs/02-domain/answer-option.md §10): explicit order values
@@ -95,6 +114,7 @@ export class QuestionsService {
     private readonly questionsRepository: QuestionsRepository,
     private readonly topicsService: TopicsService,
     private readonly settingsService: SettingsService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   /**
@@ -133,12 +153,25 @@ export class QuestionsService {
       title: row.translations[0]?.title ?? row.title,
       difficulty: row.difficulty,
       imageUrl: row.imageUrl,
-      answerOptions: row.answerOptions.map((option) => ({
-        id: option.id,
-        content: option.translations[0]?.content ?? option.content,
-        imageUrl: option.imageUrl,
-        order: option.order,
-      })),
+      passage: row.passage,
+      passageOrder: row.passageOrder,
+      // An ORDERING question keeps its answer in the option order, so this
+      // list is dealt before it leaves the server — otherwise browsing the
+      // topic would print the key. The deal is seeded by the question id
+      // alone: there is no session here, and the same question should look
+      // the same each time it is browsed.
+      answerOptions: dealOptions(
+        row.type,
+        row.answerOptions.map((option) => ({
+          id: option.id,
+          content: option.translations[0]?.content ?? option.content,
+          imageUrl: option.imageUrl,
+          order: option.order,
+        })),
+        row.id,
+        0,
+        this.config.get('jwt', { infer: true }).accessSecret,
+      ),
       ...(row.type === QuestionType.MATCHING
         ? { configuration: row.configuration }
         : {}),
@@ -160,11 +193,47 @@ export class QuestionsService {
       topicId: query.topicId,
       subjectId: query.subjectId,
       type: query.type,
+      format: query.format,
       difficulty: query.difficulty,
       isPublished: query.isPublished,
       search: query.search,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+    });
+
+    return {
+      items,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalItems,
+      totalPages: Math.ceil(totalItems / query.pageSize),
+    };
+  }
+
+  /**
+   * The bank as a teacher reads it: published questions only, with their
+   * correct answers and explanations.
+   *
+   * `isPublished` is pinned here rather than taken from the query. Passing it
+   * through would have let a teacher list the administrator's unfinished
+   * drafts by adding one parameter, and nothing in the DTO would have looked
+   * wrong.
+   */
+  async listForTeacher(
+    query: ListTeacherQuestionsQueryDto,
+  ): Promise<PaginatedQuestions> {
+    const { items, totalItems } = await this.questionsRepository.findPage({
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+      topicId: query.topicId,
+      subjectId: query.subjectId,
+      type: query.type,
+      format: query.format,
+      difficulty: query.difficulty,
+      isPublished: true,
+      search: query.search,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     });
 
     return {
@@ -185,6 +254,12 @@ export class QuestionsService {
 
     if (dto.options.some((option) => option.id !== undefined)) {
       throw new BadRequestException(OPTION_IDS_AT_CREATION_MESSAGE);
+    }
+
+    // The DTO no longer states a lower bound, because NUMERIC questions carry
+    // no options; every other type still needs at least two.
+    if (dto.type !== QuestionType.NUMERIC && dto.options.length < MIN_OPTIONS) {
+      throw new BadRequestException(OPTION_COUNT_MESSAGE);
     }
 
     const effectiveOrders = this.resolveEffectiveOrders(dto.options);
@@ -210,6 +285,22 @@ export class QuestionsService {
     if (dto.type === QuestionType.SINGLE_CHOICE) {
       this.assertSingleChoiceRules(merged, dto.configuration !== undefined);
       options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.ORDERING) {
+      this.assertOrderingRules(
+        merged,
+        isCorrectProvided,
+        dto.configuration !== undefined,
+      );
+      // The authored order is the answer. Normalizing keeps it contiguous
+      // from zero, which is what the evaluator compares against.
+      options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.MULTIPLE_CHOICE) {
+      this.assertMultipleChoiceRules(merged, dto.configuration !== undefined);
+      options = this.normalizeOrders(merged).options;
+    } else if (dto.type === QuestionType.NUMERIC) {
+      this.assertNumericRules(merged, dto.configuration);
+      options = [];
+      configuration = dto.configuration as Prisma.InputJsonValue;
     } else {
       this.assertMatchingOptionRules(merged, isCorrectProvided);
       if (dto.configuration === undefined) {
@@ -230,6 +321,7 @@ export class QuestionsService {
       title: dto.title,
       imageUrl: dto.imageUrl,
       difficulty: dto.difficulty,
+      format: dto.format,
       explanation: dto.explanation,
       configuration,
       options,
@@ -253,12 +345,32 @@ export class QuestionsService {
       ...(dto.title === undefined ? {} : { title: dto.title }),
       ...(dto.imageUrl === undefined ? {} : { imageUrl: dto.imageUrl }),
       ...(dto.difficulty === undefined ? {} : { difficulty: dto.difficulty }),
+      ...(dto.format === undefined ? {} : { format: dto.format }),
       ...(dto.explanation === undefined
         ? {}
         : { explanation: dto.explanation }),
     };
 
-    if (question.type === QuestionType.SINGLE_CHOICE) {
+    if (question.type === QuestionType.NUMERIC) {
+      if (dto.options !== undefined && dto.options.length > 0) {
+        throw new BadRequestException(NUMERIC_OPTIONS_MESSAGE);
+      }
+      if (dto.configuration !== undefined) {
+        this.assertNumericRules([], dto.configuration);
+        data.configuration = dto.configuration as Prisma.InputJsonValue;
+      }
+      return this.questionsRepository.updateWithOptions(
+        id,
+        data,
+        undefined,
+        [],
+      );
+    }
+
+    // Every remaining type but MATCHING keeps its key in the options
+    // themselves, so the update path is the same shape for all three: no
+    // configuration, merge the option set, re-check the type's own rule.
+    if (question.type !== QuestionType.MATCHING) {
       if (dto.configuration !== undefined) {
         throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
       }
@@ -272,8 +384,17 @@ export class QuestionsService {
         );
       }
 
+      const isCorrectSupplied = dto.options.some(
+        (entry) => entry.isCorrect !== undefined,
+      );
       const { merged, deleteIds } = this.mergeOptionSet(question, dto.options);
-      this.assertSingleChoiceRules(merged, false);
+      if (question.type === QuestionType.SINGLE_CHOICE) {
+        this.assertSingleChoiceRules(merged, false);
+      } else if (question.type === QuestionType.ORDERING) {
+        this.assertOrderingRules(merged, isCorrectSupplied, false);
+      } else {
+        this.assertMultipleChoiceRules(merged, false);
+      }
       const { options } = this.normalizeOrders(merged);
       return this.questionsRepository.updateWithOptions(
         id,
@@ -392,14 +513,26 @@ export class QuestionsService {
 
     if (dto.isPublished) {
       const orders = question.answerOptions.map((option) => option.order);
+      // A NUMERIC question has no options at all — its answer is a number in
+      // the configuration — so the count rule does not apply to it.
       if (
-        question.answerOptions.length < MIN_OPTIONS ||
-        question.answerOptions.length > MAX_OPTIONS
+        question.type !== QuestionType.NUMERIC &&
+        (question.answerOptions.length < MIN_OPTIONS ||
+          question.answerOptions.length > MAX_OPTIONS)
       ) {
         throw new BadRequestException(OPTION_COUNT_MESSAGE);
       }
-      if (question.type === QuestionType.SINGLE_CHOICE) {
+      if (question.type === QuestionType.NUMERIC) {
+        this.assertNumericRules(
+          question.answerOptions,
+          question.configuration ?? undefined,
+        );
+      } else if (question.type === QuestionType.SINGLE_CHOICE) {
         this.assertSingleChoiceRules(question.answerOptions, false);
+      } else if (question.type === QuestionType.ORDERING) {
+        this.assertOrderingRules(question.answerOptions, false, false);
+      } else if (question.type === QuestionType.MULTIPLE_CHOICE) {
+        this.assertMultipleChoiceRules(question.answerOptions, false);
       } else {
         const pairs = this.parseMatchingPairs(
           question.configuration ?? undefined,
@@ -604,6 +737,76 @@ export class QuestionsService {
     }
   }
 
+  /**
+   * The sequence lives in the option order, so correctness flags would be a
+   * second, contradictory key. The minimum count keeps a "sequence" from being
+   * a two-way guess.
+   */
+  private assertOrderingRules(
+    options: OptionWrite[],
+    isCorrectProvided: boolean,
+    configurationProvided: boolean,
+  ): void {
+    if (configurationProvided) {
+      throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    }
+    if (isCorrectProvided) {
+      throw new BadRequestException(ORDERING_IS_CORRECT_MESSAGE);
+    }
+    if (options.length < MIN_ORDERING_OPTIONS) {
+      throw new BadRequestException(ORDERING_MIN_OPTIONS_MESSAGE);
+    }
+  }
+
+  /**
+   * At least two correct options, or the question is a single choice wearing
+   * another type's name; and at least one incorrect one, or "select every
+   * option" is the answer.
+   */
+  private assertMultipleChoiceRules(
+    options: OptionWrite[],
+    configurationProvided: boolean,
+  ): void {
+    if (configurationProvided) {
+      throw new BadRequestException(CONFIGURATION_FORBIDDEN_MESSAGE);
+    }
+    const correctCount = options.filter((option) => option.isCorrect).length;
+    if (correctCount < 2 || correctCount === options.length) {
+      throw new BadRequestException(MULTIPLE_CHOICE_CORRECT_MESSAGE);
+    }
+  }
+
+  /**
+   * The whole point of this type is that the reader is not shown anything to
+   * choose from, so any option at all would defeat it — and the expected value
+   * must be a real, finite number, or nothing could ever be marked right.
+   */
+  private assertNumericRules(
+    options: { id?: string }[],
+    configuration: unknown,
+  ): void {
+    if (options.length > 0) {
+      throw new BadRequestException(NUMERIC_OPTIONS_MESSAGE);
+    }
+    if (
+      typeof configuration !== 'object' ||
+      configuration === null ||
+      Array.isArray(configuration)
+    ) {
+      throw new BadRequestException(NUMERIC_CONFIGURATION_MESSAGE);
+    }
+    const entries = Object.keys(configuration);
+    const answer = (configuration as { answer?: unknown }).answer;
+    if (
+      entries.length !== 1 ||
+      entries[0] !== 'answer' ||
+      typeof answer !== 'number' ||
+      !Number.isFinite(answer)
+    ) {
+      throw new BadRequestException(NUMERIC_CONFIGURATION_MESSAGE);
+    }
+  }
+
   private assertMatchingOptionRules(
     options: OptionWrite[],
     isCorrectProvided: boolean,
@@ -655,8 +858,18 @@ export class QuestionsService {
   /**
    * Validates matching pairs against an option order set
    * (docs/02-domain/answer-option.md §9): at least two pairs; no self pair;
-   * no duplicate pair; left and right sides never overlap; every option
-   * order appears in exactly one pair.
+   * no duplicate pair; left and right sides never overlap.
+   *
+   * The prompts must be the opening block of orders — `0 … L-1` where `L` is
+   * the number of pairs — and everything from `L` on is a choice. That is
+   * what lets the delivered question say where the two columns divide without
+   * shipping the answer key with it.
+   *
+   * Choices may be left unpaired. Every NMT matching task offers more choices
+   * than prompts (4×5 in Ukrainian and history, 3×5 in mathematics, up to 6×8
+   * in English), so the spare ones are the format, not an authoring mistake.
+   * Prompts, by contrast, must all be answered: an unpaired prompt would be a
+   * question with no correct answer.
    */
   private assertValidPairs(pairs: MatchingPair[], orders: number[]): void {
     if (pairs.length < MIN_MATCHING_PAIRS) {
@@ -682,10 +895,25 @@ export class QuestionsService {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
 
-    const used = [...lefts, ...rights];
     const orderSet = new Set(orders);
-    const everyUsedExists = used.every((order) => orderSet.has(order));
-    if (!everyUsedExists || used.length !== orders.length) {
+    if ([...lefts, ...rights].some((order) => !orderSet.has(order))) {
+      throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
+    }
+
+    // Checked on position, not on the order value itself: incoming orders are
+    // arbitrary (10, 5, 30 …) and are normalized to 0..n-1 only afterwards.
+    // What has to hold is the arrangement — prompts first, then choices.
+    const positionOf = new Map(
+      [...orders].sort((a, b) => a - b).map((order, index) => [order, index]),
+    );
+    const promptCount = lefts.length;
+    const promptsAreLeadingBlock = lefts.every(
+      (order) => (positionOf.get(order) ?? -1) < promptCount,
+    );
+    const choicesFollowPrompts = rights.every(
+      (order) => (positionOf.get(order) ?? -1) >= promptCount,
+    );
+    if (!promptsAreLeadingBlock || !choicesFollowPrompts) {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
   }

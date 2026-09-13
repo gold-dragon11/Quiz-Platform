@@ -3,6 +3,14 @@ import { QuizzesModule } from '../quizzes/quizzes.module';
 import { SettingsModule } from '../settings/settings.module';
 import { StatisticsModule } from '../statistics/statistics.module';
 import { QuizController } from './controllers/quiz.controller';
+import {
+  DEFAULT_NMT_BLOCKS,
+  DEFAULT_NMT_PAPERS,
+  NMT_BLOCKS,
+  NMT_PAPERS,
+  NmtPaperRegistry,
+} from './nmt/nmt-papers';
+import { MistakeReviewRepository } from './repositories/mistake-review.repository';
 import { QuestionAttemptRepository } from './repositories/question-attempt.repository';
 import { QuizSessionRepository } from './repositories/quiz-session.repository';
 import { ResultRepository } from './repositories/result.repository';
@@ -23,7 +31,14 @@ import { QuizService } from './services/quiz.service';
     QuizService,
     QuizSessionRepository,
     QuestionAttemptRepository,
+    MistakeReviewRepository,
     ResultRepository,
+    NmtPaperRegistry,
+    { provide: NMT_PAPERS, useValue: DEFAULT_NMT_PAPERS },
+    { provide: NMT_BLOCKS, useValue: DEFAULT_NMT_BLOCKS },
   ],
+  // Exported for AssignmentsModule: starting homework is the same engine with
+  // a frozen question list, not a second implementation of it.
+  exports: [QuizService],
 })
 export class QuizModule {}

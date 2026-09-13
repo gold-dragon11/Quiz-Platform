@@ -4,6 +4,7 @@ import { AccountStatus, Language, UserRole } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface TopicBody {
   id: string;
@@ -161,7 +162,7 @@ describe('Admin Topics (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestData();

@@ -18,6 +18,7 @@ High-level product documentation.
 | product-principles.md | Core product principles |
 | roadmap.md | Product roadmap |
 | architecture-overview.md | Overall system architecture |
+| teacher-side-decisions.md | Numbered decision register for the teacher side |
 
 ---
 
@@ -63,6 +64,8 @@ Defines the application's business entities.
 | statistics.md | Statistics entity |
 | user-settings.md | User settings entity |
 | avatar.md | Avatar entity |
+| group.md | Group and group membership |
+| subscription.md | Teacher subscription and usage snapshots |
 | learning-material.md | Learning material entity |
 
 ---

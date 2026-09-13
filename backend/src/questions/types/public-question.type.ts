@@ -22,6 +22,10 @@ export interface PublicQuestion {
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /** The text the question is asked about (docs/02-domain/passage.md). */
+  passage: { id: string; title: string | null; content: string } | null;
+  /** Position within the passage, from 1 — for a gapped text, the gap. */
+  passageOrder: number | null;
   answerOptions: PublicAnswerOption[];
   configuration?: Prisma.JsonValue;
 }

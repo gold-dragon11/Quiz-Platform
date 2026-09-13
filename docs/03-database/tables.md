@@ -232,7 +232,19 @@ The `title` column holds the default-locale (English) value.
 
 The `configuration` JSON column stores the type-specific correct-answer configuration (Matching pairs); `is_published` controls visibility.
 
+`passage_id` and `passage_order` place a question on a Passage — the text it is asked about — and its position in it; both are null for a question that stands alone. Deleting a passage sets `passage_id` to null.
+
 Soft delete: a `deleted_at` timestamp marks removed questions (see §6). Deleted questions disappear from all queries; historical Quiz Sessions remain valid.
+
+---
+
+## passages
+
+Stores texts that several questions are asked about: a story, a paragraph with numbered gaps (docs/02-domain/passage.md).
+
+Passages belong to one Topic and are unique by `(topic_id, slug)`. The slug is the identity, so rewording `content` keeps the passage and every question attached to it.
+
+Deleting the topic deletes its passages. Passages have no soft delete: the seed never removes one, since historical Quiz Sessions point at its questions.
 
 ---
 
@@ -318,6 +330,12 @@ Stores final quiz outcomes.
 Each completed Quiz Session produces one Result.
 
 Results are immutable.
+
+## result_paper_scores
+
+One NMT paper's score in a mock sitting (docs/02-domain/nmt-paper.md §6): result, subject, test points, maximum test points and the official 100–200 score (null below the paper's threshold). One row for a sitting of one subject, one per subject for a joint block, none for any other session; unique per `(result, subject)` and cascade-deleted with the result.
+
+`quiz_sessions.nmt_block` is the slug of the joint block a mock sitting belongs to (null otherwise). `questions.nmt_task` is the paper number an NMT-format question is written for (indexed; null for practice questions).
 
 ---
 

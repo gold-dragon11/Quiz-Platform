@@ -10,11 +10,12 @@ import { Button } from '@/shared/ui/Button';
 import { useLogout } from '@/shared/hooks/use-logout';
 import { NavList } from '@/shared/layouts/navigation/NavList';
 import { NAV_ITEMS, visibleNavItems } from '@/shared/layouts/navigation/nav-items';
+import type { UserRole } from '@/shared/types/enums';
 
 interface MobileMenuProps {
   open: boolean;
   onClose: () => void;
-  isAdmin: boolean;
+  role: UserRole | undefined;
   displayName: string;
   username?: string;
   avatarUrl?: string;
@@ -24,7 +25,7 @@ interface MobileMenuProps {
 export function MobileMenu({
   open,
   onClose,
-  isAdmin,
+  role,
   displayName,
   username,
   avatarUrl,
@@ -80,7 +81,7 @@ export function MobileMenu({
 
             <div className="flex-1 overflow-y-auto">
               <NavList
-                items={visibleNavItems(NAV_ITEMS, isAdmin)}
+                items={visibleNavItems(NAV_ITEMS, role)}
                 layoutId="mobile-active"
                 onNavigate={onClose}
               />

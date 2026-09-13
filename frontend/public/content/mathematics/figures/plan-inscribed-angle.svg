@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420" role="img" aria-label="Коло з точками A, B, C і вписаним кутом ACB">
+<rect width="420" height="420" fill="#0f0f13"/>
+<circle cx="210.0" cy="210.0" r="140.0" fill="none" stroke="#e6e6ee" stroke-width="2"/>
+<polyline points="120.01,317.25 123.81,320.32 127.71,323.26 131.71,326.07 135.81,328.73 140.0,331.24 144.27,333.61 148.63,335.83 153.06,337.9 157.56,339.81 162.12,341.56 166.74,343.15 171.41,344.58 176.13,345.84 180.89,346.94 185.69,347.87 190.52,348.64 195.37,349.23 200.23,349.66 205.11,349.91 210.0,350.0 214.89,349.91 219.77,349.66 224.63,349.23 229.48,348.64 234.31,347.87 239.11,346.94 243.87,345.84 248.59,344.58 253.26,343.15 257.88,341.56 262.44,339.81 266.94,337.9 271.37,335.83 275.73,333.61 280.0,331.24 284.19,328.73 288.29,326.07 292.29,323.26 296.19,320.32 299.99,317.25" fill="none" stroke="#8b5cf6" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+<line x1="210.0" y1="70.0" x2="120.01" y2="317.25" stroke="#e6e6ee" stroke-width="2"/>
+<line x1="210.0" y1="70.0" x2="299.99" y2="317.25" stroke="#e6e6ee" stroke-width="2"/>
+<path d="M195.6,109.5 A42,42 0 0 0 224.4,109.5" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+<text x="210.0" y="134.0" font-size="18" fill="#8b5cf6" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif">40°</text>
+<text x="112.01" y="335.25" font-size="22" fill="#e6e6ee" text-anchor="end" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">A</text>
+<text x="307.99" y="335.25" font-size="22" fill="#e6e6ee" text-anchor="start" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">B</text>
+<text x="210.0" y="58.0" font-size="22" fill="#e6e6ee" text-anchor="middle" font-family="'Times New Roman', 'Noto Serif', serif" font-style="italic">C</text>
+</svg>

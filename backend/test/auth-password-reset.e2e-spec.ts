@@ -10,6 +10,7 @@ import { PASSWORD_RESET_PURPOSE } from './../src/auth/constants/auth.constants';
 import { AppConfig } from './../src/config/configuration';
 import { EmailService } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /** One captured outbound email. */
 interface CapturedEmail {
@@ -22,6 +23,15 @@ class CapturingEmailService extends EmailService {
   readonly resetEmails: CapturedEmail[] = [];
 
   sendVerificationEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  // Required by the abstraction; this suite never sends assignment mail.
+  sendAssignmentIssuedEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
+  sendAssignmentDueSoonEmail(): Promise<void> {
     return Promise.resolve();
   }
 
@@ -166,7 +176,7 @@ describe('Password Reset (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
 

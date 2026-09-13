@@ -1,3 +1,4 @@
+import { UserRole } from '@/shared/types/enums';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -7,14 +8,14 @@ import { Avatar } from '@/shared/ui/Avatar';
 import { useLogout } from '@/shared/hooks/use-logout';
 
 interface UserMenuProps {
-  isAdmin: boolean;
+  role: UserRole | undefined;
   displayName: string;
   username?: string;
   avatarUrl?: string;
 }
 
 /** Header user dropdown: profile, settings, admin (admins only), and logout. */
-export function UserMenu({ isAdmin, displayName, username, avatarUrl }: UserMenuProps): React.JSX.Element {
+export function UserMenu({ role, displayName, username, avatarUrl }: UserMenuProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const { logout } = useLogout();
@@ -76,7 +77,7 @@ export function UserMenu({ isAdmin, displayName, username, avatarUrl }: UserMenu
               <MenuLink to={ROUTES.settings} onClick={close}>
                 Налаштування
               </MenuLink>
-              {isAdmin && (
+              {role === UserRole.ADMIN && (
                 <MenuLink to={ROUTES.admin} onClick={close}>
                   Адміністрування
                 </MenuLink>

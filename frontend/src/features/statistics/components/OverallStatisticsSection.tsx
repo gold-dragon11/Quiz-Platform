@@ -1,63 +1,65 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
-import { EmptyState } from '@/shared/ui/EmptyState';
-import { SectionHeader } from '@/shared/ui/SectionHeader';
+import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { StatCard } from '@/shared/ui/StatCard';
 import { formatDuration, formatNumber, formatPercent } from '@/shared/utils/format';
 import { useOverallStatistics } from '@/features/statistics/hooks/use-statistics';
 import { SectionError } from '@/features/statistics/components/SectionError';
 
 /**
- * Overall statistics cards (docs/01-prd/dashboard.md §9,
- * docs/04-api/statistics.md §4). Reuses the deduped overall query. A brand-new
- * user (no completed quizzes) sees an encouraging empty state instead of a row
- * of zeros.
+ * The three figures worth stating (docs/04-api/statistics.md §4).
+ *
+ * There were five, in five identical tiles: Тести, Питання, Правильних,
+ * Точність, Час навчання. Three of those were one fact — the backend computes
+ * `averageAccuracy` as `correctAnswers ÷ totalQuestions`, so the row printed a
+ * quotient beside both of its own operands and gave all three the same weight.
+ * Accuracy is the one a reader acts on, so it keeps the figure and the other
+ * two drop to its hint, where they explain it instead of competing with it.
  */
 export function OverallStatisticsSection(): React.JSX.Element {
   const overall = useOverallStatistics();
-  const navigate = useNavigate();
+
+  if (overall.isPending) {
+    return <Skeleton className="h-32" />;
+  }
+
+  if (overall.isError) {
+    return <SectionError onRetry={() => void overall.refetch()} />;
+  }
+
+  const data = overall.data;
+
+  if (data.completedQuizzes === 0) {
+    // A row of zeroes is not a summary of anything.
+    return (
+      <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
+        Цифри зʼявляться після першого пройденого тесту.{' '}
+        <Link to={ROUTES.subjects} className="text-primary underline underline-offset-4">
+          Обрати предмет
+        </Link>
+      </p>
+    );
+  }
 
   return (
-    <section>
-      <SectionHeader title="Загалом" description="Ваше навчання одним поглядом." />
-      {overall.isPending ? (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-28 rounded-xl" />
-          ))}
-        </div>
-      ) : overall.isError ? (
-        <Card>
-          <SectionError onRetry={() => void overall.refetch()} />
-        </Card>
-      ) : overall.data.completedQuizzes === 0 ? (
-        <Card>
-          <EmptyState
-            title="Статистики поки немає"
-            description="Пройдіть перший тест, щоб почати стежити за прогресом."
-            action={
-              <Button variant="secondary" size="sm" onClick={() => navigate(ROUTES.quiz)}>
-                Почати тест
-              </Button>
-            }
-          />
-        </Card>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <StatCard label="Тести" value={formatNumber(overall.data.completedQuizzes)} hint="Пройдено" />
-          <StatCard
-            label="Питання"
-            value={formatNumber(overall.data.totalQuestions)}
-            hint="Отримано відповідей"
-          />
-          <StatCard label="Правильних" value={formatNumber(overall.data.correctAnswers)} hint="Відповідей" />
-          <StatCard label="Точність" value={formatPercent(overall.data.averageAccuracy)} hint="Середня" />
-          <StatCard label="Час навчання" value={formatDuration(overall.data.totalStudyTime)} hint="Усього" />
-        </div>
-      )}
-    </section>
+    <FigureGrid
+      figures={[
+        {
+          value: formatPercent(data.averageAccuracy),
+          label: 'точність',
+          hint: `правильних ${formatNumber(data.correctAnswers)} з ${formatNumber(data.totalQuestions)}`,
+        },
+        {
+          value: formatNumber(data.completedQuizzes),
+          label: 'тестів',
+          hint: 'пройдено від початку',
+        },
+        {
+          value: formatDuration(data.totalStudyTime),
+          label: 'за тестами',
+          hint: 'сумарний час у сесіях',
+        },
+      ]}
+    />
   );
 }

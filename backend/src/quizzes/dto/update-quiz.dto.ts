@@ -1,8 +1,9 @@
-import { QuizType } from '@prisma/client';
+import { AUTHORABLE_QUIZ_MODES } from '../authorable-modes';
+import type { AuthorableQuizMode } from '../authorable-modes';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
-  IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsString,
@@ -46,8 +47,8 @@ export class UpdateQuizDto {
   description?: string | null;
 
   @ValidateIf((dto: UpdateQuizDto) => dto.mode !== undefined)
-  @IsEnum(QuizType)
-  mode?: QuizType;
+  @IsIn(AUTHORABLE_QUIZ_MODES)
+  mode?: AuthorableQuizMode;
 
   @ValidateIf((dto: UpdateQuizDto) => dto.questionCount !== undefined)
   @IsInt()

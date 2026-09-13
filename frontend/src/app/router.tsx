@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { MOCK_EXAM_ROLES } from '@/shared/constants/roles';
 import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/shared/layouts/RootLayout';
 import { PublicLayout } from '@/shared/layouts/PublicLayout';
@@ -6,6 +7,10 @@ import { MainLayout } from '@/shared/layouts/MainLayout';
 import { RequireAuth } from '@/shared/guards/RequireAuth';
 import { RequireGuest } from '@/shared/guards/RequireGuest';
 import { RequireAdmin } from '@/shared/guards/RequireAdmin';
+import { RequireLearner } from '@/shared/guards/RequireLearner';
+import { RequireRole } from '@/shared/guards/RequireRole';
+import { UserRole } from '@/shared/types/enums';
+import { RequireTeacher } from '@/shared/guards/RequireTeacher';
 import { PageTransition } from '@/shared/components/PageTransition';
 import { RouteError } from '@/shared/components/RouteError';
 import { ROUTES } from '@/shared/constants/routes';
@@ -19,7 +24,19 @@ import {
 import { ProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
+import { MockExamPage } from '@/features/mock-exam';
+import { MistakeReviewPage } from '@/features/mistake-review';
+import { DuelPage, DuelsPage } from '@/features/duels';
+import { StudentGroupsPage, TeacherGroupPage, TeacherGroupsPage } from '@/features/groups';
+import {
+  AssignmentReviewPage,
+  NewAssignmentPage,
+  StudentAssignmentPage,
+  StudentAssignmentsPage,
+  StudentProfilePage,
+} from '@/features/assignments';
 import { StatisticsPage } from '@/features/statistics';
+import { QuestionBankPage } from '@/features/question-bank';
 import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
 import { AdminPanelPage } from '@/features/admin';
@@ -110,17 +127,9 @@ export const router = createBrowserRouter([
           {
             element: <MainLayout />,
             children: [
+              // Open to every signed-in role.
               { path: ROUTES.dashboard, element: page(<DashboardPage />) },
               { path: ROUTES.subjects, element: page(<SubjectsBrowserPage />) },
-              { path: ROUTES.quiz, element: page(<QuizStartPage />) },
-              {
-                path: ROUTES.quizSession,
-                element: page(<QuizSessionPage />),
-              },
-              {
-                path: ROUTES.quizResult,
-                element: page(<QuizResultPage />),
-              },
               {
                 path: ROUTES.topicMaterial,
                 element: page(<MaterialPage />),
@@ -128,6 +137,82 @@ export const router = createBrowserRouter([
               { path: ROUTES.statistics, element: page(<StatisticsPage />) },
               { path: ROUTES.profile, element: page(<ProfilePage />) },
               { path: ROUTES.settings, element: page(<SettingsPage />) },
+
+              // Sitting a test. The navigation has always hidden these from a
+              // teacher; until now the routes themselves were still served, so
+              // typing the address gave them a mock exam their own statistics
+              // page would never show them.
+              {
+                element: <RequireLearner />,
+                children: [
+                  { path: ROUTES.quiz, element: page(<QuizStartPage />) },
+                  {
+                    path: ROUTES.mistakeReview,
+                    element: page(<MistakeReviewPage />),
+                  },
+                  { path: ROUTES.duels, element: page(<DuelsPage />) },
+                  { path: ROUTES.duel, element: page(<DuelPage />) },
+                ],
+              },
+
+              // A mock exam, and the session and result screens it runs on:
+              // open to a teacher too, who sits a paper to see what they are
+              // about to set. The only sessions a teacher can start are mocks.
+              {
+                element: <RequireLearner roles={MOCK_EXAM_ROLES} />,
+                children: [
+                  {
+                    path: ROUTES.quizSession,
+                    element: page(<QuizSessionPage />),
+                  },
+                  {
+                    path: ROUTES.quizResult,
+                    element: page(<QuizResultPage />),
+                  },
+                  { path: ROUTES.mockExam, element: page(<MockExamPage />) },
+                ],
+              },
+
+              // Being taught: a student's own groups and homework. An
+              // administrator joins no groups, so this is USER alone rather
+              // than the learner set above.
+              {
+                element: <RequireRole role={UserRole.USER} />,
+                children: [
+                  { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
+                  { path: ROUTES.assignments, element: page(<StudentAssignmentsPage />) },
+                  { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+
+      // Teacher routes — same authenticated shell, own role gate. Deliberately
+      // not open to administrators: the backend's @TeacherOnly() refuses them
+      // too, because an administrator owns no groups.
+      {
+        element: <RequireTeacher />,
+        children: [
+          {
+            element: <MainLayout />,
+            children: [
+              { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
+              { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
+              { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
+              {
+                path: ROUTES.teacherAssignmentNew,
+                element: page(<NewAssignmentPage />),
+              },
+              {
+                path: ROUTES.teacherAssignment,
+                element: page(<AssignmentReviewPage />),
+              },
+              {
+                path: ROUTES.teacherStudent,
+                element: page(<StudentProfilePage />),
+              },
             ],
           },
         ],

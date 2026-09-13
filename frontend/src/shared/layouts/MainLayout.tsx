@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
-import { UserRole } from '@/shared/types/enums';
+import { Outlet } from 'react-router-dom';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { Sidebar } from '@/shared/layouts/navigation/Sidebar';
 import { TopHeader } from '@/shared/layouts/navigation/TopHeader';
 import { BottomNav } from '@/shared/layouts/navigation/BottomNav';
 import { MobileMenu } from '@/shared/layouts/navigation/MobileMenu';
-import { getPageTitle } from '@/shared/layouts/navigation/nav-items';
 
 /**
  * The authenticated application shell (Phase 6.10) — one layout for every
@@ -17,20 +15,18 @@ import { getPageTitle } from '@/shared/layouts/navigation/nav-items';
  * Identity/role come from the shared useCurrentUser query — never duplicated.
  */
 export function MainLayout(): React.JSX.Element {
-  const location = useLocation();
   const { data: user, isPending } = useCurrentUser();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const role = user?.role;
   const displayName = user?.profile?.displayName ?? 'Account';
   const username = user?.profile?.username ?? undefined;
   const avatarUrl = user?.avatar?.imageUrl ?? undefined;
-  const title = getPageTitle(location.pathname);
 
   return (
     <div className="bg-background text-text-primary flex min-h-screen">
       <Sidebar
-        isAdmin={isAdmin}
+        role={role}
         displayName={displayName}
         username={username}
         avatarUrl={avatarUrl}
@@ -39,9 +35,8 @@ export function MainLayout(): React.JSX.Element {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopHeader
-          title={title}
           onOpenMenu={() => setMenuOpen(true)}
-          isAdmin={isAdmin}
+          role={role}
           displayName={displayName}
           username={username}
           avatarUrl={avatarUrl}
@@ -56,7 +51,7 @@ export function MainLayout(): React.JSX.Element {
       <MobileMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        isAdmin={isAdmin}
+        role={role}
         displayName={displayName}
         username={username}
         avatarUrl={avatarUrl}

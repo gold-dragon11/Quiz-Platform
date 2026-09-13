@@ -59,9 +59,11 @@ Creates a new Quiz Session in one of two mutually exclusive ways.
 Request body — **exactly one** of:
 
 - **Stored Quiz:** `quizId` only. The Subject, Topic, question count, timer, and mode are loaded from the referenced published Quiz; the ad-hoc fields must not be provided. Supplying `quizId` together with any ad-hoc field returns `400`.
-- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional), `difficulty` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
+- **Ad hoc:** `subjectId` (required), `topicId` (optional), `questionCount` (required, 1–50), `timerEnabled` (required), `onlyMistakes` (optional), `difficulty` (optional), `format` (optional); no `quizId`. The `mode` is derived from `topicId`: present → `SUBJECT_QUIZ`, absent → `RANDOM_QUIZ`.
 
 `difficulty` restricts the pool to a single level (`BEGINNER`, `INTERMEDIATE`, `ADVANCED`); omit it for a mixed quiz, which is the default. It is not combinable with `quizId` (the stored Quiz fixes its own pool) or with `onlyMistakes` — that pool is already a specific set of questions, and narrowing it further would usually leave nothing; both combinations return `400`.
+
+`format` restricts the pool to one authoring format: `NMT` is the reference bank written to the exam's own specification, `PRACTICE` is the older bank. Omit it to draw from both, which is what practice does by default. It carries the same two restrictions as `difficulty` — not combinable with `quizId` or `onlyMistakes` — and when the requested format has too few questions in the topic, the `409` says so rather than reporting a general content gap.
 
 Sizing a level-filtered request needs care: the advanced tier is much smaller than the others (roughly 8–10 questions per topic against 16–24 for the rest), so a request for 10 advanced questions from one topic fails where the same request without a level would succeed. Ask §4a first rather than guessing. The `409` for this case carries its own message, naming the level rather than the content as the limit.
 
@@ -87,14 +89,33 @@ Response `201 Created` returns the session metadata: sessionId, mode, subjectId,
 ## Count the Question Pool
 
 ```http
-GET /api/v1/quiz/available?subjectId=…&topicId=…&difficulty=…
+GET /api/v1/quiz/available?subjectId=…&topicId=…&difficulty=…&format=…
 ```
 
-Returns `{ "available": n }` — how many questions an ad-hoc quiz over exactly these filters would draw from. `subjectId` is required; `topicId` and `difficulty` are optional and mean the same as in §4.
+Returns `{ "available": n }` — how many questions an ad-hoc quiz over exactly these filters would draw from. `subjectId` is required; `topicId`, `difficulty` and `format` are optional and mean the same as in §4.
 
 Exists so a caller can size `questionCount` before starting, instead of discovering an empty pool through a `409` it had no way to anticipate. This matters mainly for `difficulty`: without a level the pool is always large enough for the maximum a client offers, so the count is only interesting once a level narrows it.
 
 The count and the picker share one eligibility predicate in the repository, deliberately — if they drifted, this endpoint would promise a pool `POST /quiz/start` could not deliver, defeating its purpose.
+
+# 4b. Mock Exam
+
+```http
+GET  /api/v1/quiz/mock-exam/blocks
+GET  /api/v1/quiz/mock-exam/spec?subjectId=…   (or ?block=…)
+POST /api/v1/quiz/mock-exam/start
+GET  /api/v1/quiz/mock-exam/history?subjectId=…
+```
+
+A sitting is started for a subject or for a joint NMT block (docs/02-domain/nmt-paper.md §8) — exactly one of the two; both or neither is `400`.
+
+**Blocks** — the blocks that can be sat now, each `{ slug, title, subjectNames }`: every subject of the block is published and has a paper.
+
+**Spec** — `{ questionCount, minutes, paper, block }`. For a subject with an NMT paper, `paper` is `{ title, taskCount, maxTestPoints, timingNote, sections: [{ from, to, instruction }] }` and the count and minutes are the paper's. `questionCount` is how many questions are set on screen and `taskCount` how many numbers the answer sheet has — the number a student calls the paper's tasks. They differ only in English: 18 questions, 32 tasks; without a paper, `paper` is `null` and the numbers come from the provisional config. For a block, `paper` is `null` and `block` is `{ title, timingNote, papers: [{ subjectName, title, questionCount, taskCount, maxTestPoints }] }`, with the count summed over the papers and the block's minutes. An unknown block is `404`.
+
+**Start** — body `{ subjectId }` or `{ block }`. With a paper: one published NMT question per task number, in paper order, on the paper's clock. With a block: every paper in turn on the block's clock. `409` if any number has no question, with the missing numbers in the message (`… Бракує завдань №2, 14.`, or per subject for a block). Without a paper: the provisional draw by difficulty. Responds `201` with the session metadata of §4; the one-active-session rule applies.
+
+**History** — the user's completed sittings, oldest first: `sessionId`, `subject`, `blockTitle`, `completedAt`, counts, `accuracy`, and `testPoints`, `maxTestPoints`, `scaledScore`. A sitting of papers is listed once per paper, with that subject's score — so a block appears in the history of each of its subjects, with `blockTitle` set. A provisional sitting has all three scores `null`; `scaledScore` is also `null` below a paper's threshold.
 
 ---
 
@@ -112,9 +133,12 @@ Each question includes:
 
 - id;
 - type;
+- subjectSlug — the subject the question belongs to. It decides which alphabet letters the options: А–Ж everywhere, A–H in English, whose instruction names those letters. A joint block sets two subjects in one session, so this cannot be read off the session;
 - title (text and/or LaTeX);
 - difficulty;
 - imageUrl (optional);
+- passage — the text the question is asked about, `{ id, title, content }`, or null (docs/02-domain/passage.md). Repeated on every question of the passage, so each question can be shown on its own. Gaps in `content` are written `(3) ______`;
+- passageOrder — position within the passage, from 1 (for a gapped text, the gap this question fills), or null;
 - answerOptions — each with id, content, imageUrl, order.
 
 Question titles, answer options, and explanations may contain inline LaTeX between `$…$` (docs/02-domain/question.md §10); the API returns it verbatim and the client renders it.
@@ -139,6 +163,9 @@ Request body:
 - selectedAnswer — shape depends on the question type:
   - Single Choice: `{ "answerOptionId": "uuid" }`
   - Matching: `{ "pairs": [ { "left": "uuid", "right": "uuid" } ] }`
+  - Ordering: `{ "sequence": [ "uuid", … ] }` — the option ids in the order the reader put them. A partial sequence is accepted and stored (the reader places one item at a time and every click autosaves); it is simply not the key. Repeated ids and ids from another question are `400`.
+  - Multiple Choice: `{ "answerOptionIds": [ "uuid", … ] }` — correct only when the set is exactly the correct one. Three of the four right statements is wrong, as it is on the paper.
+  - Numeric: `{ "numericAnswer": "12,5" }` — a string or a number. Compared by value, not by spelling: "12,5", "12.50" and 12.5 are the same answer, and the comma is accepted because the paper writes decimals with one. A string counts as a number only in plain decimal notation (`12`, `-4`, `0,25`, `.5`); anything else — an empty field, a lone minus sign mid-typing, spaces, `0x0`, `1e3` — is stored as a wrong answer rather than rejected, because every keystroke autosaves. In particular an empty field is wrong even when the answer is 0: JavaScript's `Number('')` is 0, and scoring by it once did exactly that. Only a wrong shape (an object, an array, a missing key) is `400`.
 - timeSpentSeconds (optional, analytics only — never affects scoring or XP)
 
 The backend validates session ownership (a foreign or unknown session is `404`), that the question belongs to the session's fixed set (`404` otherwise), and that the session is active (`409` otherwise — including a session whose timer has expired, which is auto-completed on access). The submitted answer must reference options that belong to the question, otherwise `400`; a well-formed but wrong answer is accepted and recorded as incorrect.
@@ -182,7 +209,8 @@ GET /api/v1/quiz/{sessionId}/result
 Returns the full post-completion **review** — available only after the session is Completed (`409` otherwise):
 
 - `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
-- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
+- `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching, `{ sequence }` for Ordering, `{ answerOptionIds }` for Multiple Choice, `{ numericAnswer }` for Numeric), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
+- `nmt` — present only for a mock sitting of an NMT paper or block: `{ title, papers }`, one entry per paper `{ subjectName, title, testPoints, maxTestPoints, scaledScore, threshold, scaleSource, tasks: [{ number, label, questionId, points, maxPoints }] }`, tasks in paper order; `label` is what the paper prints above the task — the number, or a run like `17–22`. `scaledScore` is `null` below the paper's threshold.
 - `session` — `{ subjectId, topicId }`, where the quiz came from. Carried so the result page can offer the learning material for the topic just tested (docs/04-api/learning-materials.md §4) without a second request to rediscover which topic that was.
 
 The correct answer is only ever revealed here, after completion. The historical result, per-question correctness, score, and XP are immutable; note that the *displayed* correct answer reflects the current version of the question, so a later admin edit may change what the review shows (a known MVP limitation) while the frozen result stays unchanged.
@@ -205,7 +233,7 @@ Returns `{ "session": ... }`, where `session` is the same session metadata shape
 GET /api/v1/quiz/{sessionId}
 ```
 
-Returns the current Quiz Session state for recovery after a refresh or reconnect: the session metadata, its questions (same withheld-answer view as §5), and the user's own already-saved selections (`answers`). Correctness, correct answers, and Matching configuration are never included.
+Returns the current Quiz Session state for recovery after a refresh or reconnect: the session metadata, its questions (same withheld-answer view as §5), and the user's own already-saved selections (`answers`). Correctness, correct answers, and Matching configuration are never included. A mock sitting of an NMT paper or block also carries `sitting`: `{ title, papers: [{ subjectName, title, maxTestPoints, sections, start, count }], taskNumbers, taskLabels }`. Each paper covers the session positions `start … start + count − 1`, and `taskNumbers` gives each question's number in session order, so the screen can number tasks per paper and print each section's instruction as the paper does. `taskLabels` is what the paper prints above each question — the number itself, or a run like `11–16` where one task fills several rows of the answer sheet, as English does (docs/02-domain/nmt-paper.md §3).
 
 Used when:
 

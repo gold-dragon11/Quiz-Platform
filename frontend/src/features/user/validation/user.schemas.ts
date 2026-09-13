@@ -36,3 +36,15 @@ export const changePasswordSchema = z
     path: ['newPassword'],
   });
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+/**
+ * Profile edit validation. Mirrors the backend UpdateProfileDto exactly
+ * (docs/04-api/users.md §9): display name 1–50 characters, bio up to 250 and
+ * optional. An empty bio is sent as an explicit `null`, which is how the API
+ * clears it — sending `''` would store an empty string instead.
+ */
+export const editProfileSchema = z.object({
+  displayName: z.string().trim().min(1, 'Вкажіть, як вас називати').max(50, 'Не більше 50 символів'),
+  bio: z.string().trim().max(250, 'Не більше 250 символів'),
+});
+export type EditProfileFormValues = z.infer<typeof editProfileSchema>;

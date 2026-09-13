@@ -70,13 +70,23 @@ export function buildMatchingAnswer(pairs: MatchingPair[]): SelectedAnswer {
  * are the left prompts, the second half the right choices — the natural
  * authoring convention (options are contiguous 0..n-1 with disjoint sides).
  */
-export function splitMatchingOptions(options: QuizAnswerOption[]): {
+export function splitMatchingOptions(
+  options: QuizAnswerOption[],
+  promptCount?: number,
+): {
   left: QuizAnswerOption[];
   right: QuizAnswerOption[];
 } {
   const ordered = [...options].sort((a, b) => a.order - b.order);
-  const half = Math.ceil(ordered.length / 2);
-  return { left: ordered.slice(0, half), right: ordered.slice(half) };
+  // The server states the split point, because the columns are not the same
+  // size: an NMT matching task offers spare choices — four prompts against
+  // five choices — and halving the list would move one into the prompts.
+  // Questions authored before the count existed still divide evenly.
+  const split =
+    promptCount !== undefined && promptCount > 0 && promptCount < ordered.length
+      ? promptCount
+      : Math.ceil(ordered.length / 2);
+  return { left: ordered.slice(0, split), right: ordered.slice(split) };
 }
 
 /** True when every left prompt has a distinct right assignment. */
@@ -99,6 +109,88 @@ export function assignmentsToPairs(assignments: Record<string, string>): Matchin
   return Object.entries(assignments)
     .filter(([, right]) => Boolean(right))
     .map(([left, right]) => ({ left, right }));
+}
+
+// --- Ordering -----------------------------------------------------------
+
+/** Reads a submitted or correct `{ sequence }` payload of option ids. */
+export function getSequence(answer: SelectedAnswer | Record<string, unknown> | null | undefined): string[] {
+  if (!answer) {
+    return [];
+  }
+  const raw = (answer as { sequence?: unknown }).sequence;
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
+
+export function buildOrderingAnswer(sequence: string[]): SelectedAnswer {
+  return { sequence };
+}
+
+/** Converts a stored sequence into the option id → position (1-based) map the UI holds. */
+export function sequenceToPositions(sequence: string[]): Record<string, number> {
+  const positions: Record<string, number> = {};
+  sequence.forEach((id, index) => {
+    positions[id] = index + 1;
+  });
+  return positions;
+}
+
+/**
+ * Converts the UI's positions back into a sequence, but only once every item
+ * has a distinct place. A half-filled ordering is not a partial answer the
+ * backend can store — it rejects a sequence that is not the full set — so
+ * nothing is sent until the reader has placed them all.
+ */
+export function positionsToSequence(positions: Record<string, number>, optionCount: number): string[] | null {
+  const entries = Object.entries(positions).filter(([, place]) => place > 0);
+  if (entries.length !== optionCount) {
+    return null;
+  }
+  if (new Set(entries.map(([, place]) => place)).size !== optionCount) {
+    return null;
+  }
+  return entries.sort((a, b) => a[1] - b[1]).map(([id]) => id);
+}
+
+// --- Multiple choice ----------------------------------------------------
+
+/** Reads a submitted or correct `{ answerOptionIds }` payload. */
+export function getAnswerOptionIds(
+  answer: SelectedAnswer | Record<string, unknown> | null | undefined,
+): string[] {
+  if (!answer) {
+    return [];
+  }
+  const raw = (answer as { answerOptionIds?: unknown }).answerOptionIds;
+  return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === 'string') : [];
+}
+
+export function buildMultipleChoiceAnswer(selectedIds: string[]): SelectedAnswer {
+  return { answerOptionIds: selectedIds };
+}
+
+// --- Numeric ------------------------------------------------------------
+
+/**
+ * Reads a numeric answer back as the string the field shows. The server stores
+ * whatever was submitted, so a resumed session finds either the raw text the
+ * reader typed or, for the correct answer in a review, a number.
+ */
+export function getNumericAnswer(
+  answer: SelectedAnswer | Record<string, unknown> | null | undefined,
+): string {
+  if (!answer) {
+    return '';
+  }
+  const raw = (answer as { numericAnswer?: unknown }).numericAnswer;
+  if (typeof raw === 'number') {
+    return String(raw);
+  }
+  return typeof raw === 'string' ? raw : '';
+}
+
+export function buildNumericAnswer(value: string): SelectedAnswer {
+  return { numericAnswer: value };
 }
 
 // --- Misc ---------------------------------------------------------------

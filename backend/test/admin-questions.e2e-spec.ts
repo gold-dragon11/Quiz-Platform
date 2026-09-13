@@ -4,12 +4,14 @@ import {
   AccountStatus,
   Difficulty,
   Language,
+  QuestionFormat,
   QuestionType,
   UserRole,
 } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface OptionBody {
   id: string;
@@ -23,6 +25,7 @@ interface QuestionBody {
   id: string;
   topicId: string;
   type: string;
+  format: string;
   title: string;
   imageUrl: string | null;
   difficulty: string | null;
@@ -94,14 +97,14 @@ describe('Admin Questions (e2e)', () => {
       title: `Phase43 matching ${counter}?`,
       options: [
         { content: 'Left 1' },
-        { content: 'Right 1' },
         { content: 'Left 2' },
+        { content: 'Right 1' },
         { content: 'Right 2' },
       ],
       configuration: {
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       },
       ...overrides,
@@ -245,7 +248,7 @@ describe('Admin Questions (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestData();
@@ -423,8 +426,8 @@ describe('Admin Questions (e2e)', () => {
       expect(body.type).toBe(QuestionType.MATCHING);
       expect(body.configuration).toEqual({
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       });
       expect(body.answerOptions).toHaveLength(4);
@@ -472,8 +475,8 @@ describe('Admin Questions (e2e)', () => {
         {
           configuration: {
             pairs: [
-              { left: 0, right: 1 },
-              { left: 2, right: 3 },
+              { left: 0, right: 2 },
+              { left: 1, right: 3 },
             ],
             extra: true,
           },
@@ -485,6 +488,232 @@ describe('Admin Questions (e2e)', () => {
       ],
     ])('rejects %s with 400', async (_name, overrides) => {
       await createQuestion(matchingPayload(overrides), 400);
+    });
+  });
+
+  describe('POST /admin/questions — ORDERING', () => {
+    const orderingPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'ORDERING',
+        title: `Phase43 ordering ${counter}?`,
+        options: [
+          { content: 'earliest' },
+          { content: 'second' },
+          { content: 'third' },
+          { content: 'latest' },
+        ],
+        ...overrides,
+      };
+    };
+
+    it('stores the authored sequence as the option order', async () => {
+      const created = await createQuestion(orderingPayload());
+
+      expect(created.type).toBe('ORDERING');
+      expect(created.answerOptions.map((option) => option.content)).toEqual([
+        'earliest',
+        'second',
+        'third',
+        'latest',
+      ]);
+      expect(created.answerOptions.map((option) => option.order)).toEqual([
+        0, 1, 2, 3,
+      ]);
+      // The key is the order, so no option is flagged and there is no
+      // configuration to leak.
+      expect(created.answerOptions.every((option) => !option.isCorrect)).toBe(
+        true,
+      );
+      expect(created.configuration).toBeNull();
+    });
+
+    it('rejects isCorrect, a configuration, and too few items', async () => {
+      await createQuestion(
+        orderingPayload({
+          options: [
+            { content: 'a', isCorrect: true },
+            { content: 'b' },
+            { content: 'c' },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        orderingPayload({ configuration: { pairs: [{ left: 0, right: 1 }] } }),
+        400,
+      );
+
+      await createQuestion(
+        orderingPayload({ options: [{ content: 'a' }, { content: 'b' }] }),
+        400,
+      );
+    });
+
+    it('keeps the sequence when the option set is edited', async () => {
+      const created = await createQuestion(orderingPayload());
+      const updated = await updateQuestion(created.id, {
+        options: [
+          { id: created.answerOptions[0].id, content: 'earliest, edited' },
+          { id: created.answerOptions[1].id, content: 'second' },
+          { id: created.answerOptions[2].id, content: 'third' },
+          { id: created.answerOptions[3].id, content: 'latest' },
+        ],
+      });
+      const options = updated.answerOptions as OptionBody[];
+      expect(options.map((option) => option.content)).toEqual([
+        'earliest, edited',
+        'second',
+        'third',
+        'latest',
+      ]);
+    });
+  });
+
+  describe('POST /admin/questions — MULTIPLE_CHOICE', () => {
+    const multiPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'MULTIPLE_CHOICE',
+        title: `Phase43 multiple ${counter}?`,
+        options: [
+          { content: 'right one', isCorrect: true },
+          { content: 'right two', isCorrect: true },
+          { content: 'right three', isCorrect: true },
+          { content: 'wrong one' },
+          { content: 'wrong two' },
+        ],
+        ...overrides,
+      };
+    };
+
+    it('stores several correct options', async () => {
+      const created = await createQuestion(multiPayload());
+
+      expect(created.type).toBe('MULTIPLE_CHOICE');
+      expect(
+        created.answerOptions.filter((option) => option.isCorrect),
+      ).toHaveLength(3);
+      expect(created.configuration).toBeNull();
+    });
+
+    it('requires at least two correct options and at least one wrong', async () => {
+      await createQuestion(
+        multiPayload({
+          options: [
+            { content: 'only right', isCorrect: true },
+            { content: 'wrong one' },
+            { content: 'wrong two' },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        multiPayload({
+          options: [
+            { content: 'right one', isCorrect: true },
+            { content: 'right two', isCorrect: true },
+          ],
+        }),
+        400,
+      );
+
+      await createQuestion(
+        multiPayload({ configuration: { pairs: [{ left: 0, right: 1 }] } }),
+        400,
+      );
+    });
+
+    it('re-validates the correct set after an edit', async () => {
+      const created = await createQuestion(multiPayload());
+      await updateQuestion(
+        created.id,
+        {
+          options: created.answerOptions.map((option, index) => ({
+            id: option.id,
+            content: option.content,
+            isCorrect: index === 0,
+          })),
+        },
+        400,
+      );
+    });
+  });
+
+  describe('POST /admin/questions — NUMERIC', () => {
+    const numericPayload = (
+      overrides: Record<string, unknown> = {},
+    ): Record<string, unknown> => {
+      counter += 1;
+      return {
+        topicId,
+        type: 'NUMERIC',
+        title: `Phase43 numeric ${counter}?`,
+        options: [],
+        configuration: { answer: 12.5 },
+        ...overrides,
+      };
+    };
+
+    it('stores the expected value and no options at all', async () => {
+      const created = await createQuestion(numericPayload());
+
+      expect(created.type).toBe('NUMERIC');
+      expect(created.answerOptions).toHaveLength(0);
+      expect(created.configuration).toEqual({ answer: 12.5 });
+    });
+
+    it('publishes despite having no options', async () => {
+      const created = await createQuestion(numericPayload());
+      const published = await publishQuestion(created.id, {
+        isPublished: true,
+      });
+      expect(published.isPublished).toBe(true);
+    });
+
+    it('rejects options, a missing answer and an answer that is not a number', async () => {
+      await createQuestion(
+        numericPayload({ options: [{ content: 'a' }, { content: 'b' }] }),
+        400,
+      );
+      await createQuestion(numericPayload({ configuration: {} }), 400);
+      await createQuestion(
+        numericPayload({ configuration: { answer: 'дванадцять' } }),
+        400,
+      );
+      // An extra key would be a second, unread instruction sitting in the key.
+      await createQuestion(
+        numericPayload({ configuration: { answer: 3, tolerance: 0.5 } }),
+        400,
+      );
+    });
+
+    it('edits the expected value without touching anything else', async () => {
+      const created = await createQuestion(numericPayload());
+      const updated = await updateQuestion(created.id, {
+        configuration: { answer: -4 },
+      });
+      expect(updated.configuration).toEqual({ answer: -4 });
+      expect(updated.answerOptions).toHaveLength(0);
+    });
+
+    it('still refuses fewer than two options for the other types', async () => {
+      // The lower bound moved out of the DTO when NUMERIC arrived; this is the
+      // check that it did not simply disappear.
+      await createQuestion(
+        singleChoicePayload({
+          options: [{ content: 'lonely', isCorrect: true }],
+        }),
+        400,
+      );
     });
   });
 
@@ -548,6 +777,32 @@ describe('Admin Questions (e2e)', () => {
       expect(unpublished.items.some((q) => q.id === inOther.id)).toBe(false);
     });
 
+    it('defaults format to PRACTICE, keeps NMT, and filters on it', async () => {
+      const practice = await createQuestion(singleChoicePayload());
+      const reference = await createQuestion(
+        singleChoicePayload({ format: QuestionFormat.NMT }),
+      );
+
+      expect(practice.format).toBe(QuestionFormat.PRACTICE);
+      expect(reference.format).toBe(QuestionFormat.NMT);
+
+      const nmtOnly = await listQuestions('?format=NMT&pageSize=100');
+      expect(nmtOnly.items.some((q) => q.id === reference.id)).toBe(true);
+      expect(nmtOnly.items.some((q) => q.id === practice.id)).toBe(false);
+      expect(nmtOnly.items.every((q) => q.format === QuestionFormat.NMT)).toBe(
+        true,
+      );
+
+      const practiceOnly = await listQuestions('?format=PRACTICE&pageSize=100');
+      expect(practiceOnly.items.some((q) => q.id === practice.id)).toBe(true);
+      expect(practiceOnly.items.some((q) => q.id === reference.id)).toBe(false);
+
+      await request(app.getHttpServer())
+        .get(`${QUESTIONS_URL}?format=EXAM`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(400);
+    });
+
     it('searches the title case-insensitively and sorts by title', async () => {
       const created = await createQuestion(
         singleChoicePayload({ title: 'Phase43 Unmistakable Needle?' }),
@@ -601,6 +856,27 @@ describe('Admin Questions (e2e)', () => {
       });
       expect(cleared.imageUrl).toBeNull();
       expect(cleared.difficulty).toBeNull();
+    });
+
+    it('promotes a question to the NMT format and back', async () => {
+      const created = await createQuestion(singleChoicePayload());
+      expect(created.format).toBe(QuestionFormat.PRACTICE);
+
+      const promoted = await updateQuestion(created.id, {
+        format: QuestionFormat.NMT,
+      });
+      expect(promoted.format).toBe(QuestionFormat.NMT);
+
+      // An update that says nothing about the format leaves it alone.
+      const renamed = await updateQuestion(created.id, {
+        title: 'Phase43 still reference?',
+      });
+      expect(renamed.format).toBe(QuestionFormat.NMT);
+
+      const demoted = await updateQuestion(created.id, {
+        format: QuestionFormat.PRACTICE,
+      });
+      expect(demoted.format).toBe(QuestionFormat.PRACTICE);
     });
 
     it('stores an explanation at creation, edits it, and clears it with null', async () => {
@@ -745,17 +1021,19 @@ describe('Admin Questions (e2e)', () => {
       // Supplying a consistent new set + configuration succeeds.
       const body = await updateQuestion(created.id, {
         options: options.map((option) => ({ id: option.id })),
+        // A different connection, still in the required arrangement:
+        // prompts 0-1, choices 2-3.
         configuration: {
           pairs: [
             { left: 0, right: 3 },
-            { left: 2, right: 1 },
+            { left: 1, right: 2 },
           ],
         },
       });
       expect(body.configuration).toEqual({
         pairs: [
           { left: 0, right: 3 },
-          { left: 2, right: 1 },
+          { left: 1, right: 2 },
         ],
       });
       expect(body.answerOptions as OptionBody[]).toHaveLength(4);

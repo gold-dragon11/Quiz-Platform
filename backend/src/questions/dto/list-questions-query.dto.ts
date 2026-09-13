@@ -1,4 +1,4 @@
-import { Difficulty, QuestionType } from '@prisma/client';
+import { Difficulty, QuestionFormat, QuestionType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
@@ -49,6 +49,11 @@ export class ListQuestionsQueryDto {
   @ValidateIf((dto: ListQuestionsQueryDto) => dto.type !== undefined)
   @IsEnum(QuestionType)
   type?: QuestionType;
+
+  /** Separates reference NMT questions from the older practice bank. */
+  @ValidateIf((dto: ListQuestionsQueryDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 
   @ValidateIf((dto: ListQuestionsQueryDto) => dto.difficulty !== undefined)
   @IsEnum(Difficulty)

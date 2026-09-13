@@ -1,23 +1,21 @@
 import { apiClient } from '@/lib/api-client';
-import type { AvatarView, ChangePasswordPayload, MyAccount } from '@/features/user/types/user.types';
+import type { ChangePasswordPayload, UpdateProfilePayload } from '@/features/user/types/user.types';
 
 /**
  * User Account feature API layer (Phase 6.3) — typed wrappers over the shared
- * apiClient for the existing `/users/me` endpoints. No feature touches Axios
+ * apiClient for the `/users/me` write endpoints. No feature touches Axios
  * directly. Password change and account deletion respond 204 (empty body), so
  * they resolve to `void`; the backend revokes refresh sessions on both.
+ *
+ * There are no read wrappers here any more: `/users/me` and `/users/me/avatar`
+ * returned fields `/auth/me` already carries, and the session summary is
+ * cached app-wide, so the profile screen reads that instead of fetching the
+ * same account twice on every visit.
  */
 export const userApi = {
-  /** GET /users/me — the authenticated user's account (docs §4). */
-  async getMyAccount(): Promise<MyAccount> {
-    const { data } = await apiClient.get<MyAccount>('/users/me');
-    return data;
-  },
-
-  /** GET /users/me/avatar — the active avatar (docs §10). */
-  async getMyAvatar(): Promise<AvatarView> {
-    const { data } = await apiClient.get<AvatarView>('/users/me/avatar');
-    return data;
+  /** PATCH /users/me/profile — partial update; returns the merged profile (docs §9). */
+  async updateProfile(payload: UpdateProfilePayload): Promise<void> {
+    await apiClient.patch('/users/me/profile', payload);
   },
 
   /** PATCH /users/me/password — 204; revokes refresh sessions (docs §6). */

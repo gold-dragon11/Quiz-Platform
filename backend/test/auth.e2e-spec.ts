@@ -11,6 +11,7 @@ import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { DEFAULT_AVATAR_URL } from './../src/common/constants/avatar.constants';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /**
  * Registration end-to-end tests (docs/04-api/authentication.md §4).
@@ -61,7 +62,7 @@ describe('Registration (e2e)', () => {
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
 
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestAccounts();
@@ -117,6 +118,35 @@ describe('Registration (e2e)', () => {
       expect(user?.statistics?.totalQuizzes).toBe(0);
       expect(user?.statistics?.totalQuestions).toBe(0);
       expect(user?.statistics?.totalXP).toBe(0);
+    });
+
+    it('creates a teacher account when the reader chooses to teach', async () => {
+      const credentials = nextCredentials();
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...credentials, role: UserRole.TEACHER })
+        .expect(201);
+
+      const user = await prisma.user.findUnique({
+        where: { email: credentials.email },
+        select: { role: true },
+      });
+      // Decision 18: anyone may teach, with no approval step.
+      expect(user?.role).toBe(UserRole.TEACHER);
+    });
+
+    it('never lets registration create an administrator', async () => {
+      const credentials = nextCredentials();
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...credentials, role: UserRole.ADMIN })
+        .expect(400);
+
+      expect(
+        await prisma.user.count({ where: { email: credentials.email } }),
+      ).toBe(0);
     });
 
     it('stores an Argon2 hash rather than the plaintext password', async () => {

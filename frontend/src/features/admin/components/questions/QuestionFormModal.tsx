@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/stores/toast-store';
-import { Difficulty, QuestionType } from '@/shared/types/enums';
+import { Difficulty, QuestionFormat, QuestionType } from '@/shared/types/enums';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
 import { Input } from '@/shared/ui/Input';
@@ -34,6 +34,13 @@ const FIELD_MAP = { title: 'title', imageurl: 'imageUrl' } as const;
 const TYPE_OPTIONS: SelectOption[] = [
   { value: QuestionType.SINGLE_CHOICE, label: 'Одна відповідь' },
   { value: QuestionType.MATCHING, label: 'Відповідності' },
+  { value: QuestionType.ORDERING, label: 'Послідовність' },
+  { value: QuestionType.MULTIPLE_CHOICE, label: 'Кілька відповідей' },
+  { value: QuestionType.NUMERIC, label: 'Числова відповідь' },
+];
+const FORMAT_OPTIONS: SelectOption[] = [
+  { value: QuestionFormat.PRACTICE, label: 'Тренувальне' },
+  { value: QuestionFormat.NMT, label: 'Формат НМТ' },
 ];
 const DIFFICULTY_OPTIONS: SelectOption[] = [
   { value: '', label: 'Без рівня' },
@@ -94,6 +101,7 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
     subjectId: '',
     topicId: question?.topicId ?? '',
     type: question?.type ?? QuestionType.SINGLE_CHOICE,
+    format: question?.format ?? QuestionFormat.PRACTICE,
     title: question?.title ?? '',
     imageUrl: question?.imageUrl ?? '',
     difficulty: question?.difficulty ?? '',
@@ -109,8 +117,10 @@ function toScalarDefaults(question: QuestionRecord | undefined): QuestionScalarV
  * review; an empty field clears it.
  *
  * Matching authoring uses row-pairs: each row is a left↔right pair. Options are
- * flattened with explicit orders (left = 2i, right = 2i+1) and the configuration
- * references those orders — a valid, side-disjoint matching configuration.
+ * flattened prompts-first — the left sides take orders 0..n-1 and the right
+ * sides n..2n-1 — and the configuration references those orders. That block
+ * layout is what tells the delivery side where the prompts end and the
+ * choices begin.
  */
 export function QuestionFormModal({
   open,
@@ -138,6 +148,10 @@ export function QuestionFormModal({
 
   const [options, setOptions] = useState<OptionRow[]>([emptyOption(), emptyOption()]);
   const [correctIndex, setCorrectIndex] = useState(0);
+  /** MULTIPLE_CHOICE: indices of the options marked correct. */
+  const [correctIndexes, setCorrectIndexes] = useState<number[]>([]);
+  /** NUMERIC: the expected value, held as text until it is submitted. */
+  const [numericAnswer, setNumericAnswer] = useState('');
   const [pairs, setPairs] = useState<PairRow[]>([emptyPair(), emptyPair()]);
   const [answersError, setAnswersError] = useState<string | null>(null);
 
@@ -163,6 +177,16 @@ export function QuestionFormModal({
           sorted.findIndex((o) => o.isCorrect),
         ),
       );
+    } else if (question?.type === QuestionType.ORDERING || question?.type === QuestionType.MULTIPLE_CHOICE) {
+      const sorted = [...question.answerOptions].sort((a, b) => a.order - b.order);
+      setOptions(
+        sorted.map((o) => ({
+          id: o.id,
+          content: o.content,
+          imageUrl: o.imageUrl ?? '',
+        })),
+      );
+      setCorrectIndexes(sorted.map((o, index) => (o.isCorrect ? index : -1)).filter((index) => index >= 0));
     } else if (question?.type === QuestionType.MATCHING) {
       const byOrder = new Map(question.answerOptions.map((o) => [o.order, o]));
       const configPairs = readConfigPairs(question.configuration);
@@ -182,6 +206,8 @@ export function QuestionFormModal({
     } else {
       setOptions([emptyOption(), emptyOption()]);
       setCorrectIndex(0);
+      setCorrectIndexes([]);
+      setNumericAnswer('');
       setPairs([emptyPair(), emptyPair()]);
     }
   }, [open, question, reset]);
@@ -240,6 +266,61 @@ export function QuestionFormModal({
       return;
     }
 
+    if (values.type === QuestionType.NUMERIC) {
+      const parsed = Number(numericAnswer.trim().replace(',', '.'));
+      if (numericAnswer.trim() === '' || !Number.isFinite(parsed)) {
+        setAnswersError('Укажіть числову відповідь.');
+        return;
+      }
+      // No options at all — the expected value travels in the configuration,
+      // so it never reaches a learner's browser.
+      submit(values, difficulty, [], { answer: parsed });
+      return;
+    }
+
+    if (values.type === QuestionType.ORDERING) {
+      const cleaned = options.map((o) => ({ ...o, content: o.content.trim() }));
+      if (cleaned.length < 3 || cleaned.some((o) => !o.content)) {
+        setAnswersError('Додайте щонайменше три елементи, кожен із текстом.');
+        return;
+      }
+      // The list order is the answer; no option carries a correctness flag.
+      const built: AnswerOptionInput[] = cleaned.map((o, i) => ({
+        ...(o.id ? { id: o.id } : {}),
+        content: o.content,
+        imageUrl: isEdit ? o.imageUrl.trim() || null : o.imageUrl.trim() || undefined,
+        order: i,
+      }));
+      submit(values, difficulty, built);
+      return;
+    }
+
+    if (values.type === QuestionType.MULTIPLE_CHOICE) {
+      const cleaned = options.map((o) => ({ ...o, content: o.content.trim() }));
+      if (cleaned.length < 3 || cleaned.some((o) => !o.content)) {
+        setAnswersError('Додайте щонайменше три варіанти, кожен із текстом.');
+        return;
+      }
+      const marked = correctIndexes.filter((index) => index < cleaned.length);
+      if (marked.length < 2) {
+        setAnswersError('Позначте щонайменше дві правильні відповіді.');
+        return;
+      }
+      if (marked.length === cleaned.length) {
+        setAnswersError('Залиште щонайменше один варіант неправильним.');
+        return;
+      }
+      const built: AnswerOptionInput[] = cleaned.map((o, i) => ({
+        ...(o.id ? { id: o.id } : {}),
+        content: o.content,
+        imageUrl: isEdit ? o.imageUrl.trim() || null : o.imageUrl.trim() || undefined,
+        order: i,
+        isCorrect: marked.includes(i),
+      }));
+      submit(values, difficulty, built);
+      return;
+    }
+
     // MATCHING
     const cleanedPairs = pairs.map((p) => ({
       ...p,
@@ -250,23 +331,27 @@ export function QuestionFormModal({
       setAnswersError('Додайте щонайменше дві пари, заповнивши обидві частини.');
       return;
     }
-    const built: AnswerOptionInput[] = [];
-    cleanedPairs.forEach((p, i) => {
-      built.push({
+    // Prompts occupy the opening block of orders and the choices follow, which
+    // is the only layout the backend accepts and the only one the learner's
+    // screen can draw: a numbered column on the left, a lettered one on the
+    // right. Interleaving them would put a choice where a prompt belongs.
+    const promptCount = cleanedPairs.length;
+    const built: AnswerOptionInput[] = [
+      ...cleanedPairs.map((p, i) => ({
         ...(p.leftId ? { id: p.leftId } : {}),
         content: p.leftContent,
         imageUrl: isEdit ? p.leftImage.trim() || null : p.leftImage.trim() || undefined,
-        order: i * 2,
-      });
-      built.push({
+        order: i,
+      })),
+      ...cleanedPairs.map((p, i) => ({
         ...(p.rightId ? { id: p.rightId } : {}),
         content: p.rightContent,
         imageUrl: isEdit ? p.rightImage.trim() || null : p.rightImage.trim() || undefined,
-        order: i * 2 + 1,
-      });
-    });
+        order: promptCount + i,
+      })),
+    ];
     const configuration = {
-      pairs: cleanedPairs.map((_, i) => ({ left: i * 2, right: i * 2 + 1 })),
+      pairs: cleanedPairs.map((_, i) => ({ left: i, right: promptCount + i })),
     };
     submit(values, difficulty, built, configuration);
   });
@@ -279,6 +364,7 @@ export function QuestionFormModal({
   ): void {
     if (question) {
       const payload: UpdateQuestionPayload = {
+        format: values.format,
         title: values.title,
         imageUrl: values.imageUrl.trim() || null,
         difficulty: difficulty ?? null,
@@ -300,6 +386,7 @@ export function QuestionFormModal({
       const payload: CreateQuestionPayload = {
         topicId: values.topicId,
         type: values.type,
+        format: values.format,
         title: values.title,
         imageUrl: values.imageUrl.trim() || undefined,
         difficulty,
@@ -365,6 +452,13 @@ export function QuestionFormModal({
           <Select label="Рівень" options={DIFFICULTY_OPTIONS} {...register('difficulty')} />
         </div>
 
+        <Select
+          label="Формат"
+          options={FORMAT_OPTIONS}
+          helperText="«Формат НМТ» — завдання, написане за специфікацією зовнішнього іспиту. Пробний іспит збиратиметься лише з таких."
+          {...register('format')}
+        />
+
         <Textarea label="Заголовок" error={errors.title?.message} {...register('title')} />
         <Input
           label="Посилання на зображення"
@@ -382,15 +476,24 @@ export function QuestionFormModal({
 
         {answersError && <Alert variant="error">{answersError}</Alert>}
 
-        {type === QuestionType.SINGLE_CHOICE ? (
+        {type === QuestionType.NUMERIC && <NumericEditor value={numericAnswer} onChange={setNumericAnswer} />}
+        {type === QuestionType.SINGLE_CHOICE && (
           <SingleChoiceEditor
             options={options}
             correctIndex={correctIndex}
             onChange={setOptions}
             onCorrectChange={setCorrectIndex}
           />
-        ) : (
-          <MatchingEditor pairs={pairs} onChange={setPairs} />
+        )}
+        {type === QuestionType.MATCHING && <MatchingEditor pairs={pairs} onChange={setPairs} />}
+        {type === QuestionType.ORDERING && <SequenceEditor options={options} onChange={setOptions} />}
+        {type === QuestionType.MULTIPLE_CHOICE && (
+          <MultipleChoiceEditor
+            options={options}
+            correctIndexes={correctIndexes}
+            onChange={setOptions}
+            onCorrectChange={setCorrectIndexes}
+          />
         )}
       </form>
     </Modal>
@@ -451,6 +554,157 @@ function SingleChoiceEditor({
             placeholder="Посилання на зображення (необовʼязково)"
             className="bg-surface text-text-muted border-border focus:border-primary focus:ring-primary h-9 w-full rounded-lg border px-3 text-xs outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
+        </div>
+      ))}
+      {options.length < 20 && (
+        <div>
+          <Button variant="secondary" size="sm" onClick={() => onChange([...options, emptyOption()])}>
+            Додати варіант
+          </Button>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/** Numeric editor: one field, because the answer is one number. */
+function NumericEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}): React.JSX.Element {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-text-secondary text-sm font-medium">Правильна відповідь — число</legend>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="напр. 12,5"
+        inputMode="decimal"
+        className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-48 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+      />
+      <p className="text-text-muted text-xs">
+        Учень уводить число сам, варіантів відповіді немає. Кому й крапку зараховуємо однаково.
+      </p>
+    </fieldset>
+  );
+}
+
+/**
+ * Ordering editor: the list order is the answer, so there is nothing to mark —
+ * the rows are simply written from earliest to latest and moved with the
+ * arrows. The learner never sees this order; the delivery view deals it.
+ */
+function SequenceEditor({
+  options,
+  onChange,
+}: {
+  options: OptionRow[];
+  onChange: (options: OptionRow[]) => void;
+}): React.JSX.Element {
+  const update = (i: number, patch: Partial<OptionRow>): void =>
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
+  const remove = (i: number): void => onChange(options.filter((_, idx) => idx !== i));
+  const move = (i: number, delta: number): void => {
+    const target = i + delta;
+    if (target < 0 || target >= options.length) {
+      return;
+    }
+    const next = [...options];
+    [next[i], next[target]] = [next[target], next[i]];
+    onChange(next);
+  };
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="text-text-secondary text-sm font-medium">
+        Елементи в правильній послідовності — від найранішого до найпізнішого
+      </legend>
+      {options.map((option, i) => (
+        <div key={i} className="border-border flex items-center gap-2 rounded-lg border p-3">
+          <span className="text-text-muted w-5 shrink-0 text-sm">{i + 1}</span>
+          <input
+            value={option.content}
+            onChange={(e) => update(i, { content: e.target.value })}
+            placeholder={`Елемент ${i + 1}`}
+            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+          />
+          <Button variant="ghost" size="sm" onClick={() => move(i, -1)} disabled={i === 0}>
+            Вище
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => move(i, 1)} disabled={i === options.length - 1}>
+            Нижче
+          </Button>
+          {options.length > 3 && (
+            <Button variant="ghost" size="sm" onClick={() => remove(i)}>
+              Прибрати
+            </Button>
+          )}
+        </div>
+      ))}
+      {options.length < 10 && (
+        <div>
+          <Button variant="secondary" size="sm" onClick={() => onChange([...options, emptyOption()])}>
+            Додати елемент
+          </Button>
+        </div>
+      )}
+    </fieldset>
+  );
+}
+
+/** Multiple-choice editor: several options may be marked correct at once. */
+function MultipleChoiceEditor({
+  options,
+  correctIndexes,
+  onChange,
+  onCorrectChange,
+}: {
+  options: OptionRow[];
+  correctIndexes: number[];
+  onChange: (options: OptionRow[]) => void;
+  onCorrectChange: (indexes: number[]) => void;
+}): React.JSX.Element {
+  const update = (i: number, patch: Partial<OptionRow>): void =>
+    onChange(options.map((o, idx) => (idx === i ? { ...o, ...patch } : o)));
+  const remove = (i: number): void => {
+    onChange(options.filter((_, idx) => idx !== i));
+    onCorrectChange(
+      correctIndexes.filter((index) => index !== i).map((index) => (index > i ? index - 1 : index)),
+    );
+  };
+  const toggle = (i: number): void =>
+    onCorrectChange(
+      correctIndexes.includes(i) ? correctIndexes.filter((index) => index !== i) : [...correctIndexes, i],
+    );
+
+  return (
+    <fieldset className="flex flex-col gap-3">
+      <legend className="text-text-secondary text-sm font-medium">
+        Варіанти — позначте всі правильні (в НМТ їх три із семи)
+      </legend>
+      {options.map((option, i) => (
+        <div key={i} className="border-border flex items-center gap-3 rounded-lg border p-3">
+          <input
+            type="checkbox"
+            checked={correctIndexes.includes(i)}
+            onChange={() => toggle(i)}
+            aria-label={`Правильний варіант ${i + 1}`}
+            className="accent-primary size-4 shrink-0"
+          />
+          <input
+            value={option.content}
+            onChange={(e) => update(i, { content: e.target.value })}
+            placeholder={`Варіант ${i + 1}`}
+            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+          />
+          {options.length > 3 && (
+            <Button variant="ghost" size="sm" onClick={() => remove(i)}>
+              Прибрати
+            </Button>
+          )}
         </div>
       ))}
       {options.length < 20 && (

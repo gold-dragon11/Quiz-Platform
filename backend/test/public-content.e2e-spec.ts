@@ -9,6 +9,7 @@ import {
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 interface PublicSubjectBody {
   id: string;
@@ -214,7 +215,7 @@ describe('Public Content (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
     await removeTestData();
@@ -309,14 +310,14 @@ describe('Public Content (e2e)', () => {
         title: 'Phase45 match capitals?',
         options: [
           { content: 'Ukraine' },
-          { content: 'Kyiv' },
           { content: 'France' },
+          { content: 'Kyiv' },
           { content: 'Paris' },
         ],
         configuration: {
           pairs: [
-            { left: 0, right: 1 },
-            { left: 2, right: 3 },
+            { left: 0, right: 2 },
+            { left: 1, right: 3 },
           ],
         },
       },
@@ -596,9 +597,14 @@ describe('Public Content (e2e)', () => {
         'difficulty',
         'id',
         'imageUrl',
+        'passage',
+        'passageOrder',
         'title',
         'type',
       ]);
+      // A question that stands alone says so rather than omitting the fields,
+      // so a client never has to tell "no passage" from "not sent".
+      expect(single).toMatchObject({ passage: null, passageOrder: null });
       for (const option of single.answerOptions) {
         expect(Object.keys(option).sort()).toEqual([
           'content',
@@ -621,8 +627,8 @@ describe('Public Content (e2e)', () => {
       const singleQ = body.items.find((q) => q.id === qSC.id);
       expect(matchingQ?.configuration).toEqual({
         pairs: [
-          { left: 0, right: 1 },
-          { left: 2, right: 3 },
+          { left: 0, right: 2 },
+          { left: 1, right: 3 },
         ],
       });
       expect(singleQ).not.toHaveProperty('configuration');

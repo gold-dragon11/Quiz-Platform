@@ -17,6 +17,8 @@ export interface RegisterPayload {
   password: string;
   username: string;
   preferredLanguage?: Language;
+  /** A student's account when omitted; administrator is never accepted. */
+  role?: 'USER' | 'TEACHER';
 }
 
 export interface ResendVerificationPayload {

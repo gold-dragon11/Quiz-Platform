@@ -6,6 +6,8 @@ import { splitMatchingOptions } from '@/features/quiz/lib/quiz-answers';
 
 interface MatchingAnswerProps {
   options: QuizAnswerOption[];
+  /** Where the prompts end and the choices begin; see splitMatchingOptions. */
+  promptCount?: number;
   /** Left option id → right option id. */
   assignments: Record<string, string>;
   disabled?: boolean;
@@ -15,7 +17,8 @@ interface MatchingAnswerProps {
 /**
  * Matching answer input (docs/04-api/quiz.md §6). The active quiz view
  * withholds the pairing configuration, so the flat option list is split into
- * left prompts and right choices by stored order (see splitMatchingOptions).
+ * left prompts and right choices by the split point the server states (see
+ * splitMatchingOptions) — the columns are different sizes in the NMT format.
  * Each prompt gets a dropdown of the still-available right choices; the page
  * builds the `{ pairs: [{ left, right }] }` payload and autosaves it.
  *
@@ -26,11 +29,19 @@ interface MatchingAnswerProps {
  */
 export function MatchingAnswer({
   options,
+  promptCount,
   assignments,
   disabled = false,
   onChange,
 }: MatchingAnswerProps): React.JSX.Element {
-  const { left, right } = splitMatchingOptions(options);
+  const { left, right } = splitMatchingOptions(options, promptCount);
+  // Rows that are only a gap number — "(3)", with the text beside the
+  // question — need no half of the width. The fragment chosen for them does:
+  // squeezed into half, "but the people who lived there…" is cut off after
+  // four words and every choice starts to look the same.
+  // Matched on the gap notation itself, not on length: a short prompt such as
+  // a year in history is still a row to read, not a pointer into a text.
+  const compact = left.length > 0 && left.every((prompt) => /^\(\d{1,2}\)$/.test(prompt.content));
 
   const update = (leftId: string, rightId: string): void => {
     const next = { ...assignments };
@@ -61,14 +72,23 @@ export function MatchingAnswer({
         ];
 
         return (
-          <div key={prompt.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <div className="bg-surface border-border flex-1 rounded-xl border px-4 py-3 text-sm text-text-primary">
+          <div
+            key={prompt.id}
+            className={
+              compact ? 'flex items-center gap-3' : 'flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4'
+            }
+          >
+            <div
+              className={`bg-surface border-border rounded-xl border py-3 text-sm text-text-primary ${
+                compact ? 'w-14 shrink-0 text-center tabular-nums' : 'flex-1 px-4'
+              }`}
+            >
               {prompt.imageUrl && (
                 <img src={prompt.imageUrl} alt="" className="mb-2 max-h-16 rounded-md object-contain" />
               )}
               <MathText>{prompt.content}</MathText>
             </div>
-            <div className="sm:w-1/2">
+            <div className={compact ? 'min-w-0 flex-1' : 'sm:w-1/2'}>
               <MathSelect
                 aria-label={`Відповідність для: ${mathToPlainText(prompt.content)}`}
                 options={choiceOptions}

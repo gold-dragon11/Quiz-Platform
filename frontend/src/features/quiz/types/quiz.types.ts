@@ -69,13 +69,34 @@ export interface QuizSessionMetadata {
   expiresAt: string | null;
 }
 
+/**
+ * A text several questions are asked about — a story, a paragraph with numbered
+ * gaps `(3) ______`, a set of short adverts (docs/02-domain/passage.md).
+ */
+export interface PassageView {
+  id: string;
+  title: string | null;
+  content: string;
+}
+
 /** A question while the quiz is ACTIVE — never carries the correct answer. */
 export interface QuizQuestionView {
   id: string;
   type: QuestionType;
+  /** The subject the question belongs to — it decides the option letters. */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  /** The text the question is asked about, repeated on each of its questions. */
+  passage: PassageView | null;
+  /** Position within the passage, from 1 — for a gapped text, the gap. */
+  passageOrder: number | null;
+  /**
+   * MATCHING only: how many of the ordered options are prompts. Absent on
+   * older questions, where the two columns are the same size.
+   */
+  promptCount?: number;
   answerOptions: QuizAnswerOption[];
 }
 
@@ -85,11 +106,57 @@ export interface SavedAnswerView {
   selectedAnswer: SelectedAnswer;
 }
 
+/**
+ * What a mock sitting follows (docs/02-domain/nmt-paper.md): one subject's
+ * paper, or every paper of a joint block, each over its own run of questions.
+ */
+export interface NmtSittingView {
+  title: string;
+  papers: {
+    subjectName: string;
+    title: string;
+    maxTestPoints: number;
+    sections: { from: number; to: number; instruction: string }[];
+    /** The paper's questions are positions `start` … `start + count - 1`. */
+    start: number;
+    count: number;
+  }[];
+  /** In session order. */
+  taskNumbers: (number | null)[];
+  /**
+   * What the paper prints above each question — the number itself, or «1–5»
+   * where one task fills a run of the answer sheet, as English does.
+   */
+  taskLabels: (string | null)[];
+}
+
+/** One paper of a finished mock sitting, scored as the exam scores it. */
+export interface NmtResultView {
+  subjectName: string;
+  title: string;
+  testPoints: number;
+  maxTestPoints: number;
+  /** The official 100–200 score; null below the pass threshold. */
+  scaledScore: number | null;
+  threshold: number;
+  scaleSource: string;
+  tasks: {
+    number: number;
+    /** «7», or «1–5» where the task fills a run of the answer sheet. */
+    label: string;
+    questionId: string;
+    points: number;
+    maxPoints: number;
+  }[];
+}
+
 /** Full resume state (docs/04-api/quiz.md §9). */
 export interface QuizResumeView {
   session: QuizSessionMetadata;
   questions: QuizQuestionView[];
   answers: SavedAnswerView[];
+  /** Present for a mock sitting of an NMT paper or a joint block. */
+  sitting?: NmtSittingView;
 }
 
 // --- Result / review ----------------------------------------------------
@@ -114,9 +181,13 @@ export interface QuizResultSummary {
 export interface QuizReviewQuestion {
   id: string;
   type: QuestionType;
+  /** See `QuizQuestionView.subjectSlug`. */
+  subjectSlug: string;
   title: string;
   difficulty: Difficulty | null;
   imageUrl: string | null;
+  passage: PassageView | null;
+  passageOrder: number | null;
   answerOptions: QuizAnswerOption[];
   submittedAnswer: SelectedAnswer | null;
   correctAnswer: Record<string, unknown>;
@@ -129,6 +200,8 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /** Present for a mock sitting of an NMT paper or a joint block: one score per paper. */
+  nmt?: { title: string; papers: NmtResultView[] };
   /** Where the quiz came from, so the result can link back to its material. */
   session: {
     subjectId: string;

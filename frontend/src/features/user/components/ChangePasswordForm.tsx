@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/stores/toast-store';
 import { Alert } from '@/shared/ui/Alert';
 import { Button } from '@/shared/ui/Button';
-import { Card } from '@/shared/ui/Card';
 import { PasswordInput } from '@/shared/ui/PasswordInput';
 import { applyApiErrorToForm } from '@/shared/utils/apply-api-error';
 import { useChangePassword } from '@/features/user/hooks/use-account-mutations';
@@ -63,14 +62,13 @@ export function ChangePasswordForm(): React.JSX.Element {
   });
 
   return (
-    <Card>
-      <div className="mb-4 flex flex-col gap-1">
-        <h2 className="text-text-primary text-lg font-semibold">Зміна пароля</h2>
-        <p className="text-text-muted text-sm">
-          Після цієї зміни на інших пристроях доведеться увійти заново.
-        </p>
-      </div>
-      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+    <section>
+      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Зміна пароля</h2>
+      <p className="text-text-secondary mt-4 max-w-xl text-sm">
+        Сеанси на інших пристроях завершаться, і там доведеться увійти заново. Поточний пристрій лишиться в
+        системі.
+      </p>
+      <form onSubmit={onSubmit} noValidate className="border-border mt-8 flex flex-col gap-4 border-t pt-8">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <PasswordInput
           label="Поточний пароль"
@@ -91,12 +89,12 @@ export function ChangePasswordForm(): React.JSX.Element {
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
-        <div className="flex justify-end">
+        <div>
           <Button type="submit" isLoading={changePassword.isPending}>
             Змінити пароль
           </Button>
         </div>
       </form>
-    </Card>
+    </section>
   );
 }

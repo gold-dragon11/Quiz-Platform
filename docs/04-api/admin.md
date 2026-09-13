@@ -273,7 +273,8 @@ Supported query parameters:
 | pageSize | 20 | integer 1–100 |
 | topicId | — | UUID |
 | subjectId | — | UUID; filters through the topic relation |
-| type | — | SINGLE_CHOICE or MATCHING |
+| type | — | SINGLE_CHOICE, MATCHING, ORDERING, MULTIPLE_CHOICE or NUMERIC |
+| format | — | PRACTICE or NMT |
 | difficulty | — | BEGINNER, INTERMEDIATE, or ADVANCED |
 | isPublished | — | true or false |
 | search | — | case-insensitive match against the title |
@@ -295,13 +296,14 @@ Creates a new question with its answer options, in the default locale (English).
 Required fields:
 
 - topicId — the parent topic must exist and not be soft-deleted, otherwise `404 Not Found`;
-- type — SINGLE_CHOICE or MATCHING (Multiple Choice is future);
+- type — SINGLE_CHOICE, MATCHING, ORDERING, MULTIPLE_CHOICE or NUMERIC;
 - title (plain text and/or raw LaTeX);
-- options — 2 to 20 answer options.
+- options — 2 to 20 answer options (none at all for NUMERIC).
 
 Optional fields:
 
 - imageUrl
+- format — PRACTICE (default) or NMT. NMT marks a question written to the exam's own specification; the older practice bank stays PRACTICE, so a mock exam can be drawn from the reference set alone.
 - difficulty
 - configuration (MATCHING only — see below)
 
@@ -319,6 +321,10 @@ Correctness rules by type:
 ```
 
 A valid MATCHING configuration has at least two pairs; every option order appears in exactly one pair (so the option count is even); no self pairs, no duplicate pairs, no overlap between left and right sides; only existing orders may be referenced.
+
+- **ORDERING** — the persisted option order *is* the answer: options are stored in the sequence that is correct. `isCorrect` is not accepted (it would be a second, contradictory key) and neither is `configuration`. At least three items, because a two-item "sequence" is a coin toss. The delivery view deals these options shuffled, so a learner never receives them in the stored order — and neither does the public question list (questions.md §5).
+- **MULTIPLE_CHOICE** — at least two options have `isCorrect: true` and at least one does not; `configuration` is not allowed. The count is not fixed at three: the exam asks for three of seven, but the rule that matters is "more than one right, and not all of them".
+- **NUMERIC** — no options at all: send `options: []`. `configuration` is required and must be exactly `{ "answer": <finite number> }` — an extra key would be a second instruction nobody reads. The expected value lives in the configuration so that it never reaches a learner's browser; the quiz view sends neither options nor configuration for this type. Publishing skips the option-count rule for NUMERIC and re-checks the configuration instead.
 
 New questions always start unpublished; publishing happens through the publish endpoint (§10). `explanation` is not part of the MVP schema and is rejected. `isPublished` is likewise rejected.
 
@@ -646,3 +652,62 @@ The Admin API is considered successful if it:
 - validates all incoming data;
 - preserves historical learning integrity;
 - supports future platform expansion.
+---
+
+# 19. Accounts and Roles
+
+Placed at the end rather than beside the other resources: sections 10–18 are
+cross-cutting and renumbering them would invalidate the `§10`/`§12` references
+scattered through the backend's comments.
+
+## Get Users
+
+```http
+GET /api/v1/admin/users
+```
+
+The account directory. Deleted accounts are never returned — a role on an
+account nobody can sign into decides nothing.
+
+| Parameter | Default | Constraints |
+|---|---|---|
+| page | 1 | integer ≥ 1 |
+| pageSize | 20 | integer 1–100 |
+| search | — | case-insensitive match against email, username and display name |
+| role | — | USER, TEACHER or ADMIN |
+
+Responses use the pagination envelope (§12). Each item carries `id`, `email`,
+`role`, `accountStatus`, `createdAt`, `username` and `displayName` — never a
+password hash.
+
+---
+
+## Set User Role
+
+```http
+PATCH /api/v1/admin/users/{userId}/role
+```
+
+```json
+{ "role": "TEACHER" }
+```
+
+Moves an account between `USER` and `TEACHER`. This is the only way the teacher
+role is granted: there is no self-service path to it, because a tutor's account
+can read a whole group's mistakes.
+
+`ADMIN` is out of reach in both directions, and deliberately so:
+
+- the body accepts only `USER` and `TEACHER`, so this route can never mint an
+  administrator (`400` otherwise);
+- an account that already holds `ADMIN` is refused as a subject (`409`), so no
+  sequence of calls here ends with a platform that has no administrators.
+
+Administrator access is granted where the platform is deployed.
+
+| Status | Meaning |
+|---|---|
+| 200 | Role changed; the updated account is returned |
+| 400 | `role` is missing, unknown, or `ADMIN` |
+| 404 | No such account |
+| 409 | The account is an administrator, or has been deleted |

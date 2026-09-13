@@ -1,7 +1,16 @@
 import { Difficulty, PrismaClient, QuestionType } from '@prisma/client';
 import { loadSubject } from './seed/load';
 import { loadMaterials, type MaterialContent } from './seed/materials';
-import { isMatching, questionType, type QuestionContent } from './seed/types';
+import {
+  isMatching,
+  isMultipleChoice,
+  isNumeric,
+  isOrdering,
+  questionFormat,
+  questionType,
+  type PassageContent,
+  type QuestionContent,
+} from './seed/types';
 import { estimateReadingTime } from '../src/learning-materials/learning-material.constants';
 
 /**
@@ -35,6 +44,14 @@ interface Counters {
   materialsCreated: number;
   materialsUpdated: number;
   materialsSkipped: number;
+  passagesCreated: number;
+  passagesUpdated: number;
+}
+
+/** Where a question sits relative to its text; both null when it stands alone. */
+interface Placement {
+  passageId: string | null;
+  passageOrder: number | null;
 }
 
 /**
@@ -157,14 +174,71 @@ async function seedSubject(
       counters.topicsCreated += 1;
     }
 
+    // Passages first: a question names its text by key, and the key only
+    // becomes an id once the passage row exists.
+    const passageIdByKey = new Map<string, string>();
+    for (const passage of topic.passages ?? []) {
+      passageIdByKey.set(
+        passage.key,
+        await seedPassage(topicRow.id, passage, counters),
+      );
+    }
+
+    // A question's position in its passage is its order among that passage's
+    // questions in the file — which is also the gap it fills, since the
+    // validator holds the numbered gaps to the same order.
+    const positions = new Map<string, number>();
     for (const question of topic.questions) {
-      await seedQuestion(topicRow.id, question, counters);
+      let placement: Placement = { passageId: null, passageOrder: null };
+      if (question.passage !== undefined) {
+        const passageOrder = (positions.get(question.passage) ?? 0) + 1;
+        positions.set(question.passage, passageOrder);
+        placement = {
+          passageId: passageIdByKey.get(question.passage) ?? null,
+          passageOrder,
+        };
+      }
+      await seedQuestion(topicRow.id, question, placement, counters);
     }
   }
 
   for (const [index, material] of materials.entries()) {
     await seedMaterial(subjectRow.id, topicIdBySlug, index, material, counters);
   }
+}
+
+/**
+ * Upserts one passage by its natural key `(topicId, slug)` and returns its id.
+ * Rewording the text keeps the key, so it edits the row in place — the
+ * questions that point at it do not move.
+ */
+async function seedPassage(
+  topicId: string,
+  passage: PassageContent,
+  counters: Counters,
+): Promise<string> {
+  const title = passage.title ?? null;
+  const existing = await prisma.passage.findUnique({
+    where: { topicId_slug: { topicId, slug: passage.key } },
+  });
+
+  if (!existing) {
+    const created = await prisma.passage.create({
+      data: { topicId, slug: passage.key, title, content: passage.content },
+      select: { id: true },
+    });
+    counters.passagesCreated += 1;
+    return created.id;
+  }
+
+  if (existing.title !== title || existing.content !== passage.content) {
+    await prisma.passage.update({
+      where: { id: existing.id },
+      data: { title, content: passage.content },
+    });
+    counters.passagesUpdated += 1;
+  }
+  return existing.id;
 }
 
 /**
@@ -199,15 +273,23 @@ function shuffled<T>(items: T[], seed: number): T[] {
 
 /** Flattens authoring content into the option rows + configuration the engine expects. */
 function buildAnswers(question: QuestionContent): {
-  options: { content: string; isCorrect: boolean; order: number }[];
-  configuration: { pairs: { left: number; right: number }[] } | null;
+  options: {
+    content: string;
+    isCorrect: boolean;
+    order: number;
+    imageUrl?: string | null;
+  }[];
+  configuration:
+    { pairs: { left: number; right: number }[] } | { answer: number } | null;
 } {
   if (isMatching(question)) {
-    // Block layout: every left item first (orders 0..n-1), then every right
-    // item (orders n..2n-1). The two sides stay disjoint — which is what the
-    // backend requires — and the halves line up with how the quiz UI splits a
-    // matching question into a left prompt column and a right choice column.
+    // Block layout: every prompt first (orders 0..n-1), then every choice
+    // (orders n onwards). The two sides stay disjoint — which is what the
+    // backend requires — and the leading block is how the delivery side knows
+    // where the prompts end, which is what lets a question offer more choices
+    // than it has prompts.
     const n = question.pairs.length;
+    const spare = question.extraChoices ?? [];
     const options = [
       ...question.pairs.map(([left], i) => ({
         content: left,
@@ -219,6 +301,11 @@ function buildAnswers(question: QuestionContent): {
         isCorrect: false,
         order: n + i,
       })),
+      ...spare.map((content, i) => ({
+        content,
+        isCorrect: false,
+        order: 2 * n + i,
+      })),
     ];
     return {
       options,
@@ -228,13 +315,49 @@ function buildAnswers(question: QuestionContent): {
     };
   }
 
+  if (isNumeric(question)) {
+    // No options at all: the answer is a number, and the client must never
+    // receive it.
+    return { options: [], configuration: { answer: question.answer } };
+  }
+
+  if (isOrdering(question)) {
+    // The authored sequence is the answer, so it is stored as the option
+    // order untouched. Nothing is shuffled here: the delivery view deals
+    // these options per session, which is where the reader meets them.
+    return {
+      options: question.sequence.map((content, order) => ({
+        content,
+        isCorrect: false,
+        order,
+      })),
+      configuration: null,
+    };
+  }
+
+  if (isMultipleChoice(question)) {
+    const correct = new Set(question.correct);
+    const permuted = shuffled(
+      question.options.map((content, index) => ({
+        content,
+        isCorrect: correct.has(index),
+      })),
+      hash(question.title),
+    );
+    return {
+      options: permuted.map((option, order) => ({ ...option, order })),
+      configuration: null,
+    };
+  }
+
   // Content files always author the correct answer first for readability, but
   // the engine serves options in stored order without shuffling. Permuting
   // here (deterministically, keyed by the title) spreads correct answers
   // across all positions so the position itself never gives the answer away.
   const permuted = shuffled(
-    question.options.map((content, index) => ({
-      content,
+    question.options.map((option, index) => ({
+      content: typeof option === 'string' ? option : option.content,
+      imageUrl: typeof option === 'string' ? null : option.imageUrl,
       isCorrect: index === question.correct,
     })),
     hash(question.title),
@@ -249,10 +372,12 @@ function buildAnswers(question: QuestionContent): {
 async function seedQuestion(
   topicId: string,
   question: QuestionContent,
+  placement: Placement,
   counters: Counters,
 ): Promise<void> {
   const { options, configuration } = buildAnswers(question);
   const type = questionType(question);
+  const format = questionFormat(question);
   const difficulty = Difficulty[question.difficulty];
 
   const existing = await prisma.question.findFirst({
@@ -263,15 +388,21 @@ async function seedQuestion(
   // Authored as optional; an absent note stores NULL rather than an empty
   // string, so "has no explanation" is one state in the database, not two.
   const explanation = question.explanation ?? null;
+  const imageUrl = question.imageUrl ?? null;
+  const nmtTask = question.nmtTask ?? null;
 
   if (!existing) {
     await prisma.question.create({
       data: {
         topicId,
         type,
+        format,
         title: question.title,
         difficulty,
         explanation,
+        imageUrl,
+        nmtTask,
+        ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,
         answerOptions: { create: options },
@@ -288,13 +419,19 @@ async function seedQuestion(
     existing.answerOptions.every(
       (row, i) =>
         row.content === options[i].content &&
+        (row.imageUrl ?? null) === (options[i].imageUrl ?? null) &&
         row.isCorrect === options[i].isCorrect &&
         row.order === options[i].order,
     );
   const scalarsMatch =
     existing.type === type &&
+    existing.format === format &&
     existing.difficulty === difficulty &&
     existing.explanation === explanation &&
+    existing.imageUrl === imageUrl &&
+    existing.nmtTask === nmtTask &&
+    existing.passageId === placement.passageId &&
+    existing.passageOrder === placement.passageOrder &&
     existing.isPublished &&
     existing.deletedAt === null &&
     JSON.stringify(existing.configuration ?? null) ===
@@ -313,8 +450,12 @@ async function seedQuestion(
       where: { id: existing.id },
       data: {
         type,
+        format,
         difficulty,
         explanation,
+        imageUrl,
+        nmtTask,
+        ...placement,
         configuration: configuration ?? undefined,
         isPublished: true,
         deletedAt: null,
@@ -335,6 +476,8 @@ async function main(): Promise<void> {
     materialsCreated: 0,
     materialsUpdated: 0,
     materialsSkipped: 0,
+    passagesCreated: 0,
+    passagesUpdated: 0,
   };
 
   for (const [index, pack] of SUBJECT_PACKS.entries()) {
@@ -358,6 +501,9 @@ async function main(): Promise<void> {
   for (const row of totals) {
     console.log(`  ${row.difficulty ?? 'UNSET'}: ${row._count._all}`);
   }
+  console.log(
+    `  passages  : ${counters.passagesCreated} created, ${counters.passagesUpdated} updated`,
+  );
   console.log(
     `  materials : ${counters.materialsCreated} created, ${counters.materialsUpdated} updated, ${counters.materialsSkipped} skipped`,
   );

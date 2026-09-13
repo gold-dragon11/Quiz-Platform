@@ -14,6 +14,7 @@ import { AppModule } from './../src/app.module';
 import { DEFAULT_AVATAR_URL } from './../src/common/constants/avatar.constants';
 import { AppConfig } from './../src/config/configuration';
 import { PrismaService } from './../src/prisma/prisma.service';
+import { listenOnLoopback } from './loopback';
 
 /** The documented session summary (docs/04-api/authentication.md §11). */
 interface CurrentUserBody {
@@ -122,7 +123,7 @@ describe('Current User (e2e)', () => {
       }),
     );
     app.setGlobalPrefix('api/v1', { exclude: ['health'] });
-    await app.init();
+    await listenOnLoopback(app);
 
     prisma = app.get(PrismaService);
 

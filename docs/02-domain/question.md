@@ -37,7 +37,8 @@ A Question:
 - belongs to exactly one Topic;
 - has one or more Answer Options;
 - may appear in many Quiz Sessions;
-- may have many Question Attempts.
+- may have many Question Attempts;
+- may be asked about one Passage, at a position in it (docs/02-domain/passage.md).
 
 Relationship summary:
 

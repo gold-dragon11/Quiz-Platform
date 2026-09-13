@@ -1,4 +1,4 @@
-import { Difficulty, Language } from '@prisma/client';
+import { Difficulty, Language, QuestionFormat } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -55,6 +55,14 @@ export class UpdateQuestionDto {
   )
   @IsEnum(Difficulty)
   difficulty?: Difficulty | null;
+
+  /**
+   * Not nullable, unlike the tags around it: every question follows some
+   * specification, so this can be changed but never cleared.
+   */
+  @ValidateIf((dto: UpdateQuestionDto) => dto.format !== undefined)
+  @IsEnum(QuestionFormat)
+  format?: QuestionFormat;
 
   @ValidateIf(
     (dto: UpdateQuestionDto) =>

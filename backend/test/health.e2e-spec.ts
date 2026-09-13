@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { listenOnLoopback } from './loopback';
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
@@ -12,7 +13,7 @@ describe('Health (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await listenOnLoopback(app);
   });
 
   afterAll(async () => {

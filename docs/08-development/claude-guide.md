@@ -238,6 +238,20 @@ Functions should:
 
 Business logic should remain easy to unit test.
 
+## E2E suites start the app on 127.0.0.1
+
+Every e2e suite starts its app with `listenOnLoopback(app)` from
+`backend/test/loopback.ts`, never with `app.init()`. A request made against an
+app that is not listening fails on the spot (`test/require-loopback.setup.ts`).
+
+The reason is in the helper. Left un-listened, supertest binds a random wildcard
+port per request and connects to 127.0.0.1 on it; on macOS another process — VS
+Code and its extensions keep dozens of loopback ports — can hold 127.0.0.1 on
+the same port and receives the request instead. For months that surfaced as a
+"flaky 401" (and 400, 404, and suites that timed out) roughly once per full run,
+and it read like rows vanishing from the database. Nothing in the app was wrong:
+the request never reached it.
+
 ---
 
 # 17. Communication Style
