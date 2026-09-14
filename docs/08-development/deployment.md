@@ -204,6 +204,10 @@ Health checks support automated deployment verification.
 
 Production databases should be backed up automatically.
 
+In production this is Neon: point-in-time restore within the plan's history
+window, and a branch taken by hand before every release that migrates or
+seeds (§17.6).
+
 Backups should:
 
 - run on a regular schedule;
@@ -222,6 +226,9 @@ Rollback should restore:
 - previous database state when necessary.
 
 Rollback procedures should be documented and tested.
+
+For the actual target: roll the API back to the previous deploy on Render, and
+restore the database from the branch taken before the release (§17.6).
 
 ---
 
@@ -255,7 +262,7 @@ Manual deployments should be minimized.
 
 ---
 
-# 17. Target Deployment (Render + Vercel)
+# 17. Target Deployment (Render + Vercel + Neon)
 
 Sections 1–16 describe deployment in principle. This section describes the
 actual target and the configuration committed for it.
@@ -263,28 +270,62 @@ actual target and the configuration committed for it.
 | Component | Host | Configuration |
 | --- | --- | --- |
 | API | Render (Docker) | `backend/render.yaml` |
-| Database | Render PostgreSQL | declared in the same blueprint |
+| Database | Neon PostgreSQL | project `L&S`, branch `production` — see §17.6 |
 | Frontend | Vercel | `frontend/vercel.json` |
+
+The blueprint in `backend/render.yaml` still declares a Render PostgreSQL
+database (`quix-postgres`) and wires `DATABASE_URL` to it. Production does not
+use it: the live data is on Neon, and `DATABASE_URL` is set by hand on the
+Render service.
 
 ## 17.1 Order of Operations
 
-The order matters, because two steps depend on results from earlier ones.
+### First deployment
+
+The order matters, because later steps depend on results from earlier ones.
 
 1. **Register the domain and verify it in Resend.** Resend requires SPF and
    DKIM records on the domain before it will deliver, so the domain must exist
    first. Until the domain is verified, Resend rejects delivery to any address
    outside the account owner's.
-2. **Deploy the API to Render** from the blueprint, and confirm `/health`
-   returns 200.
-3. **Deploy the frontend to Vercel** with `VITE_API_URL` set to the live API.
+2. **Create the database on Neon** and set `DATABASE_URL` on the Render service
+   to its connection string (§17.6).
+3. **Deploy the API to Render**, and confirm `/health` returns 200.
+4. **Deploy the frontend to Vercel** with `VITE_API_URL` set to the live API.
    Vite inlines environment variables at build time, so this must be set
    before the first build and a change to it requires a rebuild, not a
    restart.
-4. **Set `CORS_ORIGIN` and `FRONTEND_URL` on Render** to the frontend's final
-   domain. These are the two values that cannot be known until step 3.
-5. **Seed the production database once**: `npx prisma db seed`. Migrations run
-   automatically on boot; seeding does not, so without this step the platform
-   deploys with no subjects at all.
+5. **Set `CORS_ORIGIN` and `FRONTEND_URL` on Render** to the frontend's final
+   domain. These are the two values that cannot be known until step 4.
+6. **Seed the production database once**, from a checkout, against the direct
+   connection string (§17.6). Migrations run automatically on boot; seeding
+   does not, so without this step the platform deploys with no subjects at all.
+
+### A release
+
+What a release that changes the schema or the content looks like — the way
+`feat/nmt-format` went out on 14 September 2026.
+
+1. **Take a Neon branch of `production`** (§17.6) with auto-delete off. It is
+   the rollback point for everything below.
+2. **Merge into `main`.** Render and Vercel both deploy `main` automatically.
+   The API container runs `prisma migrate deploy` before it starts: its log
+   must show `All migrations have been successfully applied.`, then
+   `Nest application successfully started`. Confirm `/health`.
+3. **Deploy before seeding, not after.** New content can carry question types
+   the previous code cannot show; seeding first would put them in front of
+   users on the old screens. The cost of this order is a window where content
+   that depends on the new data is missing — a mock exam refuses with
+   «бракує завдань» until the seed finishes.
+4. **Repair retitled questions, then seed** (§17.1a), from a checkout of
+   `main`, with `DATABASE_URL` set to the direct connection string. A full seed
+   from a laptop takes about an hour: every statement crosses to us-east-2.
+5. **Verify from outside.** `GET /api/v1/catalogue` is public and reads the
+   production database: its `questionCount` per subject, and `totalQuestions`,
+   must equal the published questions in a local database seeded from the same
+   commit. It also shows the seed's progress while it runs.
+6. **`unset DATABASE_URL`** in that terminal, and delete the Neon branch once
+   production has run cleanly for a few days.
 
 ## 17.1a Retitled Questions
 
@@ -296,8 +337,8 @@ with both.
 This has happened twice — the mathematics questions converted from Unicode to
 LaTeX (docs/02-domain/question.md §10), and a handful of questions reworded by
 the content audit (docs/09-content/question-audit.md). Together **587 titles**
-changed since commit `870657b`, which is the last state production was seeded
-from. A database seeded at or before that commit must be repaired **before** it
+changed since commit `870657b`, which production was seeded from before 14
+September 2026. A database seeded at or before that commit must be repaired **before** it
 is seeded again:
 
 ```bash
@@ -306,6 +347,9 @@ npx ts-node --compiler-options '{"module":"CommonJS"}' \
 npx ts-node --compiler-options '{"module":"CommonJS"}' \
   prisma/scripts/sync-retitled-questions.ts --base 870657b --write
 ```
+
+Production has since been seeded from `6d59b7e` (14 September 2026), so that is
+the base for the next production seed.
 
 `--base` is the commit that database was last seeded from; the script reads the
 old titles from it with `git show`, so it must run from a checkout of this
@@ -375,8 +419,44 @@ each one and no secret is committed. `CORS_ORIGIN`, `FRONTEND_URL`,
 `RESEND_API_KEY` and `EMAIL_FROM` use `sync: false`, which makes Render prompt
 for them once and store them itself.
 
+`DATABASE_URL` is the exception to the blueprint: it is set by hand on the Render
+service to the Neon connection string, and never written to a file in the
+repository. The same holds on a laptop — `export` it for one terminal session,
+and `unset` it when done, or the next Prisma command there reaches production.
+
+`JWT_ACCESS_SECRET` also keys the deal of ordering and matching options
+(`src/quiz/option-deal.util.ts`). Rotating it invalidates current access
+tokens — clients renew them with the refresh token, which has its own secret —
+and reorders the options of questions in unfinished sessions; answers are
+stored by option id, so nothing is lost.
+
 Rotate any key that has ever been committed or shared, regardless of whether
 the exposure is believed to be contained.
+
+## 17.6 Database (Neon)
+
+The production database is a Neon project named `L&S`, branch `production`, in
+AWS us-east-2 (Ohio). The API runs in Render's Frankfurt region, so every query
+crosses the Atlantic — unnoticeable per request, but the reason a full seed of
+5 399 questions from a laptop takes about an hour.
+
+**Two connection strings.** Neon's Connect dialog offers a pooled string (the
+host ends in `-pooler`, PgBouncer in transaction mode) and a direct one. Use the
+**direct** string for anything that runs many statements in one go — the seed,
+`sync-retitled-questions.ts`, a migration run by hand. Transaction pooling does
+not keep prepared statements between transactions, and a long Prisma run
+through it can fail midway. Both need `sslmode=require`.
+
+**Branches are the backup.** Before a release that migrates or seeds, create a
+branch of `production` (Branches → New branch, «Branch data and schema», auto-
+delete off). It costs nothing until `production` diverges from it. To roll back,
+point `DATABASE_URL` on Render at the branch, or restore `production` from it in
+the Neon console. Delete it once the release has proved itself.
+
+**Free plan.** Storage is capped at 0.5 GB; the database was about 40 MB before
+the September 2026 seed. Compute scales to zero when idle, so the first query
+after a quiet period pays a start-up delay on top of Render's own cold start
+(§17.4).
 
 ---
 

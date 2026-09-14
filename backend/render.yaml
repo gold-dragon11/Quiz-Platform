@@ -7,6 +7,9 @@
 #
 # The frontend is deployed separately on Vercel (see frontend/vercel.json).
 
+# Production does not use this database. The live data is on Neon
+# (docs/08-development/deployment.md §17.6), and DATABASE_URL is set by hand on
+# the Render service. The block is kept for a Render-only setup from scratch.
 databases:
   - name: quix-postgres
     databaseName: quiz_platform

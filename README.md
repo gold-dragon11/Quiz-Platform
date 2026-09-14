@@ -57,8 +57,9 @@ on to cover the limiter itself.
 
 ## Deployment
 
-The API deploys to Render from [`backend/render.yaml`](backend/render.yaml)
-and the frontend to Vercel from [`frontend/vercel.json`](frontend/vercel.json).
+The API deploys to Render from [`backend/render.yaml`](backend/render.yaml),
+the frontend to Vercel from [`frontend/vercel.json`](frontend/vercel.json), and
+the database lives on Neon.
 Read [`docs/08-development/deployment.md`](docs/08-development/deployment.md)
 §17 first — the order of operations matters, and two settings (`TRUST_PROXY`
 and `VITE_API_URL`) fail quietly if they are wrong.
