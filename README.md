@@ -1,5 +1,7 @@
 # L&S
 
+[![CI](https://github.com/gold-dragon11/Quiz-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/gold-dragon11/Quiz-Platform/actions/workflows/ci.yml)
+
 *Вчись. Прогресуй. Повторюй.*
 
 An educational web application for Ukrainian НМТ/ЗНО exam preparation, built

@@ -1,0 +1,135 @@
+# Continuous integration (docs/08-development/deployment.md §16).
+#
+# Render and Vercel deploy `main` the moment it changes, so this is the only
+# thing standing between a broken commit and production. It runs what a
+# reviewer would run by hand before merging — lint, formatting, types, the
+# content checks, unit and end-to-end tests, the production builds — on every
+# push to `main` and on every pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend — lint, content, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      # The same major version as docker-compose.yml.
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: quiz_platform
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    # Placeholders for a throwaway database on the runner. None of them is a
+    # real credential, and none is used anywhere else. There is no .env file
+    # in CI, so every variable the app requires is set here; RESEND_API_KEY
+    # is left unset on purpose, which selects the logging email service.
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/quiz_platform?schema=public
+      JWT_ACCESS_SECRET: ci-only-access-secret-not-a-real-credential
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-not-a-real-credential
+      EMAIL_VERIFICATION_SECRET: ci-only-verification-secret-not-a-real-credential
+      PASSWORD_RESET_SECRET: ci-only-password-reset-secret-not-a-real-credential
+      FRONTEND_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The version the production Docker image runs.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Formatting
+        run: npm run format:check
+
+      # Content is data, and a broken question is as real a bug as broken
+      # code: these read the seed files directly and need no database.
+      - name: Content — NMT audit
+        run: python3 prisma/scripts/audit/audit_nmt.py
+
+      - name: Content — lint
+        run: npx ts-node --compiler-options '{"module":"CommonJS","moduleResolution":"node"}' prisma/lint-content.ts
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      - name: Migrations
+        run: npx prisma migrate deploy
+
+      # Seeding also validates every topic file, so a malformed question
+      # fails here rather than on the production seed.
+      - name: Seed
+        run: npx prisma db seed
+
+      - name: End-to-end tests
+        run: npm run test:e2e -- --ci
+
+  frontend:
+    name: Frontend — lint, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Formatting
+        run: npm run format:check
+
+      # `tsc -b` then `vite build`: type errors fail the build.
+      - name: Build
+        run: npm run build

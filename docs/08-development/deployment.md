@@ -260,6 +260,20 @@ Recommended pipeline:
 
 Manual deployments should be minimized.
 
+In this repository the pipeline is `.github/workflows/ci.yml`, run by GitHub
+Actions on every push to `main` and every pull request. It has two jobs:
+
+- **backend** — lint, Prettier, the NMT content audit and the content linter,
+  the production build, unit tests, then against a throwaway PostgreSQL 16:
+  migrations, a full seed (which also validates every topic file) and the
+  end-to-end suite;
+- **frontend** — lint, Prettier, and `tsc -b && vite build`.
+
+Render and Vercel deploy `main` independently of it, the moment it changes. CI
+does not gate those deploys by itself: the protection is to merge only through
+a pull request whose checks are green. For that, require the CI checks in the
+branch protection rule for `main` (GitHub → Settings → Branches).
+
 ---
 
 # 17. Target Deployment (Render + Vercel + Neon)
