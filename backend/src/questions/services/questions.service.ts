@@ -172,9 +172,10 @@ export class QuestionsService {
         0,
         this.config.get('jwt', { infer: true }).accessSecret,
       ),
-      ...(row.type === QuestionType.MATCHING
-        ? { configuration: row.configuration }
-        : {}),
+      // No `configuration`, not even for MATCHING: it holds the pairs, which
+      // is the answer. Browsing a topic used to hand every signed-in user the
+      // key to matching questions they would then meet in homework, a duel or
+      // a mock exam. Nothing on the client reads it here.
     }));
 
     return {

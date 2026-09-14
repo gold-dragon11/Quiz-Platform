@@ -692,9 +692,9 @@ PATCH /api/v1/admin/users/{userId}/role
 { "role": "TEACHER" }
 ```
 
-Moves an account between `USER` and `TEACHER`. This is the only way the teacher
-role is granted: there is no self-service path to it, because a tutor's account
-can read a whole group's mistakes.
+Moves an account between `USER` and `TEACHER`. Registration already offers both
+roles (authentication.md §4), so this is how a role chosen by mistake is
+corrected, and the only way a teacher's role is taken away.
 
 `ADMIN` is out of reach in both directions, and deliberately so:
 

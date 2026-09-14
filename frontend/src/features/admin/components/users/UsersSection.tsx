@@ -31,11 +31,11 @@ const ROLE_FILTER: SelectOption[] = [
 ];
 
 /**
- * The account directory, and the only place a teacher is made.
+ * The account directory, and where a role is corrected.
  *
- * There is no self-service path to the teacher role, and that is the product
- * decision this screen implements: a tutor's account can read a whole group's
- * mistakes, so it is granted one account at a time by somebody who decided to.
+ * Registration offers both roles (decisions 17 and 18), so an administrator
+ * no longer makes every teacher; this is where a wrong choice at sign-up is
+ * put right, and the only place a teacher's role is taken away.
  *
  * Administrator accounts appear in the list but carry no control. The API
  * refuses to change them in either direction, and a button that only ever

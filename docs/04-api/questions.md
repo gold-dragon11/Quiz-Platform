@@ -153,7 +153,7 @@ Each question carries exactly what taking a quiz requires:
 - difficulty;
 - imageUrl;
 - answerOptions — each with id, content (localized), imageUrl, order;
-- configuration — MATCHING questions only; absent for SINGLE_CHOICE.
+- no configuration, for any type: for a MATCHING question it holds the pairs, which is the answer.
 
 Never included:
 
@@ -277,8 +277,11 @@ Only information required to display the question is exposed.
 There is exactly one exception, and it is not a delivery endpoint:
 `GET /api/v1/teacher/questions` (§17) returns the correct options and the
 explanations, because a tutor cannot judge a question from its stem. It is
-gated on the `TEACHER` role, which is granted by an administrator one account
-at a time (admin.md §19) and has no self-service path. Everything a student's
+gated on the `TEACHER` role, which anybody can choose at registration
+(authentication.md §4). That makes the bank's keys readable by anybody willing
+to register as a teacher — an accepted risk, recorded as decision 30 in
+docs/00-overview/teacher-side-decisions.md: the same keys and explanations
+reach every student in the review after a test. Everything a student's
 client can reach still withholds both, and must keep withholding them.
 
 ---

@@ -44,7 +44,9 @@ const DIFFICULTY_OPTIONS: SelectOption[] = [
  * hard it really is, whether the key is even right. So this is the one screen
  * in the product that reveals the correct option and the explanation before
  * anybody has answered anything — and the reason the endpoint behind it is
- * teacher-only, and the reason the role is granted by hand.
+ * teacher-only. Anybody can register as a teacher, so anybody can read it; that
+ * is an accepted risk (decision 30), because the same keys reach every student
+ * in the review after a test.
  *
  * A reading surface, not an editing one. Writing to the bank stays with the
  * administrator; a teacher who spots a bad question reports it the same way a

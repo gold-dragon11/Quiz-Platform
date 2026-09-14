@@ -14,11 +14,13 @@ import { PaginatedQuestions } from '../types/paginated-questions.type';
  * visible from the stem alone. The delivery endpoint students use withholds
  * both, and must keep withholding them.
  *
- * The trade this makes: any teacher can read the entire bank with its keys.
- * That is acceptable precisely because the role is not self-service — an
- * administrator grants it one account at a time (docs/04-api/admin.md §19).
- * If teachers ever become self-registering, this endpoint is the first thing
- * that has to change.
+ * The trade this makes: any teacher can read the entire bank with its keys,
+ * and since registration offers the teacher role to anybody (decisions 17
+ * and 18), so can anybody who picks it. That risk is accepted rather than
+ * designed away (decision 30 in docs/00-overview/teacher-side-decisions.md):
+ * the same keys and explanations reach every student in the review after a
+ * test, so hiding them here would inconvenience honest tutors far more than
+ * it would stop a determined student.
  *
  * Only published questions. Drafts belong to whoever is writing them.
  */

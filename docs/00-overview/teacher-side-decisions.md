@@ -106,12 +106,22 @@ never dead-end — which matters at roughly 41 questions per topic.
 | 18 | Who may teach | Anyone, no verification | Manual approval (daily work, and a brake); subscription first (kills the trial) |
 | 19 | Pricing | Steps by student count | Per active student (unpredictability unsettles more than price); one flat price (a teacher with three students pays like one with thirty and never arrives) |
 | 20 | Exceeding a tier mid-month | Allowed; charged from the next cycle | Blocking — student №11 is left without homework and the product looks guilty |
+| 30 | Question bank keys once anybody may teach | Keep the bank's answers and explanations visible to every teacher account | Keys only for questions the teacher has set (a tutor could not check a key before issuing it); admin-approved teachers (contradicts decision 18) |
 
 The choice is made at registration, as two tabs over the same form — a
 student's account by default, a teacher's when chosen or when the link carries
 `?as=teacher`. It is not offered again in settings: only an administrator
 changes a role afterwards, because switching would have to decide what happens
 to a teacher's groups or a student's memberships.
+
+Decision 30 is a risk taken knowingly, not an oversight. Registration lets
+anybody choose the teacher role, and the teacher bank shows every published
+question with its key and explanation — so a student can open a second account
+and read keys before a homework, a duel or a mock exam. It is accepted because
+the same keys and explanations already reach every student in the review after
+any test, so hiding the bank would cost honest tutors far more than it would
+cost a determined student. Revisit it if homework ever carries marks that
+matter outside the platform.
 
 Decision 17 costs something: a university student who both studies and tutors
 needs two accounts. It is reversible — membership already points at a user, so

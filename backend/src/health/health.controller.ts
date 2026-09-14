@@ -7,7 +7,8 @@ import { HealthService, HealthStatus } from './health.service';
  * fixed schedule to decide whether the instance is alive; a 429 would read as
  * an unhealthy instance and could take a healthy deployment out of rotation.
  */
-@SkipThrottle()
+// Both named limits: a bare @SkipThrottle() skips only `default`.
+@SkipThrottle({ default: true, address: true })
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}

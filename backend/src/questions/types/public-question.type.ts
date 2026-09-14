@@ -1,4 +1,4 @@
-import { Difficulty, Prisma, QuestionType } from '@prisma/client';
+import { Difficulty, QuestionType } from '@prisma/client';
 
 /**
  * An answer option as exposed by the public content API
@@ -14,7 +14,8 @@ export interface PublicAnswerOption {
 /**
  * A question as exposed by the public content API
  * (docs/04-api/questions.md §5, §7, §14): exactly what is needed to take a
- * quiz. `configuration` is present for MATCHING questions only.
+ * quiz. Never the answer: no `isCorrect`, and no `configuration` either — for
+ * a matching question that is the key.
  */
 export interface PublicQuestion {
   id: string;
@@ -27,7 +28,6 @@ export interface PublicQuestion {
   /** Position within the passage, from 1 — for a gapped text, the gap. */
   passageOrder: number | null;
   answerOptions: PublicAnswerOption[];
-  configuration?: Prisma.JsonValue;
 }
 
 /** Pagination envelope (docs/04-api/admin.md §12 — same shape everywhere). */

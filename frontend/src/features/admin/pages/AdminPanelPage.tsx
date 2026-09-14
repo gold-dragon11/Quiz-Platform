@@ -22,7 +22,7 @@ function isTabId(value: string | null): value is AdminTabId {
  * tabs for Subjects, Topics, Questions, Quizzes and Users, each over the
  * documented `admin/*` endpoints (docs/04-api/admin.md). The first four are
  * full CRUD; Users is a directory with exactly one decision on it — who is a
- * teacher — because there is no self-service path to that role.
+ * teacher — for correcting the role chosen at registration.
  *
  * The open section lives in the URL (`?tab=users`) rather than in component
  * state. It was local, which meant the back button left the panel instead of

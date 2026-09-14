@@ -615,7 +615,7 @@ describe('Public Content (e2e)', () => {
       }
     });
 
-    it('exposes the configuration for MATCHING and omits it for SINGLE_CHOICE', async () => {
+    it('never exposes the matching key, nor anything else that answers a question', async () => {
       const response = await authed(
         'get',
         `/api/v1/topics/${tPub}/questions`,
@@ -625,12 +625,7 @@ describe('Public Content (e2e)', () => {
 
       const matchingQ = body.items.find((q) => q.id === qMatch.id);
       const singleQ = body.items.find((q) => q.id === qSC.id);
-      expect(matchingQ?.configuration).toEqual({
-        pairs: [
-          { left: 0, right: 2 },
-          { left: 1, right: 3 },
-        ],
-      });
+      expect(matchingQ).not.toHaveProperty('configuration');
       expect(singleQ).not.toHaveProperty('configuration');
       expect(matchingQ?.answerOptions.map((o) => o.order)).toEqual([
         0, 1, 2, 3,

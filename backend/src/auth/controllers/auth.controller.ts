@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { byAccount, byAddress } from '../../common/throttle/request-trackers';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
@@ -31,14 +32,33 @@ const HOUR = 60 * MINUTE;
  * each request spends provider quota and a burst of mail to addresses that
  * never asked for it damages the sending domain's reputation.
  *
- * The limits are counted per client address, so users behind one NAT — a
- * school, a mobile carrier — share an allowance. They are set loosely enough
- * that a shared address doing legitimate work will not reach them.
+ * Users behind one NAT — a school, a mobile carrier — share a client address,
+ * so limits that must hold per person are counted per account instead, and
+ * the address limits are sized for a class of about thirty-five signing up,
+ * confirming and logging in from one room (docs/06-backend/security.md §12).
+ *
+ * - Login: ten attempts a minute per account, wherever they come from, and a
+ *   hundred per address — enough for a class, not for guessing across many
+ *   accounts from one machine.
+ * - Registration and token submission: per address, and explicitly so — a
+ *   bearer token would otherwise buy a fresh allowance per account.
+ * - Email-sending routes: three a message per address of mail an hour, so one
+ *   inbox cannot be flooded, and twenty per network address.
  */
-const LOGIN_LIMIT = { default: { limit: 10, ttl: MINUTE } };
-const REGISTER_LIMIT = { default: { limit: 10, ttl: HOUR } };
-const EMAIL_SEND_LIMIT = { default: { limit: 5, ttl: HOUR } };
-const TOKEN_SUBMIT_LIMIT = { default: { limit: 20, ttl: HOUR } };
+const LOGIN_LIMIT = {
+  default: { limit: 10, ttl: MINUTE, getTracker: byAccount },
+  address: { limit: 100, ttl: MINUTE },
+};
+const REGISTER_LIMIT = {
+  default: { limit: 40, ttl: HOUR, getTracker: byAddress },
+};
+const EMAIL_SEND_LIMIT = {
+  default: { limit: 3, ttl: HOUR, getTracker: byAccount },
+  address: { limit: 20, ttl: HOUR },
+};
+const TOKEN_SUBMIT_LIMIT = {
+  default: { limit: 40, ttl: HOUR, getTracker: byAddress },
+};
 
 /**
  * Authentication endpoints (docs/04-api/authentication.md).

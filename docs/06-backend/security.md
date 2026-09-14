@@ -171,46 +171,64 @@ The Access Token must not be persisted in a location that would defeat this prot
 Implemented with `@nestjs/throttler`, registered as a global guard so a new
 controller is protected by default rather than by remembering to add one.
 
-A loose global allowance backs everything — `THROTTLE_LIMIT` requests per
-`THROTTLE_TTL` seconds per client address, 120 per minute by default. It
-exists to stop scripted abuse, not to shape normal traffic.
+## Who a request counts against
 
-Routes that guard a credential or spend money carry tighter per-route limits,
-declared with `@Throttle` in `auth.controller.ts`:
+The library counts by client address, and on its own that is wrong for this
+product. A school class on one Wi-Fi, or everyone behind one mobile carrier's
+NAT, shares a public address: thirty-five students sitting a mock exam in one
+room would share one allowance, and the limiter would reject someone's saved
+answer mid-paper. So every request is counted twice
+(`src/common/throttle/request-trackers.ts`):
+
+| Limit | Counted per | Allowance | Purpose |
+| --- | --- | --- | --- |
+| `default` | person — the user behind a **verified** bearer token, else the address | `THROTTLE_LIMIT` per `THROTTLE_TTL` s, 120 / minute by default | Stop one client's scripted abuse without one busy classmate spending the room's allowance |
+| `address` | client address | 600 / minute | A ceiling for everything from one network, sized for a class of about 35 |
+
+The token is verified, not decoded. An unverified `sub` would let a script
+claim a different user on every request and never be counted twice; a missing,
+forged or expired token falls back to the address.
+
+## Tighter per-route limits
+
+Routes that guard a credential or spend money carry tighter limits, declared
+with `@Throttle` in `auth.controller.ts`:
 
 | Route | Limit | Why |
 | --- | --- | --- |
-| `POST /auth/login` | 10 / minute | An unlimited rate turns an offline password guess into an online one |
-| `POST /auth/register` | 10 / hour | Bulk account creation |
-| `POST /auth/forgot-password` | 5 / hour | Each request sends email: provider quota, and bounces damage the sending domain's reputation |
-| `POST /auth/resend-verification` | 5 / hour | As above |
-| `POST /auth/verify-email` | 20 / hour | Token guessing |
-| `POST /auth/reset-password` | 20 / hour | Token guessing |
+| `POST /auth/login` | 10 / minute per account, 100 / minute per address | Guessing one account's password is stopped wherever it comes from; a class logging in at once is not stopped as one |
+| `POST /auth/register` | 40 / hour per address | Bulk account creation, sized so a class of 35 can sign up from one room |
+| `POST /auth/verify-email` | 40 / hour per address | Token guessing, sized for the same class confirming its email |
+| `POST /auth/reset-password` | 40 / hour per address | Token guessing |
+| `POST /auth/resend-verification` | 3 / hour per email address, 20 / hour per network address | Each request sends mail: one inbox cannot be flooded, and provider quota and the sending domain's reputation are protected |
+| `POST /auth/forgot-password` | as above | As above |
 
-`GET /health` is exempt via `@SkipThrottle`. The hosting platform polls it on
-a fixed schedule, and a 429 would read as an unhealthy instance.
+Registration and token submission are counted by address explicitly, not by
+person: otherwise any valid bearer token would buy a fresh allowance per
+account.
 
-Three properties that are easy to get wrong and are covered by
-`test/throttling.e2e-spec.ts`:
+`GET /health` is exempt via `@SkipThrottle({ default: true, address: true })`.
+A bare `@SkipThrottle()` skips only `default`. The hosting platform polls the
+endpoint on a fixed schedule, and a 429 would read as an unhealthy instance.
+
+## What the tests hold
+
+Covered by `test/throttling.e2e-spec.ts`:
 
 - **The allowance is not spent by the limiter.** The first ten login attempts
   must reach the handler and fail on credentials, not on 429.
+- **Two people on one address are counted separately**, and a forged token
+  earns no allowance of its own.
+- **A locked account does not lock out the room:** after ten failed logins on
+  one account, the next account from the same address still reaches the
+  handler.
+- **A class can register:** forty registrations from one address pass the
+  limiter before the forty-first is refused.
 - **The rejection is Ukrainian and says nothing quantitative.** The library's
   default message is `ThrottlerException: Too Many Requests`, which the
-  frontend would render verbatim; `LocalizedThrottlerGuard` replaces it.
-  Reporting how many attempts remain would tell an attacker their budget.
-- **The health check is genuinely exempt**, not merely inside the global
-  allowance.
-
-Limits are counted per client address, so users behind one NAT — a school, a
-mobile carrier — share an allowance. They are set loosely enough that a shared
-address doing legitimate work will not reach them.
-
-**`TRUST_PROXY` must match the number of reverse proxies in front of the
-app.** Behind a platform that terminates TLS, the client address arrives in
-`X-Forwarded-For`; left unset, the limiter counts every request against the
-proxy and throttles all users as one. Set higher than the proxies that
-actually exist, it lets a client forge its own address through the header.
+  frontend would render verbatim; saying how many attempts remain would tell
+  an attacker their budget.
+- **The health check is never throttled.**
 
 Rate limiting is disabled when `NODE_ENV=test`, because 500-odd e2e requests
 from one address would trip it for reasons unrelated to what they assert. The

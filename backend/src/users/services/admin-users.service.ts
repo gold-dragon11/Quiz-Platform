@@ -32,12 +32,10 @@ export interface PaginatedAdminUsers {
 /**
  * The one thing that turns an ordinary account into a teacher.
  *
- * There is no self-service path to `TEACHER` on purpose. A tutor's account
- * can read a whole group's mistakes, so handing the role out on a checkbox at
- * registration would mean anybody could watch anybody who joined their group.
- * An administrator deciding it, one account at a time, is the smallest control
- * that makes that meaningful — and it is honest about what this is: a platform
- * where tutors are vetted by hand.
+ * Registration now offers the teacher role to anybody (decisions 17 and 18
+ * in docs/00-overview/teacher-side-decisions.md), so this is no longer the
+ * only way to become one. It remains the way to correct a role — somebody who
+ * picked the wrong tab at sign-up — and the only way to take it away.
  */
 @Injectable()
 export class AdminUsersService {
