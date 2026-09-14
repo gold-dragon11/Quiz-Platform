@@ -104,6 +104,14 @@ class EnvironmentVariables {
   @IsOptional()
   @IsNumberString()
   THROTTLE_LIMIT?: string;
+
+  // Optional: without it the scheduled sweep is simply unreachable. When set,
+  // it guards a route that closes sessions and sends email, so it gets the
+  // same minimum length as the signing secrets. Blank counts as unset.
+  @ValidateIf((env: EnvironmentVariables) => Boolean(env.CRON_SECRET))
+  @IsString()
+  @MinLength(MIN_SECRET_LENGTH)
+  CRON_SECRET?: string;
 }
 
 export function validateEnv(

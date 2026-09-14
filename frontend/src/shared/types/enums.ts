@@ -126,5 +126,7 @@ export const QuizStatus = {
   DRAFT: 'DRAFT',
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',
+  /** Untouched for a week and closed without a result. */
+  ABANDONED: 'ABANDONED',
 } as const;
 export type QuizStatus = (typeof QuizStatus)[keyof typeof QuizStatus];

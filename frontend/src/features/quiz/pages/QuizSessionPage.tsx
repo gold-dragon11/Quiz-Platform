@@ -75,6 +75,7 @@ export function QuizSessionPage(): React.JSX.Element {
     setAnswers(initial);
   }, [session.data, goToResult]);
 
+  const refetchSession = session.refetch;
   const handleInactive = useCallback(
     (error: unknown) => {
       if (isApiError(error) && error.status === 404) {
@@ -82,11 +83,17 @@ export function QuizSessionPage(): React.JSX.Element {
         navigate(ROUTES.quiz, { replace: true });
         return;
       }
-      // 409 → the session is no longer active (completed or timed out).
+      // 409 → the session is no longer active. Completed or timed out has a
+      // result to show; closed for inactivity has none, and the refreshed
+      // session renders the explanation in place.
       toast.info('Цей тест уже неактивний.');
-      goToResult();
+      void refetchSession().then(({ data }) => {
+        if (data?.session.status !== QuizStatus.ABANDONED) {
+          goToResult();
+        }
+      });
     },
-    [navigate, goToResult],
+    [navigate, goToResult, refetchSession],
   );
 
   const handleAnswerChange = (questionId: string, selectedAnswer: SelectedAnswer): void => {
@@ -114,15 +121,15 @@ export function QuizSessionPage(): React.JSX.Element {
       onSuccess: () => goToResult(),
       onError: (error) => {
         // Already completed (e.g. timer expiry auto-completed it) → the result
-        // still exists.
+        // still exists; closed for inactivity → there is none to go to.
         if (isApiError(error) && error.status === 409) {
-          goToResult();
+          handleInactive(error);
         } else if (isApiError(error)) {
           toast.error(error.message);
         }
       },
     });
-  }, [complete, goToResult]);
+  }, [complete, goToResult, handleInactive]);
 
   // --- Loading / empty / error states -----------------------------------
 
@@ -168,6 +175,24 @@ export function QuizSessionPage(): React.JSX.Element {
   if (meta.status === QuizStatus.COMPLETED) {
     // The initialization effect redirects; render a brief loader meanwhile.
     return <SessionSkeleton />;
+  }
+
+  if (meta.status === QuizStatus.ABANDONED) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
+          Цей тест закрито: тиждень у ньому нічого не змінювалося. Він не зарахований і на статистику не
+          вплинув.{' '}
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.quiz)}
+            className="text-primary underline underline-offset-4"
+          >
+            Почати новий
+          </button>
+        </p>
+      </div>
+    );
   }
 
   if (questions.length === 0) {

@@ -167,6 +167,14 @@ export class DuelsService {
     return this.toView(await this.settleIfFinished(duel), userId);
   }
 
+  /**
+   * For the hourly sweep. Listing duels still expires them too — the sweep
+   * only means a stale challenge no longer waits for someone to look.
+   */
+  async expireStaleChallenges(): Promise<number> {
+    return this.duelsRepository.expireStale();
+  }
+
   /** Every duel this person is in, newest first, stale invites marked as such. */
   async list(userId: string): Promise<DuelView[]> {
     await this.duelsRepository.expireStale();

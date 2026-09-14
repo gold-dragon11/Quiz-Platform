@@ -117,9 +117,9 @@ Completed
 
 or
 
-Abandoned *(future)*
+Abandoned
 
-Sessions are created directly as **Active** in a single transaction; the `Draft` status is reserved for future asynchronous generation and is not persisted in the MVP. Only one Active session may exist per user at a time. A session becomes **Completed** when the user submits it, finishes early, or its timer expires (an expired timer auto-completes the session on the next access). Only completed sessions generate Results and XP.
+Sessions are created directly as **Active** in a single transaction; the `Draft` status is reserved for future asynchronous generation and is not persisted in the MVP. Only one Active session may exist per user at a time. A session becomes **Completed** when the user submits it, finishes early, or its timer expires — an expired timer completes the session on the next access or at the next hourly sweep, whichever comes first. An untimed session becomes **Abandoned** when no answer has been saved in it for seven days (§11). Only completed sessions generate Results and XP.
 
 ---
 
@@ -171,15 +171,25 @@ Completion immediately triggers result calculation.
 
 # 11. Cancellation
 
-Future versions may support abandoned sessions.
+A session is never cancelled by its owner; the one way it ends unfinished is
+abandonment (docs/00-overview/teacher-side-decisions.md decision 23).
+
+The hourly sweep (docs/08-development/deployment.md §17.7) marks an Active,
+untimed session **Abandoned** when it was started more than seven days ago and
+no answer has been saved in it for seven days. Idleness is measured from the
+last saved answer, not from the start, so homework worked through a little each
+day is never closed under someone still doing it.
 
 Abandoned sessions:
 
 - do not award XP;
-- do not generate Results;
-- may optionally appear in learning history.
+- do not generate Results, statistics or review-ladder changes;
+- do not appear in learning history, which lists completed sessions only;
+- free the slot, so the owner can start a new session;
+- keep their snapshot and saved answers — nothing is deleted.
 
-This feature is outside the MVP.
+A timed session is never abandoned: its clock ends it, and it is completed and
+scored instead (§6).
 
 ---
 

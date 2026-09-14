@@ -70,3 +70,9 @@ services:
         sync: false
       - key: EMAIL_FROM
         sync: false
+
+      # Presented by the hourly GitHub Actions workflow to POST /api/v1/jobs/hourly.
+      # Not generated: the same value is stored as the CRON_SECRET repository
+      # secret in GitHub (docs/08-development/deployment.md §17.7).
+      - key: CRON_SECRET
+        sync: false

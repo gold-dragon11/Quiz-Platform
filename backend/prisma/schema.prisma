@@ -154,12 +154,14 @@ enum QuizType {
   MOCK_EXAM
 }
 
-/// Quiz session lifecycle status (docs/02-domain/quiz-session.md §6). Abandoned
-/// is future and deferred.
+/// Quiz session lifecycle status (docs/02-domain/quiz-session.md §6).
+/// ABANDONED: an untimed session nobody touched for seven days, closed by the
+/// hourly sweep without a result (decision 23).
 enum QuizStatus {
   DRAFT
   ACTIVE
   COMPLETED
+  ABANDONED
 }
 
 /// Source of an XP award (docs/02-domain/xp-transaction.md §5). Future: Daily

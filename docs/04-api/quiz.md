@@ -255,6 +255,12 @@ DELETE /api/v1/quiz/{sessionId}
 
 Not included in the MVP.
 
+An untimed session nobody has saved an answer in for seven days is closed by
+the hourly sweep with status `ABANDONED` (docs/02-domain/quiz-session.md §11).
+`GET /quiz/{sessionId}` still returns it, so its owner can be told what
+happened; answering or completing it returns `409`, and so does asking for its
+result.
+
 ---
 
 # 11. Timer
@@ -262,7 +268,9 @@ Not included in the MVP.
 When enabled:
 
 - remaining time is tracked by the backend;
-- expired sessions are completed automatically.
+- expired sessions are completed automatically — on the next request that
+  touches the session, or by the hourly sweep
+  (docs/08-development/deployment.md §17.7), whichever comes first.
 
 The client displays the countdown.
 
