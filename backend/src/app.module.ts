@@ -11,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { byAddress, byPerson } from './common/throttle/request-trackers';
 import { DuelsModule } from './duels/duels.module';
 import { HealthModule } from './health/health.module';
+import { JobsModule } from './jobs/jobs.module';
 import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -87,6 +88,7 @@ const ADDRESS_LIMIT_PER_MINUTE = 600;
     QuestionReportsModule,
     DuelsModule,
     NotificationsModule,
+    JobsModule,
     LearningMaterialsModule,
     GroupsModule,
     AssignmentsModule,

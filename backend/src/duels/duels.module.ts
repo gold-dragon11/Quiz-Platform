@@ -13,5 +13,7 @@ import { DuelsService } from './services/duels.service';
   imports: [QuizModule],
   controllers: [DuelsController],
   providers: [DuelsService, DuelsRepository],
+  // Exported for JobsModule, which expires unanswered challenges on schedule.
+  exports: [DuelsService],
 })
 export class DuelsModule {}

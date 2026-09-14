@@ -685,6 +685,37 @@ export class QuizSessionRepository {
     });
     return result.count === 1;
   }
+
+  /** Timed sessions whose clock has run out and that nobody has opened since. */
+  async findExpiredTimed(now: Date): Promise<QuizSessionRecord[]> {
+    return this.prisma.quizSession.findMany({
+      where: {
+        status: QuizStatus.ACTIVE,
+        timerEnabled: true,
+        expiresAt: { lte: now },
+      },
+      select: SESSION_SELECT,
+    });
+  }
+
+  /**
+   * Closes untimed sessions with no sign of life since `idleSince`: started
+   * before it, and no answer saved after it. Measured from the last answer,
+   * not the start, so a long homework worked through a little each day is
+   * never taken away from someone still doing it.
+   */
+  async abandonIdle(idleSince: Date): Promise<number> {
+    const { count } = await this.prisma.quizSession.updateMany({
+      where: {
+        status: QuizStatus.ACTIVE,
+        timerEnabled: false,
+        startedAt: { lt: idleSince },
+        attempts: { none: { answeredAt: { gte: idleSince } } },
+      },
+      data: { status: QuizStatus.ABANDONED },
+    });
+    return count;
+  }
 }
 
 /**

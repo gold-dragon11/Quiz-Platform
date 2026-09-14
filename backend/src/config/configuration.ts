@@ -75,6 +75,11 @@ export interface AppConfig {
   passwordReset: PasswordResetConfig;
   email: EmailProviderConfig;
   throttle: ThrottleConfig;
+  /**
+   * Shared secret of the external scheduler that calls the hourly sweep
+   * (src/jobs). Unset means the sweep route answers 404: nothing can run it.
+   */
+  cronSecret?: string;
 }
 
 export default (): AppConfig => ({
@@ -112,4 +117,5 @@ export default (): AppConfig => ({
     ttl: parseInt(process.env.THROTTLE_TTL ?? '60', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT ?? '120', 10),
   },
+  cronSecret: process.env.CRON_SECRET || undefined,
 });

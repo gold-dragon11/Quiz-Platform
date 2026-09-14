@@ -271,8 +271,12 @@ Actions on every push to `main` and every pull request. It has two jobs:
 
 Render and Vercel deploy `main` independently of it, the moment it changes. CI
 does not gate those deploys by itself: the protection is to merge only through
-a pull request whose checks are green. For that, require the CI checks in the
-branch protection rule for `main` (GitHub → Settings → Branches).
+a pull request whose checks are green. `main` has a ruleset (GitHub → Settings
+→ Rules → Rulesets) that requires a pull request and both CI checks, and blocks
+force pushes and deletion.
+
+A second workflow, `.github/workflows/hourly.yml`, is not a check: it runs on a
+schedule and calls the production API (§17.7).
 
 ---
 
@@ -430,8 +434,9 @@ few minutes ahead to wake the service.
 
 Signing secrets are declared with `generateValue: true`, so Render generates
 each one and no secret is committed. `CORS_ORIGIN`, `FRONTEND_URL`,
-`RESEND_API_KEY` and `EMAIL_FROM` use `sync: false`, which makes Render prompt
-for them once and store them itself.
+`RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET` use `sync: false`, which makes
+Render prompt for them once and store them itself. `CRON_SECRET` is not
+generated because the same value has to be copied into GitHub (§17.7).
 
 `DATABASE_URL` is the exception to the blueprint: it is set by hand on the Render
 service to the Neon connection string, and never written to a file in the
@@ -471,6 +476,56 @@ the Neon console. Delete it once the release has proved itself.
 the September 2026 seed. Compute scales to zero when idle, so the first query
 after a quiet period pays a start-up delay on top of Render's own cold start
 (§17.4).
+
+## 17.7 Scheduled Jobs
+
+The API keeps no clock of its own: on Render's free tier the process is stopped
+between requests, and a timer inside a stopped process never fires. GitHub
+Actions calls it from outside instead. `.github/workflows/hourly.yml` runs at
+minute 17 of every hour and sends
+
+```http
+POST /api/v1/jobs/hourly
+Authorization: Bearer <CRON_SECRET>
+```
+
+One run does four independent things:
+
+| Step | What it does | Without the schedule |
+| --- | --- | --- |
+| Expired timers | Completes and scores timed sessions whose clock ran out | Waits until the owner opens the session |
+| Abandoned sessions | Closes untimed sessions with no answer saved for 7 days, without a result (decision 23) | The session holds the owner's slot indefinitely |
+| Deadline reminders | Emails recipients whose deadline is within 24 hours and who have not handed in (decision 25) | Only `POST /admin/notifications/due-reminders`, by hand |
+| Stale duels | Marks challenges nobody answered as expired | Waits until someone lists their duels |
+
+Every step is idempotent — a reminder is claimed in `email_dispatches` before it
+is sent, and a session can leave `ACTIVE` only once — so a late, repeated or
+manual run is harmless. One failing step does not stop the others; the request
+then answers 500, the workflow run turns red, and the API log names the step.
+The response reports what was done:
+`{ sessionsCompleted, sessionsAbandoned, remindersSent, duelsExpired }`.
+
+**Setup.**
+
+1. Generate a secret: `openssl rand -base64 48`.
+2. Render → the API service → Environment → `CRON_SECRET` = that value. The
+   service restarts.
+3. GitHub → Settings → Secrets and variables → Actions:
+   - **Secrets** → `CRON_SECRET` = the same value;
+   - **Variables** → `API_URL` = `https://api.learn-ls.com`.
+4. Actions → «Hourly jobs» → Run workflow, and check that the run is green.
+
+Without `CRON_SECRET` on the API the route answers 404, and without `API_URL`
+in GitHub the workflow skips itself, so a fork or a local setup has neither
+the endpoint nor a failing schedule.
+
+**Limits of GitHub's schedule.** Scheduled runs can start late, by minutes or
+more under load, and are occasionally dropped; the windows involved — 24 hours,
+7 days — make that irrelevant. GitHub disables schedules in a repository with
+no activity for 60 days; re-enable the workflow on the Actions tab. An hourly
+request does not keep the instance awake: Render stops it after 15 idle
+minutes, so each run usually pays a cold start, which the workflow's 90-second
+timeout and retries allow for.
 
 ---
 

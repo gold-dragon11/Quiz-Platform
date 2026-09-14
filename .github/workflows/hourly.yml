@@ -1,0 +1,39 @@
+# The hourly sweep (docs/08-development/deployment.md §17.7).
+#
+# The API cannot keep its own schedule: on Render's free tier the process is
+# stopped between requests, so an in-process timer never fires. GitHub calls
+# the sweep from outside instead. The sweep is idempotent — a reminder is
+# claimed before it is sent, a session can be closed only once — so a retry, a
+# late run or a manual one does no harm.
+name: Hourly jobs
+
+on:
+  schedule:
+    # Not minute 0: GitHub delays scheduled runs most at the top of the hour.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+# Nothing in the repository is read or written.
+permissions: {}
+
+jobs:
+  sweep:
+    name: Sweep
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # A fork has neither the variable nor the secret, and nothing to call.
+    if: ${{ vars.API_URL != '' }}
+
+    steps:
+      # A cold instance takes up to a minute to answer, hence the long timeout
+      # and the retries.
+      - name: Run the sweep
+        env:
+          API_URL: ${{ vars.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --silent --show-error \
+            --retry 3 --retry-delay 30 --retry-all-errors --max-time 90 \
+            -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${API_URL%/}/api/v1/jobs/hourly"

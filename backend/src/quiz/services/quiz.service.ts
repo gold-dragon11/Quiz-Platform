@@ -68,6 +68,8 @@ const SECONDS_PER_QUESTION = 60;
 /** Extra XP for a high-accuracy quiz, and its threshold (decisions D13/R2). */
 const HIGH_ACCURACY_THRESHOLD = 90;
 const HIGH_ACCURACY_BONUS_XP = 25;
+/** An untimed session untouched this long is closed (decision 23). */
+const ABANDON_AFTER_DAYS = 7;
 
 const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
 const SUBJECT_NOT_FOUND_MESSAGE =
@@ -1096,6 +1098,37 @@ export class QuizService {
   ): Promise<{ session: QuizSessionMetadata | null }> {
     const session = await this.quizSessionRepository.findActiveByUser(userId);
     return { session: session ? this.toMetadata(session) : null };
+  }
+
+  /**
+   * The session half of the hourly sweep (decision 23).
+   *
+   * A timed session whose clock ran out is completed exactly as if its owner
+   * had opened it: the clock ended it, so the score counts, and it no longer
+   * holds the learner's slot until they happen to come back.
+   *
+   * An untimed session left for a week is closed without a result. Nobody
+   * finished it, and a score for half a paper would sit in the statistics as
+   * if it were an honest attempt. It frees the slot, so the next start works.
+   */
+  async closeStaleSessions(
+    now = new Date(),
+  ): Promise<{ completed: number; abandoned: number }> {
+    let completed = 0;
+    for (const session of await this.quizSessionRepository.findExpiredTimed(
+      now,
+    )) {
+      // Null when the owner's own request finished it a moment earlier.
+      if (await this.finalize(session)) {
+        completed += 1;
+      }
+    }
+
+    const idleSince = new Date(
+      now.getTime() - ABANDON_AFTER_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const abandoned = await this.quizSessionRepository.abandonIdle(idleSince);
+    return { completed, abandoned };
   }
 
   /**
