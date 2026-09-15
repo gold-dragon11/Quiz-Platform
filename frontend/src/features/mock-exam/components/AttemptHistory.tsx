@@ -105,7 +105,12 @@ function AccuracyStrip({ attempts }: { attempts: MockExamAttempt[] }): React.JSX
               {/* The label rides on top of its own bar rather than at the top
                   of the column: with accuracies down in the teens, a label
                   pinned to the ceiling floats far from what it measures. */}
-              <span className="text-text-secondary mb-1 text-center text-xs">{attemptLabel(attempt)}</span>
+              <span
+                className="text-text-secondary mb-1 text-center text-xs whitespace-nowrap"
+                title={attemptLabel(attempt)}
+              >
+                {stripLabel(attempt)}
+              </span>
               <div
                 className="bg-primary/70 w-full"
                 style={{ height: `${Math.max(attemptShare(attempt), 1.5)}%` }}
@@ -139,6 +144,15 @@ function attemptLabel(attempt: MockExamAttempt): string {
     return formatPercent(attempt.accuracy);
   }
   return attempt.scaledScore !== null ? String(attempt.scaledScore) : 'нижче порогу';
+}
+
+/**
+ * The strip's own label. A column is four characters wide, and «нижче порогу»
+ * broke over two lines and pushed its bar out of line with the rest; a dash
+ * says «no score» in the space of one, and the row below spells it out.
+ */
+function stripLabel(attempt: MockExamAttempt): string {
+  return attempt.maxTestPoints !== null && attempt.scaledScore === null ? '—' : attemptLabel(attempt);
 }
 
 /**

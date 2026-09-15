@@ -40,6 +40,9 @@ export function StudentGroupsPage(): React.JSX.Element {
     if (!code.trim()) {
       return;
     }
+    // A new attempt replaces the last outcome: the notice of an earlier join
+    // standing under a fresh «no such code» reads as both at once.
+    setJoined(null);
     join.mutate(code.trim(), {
       onSuccess: (group) => {
         setJoined(group);

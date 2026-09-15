@@ -19,5 +19,9 @@ export const SECTION_SPACING = 'py-24 md:py-32';
  */
 export const NAV_HEIGHT = 'h-20';
 
-/** Anchor the hero's "Дізнатись більше" link scrolls to. */
-export const HOW_IT_WORKS_ID = 'yak-tse-pratsyuye';
+/**
+ * Anchor the hero's «Дізнатись більше» link scrolls to: what the product does
+ * beyond tests. It used to point at the test run, which on a wide screen now
+ * sits in the hero itself — the link would have scrolled to nothing.
+ */
+export const FEATURES_ID = 'mozhlyvosti';

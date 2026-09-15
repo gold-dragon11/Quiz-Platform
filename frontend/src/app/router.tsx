@@ -21,7 +21,7 @@ import {
   ResetPasswordPage,
   VerifyEmailPage,
 } from '@/features/auth';
-import { ProfilePage, SettingsPage } from '@/features/user';
+import { ProfilePage, PublicProfilePage, SettingsPage } from '@/features/user';
 import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 import { MockExamPage } from '@/features/mock-exam';
@@ -95,7 +95,8 @@ export const router = createBrowserRouter([
         element: <PublicLayout />,
         children: [
           { path: ROUTES.verifyEmail, element: page(<VerifyEmailPage />) },
-          { path: ROUTES.publicProfile, element: withTransition('Публічний профіль') },
+          // Open to everyone, signed in or not: the owner shares the link.
+          { path: ROUTES.publicProfile, element: page(<PublicProfilePage />) },
 
           // Guest-only routes (redirect authenticated users away)
           {
@@ -184,71 +185,66 @@ export const router = createBrowserRouter([
                   { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
                 ],
               },
-            ],
-          },
-        ],
-      },
 
-      // Teacher routes — same authenticated shell, own role gate. Deliberately
-      // not open to administrators: the backend's @TeacherOnly() refuses them
-      // too, because an administrator owns no groups.
-      {
-        element: <RequireTeacher />,
-        children: [
-          {
-            element: <MainLayout />,
-            children: [
-              { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
-              { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
-              { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
+              // Teacher routes — own role gate. Deliberately not open to
+              // administrators: the backend's @TeacherOnly() refuses them too,
+              // because an administrator owns no groups.
+              //
+              // The gates sit inside the shell, as the learner gates above do.
+              // Outside it, a wrong role got a 403 on a bare page with no way
+              // back but the one link, while the same refusal on a learner route
+              // kept the navigation.
               {
-                path: ROUTES.teacherAssignmentNew,
-                element: page(<NewAssignmentPage />),
+                element: <RequireTeacher />,
+                children: [
+                  { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
+                  { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
+                  { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
+                  {
+                    path: ROUTES.teacherAssignmentNew,
+                    element: page(<NewAssignmentPage />),
+                  },
+                  {
+                    path: ROUTES.teacherAssignment,
+                    element: page(<AssignmentReviewPage />),
+                  },
+                  {
+                    path: ROUTES.teacherStudent,
+                    element: page(<StudentProfilePage />),
+                  },
+                ],
               },
-              {
-                path: ROUTES.teacherAssignment,
-                element: page(<AssignmentReviewPage />),
-              },
-              {
-                path: ROUTES.teacherStudent,
-                element: page(<StudentProfilePage />),
-              },
-            ],
-          },
-        ],
-      },
 
-      // Administrator routes — share the same authenticated shell (MainLayout).
-      {
-        element: <RequireAdmin />,
-        children: [
-          {
-            element: <MainLayout />,
-            children: [
-              { path: ROUTES.admin, element: page(<AdminPanelPage />) },
+              // Administrator routes.
               {
-                path: ROUTES.adminSubjects,
-                element: withTransition('Керування предметами'),
-              },
-              {
-                path: ROUTES.adminTopics,
-                element: withTransition('Керування темами'),
-              },
-              {
-                path: ROUTES.adminQuizzes,
-                element: withTransition('Керування шаблонами тестів'),
-              },
-              {
-                path: ROUTES.adminQuestions,
-                element: withTransition('Керування питаннями'),
-              },
-              {
-                path: ROUTES.adminQuestionNew,
-                element: withTransition('Створення питання'),
-              },
-              {
-                path: ROUTES.adminQuestionEdit,
-                element: withTransition('Редагування питання'),
+                element: <RequireAdmin />,
+                children: [
+                  { path: ROUTES.admin, element: page(<AdminPanelPage />) },
+                  {
+                    path: ROUTES.adminSubjects,
+                    element: withTransition('Керування предметами'),
+                  },
+                  {
+                    path: ROUTES.adminTopics,
+                    element: withTransition('Керування темами'),
+                  },
+                  {
+                    path: ROUTES.adminQuizzes,
+                    element: withTransition('Керування шаблонами тестів'),
+                  },
+                  {
+                    path: ROUTES.adminQuestions,
+                    element: withTransition('Керування питаннями'),
+                  },
+                  {
+                    path: ROUTES.adminQuestionNew,
+                    element: withTransition('Створення питання'),
+                  },
+                  {
+                    path: ROUTES.adminQuestionEdit,
+                    element: withTransition('Редагування питання'),
+                  },
+                ],
               },
             ],
           },

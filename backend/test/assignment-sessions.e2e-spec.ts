@@ -476,6 +476,15 @@ describe('Assignment sessions (e2e)', () => {
       const assignment = await issue(group, mathsQuestionIds.slice(0, 2));
       await startAssignment(assignment);
 
+      // Open homework is not the session the start screens warn about: the
+      // resume banner reads this, and counting homework here made every start
+      // screen claim nothing new could begin.
+      const active = await request(app.getHttpServer())
+        .get('/api/v1/quiz/active')
+        .set('Authorization', `Bearer ${student}`)
+        .expect(200);
+      expect((active.body as { session: unknown }).session).toBeNull();
+
       await request(app.getHttpServer())
         .post('/api/v1/quiz/start')
         .set('Authorization', `Bearer ${student}`)

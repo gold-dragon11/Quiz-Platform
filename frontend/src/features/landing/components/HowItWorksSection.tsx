@@ -1,6 +1,6 @@
 import { DecorCurves } from '@/features/landing/components/DecorCurves';
 import { QuizRun } from '@/features/landing/components/QuizRun';
-import { HOW_IT_WORKS_ID, SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
+import { SECTION_CONTAINER, SECTION_SPACING } from '@/features/landing/constants';
 
 /**
  * How it works — shown as the one thing that is true only here.
@@ -16,12 +16,12 @@ import { HOW_IT_WORKS_ID, SECTION_CONTAINER, SECTION_SPACING } from '@/features/
  * have been the same mistake in smaller type: if the run does not read as the
  * product, no sentence above it will fix that.
  *
- * `scroll-mt` keeps the run clear of the sticky bar when the hero link
- * scrolls here.
+ * Phones and tablets only. From `lg` the run sits in the hero's right column,
+ * and showing it here as well put the same demo on the page twice.
  */
 export function HowItWorksSection(): React.JSX.Element {
   return (
-    <section id={HOW_IT_WORKS_ID} className="border-border relative scroll-mt-20 overflow-hidden border-t">
+    <section className="border-border relative overflow-hidden border-t lg:hidden">
       <DecorCurves set="a" />
 
       <div className={`${SECTION_CONTAINER} ${SECTION_SPACING} relative`}>

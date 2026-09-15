@@ -1,5 +1,4 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
-import { toast } from '@/stores/toast-store';
 import type { ApiError } from '@/shared/types/api';
 
 /** Narrows the value a mutation rejects with to the normalized ApiError. */
@@ -21,8 +20,10 @@ export function isApiError(error: unknown): error is ApiError {
  *   backend's own business errors are Ukrainian ("Поточний пароль …"), while
  *   its class-validator messages still start with the English field name
  *   ("password must be …").
- * - Anything left unmapped becomes a form-level (`root`) error and a toast, so
- *   no failure is ever swallowed.
+ * - Anything left unmapped becomes a form-level (`root`) error, so no failure
+ *   is ever swallowed. Every form that calls this renders `errors.root` above
+ *   its fields. It used to raise a toast as well, which put the same sentence
+ *   on screen twice — once over the form, once in the corner.
  */
 export function applyApiErrorToForm<T extends FieldValues>(
   error: unknown,
@@ -53,7 +54,6 @@ export function applyApiErrorToForm<T extends FieldValues>(
     const formMessage = unmatched.join(' ');
     // 'root' is a valid RHF target for form-level errors.
     setError('root' as Path<T>, { type: 'server', message: formMessage });
-    toast.error(formMessage);
   }
 }
 

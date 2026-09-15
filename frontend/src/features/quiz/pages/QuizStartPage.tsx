@@ -147,12 +147,16 @@ export function QuizStartPage(): React.JSX.Element {
     ...(subjects.data ?? []).map((subject) => ({ value: subject.id, label: subject.name })),
   ];
 
-  const topicOptions: SelectOption[] = topics.isPending
-    ? [{ value: '', label: 'Завантаження тем…' }]
-    : [
-        { value: '', label: 'Усі теми (випадково)' },
-        ...(topics.data ?? []).map((topic) => ({ value: topic.id, label: topic.name })),
-      ];
+  // A query that waits for a subject counts as pending too, so without the
+  // first check an empty form claimed to be loading topics it never asked for.
+  const topicOptions: SelectOption[] = !subjectId
+    ? [{ value: '', label: 'Спочатку оберіть предмет' }]
+    : topics.isPending
+      ? [{ value: '', label: 'Завантаження тем…' }]
+      : [
+          { value: '', label: 'Усі теми (випадково)' },
+          ...(topics.data ?? []).map((topic) => ({ value: topic.id, label: topic.name })),
+        ];
 
   const emptyPool = subjectId !== '' && pool === 0;
   const minutes = Math.round((SECONDS_PER_QUESTION * questionCount) / 60);
