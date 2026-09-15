@@ -1,5 +1,9 @@
 import { apiClient } from '@/lib/api-client';
-import type { ChangePasswordPayload, UpdateProfilePayload } from '@/features/user/types/user.types';
+import type {
+  ChangePasswordPayload,
+  PublicProfile,
+  UpdateProfilePayload,
+} from '@/features/user/types/user.types';
 
 /**
  * User Account feature API layer (Phase 6.3) — typed wrappers over the shared
@@ -21,6 +25,17 @@ export const userApi = {
   /** PATCH /users/me/password — 204; revokes refresh sessions (docs §6). */
   async changePassword(payload: ChangePasswordPayload): Promise<void> {
     await apiClient.patch('/users/me/password', payload);
+  },
+
+  /** GET /users/{username} — public, works without a session (docs §12). */
+  async getPublicProfile(username: string): Promise<PublicProfile> {
+    const { data } = await apiClient.get<PublicProfile>(`/users/${encodeURIComponent(username)}`);
+    return data;
+  },
+
+  /** PATCH /users/me/settings — only the public-profile switch is offered. */
+  async setPublicProfileEnabled(publicProfileEnabled: boolean): Promise<void> {
+    await apiClient.patch('/users/me/settings', { publicProfileEnabled });
   },
 
   /** DELETE /users/me — 204 soft delete; revokes refresh sessions (docs §7). */

@@ -222,6 +222,8 @@ export interface QuizReview {
   session: {
     subjectId: string;
     topicId: string | null;
+    /** Lets the client file a mock sitting's result under the mock exam. */
+    mode: QuizSessionMetadata['mode'];
   };
 }
 

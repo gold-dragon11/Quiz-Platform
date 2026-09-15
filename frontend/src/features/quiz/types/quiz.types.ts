@@ -206,6 +206,8 @@ export interface QuizReview {
   session: {
     subjectId: string;
     topicId: string | null;
+    /** A mock sitting's result belongs under «Пробний НМТ» in the navigation. */
+    mode: QuizSessionMetadata['mode'];
   };
 }
 

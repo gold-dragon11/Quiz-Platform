@@ -56,7 +56,8 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
       key: 'active',
       to: generatePath(ROUTES.quizSession, { sessionId: activeQuiz.data.sessionId }),
       title: 'Незавершений тест',
-      detail: 'Поки він відкритий, новий почати не вийде — ні домашку, ні дуель.',
+      // Homework is not in this list: it has its own slot and starts regardless.
+      detail: 'Поки він відкритий, новий тест, пробний чи дуель не почнуться. Домашки це не стосується.',
       urgency: 'now',
     });
   }

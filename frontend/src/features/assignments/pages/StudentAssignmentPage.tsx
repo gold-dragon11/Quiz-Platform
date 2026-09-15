@@ -8,7 +8,6 @@ import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { formatShortDate, pluralUk } from '@/shared/utils/format';
 import { isApiError } from '@/shared/utils/apply-api-error';
-import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
 import { useStartAssignment, useStudentAssignment } from '@/features/assignments/hooks/use-assignments';
 import type { StudentAssignment } from '@/features/assignments/types/assignment.types';
 
@@ -66,7 +65,10 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
         lead={assignment.description ?? undefined}
       />
 
-      <ActiveQuizBanner className="mt-8" />
+      {/* No «unfinished test» banner: homework has its own slot, so open
+          practice does not stop it, and saying so sent students away from
+          work they could have started. Unfinished homework in the same
+          subject is the one real block, and the start error names it. */}
 
       <FigureGrid
         rule="bottom"

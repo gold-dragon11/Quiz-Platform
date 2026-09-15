@@ -5,7 +5,7 @@ import { EmptyState } from '@/shared/ui/EmptyState';
 import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
-import { formatNumber, formatPercent, formatShortDate } from '@/shared/utils/format';
+import { formatNumber, formatPercent, formatShortDate, pluralUk } from '@/shared/utils/format';
 import { TopicPerformanceList } from '@/features/assignments/components/TopicPerformanceList';
 import { useStudentProfile } from '@/features/assignments/hooks/use-assignments';
 import type { SelfStudySummary, StudentProfile } from '@/features/assignments/types/review.types';
@@ -139,8 +139,17 @@ function SelfStudySection({ summary }: { summary: SelfStudySummary }): React.JSX
           <FigureGrid
             className="mt-8"
             figures={[
-              { value: formatNumber(summary.sessions ?? 0), label: 'тестів' },
-              { value: formatNumber(summary.questionsAnswered ?? 0), label: 'питань' },
+              {
+                value: formatNumber(summary.sessions ?? 0),
+                label: pluralUk(summary.sessions ?? 0, 'тест', 'тести', 'тестів'),
+              },
+              // Answers given, not questions sat: a finished test with nothing
+              // answered counts towards the tests and adds nothing here, and
+              // «2 тести · 0 питань» read as a contradiction.
+              {
+                value: formatNumber(summary.questionsAnswered ?? 0),
+                label: pluralUk(summary.questionsAnswered ?? 0, 'відповідь', 'відповіді', 'відповідей'),
+              },
               {
                 value: summary.accuracy === null ? '—' : formatPercent(summary.accuracy),
                 label: 'точність',

@@ -510,10 +510,18 @@ export class QuizSessionRepository {
     });
   }
 
-  /** Anything active at all — used by the resume banner, which is mode-blind. */
+  /**
+   * The session that holds the self-study slot — practice, a mock, a review
+   * or a duel — for the resume banner.
+   *
+   * Homework is left out on purpose. It has slots of its own (decision 13)
+   * and is resumed from its assignment page; counted here, an open homework
+   * made every start screen claim that nothing new could begin, and hid the
+   * start button the backend would in fact have honoured.
+   */
   async findActiveByUser(userId: string): Promise<QuizSessionRecord | null> {
     return this.prisma.quizSession.findFirst({
-      where: { userId, status: QuizStatus.ACTIVE },
+      where: { userId, status: QuizStatus.ACTIVE, assignmentId: null },
       select: SESSION_SELECT,
     });
   }

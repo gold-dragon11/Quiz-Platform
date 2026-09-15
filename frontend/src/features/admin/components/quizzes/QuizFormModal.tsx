@@ -85,12 +85,16 @@ export function QuizFormModal({ open, quiz, subjects, onClose }: QuizFormModalPr
     { value: '', label: 'Оберіть предмет…' },
     ...subjects.map((s) => ({ value: s.id, label: s.name })),
   ];
-  const topicOptions: SelectOption[] = topics.isPending
-    ? [{ value: '', label: 'Завантаження тем…' }]
-    : [
-        { value: '', label: 'Без теми (весь предмет)' },
-        ...(topics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
-      ];
+  // Before a subject is chosen the topics query is disabled, and a disabled
+  // query still counts as pending — it would claim to be loading.
+  const topicOptions: SelectOption[] = !subjectId
+    ? [{ value: '', label: 'Спочатку оберіть предмет' }]
+    : topics.isPending
+      ? [{ value: '', label: 'Завантаження тем…' }]
+      : [
+          { value: '', label: 'Без теми (весь предмет)' },
+          ...(topics.data ?? []).map((t) => ({ value: t.id, label: t.name })),
+        ];
 
   const onSubmit = handleSubmit((values) => {
     if (quiz) {

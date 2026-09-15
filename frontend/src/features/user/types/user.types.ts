@@ -15,6 +15,24 @@ export interface UpdateProfilePayload {
   bio?: string | null;
 }
 
+/**
+ * GET /users/{username} (docs §12) — the public subset of an account. The
+ * same 404 answers an unknown username, a hidden profile and an inactive
+ * account, so a caller cannot tell which it was.
+ */
+export interface PublicProfile {
+  username: string;
+  displayName: string;
+  bio: string | null;
+  avatar: { type: string; imageUrl: string } | null;
+  registrationDate: string;
+  currentLevel: number;
+  totalXP: number;
+  completedQuizzes: number;
+  /** Decimal string, e.g. "74.50". */
+  averageAccuracy: string;
+}
+
 /** PATCH /users/me/password body (docs §6). */
 export interface ChangePasswordPayload {
   currentPassword: string;

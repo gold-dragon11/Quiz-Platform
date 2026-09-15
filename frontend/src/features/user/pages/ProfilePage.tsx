@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { generatePath, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ROUTES } from '@/shared/constants/routes';
@@ -118,6 +118,13 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
 
       <p className="text-text-muted mt-6 text-sm">З нами з {formatJoinDate(user.createdAt)}</p>
 
+      {user.profile && (
+        <PublicProfileNote
+          username={user.profile.username}
+          enabled={user.settings?.publicProfileEnabled ?? true}
+        />
+      )}
+
       {statusNote && (
         <p className="border-warning text-text-secondary mt-10 max-w-xl border-l pl-5 text-sm">
           {statusNote}
@@ -136,6 +143,46 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
         .
       </p>
     </div>
+  );
+}
+
+/**
+ * Where the public page lives, and a way to pass it on. When the page is
+ * hidden the line says so instead, so nobody copies a link that shows a 404.
+ */
+function PublicProfileNote({ username, enabled }: { username: string; enabled: boolean }): React.JSX.Element {
+  const path = generatePath(ROUTES.publicProfile, { username });
+
+  if (!enabled) {
+    return (
+      <p className="text-text-muted mt-2 text-sm">
+        Публічний профіль приховано —{' '}
+        <Link to={ROUTES.settings} className="text-text-secondary underline underline-offset-4">
+          показати в налаштуваннях
+        </Link>
+        .
+      </p>
+    );
+  }
+
+  const copy = (): void => {
+    navigator.clipboard.writeText(`${window.location.origin}${path}`).then(
+      () => toast.success('Посилання скопійовано.'),
+      () => toast.error('Не вдалося скопіювати. Скопіюйте адресу вручну.'),
+    );
+  };
+
+  return (
+    <p className="text-text-muted mt-2 text-sm">
+      Публічний профіль:{' '}
+      <Link to={path} className="text-text-secondary break-all underline underline-offset-4">
+        {window.location.host}
+        {path}
+      </Link>
+      <button type="button" onClick={copy} className="text-primary ml-3 underline underline-offset-4">
+        Скопіювати
+      </button>
+    </p>
   );
 }
 
@@ -233,7 +280,8 @@ function EditProfileSection({
       <section className="border-border mt-12 border-t pt-8">
         <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Про себе</h2>
         <p className={`mt-4 max-w-xl text-sm ${bio ? 'text-text-secondary' : 'text-text-muted'}`}>
-          {bio ?? 'Ви ще нічого про себе не написали. Це видно викладачам у ваших групах.'}
+          {bio ??
+            'Ви ще нічого про себе не написали. Опис бачать викладачі у ваших групах і всі, хто відкриє ваш публічний профіль.'}
         </p>
         <button
           type="button"
@@ -253,7 +301,7 @@ function EditProfileSection({
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input
           label="Імʼя"
-          helperText="Так вас називає застосунок і бачать викладачі у групах."
+          helperText="Так вас називає застосунок; його бачать викладачі у групах і всі на публічному профілі."
           error={errors.displayName?.message}
           {...register('displayName')}
         />

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
 import { TRANSITION } from '@/shared/constants/motion';
 import type { NavItem } from '@/shared/layouts/navigation/nav-items';
+import { isNavItemActive, useMockSittingOpen } from '@/shared/layouts/navigation/use-mock-sitting';
 
 interface NavListProps {
   items: NavItem[];
@@ -28,6 +29,8 @@ interface NavListProps {
  * a section that comes back empty for this role leaves no stray line behind.
  */
 export function NavList({ items, layoutId, onNavigate }: NavListProps): React.JSX.Element {
+  const mockSitting = useMockSittingOpen();
+
   return (
     <nav className="flex flex-col gap-1">
       {items.map((item, index) => (
@@ -39,25 +42,28 @@ export function NavList({ items, layoutId, onNavigate }: NavListProps): React.JS
             index > 0 && items[index - 1].section !== item.section ? 'border-border mt-3 border-t pt-3' : ''
           }`}
         >
-          {({ isActive }) => (
-            <span className="relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium">
-              {isActive && (
-                <motion.span
-                  layoutId={layoutId}
-                  transition={TRANSITION.fade}
-                  className="bg-surface-elevated absolute inset-0 rounded-lg"
-                />
-              )}
-              <span
-                className={`relative z-10 flex items-center gap-3 transition-colors ${
-                  isActive ? 'text-text-primary' : 'text-text-muted group-hover:text-text-secondary'
-                }`}
-              >
-                {item.icon}
-                {item.label}
+          {({ isActive: routerActive }) => {
+            const isActive = isNavItemActive(item.to, routerActive, mockSitting);
+            return (
+              <span className="relative flex items-center gap-3 px-3 py-2.5 text-sm font-medium">
+                {isActive && (
+                  <motion.span
+                    layoutId={layoutId}
+                    transition={TRANSITION.fade}
+                    className="bg-surface-elevated absolute inset-0 rounded-lg"
+                  />
+                )}
+                <span
+                  className={`relative z-10 flex items-center gap-3 transition-colors ${
+                    isActive ? 'text-text-primary' : 'text-text-muted group-hover:text-text-secondary'
+                  }`}
+                >
+                  {item.icon}
+                  {item.label}
+                </span>
               </span>
-            </span>
-          )}
+            );
+          }}
         </NavLink>
       ))}
     </nav>

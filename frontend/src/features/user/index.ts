@@ -11,6 +11,9 @@ import { lazy } from 'react';
 export const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })),
 );
+export const PublicProfilePage = lazy(() =>
+  import('./pages/PublicProfilePage').then((m) => ({ default: m.PublicProfilePage })),
+);
 export const SettingsPage = lazy(() =>
   import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );

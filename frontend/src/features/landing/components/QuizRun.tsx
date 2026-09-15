@@ -267,7 +267,15 @@ function Matching({ filled }: { filled: number }): React.JSX.Element {
                 index < filled ? 'text-text-primary' : 'text-text-muted'
               }`}
             >
-              {index < filled ? right : '— оберіть відповідність —'}
+              {index < filled ? (
+                right
+              ) : (
+                // The full hint broke over two lines in a phone-width column.
+                <>
+                  <span className="sm:hidden">— обрати —</span>
+                  <span className="hidden sm:inline">— оберіть відповідність —</span>
+                </>
+              )}
             </span>
           </li>
         ))}
