@@ -1,3 +1,5 @@
+// Must stay first: the Sentry SDK instruments modules as they load.
+import './instrument';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';

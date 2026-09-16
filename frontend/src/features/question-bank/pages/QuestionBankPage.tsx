@@ -90,11 +90,7 @@ export function QuestionBankPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Викладання"
-        title="Банк питань"
-        lead="Усе, з чого складаються роботи, — разом із правильними відповідями й поясненнями. Це той самий матеріал, який учень бачить без ключів."
-      />
+      <PageHeader eyebrow="Викладання" title="Банк питань" />
 
       {/* Two columns even on a phone. Stacked one per row, the four filters
           filled the entire first screen and the bank itself — the point of

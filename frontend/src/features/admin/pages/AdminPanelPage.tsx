@@ -53,11 +53,7 @@ export function AdminPanelPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader
-        eyebrow="Адміністрування"
-        title="Каталог"
-        lead="Предмети, теми, питання й тести — і ролі облікових записів."
-      />
+      <PageHeader eyebrow="Адміністрування" title="Каталог" />
 
       <div className="mt-10">
         <AdminTabs active={tab} onChange={openTab} />

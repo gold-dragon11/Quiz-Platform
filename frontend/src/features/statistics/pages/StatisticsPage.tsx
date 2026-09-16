@@ -38,11 +38,7 @@ export function StatisticsPage(): React.JSX.Element {
   if (user.role === UserRole.TEACHER) {
     return (
       <div className="mx-auto max-w-4xl">
-        <PageHeader
-          eyebrow="Викладання"
-          title="Статистика"
-          lead="Де ваші групи слабкі — і що з цього варто зробити наступною роботою."
-        />
+        <PageHeader eyebrow="Викладання" title="Статистика" />
         <div className="mt-12">
           <TeacherStatistics />
         </div>
@@ -52,11 +48,7 @@ export function StatisticsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Ваші цифри"
-        title="Статистика"
-        lead="Скільки пройдено, що виходить гірше за решту — і куди варто повернутися."
-      />
+      <PageHeader eyebrow="Ваші цифри" title="Статистика" />
 
       <div className="mt-12">
         <LevelStanding />

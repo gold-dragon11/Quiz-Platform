@@ -74,11 +74,7 @@ export function MockExamPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Пробна робота"
-        title="Пробний НМТ"
-        lead="Робота цілком, на один годинник, без права щось налаштувати — рівно так, як на іспиті."
-      />
+      <PageHeader eyebrow="Пробна робота" title="Пробний НМТ" />
 
       <ActiveQuizBanner className="mt-8" />
 

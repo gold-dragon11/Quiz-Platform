@@ -167,11 +167,7 @@ export function QuizStartPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader
-        eyebrow="Тренування"
-        title="Тест"
-        lead="Оберіть предмет і тему — або лишіть усі теми, щоб питання добиралися з усього предмета."
-      />
+      <PageHeader eyebrow="Тренування" title="Тест" />
 
       <ActiveQuizBanner className="mt-10" />
 
@@ -212,7 +208,6 @@ export function QuizStartPage(): React.JSX.Element {
             // Explains the option that is actually selected. Left on
             // permanently it described «Усі теми» while a named topic sat in
             // the field — a hint about a state the reader is not in.
-            helperText={topicId === '' ? 'Питання беруться з усіх тем предмета, вперемішку.' : undefined}
             options={topicOptions}
             disabled={!subjectId || topics.isPending}
             {...register('topicId')}
@@ -282,7 +277,8 @@ function buildCountOptions(pool: number | undefined): number[] {
  */
 function poolHint(pool: number | undefined, subjectId: string): string | undefined {
   if (!subjectId) {
-    return 'Спочатку оберіть предмет.';
+    // The «Тема» field above already says it, in the control itself.
+    return undefined;
   }
   if (pool === undefined) {
     return 'Рахуємо, скільки питань доступно…';

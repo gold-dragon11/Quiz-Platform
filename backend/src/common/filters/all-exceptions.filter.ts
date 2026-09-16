@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { Request, Response } from 'express';
 
 /**
@@ -54,6 +55,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
         `${request.method} ${request.url}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+      // Only 5xx. A 400, 401, 403, 404 or 409 is the API working as designed —
+      // reporting those would bury the real failures under refused logins.
+      // Inert unless SENTRY_DSN is set (see src/instrument.ts).
+      // The route pattern rather than the filled-in URL: «/quiz/:sessionId»
+      // groups every session's failures into one issue, while a concrete id
+      // would open one issue per learner. Express types `route` as `any`.
+      const pattern = (request.route as { path?: string } | undefined)?.path;
+      Sentry.captureException(exception, {
+        tags: { route: `${request.method} ${pattern ?? request.url}` },
+      });
     }
 
     response.status(statusCode).json(body);

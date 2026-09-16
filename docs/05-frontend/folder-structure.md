@@ -39,6 +39,7 @@ src/
 ├── stores/
 ├── styles/
 ├── config/
+├── test/
 └── main.tsx
 ```
 
@@ -388,7 +389,15 @@ New features should integrate without restructuring existing folders.
 
 ---
 
-# 19. Success Criteria
+# 19. test/
+
+Shared test plumbing only — the jsdom setup, the MSW server and the render
+helper (docs/05-frontend/architecture.md §16). The tests themselves live beside
+the files they cover.
+
+---
+
+# 20. Success Criteria
 
 The folder structure is considered successful if it:
 
@@ -397,3 +406,4 @@ The folder structure is considered successful if it:
 - minimizes coupling;
 - encourages code reuse;
 - clearly separates business features from shared resources.
+

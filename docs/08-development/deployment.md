@@ -267,7 +267,9 @@ Actions on every push to `main` and every pull request. It has two jobs:
   the production build, unit tests, then against a throwaway PostgreSQL 16:
   migrations, a full seed (which also validates every topic file) and the
   end-to-end suite;
-- **frontend** — lint, Prettier, and `tsc -b && vite build`.
+- **frontend** — lint, Prettier, the component tests (Vitest and Testing
+  Library over jsdom, with the API mocked at the network boundary by MSW), and
+  `tsc -b && vite build`.
 
 Render and Vercel deploy `main` independently of it, the moment it changes. CI
 does not gate those deploys by itself: the protection is to merge only through
@@ -526,6 +528,43 @@ no activity for 60 days; re-enable the workflow on the Actions tab. An hourly
 request does not keep the instance awake: Render stops it after 15 idle
 minutes, so each run usually pays a cold start, which the workflow's 90-second
 timeout and retries allow for.
+
+
+## 17.8 Error Reporting
+
+Both applications report errors to Sentry, each to its own project, and each
+does nothing at all without a DSN — locally, in CI and in every test the SDK
+never initialises.
+
+| Where | Variable | Set on |
+| --- | --- | --- |
+| API | `SENTRY_DSN` | Render (`sync: false` in the blueprint) |
+| Frontend | `VITE_SENTRY_DSN` | Vercel, Production environment |
+
+Vite inlines its variable at build time, so changing the frontend DSN requires
+a redeploy rather than a restart.
+
+**What is reported.** On the API, only responses of 500 and above: a 400, 401,
+403, 404 or 409 is the contract working, and reporting those would bury real
+failures under refused logins. In the browser, render-time crashes caught by
+the error boundary and the router's error element; a failed API call is not
+reported twice, since the API reports its own.
+
+**What is never sent.** Request bodies — the login form posts a password
+through the same pipeline — headers, cookies and the user. `sendDefaultPii` is
+off on both sides and `beforeSend` strips what remains (`backend/src/instrument.ts`,
+`frontend/src/lib/sentry.ts`). Session replay and tracing are deliberately not
+enabled: a recording of a school student's screen is not something this product
+needs to hold, and tracing would spend the free plan's quota on timings nobody
+is reading.
+
+**Quota.** The free plan allows about 5 000 events a month. Identical errors
+group into one issue but still count per event, so the alert rule is «a new
+issue», not «every event».
+
+`backend/src/instrument.ts` is imported before anything else in `main.ts`: the
+SDK instruments modules as they load, and whatever is required before it stays
+uninstrumented.
 
 ---
 

@@ -53,11 +53,7 @@ export function StudentGroupsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Навчання"
-        title="Мої групи"
-        lead="Група — це звʼязок з репетитором під один предмет. Він видає завдання й бачить, як вони йдуть."
-      />
+      <PageHeader eyebrow="Навчання" title="Мої групи" />
 
       <section className="mt-12">
         <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">

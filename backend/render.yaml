@@ -71,6 +71,11 @@ services:
       - key: EMAIL_FROM
         sync: false
 
+      # Error reporting. Without it the SDK stays inert and the service runs
+      # exactly as before (docs/08-development/deployment.md §17.8).
+      - key: SENTRY_DSN
+        sync: false
+
       # Presented by the hourly GitHub Actions workflow to POST /api/v1/jobs/hourly.
       # Not generated: the same value is stored as the CRON_SECRET repository
       # secret in GitHub (docs/08-development/deployment.md §17.7).

@@ -17,11 +17,7 @@ export function DuelsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Змагання"
-        title="Дуелі"
-        lead="Один і той самий папір для двох. Виграє точніший, а за рівної точності — швидший. Грати можна коли завгодно: суперник не мусить бути онлайн."
-      />
+      <PageHeader eyebrow="Змагання" title="Дуелі" />
 
       <ActiveQuizBanner className="mt-8" />
 

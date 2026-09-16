@@ -59,11 +59,7 @@ export function MistakeReviewPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Інтервальне повторення"
-        title="Повторення помилок"
-        lead="Кожна помилка повертається за розкладом, і кожного разу пізніше. Відповіли правильно — інтервал росте; помилилися знову — усе спочатку."
-      />
+      <PageHeader eyebrow="Інтервальне повторення" title="Повторення помилок" />
 
       <ActiveQuizBanner className="mt-8" />
 
@@ -95,14 +91,9 @@ export function MistakeReviewPage(): React.JSX.Element {
 
             <div className="max-w-sm sm:text-right">
               {due > 0 ? (
-                <>
-                  <p className="text-text-secondary mb-4 text-sm">
-                    Коротка сесія — вона задумана як звичка, а не як марафон.
-                  </p>
-                  <Button onClick={handleStart} isLoading={startReview.isPending}>
-                    Почати повторення
-                  </Button>
-                </>
+                <Button onClick={handleStart} isLoading={startReview.isPending}>
+                  Почати повторення
+                </Button>
               ) : (
                 <p className="text-text-secondary text-sm">
                   {laterOn > 0
@@ -115,10 +106,6 @@ export function MistakeReviewPage(): React.JSX.Element {
 
           <section className="mt-16">
             <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Сходинки</h2>
-            <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-              Де лежить вага — там ви і є. Купа на першій сходинці означає, що ті самі помилки повертаються;
-              вага праворуч — що більшість уже майже позаду.
-            </p>
             <div className="mt-8">
               <ReviewLadder rungs={summary.data.ladder} cleared={summary.data.cleared} />
             </div>
