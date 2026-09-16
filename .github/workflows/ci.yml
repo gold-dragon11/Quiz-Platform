@@ -130,6 +130,11 @@ jobs:
       - name: Formatting
         run: npm run format:check
 
+      # Vitest + Testing Library against jsdom, with the API mocked at the
+      # network boundary (MSW) rather than stubbed inside the components.
+      - name: Tests
+        run: npm test
+
       # `tsc -b` then `vite build`: type errors fail the build.
       - name: Build
         run: npm run build

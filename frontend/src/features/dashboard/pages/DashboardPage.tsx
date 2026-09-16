@@ -47,9 +47,12 @@ export function DashboardPage(): React.JSX.Element {
         lead={
           isTeacher
             ? 'Групи, які ви ведете, і що по них зараз відкрито.'
-            : name
-              ? `Вітаю, ${name}. Ось усе, що чекає на вас — і нічого зайвого.`
-              : 'Усе, що чекає на вас — і нічого зайвого.'
+            : // Just the greeting: the sentence that followed it («Ось усе, що
+              // чекає на вас») described the list below rather than saying
+              // anything, and the list speaks for itself.
+              name
+              ? `Вітаю, ${name}.`
+              : undefined
         }
       />
 

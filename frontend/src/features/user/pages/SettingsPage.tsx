@@ -11,17 +11,12 @@ import { PublicProfileSection } from '@/features/user/components/PublicProfileSe
  *
  * There is no language preference: the interface is Ukrainian-only, so the
  * backend's `UserSettings.language` is set once at registration and never
- * shown. Theme remains a later feature. The lead says what the page holds, so
- * a short list does not read as a broken one.
+ * shown. Theme remains a later feature.
  */
 export function SettingsPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader
-        eyebrow="Акаунт"
-        title="Налаштування"
-        lead="Що бачать інші, пароль і видалення акаунта. Інтерфейс україномовний, тож мову обирати не треба."
-      />
+      <PageHeader eyebrow="Акаунт" title="Налаштування" />
 
       <div className="mt-14">
         <PublicProfileSection />

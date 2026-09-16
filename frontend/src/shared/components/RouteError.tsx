@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { ServerErrorPage } from '@/pages/error/ServerErrorPage';
+import { reportError } from '@/lib/sentry';
 
 /**
  * Router `errorElement` (Phase 6.1 decision F7) — the second error layer.
@@ -10,6 +12,14 @@ import { ServerErrorPage } from '@/pages/error/ServerErrorPage';
 export function RouteError(): React.JSX.Element {
   const error = useRouteError();
   const navigate = useNavigate();
+
+  // A 404 from the router is navigation, not a failure; anything else is a
+  // crash somebody should hear about.
+  useEffect(() => {
+    if (!isRouteErrorResponse(error)) {
+      reportError(error);
+    }
+  }, [error]);
 
   const message = isRouteErrorResponse(error)
     ? `${error.status} — ${error.statusText}`

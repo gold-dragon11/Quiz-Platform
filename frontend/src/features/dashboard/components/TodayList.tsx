@@ -12,7 +12,8 @@ interface TodayItem {
   key: string;
   to: string;
   title: string;
-  detail: string;
+  /** Omitted when the title already says everything. */
+  detail?: string;
   /** `now` carries the accent rule; `soon` is worth knowing, not doing today. */
   urgency: 'now' | 'soon';
 }
@@ -92,7 +93,6 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
       key: 'review',
       to: ROUTES.mistakeReview,
       title: `${due} ${pluralUk(due, 'помилка чекає', 'помилки чекають', 'помилок чекає')} повторення`,
-      detail: 'Коротка сесія — і вони повернуться нескоро, а частина не повернеться взагалі.',
       urgency: 'now',
     });
   }
@@ -131,7 +131,7 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
               }`}
             >
               <p className="text-text-primary truncate font-medium">{item.title}</p>
-              <p className="text-text-muted mt-1 text-xs">{item.detail}</p>
+              {item.detail && <p className="text-text-muted mt-1 text-xs">{item.detail}</p>}
             </div>
           </Link>
         </li>

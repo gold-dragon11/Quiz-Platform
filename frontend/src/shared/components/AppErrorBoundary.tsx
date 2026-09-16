@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, PropsWithChildren, ReactNode } from 'react';
 import { env } from '@/config/env';
+import { reportError } from '@/lib/sentry';
 import { ServerErrorPage } from '@/pages/error/ServerErrorPage';
 
 interface State {
@@ -28,6 +29,8 @@ export class AppErrorBoundary extends Component<PropsWithChildren, State> {
     if (env.isDev) {
       console.error('Uncaught render error:', error, info);
     }
+    // The component stack is what makes a minified browser trace readable.
+    reportError(error, { componentStack: info.componentStack });
   }
 
   private readonly handleReload = (): void => {

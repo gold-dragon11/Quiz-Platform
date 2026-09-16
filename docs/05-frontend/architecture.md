@@ -30,6 +30,7 @@ The frontend is built using:
 - Zustand
 - React Hook Form
 - Zod
+- Vitest, Testing Library and MSW (tests — §16)
 
 The application follows modern React best practices.
 
@@ -337,7 +338,30 @@ Future expansion should require minimal architectural changes.
 
 ---
 
-# 15. Success Criteria
+# 15. Tests
+
+`npm test` runs Vitest once; `npm run test:watch` keeps it open. CI runs the
+same command in the frontend job, before the build.
+
+Tests sit next to what they test (`LoginPage.test.tsx` beside `LoginPage.tsx`),
+as the backend's specs do. `src/test/` holds only the shared parts: the jsdom
+setup, the MSW server, and `renderScreen`, which mounts one screen inside the
+query client, the toast channel and a router.
+
+**The API is mocked at the network boundary, never inside a component.** A test
+declares what the endpoint answers and lets the real Axios client, the
+interceptors and the query cache run — that is where these screens have
+actually gone wrong. Unhandled requests fail the test rather than hanging, so a
+screen that quietly calls an endpoint nobody declared is caught.
+
+What is covered first is what breaks worst: sitting a quiz (an answer reaching
+the backend, handing the work in, a session closed by the sweep), the result
+screen's three states, the login form, and the plural/percentage helpers that
+label every figure in the product.
+
+---
+
+# 16. Success Criteria
 
 The frontend architecture is considered successful if it:
 
@@ -346,3 +370,4 @@ The frontend architecture is considered successful if it:
 - supports feature growth;
 - encourages code reuse;
 - provides a consistent development experience.
+

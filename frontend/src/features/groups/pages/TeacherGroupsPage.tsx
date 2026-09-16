@@ -24,11 +24,7 @@ export function TeacherGroupsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader
-        eyebrow="Викладання"
-        title="Групи"
-        lead="Група — це список учнів під один предмет. Ви даєте код, вони заходять; далі групі можна видавати завдання й дивитися, як вона справляється."
-      />
+      <PageHeader eyebrow="Викладання" title="Групи" />
 
       <section className="mt-12">
         <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">

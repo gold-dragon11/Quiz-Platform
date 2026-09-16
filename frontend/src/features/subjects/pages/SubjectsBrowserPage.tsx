@@ -130,11 +130,7 @@ export function SubjectsBrowserPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <PageHeader
-        eyebrow="Каталог"
-        title="Предмети"
-        lead="Усе, що можна вчити. Оберіть предмет, щоб відкрити його теми, конспекти й тести."
-      />
+      <PageHeader eyebrow="Каталог" title="Предмети" />
 
       <div className="mt-10 max-w-md">
         <Input

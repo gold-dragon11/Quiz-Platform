@@ -14,6 +14,11 @@ if (!apiUrl) {
 export const env = {
   /** Base URL of the backend API, e.g. http://localhost:3000/api/v1 */
   apiUrl,
+  /**
+   * Where browser errors are reported, or undefined when they are not —
+   * locally and in tests there is no DSN and the SDK stays inert.
+   */
+  sentryDsn: import.meta.env.VITE_SENTRY_DSN || undefined,
   /** True in the Vite dev server, false in production builds. */
   isDev: import.meta.env.DEV,
 } as const;
