@@ -51,6 +51,9 @@ export interface LiveGameView {
     outcome: LiveResultOutcome;
     forfeit: 'ME' | 'OPPONENT' | null;
     sessionId: string;
+    /** Whole seconds spent answering — the figures the tie-break compared. */
+    time: { mine: number; theirs: number };
+    questions: { mine: LiveAnswerOutcome | null; theirs: LiveAnswerOutcome | null }[];
   } | null;
 }
 

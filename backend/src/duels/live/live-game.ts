@@ -100,6 +100,8 @@ export class LiveGame {
   private forfeitedById: string | null = null;
   private correctAnswer: Record<string, unknown> | null = null;
   private outcome: Map<string, LiveResultOutcome> | null = null;
+  /** Whole seconds per player, as the tie-break saw them. */
+  private durations = new Map<string, number>();
   /** answers[userId][questionIndex] */
   private readonly answers = new Map<string, Map<number, Answer>>();
 
@@ -261,6 +263,19 @@ export class LiveGame {
                     ? 'ME'
                     : 'OPPONENT',
               sessionId: me.sessionId,
+              time: {
+                mine: this.durations.get(me.userId) ?? 0,
+                theirs: this.durations.get(opponent.userId) ?? 0,
+              },
+              questions: Array.from(
+                { length: this.questionCount },
+                (_, index) => ({
+                  mine: outcomeOf(this.answers.get(me.userId)!.get(index)),
+                  theirs: outcomeOf(
+                    this.answers.get(opponent.userId)!.get(index),
+                  ),
+                }),
+              ),
             }
           : null,
     };
@@ -346,6 +361,9 @@ export class LiveGame {
     });
 
     this.outcome = decide(totals, this.forfeitedById);
+    this.durations = new Map(
+      totals.map((one) => [one.userId, one.durationSeconds]),
+    );
     await this.port.finish({
       duelId: this.duelId,
       forfeitedById: this.forfeitedById,
