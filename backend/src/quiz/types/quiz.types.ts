@@ -18,6 +18,11 @@ export interface QuizSessionMetadata {
   status: QuizStatus;
   startedAt: string;
   expiresAt: string | null;
+  /**
+   * Set while this is one player's half of a live duel: the way back is that
+   * duel's page, not the ordinary quiz screen (duel.md §5.3).
+   */
+  liveDuelId: string | null;
 }
 
 /**

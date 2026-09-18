@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/api-client';
 import type { QuizSessionMetadata } from '@/features/quiz/types/quiz.types';
 import type { CreateDuelPayload, DuelView } from '@/features/duels/types/duel.types';
+import type { LiveAvailability } from '@/features/duels/live/live.types';
 
 /**
  * Duel endpoints. Thin wrappers over the shared apiClient — no direct Axios,
@@ -37,6 +38,14 @@ export const duelsApi = {
   /** POST /duels/:duelId/play — starts (or resumes) this player's half. */
   async play(duelId: string): Promise<QuizSessionMetadata> {
     const { data } = await apiClient.post<QuizSessionMetadata>(`/duels/${duelId}/play`);
+    return data;
+  },
+
+  /** GET /duels/live/availability — how many questions fit each live time. */
+  async liveAvailability(subjectId: string, topicId?: string): Promise<LiveAvailability> {
+    const { data } = await apiClient.get<LiveAvailability>('/duels/live/availability', {
+      params: { subjectId, ...(topicId ? { topicId } : {}) },
+    });
     return data;
   },
 };

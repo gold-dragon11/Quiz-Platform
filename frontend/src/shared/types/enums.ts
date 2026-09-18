@@ -108,7 +108,7 @@ export type QuestionReportStatus = (typeof QuestionReportStatus)[keyof typeof Qu
 export const DuelMode = {
   /** Both sit the same paper whenever they like; the result is a comparison. */
   ASYNC: 'ASYNC',
-  /** Both on the clock together, question by question. Not built yet. */
+  /** Both on the clock together, question by question, over a socket. */
   LIVE: 'LIVE',
 } as const;
 export type DuelMode = (typeof DuelMode)[keyof typeof DuelMode];

@@ -1,5 +1,6 @@
 import { generatePath, Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
+import { DuelMode } from '@/shared/types/enums';
 import { EmptyState } from '@/shared/ui/EmptyState';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { formatShortDate, pluralUk } from '@/shared/utils/format';
@@ -20,7 +21,7 @@ interface DuelListProps {
 }
 
 /** Stances the viewer can act on — these carry the accent rule and sort first. */
-const ACTIONABLE: DuelStance[] = ['INVITE_RECEIVED', 'MY_TURN'];
+const ACTIONABLE: DuelStance[] = ['LIVE_NOW', 'INVITE_RECEIVED', 'MY_TURN'];
 
 /**
  * Every duel, ordered by what it wants from the viewer rather than by date.
@@ -81,7 +82,7 @@ function DuelRow({ duel, userId }: { duel: DuelView; userId: string }): React.JS
   return (
     <li>
       <Link
-        to={generatePath(ROUTES.duel, { duelId: duel.id })}
+        to={generatePath(stance === 'LIVE_NOW' ? ROUTES.liveDuel : ROUTES.duel, { duelId: duel.id })}
         className="hover:bg-surface-elevated flex items-center justify-between gap-4 py-5 pr-2 transition-colors"
       >
         {/* The accent rule marks the rows that want something from you, so the
@@ -93,7 +94,9 @@ function DuelRow({ duel, userId }: { duel: DuelView; userId: string }): React.JS
           <p className="text-text-muted mt-1 text-xs">
             {duel.subject.name}
             {duel.topic && ` · ${duel.topic.name}`} · {duel.questionCount}{' '}
-            {pluralUk(duel.questionCount, 'питання', 'питання', 'питань')} · {formatShortDate(duel.createdAt)}
+            {pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}
+            {duel.mode === DuelMode.LIVE && ` · наживо, ${duel.secondsPerQuestion ?? ''} с`} ·{' '}
+            {formatShortDate(duel.createdAt)}
           </p>
         </div>
 

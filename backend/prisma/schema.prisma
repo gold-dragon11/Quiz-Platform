@@ -1135,14 +1135,22 @@ model Duel {
   subjectId String  @db.Uuid
   topicId   String? @db.Uuid
 
-  mode          DuelMode   @default(ASYNC)
-  status        DuelStatus @default(PENDING)
-  questionCount Int
+  mode               DuelMode   @default(ASYNC)
+  status             DuelStatus @default(PENDING)
+  questionCount      Int
+  /// Live only: the clock each question is on (docs/02-domain/duel.md §5.2).
+  secondsPerQuestion Int?
 
   /// An unanswered challenge goes stale rather than sitting in a list forever.
-  expiresAt   DateTime
-  acceptedAt  DateTime?
-  completedAt DateTime?
+  /// For a live duel: when its last question has closed, with a margin.
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  /// Live only: the moment the countdown ended and the first question opened.
+  startedAt     DateTime?
+  completedAt   DateTime?
+  /// Live only: the player who surrendered; the other wins whatever the score.
+  /// One of the two players, so no relation of its own.
+  forfeitedById String?   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

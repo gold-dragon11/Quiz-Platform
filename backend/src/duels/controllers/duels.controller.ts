@@ -7,18 +7,23 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
 import { CreateDuelDto } from '../dto/create-duel.dto';
+import { LiveAvailabilityQueryDto } from '../dto/live-availability-query.dto';
+import { LiveAvailability, LiveGamesService } from '../live/live-games.service';
 import { DuelsService } from '../services/duels.service';
 import { DuelView } from '../types/duel.types';
 
 /**
- * Duels (docs/02-domain/duel.md). Asynchronous for now: both players sit the
- * same frozen paper whenever they like, and the result is a comparison.
+ * Duels (docs/02-domain/duel.md). The asynchronous kind lives here: both
+ * players sit the same frozen paper whenever they like, and the result is a
+ * comparison. The live kind is played over the socket (live/live.gateway.ts);
+ * over HTTP it only has the availability count and its place in the list.
  *
  * Playing runs through the ordinary quiz routes once a session exists, so a
  * duel ends with the same review — including the explanation for every
@@ -28,7 +33,10 @@ import { DuelView } from '../types/duel.types';
 @UseGuards(JwtAuthGuard)
 @Controller('duels')
 export class DuelsController {
-  constructor(private readonly duelsService: DuelsService) {}
+  constructor(
+    private readonly duelsService: DuelsService,
+    private readonly liveGames: LiveGamesService,
+  ) {}
 
   /** POST /api/v1/duels — challenge somebody by username. */
   @Post()
@@ -43,6 +51,18 @@ export class DuelsController {
   @Get()
   async list(@CurrentUser('id') userId: string): Promise<DuelView[]> {
     return this.duelsService.list(userId);
+  }
+
+  /**
+   * GET /api/v1/duels/live/availability — for each time a live game allows,
+   * how many questions of the subject (or topic) fit it (duel.md §5.2).
+   * Declared before `:duelId`, which would otherwise take «live» for an id.
+   */
+  @Get('live/availability')
+  async liveAvailability(
+    @Query() query: LiveAvailabilityQueryDto,
+  ): Promise<LiveAvailability> {
+    return this.liveGames.availability(query.subjectId, query.topicId ?? null);
   }
 
   /** GET /api/v1/duels/:duelId */

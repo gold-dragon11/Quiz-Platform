@@ -8,6 +8,7 @@ import { EmailModule } from '../email/email.module';
 import { JWT_STRATEGY } from './constants/auth.constants';
 import { AuthController } from './controllers/auth.controller';
 import { AuthRepository } from './repositories/auth.repository';
+import { AccessTokenVerifier } from './services/access-token-verifier.service';
 import { AuthService } from './services/auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { PasswordUtil } from './utils/password.util';
@@ -47,7 +48,19 @@ import { PasswordUtil } from './utils/password.util';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthRepository, JwtStrategy, PasswordUtil],
-  exports: [AuthService, PasswordUtil, JwtModule, PassportModule],
+  providers: [
+    AuthService,
+    AuthRepository,
+    JwtStrategy,
+    PasswordUtil,
+    AccessTokenVerifier,
+  ],
+  exports: [
+    AuthService,
+    PasswordUtil,
+    JwtModule,
+    PassportModule,
+    AccessTokenVerifier,
+  ],
 })
 export class AuthModule {}

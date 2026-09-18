@@ -25,6 +25,7 @@ export const ROUTES = {
   assignment: '/assignments/:assignmentId',
   duels: '/duels',
   duel: '/duels/:duelId',
+  liveDuel: '/duels/live/:duelId',
   topicMaterial: '/topics/:topicId/material',
   statistics: '/statistics',
   profile: '/profile',

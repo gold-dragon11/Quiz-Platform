@@ -58,7 +58,10 @@ questions the group fell down on. A student's own practice is summarised for
 their tutor only while the student allows it, and they are told at the moment
 it starts to apply.
 
-**Duels.** The same set of questions for two players, asynchronously: the more
+**Duels.** The same set of questions for two players, two ways. Live: a random
+opponent or a named one who is online, question by question on the server's
+clock — 10 to 60 seconds each, with only questions that can honestly be done in
+that time. Or asynchronously, each whenever they like. Either way the more
 accurate wins, and at equal accuracy the faster one.
 
 **Public profile.** `/u/<username>` — avatar, level, XP, tests taken; open to
@@ -100,8 +103,8 @@ On a phone:
 
 | Layer | Choice |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, React Hook Form + Zod, Framer Motion |
-| Backend | NestJS, TypeScript, Prisma ORM, Passport JWT, Argon2, Resend |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, React Hook Form + Zod, Framer Motion, Socket.IO client |
+| Backend | NestJS, TypeScript, Prisma ORM, Passport JWT, Argon2, Resend, Socket.IO (live duels) |
 | Database | PostgreSQL 16 |
 | Tests | Jest (unit and end-to-end), Vitest + Testing Library + MSW |
 | Hosting | Render (API), Vercel (frontend), Neon (PostgreSQL) |

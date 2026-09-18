@@ -142,6 +142,10 @@ letting a teacher account join groups later needs no migration.
 | 27 | Student who joins after an assignment was issued | Does not receive it | A live recipient list — friendlier, but it breaks decision 02 |
 | 28 | Mock exam | Its own session type | A preset — nothing new in the schema, but mock history gets lost among ordinary tests |
 | 29 | Mock exam and the teacher | A teacher may sit one, without XP or the review ladder, and set one as homework: the group subject's paper, one variant drawn at issue, sat on the paper's clock and scored by its table | Hidden from teachers (they would set a paper they had never seen); a fresh variant per student (scores in one group stop being comparable); untimed homework (the clock is the exam) |
+| 31 | Live duel state | In the memory of the one API process; every answer written through the engine as it arrives; sessions carry an expiry so a restart loses the game, not the data | Redis (a second service to run for one instance); the database as the game loop (a query on every tick) |
+| 32 | Live duel questions | Only those whose estimated time fits the chosen seconds; passages never | Any question of the topic (a matching task in 10 seconds is a coin toss, not a contest) |
+| 33 | Answer in a live duel | The first one stands | Changeable until the deadline — speed stops meaning anything |
+| 34 | Random live opponent | A queue per subject, seconds and count; no topic; no confirmation after a match | Topic in the key (the queue splits into pieces too small to pair); an accept step (pairs lost to one slow click) |
 
 ---
 

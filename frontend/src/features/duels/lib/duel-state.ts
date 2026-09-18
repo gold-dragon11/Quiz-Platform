@@ -1,4 +1,4 @@
-import { DuelStatus } from '@/shared/types/enums';
+import { DuelMode, DuelStatus } from '@/shared/types/enums';
 import type { DuelPlayer, DuelView } from '@/features/duels/types/duel.types';
 
 /**
@@ -11,7 +11,14 @@ import type { DuelPlayer, DuelView } from '@/features/duels/types/duel.types';
  * whose turn it is.
  */
 export type DuelStance =
-  'INVITE_RECEIVED' | 'INVITE_SENT' | 'MY_TURN' | 'WAITING_OPPONENT' | 'FINISHED' | 'DECLINED' | 'EXPIRED';
+  | 'LIVE_NOW'
+  | 'INVITE_RECEIVED'
+  | 'INVITE_SENT'
+  | 'MY_TURN'
+  | 'WAITING_OPPONENT'
+  | 'FINISHED'
+  | 'DECLINED'
+  | 'EXPIRED';
 
 export function isChallenger(duel: DuelView, userId: string): boolean {
   return duel.challenger.id === userId;
@@ -32,6 +39,10 @@ export function stanceOf(duel: DuelView, userId: string): DuelStance {
     case DuelStatus.PENDING:
       return isChallenger(duel, userId) ? 'INVITE_SENT' : 'INVITE_RECEIVED';
     case DuelStatus.ACCEPTED:
+      // A live game has no turns: while it is accepted it is being played.
+      if (duel.mode === DuelMode.LIVE) {
+        return 'LIVE_NOW';
+      }
       return mySide(duel, userId).finished ? 'WAITING_OPPONENT' : 'MY_TURN';
     case DuelStatus.COMPLETED:
       return 'FINISHED';
@@ -44,6 +55,7 @@ export function stanceOf(duel: DuelView, userId: string): DuelStance {
 
 /** Short label for the state, in the viewer's own terms. */
 export const STANCE_LABEL: Record<DuelStance, string> = {
+  LIVE_NOW: 'іде зараз',
   INVITE_RECEIVED: 'вас викликали',
   INVITE_SENT: 'чекає на відповідь',
   MY_TURN: 'ваш хід',
@@ -55,6 +67,7 @@ export const STANCE_LABEL: Record<DuelStance, string> = {
 
 /** Duels the viewer can still do something about come first. */
 export const STANCE_ORDER: DuelStance[] = [
+  'LIVE_NOW',
   'INVITE_RECEIVED',
   'MY_TURN',
   'WAITING_OPPONENT',

@@ -67,6 +67,11 @@ export interface QuizSessionMetadata {
   status: QuizStatus;
   startedAt: string;
   expiresAt: string | null;
+  /**
+   * Set while this is one half of a live duel: the way back is that game's
+   * page, not the quiz screen, whose routes refuse it while it plays.
+   */
+  liveDuelId: string | null;
 }
 
 /**
