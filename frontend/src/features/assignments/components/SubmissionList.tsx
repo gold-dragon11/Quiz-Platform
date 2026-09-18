@@ -10,10 +10,12 @@ import type { SubmissionRow } from '@/features/assignments/types/review.types';
 /** Who still owes work comes first — that is what the list is opened for. */
 const STATUS_ORDER: SubmissionRow['status'][] = ['NOT_STARTED', 'IN_PROGRESS', 'SUBMITTED'];
 
+// Impersonal on purpose: «здав» beside «Дарина» is wrong, and the list knows
+// nothing about who is who.
 const STATUS_LABEL: Record<SubmissionRow['status'], string> = {
-  NOT_STARTED: 'не починав',
+  NOT_STARTED: 'не розпочато',
   IN_PROGRESS: 'у процесі',
-  SUBMITTED: 'здав',
+  SUBMITTED: 'здано',
 };
 
 /**

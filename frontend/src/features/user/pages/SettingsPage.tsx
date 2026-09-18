@@ -1,3 +1,4 @@
+import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { PageHeader } from '@/shared/ui/PageHeader';
 import { ChangePasswordForm } from '@/features/user/components/ChangePasswordForm';
 import { DeleteAccountSection } from '@/features/user/components/DeleteAccountSection';
@@ -14,6 +15,22 @@ import { PublicProfileSection } from '@/features/user/components/PublicProfileSe
  * shown. Theme remains a later feature.
  */
 export function SettingsPage(): React.JSX.Element {
+  const { data: user } = useCurrentUser();
+
+  // A demo account may change none of this, and offering three forms that each
+  // answer «forbidden» is worse than saying so once.
+  if (user?.isDemo) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <PageHeader eyebrow="Акаунт" title="Налаштування" />
+        <p className="border-primary text-text-secondary mt-14 max-w-xl border-l pl-5 text-sm">
+          Це демо-акаунт. Пароль, публічність профілю й видалення акаунта тут вимкнені, а щоночі все
+          повертається до початкового стану — тож тести й домашку можна проходити без жодних наслідків.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader eyebrow="Акаунт" title="Налаштування" />

@@ -133,7 +133,13 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
 
       {!user.emailVerified && <VerificationBlock email={user.email} />}
 
-      {user.profile && <EditProfileSection displayName={user.profile.displayName} bio={user.profile.bio} />}
+      {user.profile && (
+        <EditProfileSection
+          displayName={user.profile.displayName}
+          bio={user.profile.bio}
+          readOnly={user.isDemo}
+        />
+      )}
 
       <p className="text-text-muted mt-16 text-sm">
         Пароль і видалення акаунта —{' '}
@@ -233,9 +239,12 @@ function VerificationBlock({ email }: { email: string }): React.JSX.Element {
 function EditProfileSection({
   displayName,
   bio,
+  readOnly,
 }: {
   displayName: string;
   bio: string | null;
+  /** A demo account: the API refuses the change, so it is not offered. */
+  readOnly: boolean;
 }): React.JSX.Element {
   const updateProfile = useUpdateProfile();
   const [open, setOpen] = useState(false);
@@ -283,13 +292,19 @@ function EditProfileSection({
           {bio ??
             'Ви ще нічого про себе не написали. Опис бачать викладачі у ваших групах і всі, хто відкриє ваш публічний профіль.'}
         </p>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="text-primary mt-6 text-sm underline underline-offset-4"
-        >
-          Змінити імʼя або опис
-        </button>
+        {readOnly ? (
+          <p className="text-text-muted mt-6 text-sm">
+            Імʼя та опис демо-акаунта змінити не можна — щоночі він повертається до початкового стану.
+          </p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="text-primary mt-6 text-sm underline underline-offset-4"
+          >
+            Змінити імʼя або опис
+          </button>
+        )}
       </section>
     );
   }

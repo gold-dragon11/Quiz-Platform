@@ -118,12 +118,23 @@ export class DuelsRepository {
 
   async findUserByUsername(
     username: string,
-  ): Promise<{ id: string; accountStatus: string } | null> {
+  ): Promise<{ id: string; accountStatus: string; isDemo: boolean } | null> {
     const profile = await this.prisma.profile.findUnique({
       where: { username },
-      select: { user: { select: { id: true, accountStatus: true } } },
+      select: {
+        user: { select: { id: true, accountStatus: true, isDemo: true } },
+      },
     });
     return profile?.user ?? null;
+  }
+
+  /** Whether an account is a public demo account (deployment.md §17.9). */
+  async isDemoAccount(userId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isDemo: true },
+    });
+    return user?.isDemo ?? false;
   }
 
   /**

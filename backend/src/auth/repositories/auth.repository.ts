@@ -19,6 +19,7 @@ export interface AuthenticationCandidate {
   role: UserRole;
   accountStatus: AccountStatus;
   passwordHash: string;
+  isDemo: boolean;
 }
 
 /**
@@ -30,6 +31,7 @@ export interface AuthorizedAccount {
   email: string;
   role: UserRole;
   accountStatus: AccountStatus;
+  isDemo: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export interface CurrentUserRecord {
   role: UserRole;
   accountStatus: AccountStatus;
   emailVerified: boolean;
+  isDemo: boolean;
   createdAt: Date;
   profile: {
     username: string;
@@ -111,6 +114,7 @@ export class AuthRepository {
         role: true,
         accountStatus: true,
         passwordHash: true,
+        isDemo: true,
       },
     });
   }
@@ -129,6 +133,7 @@ export class AuthRepository {
         email: true,
         role: true,
         accountStatus: true,
+        isDemo: true,
       },
     });
   }
@@ -148,6 +153,7 @@ export class AuthRepository {
         role: true,
         accountStatus: true,
         emailVerified: true,
+        isDemo: true,
         createdAt: true,
         profile: {
           select: { username: true, displayName: true, bio: true },
@@ -205,10 +211,16 @@ export class AuthRepository {
     id: string;
     passwordHash: string;
     accountStatus: AccountStatus;
+    isDemo: boolean;
   } | null> {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, passwordHash: true, accountStatus: true },
+      select: {
+        id: true,
+        passwordHash: true,
+        accountStatus: true,
+        isDemo: true,
+      },
     });
   }
 

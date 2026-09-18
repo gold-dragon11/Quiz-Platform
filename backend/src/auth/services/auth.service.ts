@@ -496,7 +496,10 @@ export class AuthService implements OnModuleInit {
   async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
     const user = await this.authRepository.findUserForAuthentication(dto.email);
 
-    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+    // A demo account's address is published in the README; a reset link for
+    // it would hand the account to whoever reads that mailbox. Silent, like an
+    // unknown address, so the response says nothing either way.
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE || user.isDemo) {
       return;
     }
 
@@ -527,7 +530,7 @@ export class AuthService implements OnModuleInit {
 
     const user = await this.authRepository.findUserCredentialsById(payload.sub);
 
-    if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
+    if (!user || user.accountStatus !== AccountStatus.ACTIVE || user.isDemo) {
       throw new BadRequestException(INVALID_RESET_TOKEN_MESSAGE);
     }
 

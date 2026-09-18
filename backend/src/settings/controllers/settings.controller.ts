@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { NotDemoGuard } from '../../auth/guards/not-demo.guard';
 import { UpdateSettingsDto } from '../dto/update-settings.dto';
 import { UserSettingsRecord } from '../repositories/settings.repository';
 import { SettingsService } from '../services/settings.service';
@@ -23,7 +24,10 @@ export class SettingsController {
   }
 
   /** PATCH /api/v1/users/me/settings — partial update of preferences. */
+  // A demo account's profile staying public is part of the demo; hiding it
+  // would hide it from every reviewer until the nightly reset.
   @Patch()
+  @UseGuards(NotDemoGuard)
   async updateSettings(
     @CurrentUser('id') userId: string,
     @Body() updateSettingsDto: UpdateSettingsDto,

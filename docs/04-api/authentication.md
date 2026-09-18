@@ -313,7 +313,7 @@ The response is the authenticated user's session summary — the account togethe
 
 | Section | Fields |
 |---|---|
-| Account | id, email, role, accountStatus, emailVerified, createdAt |
+| Account | id, email, role, accountStatus, emailVerified, isDemo, createdAt |
 | Profile | username, displayName, bio |
 | Avatar | type, imageUrl |
 | Settings | language, theme, publicProfileEnabled, assignmentEmailsEnabled, shareSelfStudyWithTutors |

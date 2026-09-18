@@ -15,6 +15,23 @@ mistakes. Tutors run groups, set homework and see where a class actually broke.
 The interface is Ukrainian throughout; the code, comments and documentation are
 in English.
 
+![The landing page, with a test being sat in the hero](docs/media/landing.png)
+
+### Try it
+
+| | Email | Password |
+| --- | --- | --- |
+| Student | `demo-student@learn-ls.com` | `LsDemo2026!` |
+| Teacher | `demo-teacher@learn-ls.com` | `LsDemo2026!` |
+
+Both come with weeks of history — practice, mock papers, mistakes due for
+review, a class with homework to check. Sit tests and set homework freely: the
+demo is rebuilt from scratch every night, and changing its password or profile
+is switched off.
+
+The API runs on a free instance that sleeps when idle, so the first request
+after a quiet spell can take up to a minute.
+
 ---
 
 ## What it does
@@ -51,6 +68,31 @@ engines.
 The bank currently holds **5 399 published questions** across **4 subjects**,
 **76 topics**, with a learning material for every topic and 112 reading
 passages.
+
+---
+
+## Screenshots
+
+Taken from the demo accounts above, so everything here can be opened live.
+
+| | |
+| --- | --- |
+| ![Dashboard](docs/media/dashboard.png) | ![A test in progress](docs/media/quiz.png) |
+| **Dashboard** — homework due and mistakes waiting, nothing else | **A test in progress** — on a clock, answers saved as they are given |
+| ![Result with review](docs/media/result.png) | ![Mock NMT result](docs/media/mock-result.png) |
+| **Result** — then every question with its explanation | **Mock NMT** — the 100–200 score and points per task |
+| ![Mistake review](docs/media/mistake-review.png) | ![Statistics](docs/media/statistics.png) |
+| **Mistake review** — what is due today and where the rest sit on the ladder | **Statistics** — level, accuracy, time, and topics with unfixed mistakes first |
+| ![Homework review for a tutor](docs/media/teacher-review.png) | |
+| **Homework review** — who has not started, who was late, scores | |
+
+On a phone:
+
+<p>
+  <img src="docs/media/dashboard-mobile.png" alt="Dashboard on a phone" width="260">
+  <img src="docs/media/quiz-mobile.png" alt="A test on a phone" width="260">
+  <img src="docs/media/result-mobile.png" alt="A result on a phone" width="260">
+</p>
 
 ---
 

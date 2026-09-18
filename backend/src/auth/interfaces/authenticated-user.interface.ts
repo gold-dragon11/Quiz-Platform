@@ -10,4 +10,6 @@ export interface AuthenticatedUser {
   id: string;
   email: string;
   role: UserRole;
+  /** A public demo account — see NotDemoGuard. */
+  isDemo: boolean;
 }

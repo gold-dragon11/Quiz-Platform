@@ -182,6 +182,7 @@ describe('Current User (e2e)', () => {
         'email',
         'emailVerified',
         'id',
+        'isDemo',
         'profile',
         'role',
         'settings',

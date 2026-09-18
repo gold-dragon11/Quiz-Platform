@@ -13,6 +13,7 @@ import {
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { NotDemoGuard } from '../../auth/guards/not-demo.guard';
 import { AuthService } from '../../auth/services/auth.service';
 import { SelectAvatarDto } from '../dto/select-avatar.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
@@ -59,7 +60,7 @@ export class UsersController {
 
   /** PATCH /api/v1/users/me/profile — partial profile update. */
   @Patch('me/profile')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotDemoGuard)
   async updateMyProfile(
     @CurrentUser('id') userId: string,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -72,7 +73,7 @@ export class UsersController {
    * all refresh sessions are revoked (docs/04-api/users.md §6, decision A2).
    */
   @Patch('me/password')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotDemoGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async changePassword(
     @CurrentUser('id') userId: string,
@@ -90,7 +91,7 @@ export class UsersController {
 
   /** PUT /api/v1/users/me/avatar — select a predefined avatar. */
   @Put('me/avatar')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotDemoGuard)
   async selectAvatar(
     @CurrentUser('id') userId: string,
     @Body() selectAvatarDto: SelectAvatarDto,
@@ -104,7 +105,7 @@ export class UsersController {
    * historical data is preserved.
    */
   @Delete('me')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, NotDemoGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAccount(@CurrentUser('id') userId: string): Promise<void> {
     await this.authService.deleteAccount(userId);

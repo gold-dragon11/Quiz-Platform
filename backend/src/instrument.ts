@@ -20,6 +20,10 @@ if (dsn) {
     // Render exposes the deployed commit; it turns «when did this start» into
     // a question with an answer.
     release: process.env.RENDER_GIT_COMMIT,
+    // `SENTRY_DEBUG=true` makes the SDK narrate what it does — whether an
+    // event was built, and whether it left the process. The one way to tell a
+    // missing report apart from a rejected one.
+    debug: process.env.SENTRY_DEBUG === 'true',
     // Errors only. Tracing would spend the free plan's quota on timings we
     // are not reading, and performance work is a separate job.
     tracesSampleRate: 0,
