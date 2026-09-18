@@ -2,6 +2,7 @@ import { Component } from 'react';
 import type { ErrorInfo, PropsWithChildren, ReactNode } from 'react';
 import { env } from '@/config/env';
 import { reportError } from '@/lib/sentry';
+import { isStaleBuildError, reloadForNewBuild } from '@/lib/stale-build';
 import { ServerErrorPage } from '@/pages/error/ServerErrorPage';
 
 interface State {
@@ -28,6 +29,10 @@ export class AppErrorBoundary extends Component<PropsWithChildren, State> {
   componentDidCatch(error: Error, info: ErrorInfo): void {
     if (env.isDev) {
       console.error('Uncaught render error:', error, info);
+    }
+    // An older build's page: reload onto the new one (lib/stale-build.ts).
+    if (isStaleBuildError(error) && reloadForNewBuild()) {
+      return;
     }
     // The component stack is what makes a minified browser trace readable.
     reportError(error, { componentStack: info.componentStack });

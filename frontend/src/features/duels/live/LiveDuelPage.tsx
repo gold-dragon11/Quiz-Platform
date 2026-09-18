@@ -382,6 +382,9 @@ function Finished({ game }: { game: LiveGameView }): React.JSX.Element | null {
       </h1>
       {why && <p className="text-text-secondary mt-3">{why}</p>}
 
+      <TimeSummary game={game} />
+      <QuestionBreakdown game={game} />
+
       <div className="mt-10 flex flex-wrap gap-3">
         <Button onClick={() => navigate(generatePath(ROUTES.quizResult, { sessionId: result.sessionId }))}>
           Мій розбір
@@ -401,5 +404,101 @@ function Finished({ game }: { game: LiveGameView }): React.JSX.Element | null {
         .
       </p>
     </section>
+  );
+}
+
+/** 102 → «1 хв 42 с»: to the second, since a second can decide the game. */
+function clock(total: number): string {
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes > 0 ? `${minutes} хв ${seconds} с` : `${seconds} с`;
+}
+
+/**
+ * Both times and the gap, always — not only when time decided it. Whole
+ * seconds, as the tie-break compared them: a tenth shown here that the
+ * result ignored would read as a wrong result.
+ */
+function TimeSummary({ game }: { game: LiveGameView }): React.JSX.Element | null {
+  const result = game.result;
+  if (!result) {
+    return null;
+  }
+  const { mine, theirs } = result.time;
+  const gap = Math.abs(mine - theirs);
+  const them = nameOf(game.opponent);
+
+  return (
+    <div className="border-border mt-8 border-l pl-5">
+      <p className="text-text-primary">
+        Ваш час — {clock(mine)}, {them} — {clock(theirs)}.{' '}
+        {gap === 0
+          ? 'Однаково.'
+          : mine < theirs
+            ? `Ви швидші на ${clock(gap)}.`
+            : `${them} — на ${clock(gap)} швидше.`}
+      </p>
+      <p className="text-text-muted mt-2 text-sm">
+        Час — це сума часу на відповіді; питання без відповіді рахується повністю, {game.secondsPerQuestion}{' '}
+        с.
+      </p>
+    </div>
+  );
+}
+
+function Cell({ outcome }: { outcome: { isCorrect: boolean; seconds: number } | null }): React.JSX.Element {
+  if (!outcome) {
+    return <span className="text-text-muted">без відповіді</span>;
+  }
+  const seconds = outcome.seconds.toLocaleString('uk-UA', { maximumFractionDigits: 1 });
+  return (
+    <span className={outcome.isCorrect ? 'text-success' : 'text-error'}>
+      {outcome.isCorrect ? 'правильно' : 'неправильно'}
+      <span className="text-text-secondary">, {seconds} с</span>
+    </span>
+  );
+}
+
+/** Question by question, so the place where the gap opened can be found. */
+function QuestionBreakdown({ game }: { game: LiveGameView }): React.JSX.Element | null {
+  const questions = game.result?.questions;
+  if (!questions || questions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-10 overflow-x-auto">
+      <table className="w-full min-w-[22rem] text-sm">
+        <caption className="text-text-muted mb-3 text-left text-xs tracking-[0.18em] uppercase">
+          По питаннях
+        </caption>
+        <thead>
+          <tr className="text-text-muted border-border border-b text-left">
+            <th scope="col" className="py-2 pr-4 font-normal">
+              №
+            </th>
+            <th scope="col" className="py-2 pr-4 font-normal">
+              Ви
+            </th>
+            <th scope="col" className="py-2 font-normal">
+              {nameOf(game.opponent)}
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-border divide-y">
+          {questions.map((row, index) => (
+            <tr key={index}>
+              <td className="text-text-muted py-2 pr-4 tabular-nums">{index + 1}</td>
+              <td className="py-2 pr-4 tabular-nums">
+                <Cell outcome={row.mine} />
+              </td>
+              <td className="py-2 tabular-nums">
+                <Cell outcome={row.theirs} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

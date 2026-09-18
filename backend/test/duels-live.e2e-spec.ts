@@ -428,6 +428,17 @@ describe('Duels — live (e2e)', () => {
       const finished = await game(a, (view) => view.phase === 'finished');
       expect(finished.result).toMatchObject({ outcome: 'WIN', forfeit: null });
       expect(finished.me.score).toBe(settings.count);
+      // Both times, and every question for both, so a result can be checked.
+      expect(finished.result!.questions).toHaveLength(settings.count);
+      expect(
+        finished.result!.questions.every(
+          (one) =>
+            one.mine?.isCorrect === true && one.theirs?.isCorrect === false,
+        ),
+      ).toBe(true);
+      expect(finished.result!.time.mine).toBeLessThanOrEqual(
+        settings.count * settings.seconds,
+      );
 
       const duel = await prisma.duel.findUniqueOrThrow({
         where: { id: finished.duelId },

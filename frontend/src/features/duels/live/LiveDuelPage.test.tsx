@@ -101,12 +101,47 @@ describe('LiveDuelPage', () => {
       view({
         phase: 'finished',
         deadline: null,
-        result: { outcome: 'WIN', forfeit: 'OPPONENT', sessionId: 's-me' },
+        result: {
+          outcome: 'WIN',
+          forfeit: 'OPPONENT',
+          sessionId: 's-me',
+          time: { mine: 42, theirs: 60 },
+          questions: [{ mine: { isCorrect: true, seconds: 4.2 }, theirs: null }],
+        },
       }),
     );
 
     expect(screen.getByRole('heading', { name: 'Перемога' })).toBeInTheDocument();
     expect(screen.getByText('Андрій — здача.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Мій розбір' })).toBeInTheDocument();
+  });
+
+  it('shows both times, the gap, and every question, so a tie-break can be checked', () => {
+    show(
+      view({
+        phase: 'finished',
+        deadline: null,
+        me: player('me', 'Олена', 7),
+        opponent: player('them', 'Андрій', 7),
+        result: {
+          outcome: 'WIN',
+          forfeit: null,
+          sessionId: 's-me',
+          time: { mine: 102, theirs: 125 },
+          questions: [
+            { mine: { isCorrect: true, seconds: 4.2 }, theirs: { isCorrect: true, seconds: 6 } },
+            { mine: { isCorrect: false, seconds: 12.5 }, theirs: null },
+          ],
+        },
+      }),
+    );
+
+    expect(screen.getByText('Рахунок рівний — вирішив час.')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Ваш час — 1 хв 42 с, Андрій — 2 хв 5 с\. Ви швидші на 23 с\./),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/без відповіді рахується повністю, 20 с/)).toBeInTheDocument();
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+    expect(screen.getByRole('cell', { name: 'без відповіді' })).toBeInTheDocument();
   });
 });

@@ -59,6 +59,17 @@ export interface LiveGameView {
     forfeit: 'ME' | 'OPPONENT' | null;
     /** For the review of this player's half. */
     sessionId: string;
+    /**
+     * Time spent answering, in whole seconds — the same figures the tie-break
+     * compared, so the screen can never show a gap the result ignored.
+     * An unanswered question counts in full.
+     */
+    time: { mine: number; theirs: number };
+    /** Every question, in order: how each player did, or null for none. */
+    questions: {
+      mine: LiveAnswerOutcome | null;
+      theirs: LiveAnswerOutcome | null;
+    }[];
   } | null;
 }
 

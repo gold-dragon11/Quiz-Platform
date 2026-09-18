@@ -222,6 +222,15 @@ describe('LiveGame', () => {
       outcome: 'WIN',
       forfeit: null,
       sessionId: 's-ann',
+      // Exactly the figures the tie-break compared.
+      time: { mine: 4, theirs: 10 },
+      questions: [
+        { mine: { isCorrect: true, seconds: 4 }, theirs: null },
+        {
+          mine: { isCorrect: false, seconds: 0 },
+          theirs: { isCorrect: true, seconds: 0 },
+        },
+      ],
     });
     expect(game.viewFor('ben').result?.outcome).toBe('LOSS');
   });

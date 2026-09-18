@@ -3,6 +3,7 @@ import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-d
 import { ROUTES } from '@/shared/constants/routes';
 import { ServerErrorPage } from '@/pages/error/ServerErrorPage';
 import { reportError } from '@/lib/sentry';
+import { isStaleBuildError, reloadForNewBuild } from '@/lib/stale-build';
 
 /**
  * Router `errorElement` (Phase 6.1 decision F7) — the second error layer.
@@ -15,10 +16,17 @@ export function RouteError(): React.JSX.Element {
 
   // A 404 from the router is navigation, not a failure; anything else is a
   // crash somebody should hear about.
+  //
+  // A page of an older build is not a crash: the tab reloads onto the new
+  // one (lib/stale-build.ts), and is only reported if that did not help.
   useEffect(() => {
-    if (!isRouteErrorResponse(error)) {
-      reportError(error);
+    if (isRouteErrorResponse(error)) {
+      return;
     }
+    if (isStaleBuildError(error) && reloadForNewBuild()) {
+      return;
+    }
+    reportError(error);
   }, [error]);
 
   const message = isRouteErrorResponse(error)
