@@ -20,6 +20,8 @@ export type CurrentUserResponse = {
   role: UserRole;
   accountStatus: AccountStatus;
   emailVerified: boolean;
+  /** Lets the interface explain, rather than fail, what a demo cannot do. */
+  isDemo: boolean;
   createdAt: Date;
   profile: {
     username: string;

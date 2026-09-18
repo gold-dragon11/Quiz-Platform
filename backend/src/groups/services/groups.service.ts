@@ -184,6 +184,17 @@ export class GroupsService {
     if (!group) {
       throw new NotFoundException(INVALID_CODE_MESSAGE);
     }
+    // Demo groups are sealed both ways. The demo teacher's invite code is on
+    // screen for anyone who signs in, and a real learner who joined with it
+    // would have their homework deleted by the nightly reset. Answered like a
+    // wrong code, so the code says nothing about whose group it is.
+    const [ownerIsDemo, studentIsDemo] = await Promise.all([
+      this.groupsRepository.isDemoAccount(group.ownerId),
+      this.groupsRepository.isDemoAccount(studentId),
+    ]);
+    if (ownerIsDemo !== studentIsDemo) {
+      throw new NotFoundException(INVALID_CODE_MESSAGE);
+    }
     if (group.archivedAt) {
       throw new ConflictException(ARCHIVED_MESSAGE);
     }

@@ -49,6 +49,15 @@ export class GroupsRepository {
     });
   }
 
+  /** Whether an account is a public demo account (deployment.md §17.9). */
+  async isDemoAccount(userId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isDemo: true },
+    });
+    return user?.isDemo ?? false;
+  }
+
   async findByInviteCode(inviteCode: string): Promise<GroupRow | null> {
     return this.prisma.group.findUnique({
       where: { inviteCode },

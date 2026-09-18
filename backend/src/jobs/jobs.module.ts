@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DemoModule } from '../demo/demo.module';
 import { DuelsModule } from '../duels/duels.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { QuizModule } from '../quiz/quiz.module';
@@ -12,7 +13,7 @@ import { JobsService } from './services/jobs.service';
  * decides when they run and who may ask.
  */
 @Module({
-  imports: [QuizModule, NotificationsModule, DuelsModule],
+  imports: [QuizModule, NotificationsModule, DuelsModule, DemoModule],
   controllers: [JobsController],
   providers: [JobsService, CronSecretGuard],
 })

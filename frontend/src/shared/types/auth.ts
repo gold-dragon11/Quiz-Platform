@@ -11,6 +11,8 @@ export interface CurrentUser {
   role: UserRole;
   accountStatus: AccountStatus;
   emailVerified: boolean;
+  /** A public demo account: account changes are refused and it resets nightly. */
+  isDemo: boolean;
   createdAt: string;
   profile: {
     username: string;

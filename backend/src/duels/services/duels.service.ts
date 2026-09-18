@@ -56,6 +56,15 @@ export class DuelsService {
     if (!opponent || opponent.accountStatus !== AccountStatus.ACTIVE) {
       throw new NotFoundException(OPPONENT_NOT_FOUND_MESSAGE);
     }
+    // Demo accounts duel only each other: a duel with a real learner would be
+    // deleted, their half included, by the nightly reset. Answered as an
+    // unknown username, so it reveals nothing about either account.
+    if (
+      opponent.isDemo !==
+      (await this.duelsRepository.isDemoAccount(challengerId))
+    ) {
+      throw new NotFoundException(OPPONENT_NOT_FOUND_MESSAGE);
+    }
     if (opponent.id === challengerId) {
       throw new BadRequestException(SELF_CHALLENGE_MESSAGE);
     }

@@ -566,6 +566,60 @@ issue», not «every event».
 SDK instruments modules as they load, and whatever is required before it stays
 uninstrumented.
 
+## 17.9 Public Demo
+
+Two accounts anyone may sign in with, listed in the README:
+
+| Account | Email | Password |
+| --- | --- | --- |
+| Student | `demo-student@learn-ls.com` | `LsDemo2026!` |
+| Teacher | `demo-teacher@learn-ls.com` | `LsDemo2026!` |
+
+Behind them sit six classmates nobody signs in as, so the teacher's review has
+a class in it and the student has someone to have duelled.
+
+**What it contains.** Three weeks of the student's own practice across four
+subjects, two mock papers (one above the threshold, one short of it), three
+earlier review sessions — so mistakes sit on every rung of the ladder, with some
+due today — a finished duel, and a group with three pieces of
+homework: one past its deadline and handed in by most of the class, one open,
+one a mock paper just issued.
+
+**How it is built.** `src/demo/demo.service.ts` drives the product's own
+services — groups are created and joined, homework is issued and started, and
+every sitting is completed by the quiz engine. Only the answers are written in
+bulk, marked by the engine's own `evaluateAnswer`. The scores, XP, statistics
+and mistake ladder are therefore the ones the product computed. Each sitting is
+then moved back to a day in the past, together with the ladder rows and
+exposures it created, so the history reads as weeks rather than a minute.
+
+**What a demo account cannot do.** `User.isDemo` marks the accounts, and:
+
+- `NotDemoGuard` refuses changing the password, profile, avatar or the public
+  profile switch, and deleting the account — anyone could otherwise lock the
+  next visitor out or rename the account into something that greets them;
+- password recovery ignores the demo addresses, silently, as for an unknown
+  address;
+- the demo is sealed: a real account cannot join a demo group, and duels
+  between demo and real accounts are refused both ways, each answered as an
+  unknown code or username. This is what makes the reset safe — deleting the
+  demo can never take a real learner's work with it.
+
+The interface says so rather than failing: Settings shows one explanation in
+place of its forms, and the profile hides the edit link.
+
+**The reset.** `.github/workflows/demo-reset.yml` calls
+`POST /api/v1/jobs/demo-reset` every night at 00:23 UTC with the same
+`CRON_SECRET` as the hourly job. The API answers 202 at once and rebuilds in the
+background — about a minute against production, far longer than a scheduler's
+request should stay open. A reset already running is left alone (`started:
+false`). A failure is logged and reported to Sentry. The rebuild deletes every
+demo account with everything it made and creates the demo again from nothing,
+so however often it runs, exactly one demo exists afterwards.
+
+**First run after a deploy.** Actions → «Demo reset» → Run workflow. Until then
+the demo accounts do not exist.
+
 ---
 
 # 18. Future Improvements
