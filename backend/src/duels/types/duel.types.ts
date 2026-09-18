@@ -25,6 +25,10 @@ export interface DuelView {
   subject: { id: string; name: string };
   topic: { id: string; name: string } | null;
   questionCount: number;
+  /** Live only: the clock each question was on. */
+  secondsPerQuestion: number | null;
+  /** Live only: set when a player surrendered. */
+  forfeitedById: string | null;
   challenger: DuelPlayer;
   opponent: DuelPlayer;
   /** Set only once both have finished. */

@@ -6,6 +6,7 @@ import {
   drawKeepingPassages,
   type PassageMember,
 } from '../../quiz/passage-draw.util';
+import type { TimedQuestion } from '../live/question-fit.util';
 
 const PLAYER_SELECT = {
   id: true,
@@ -17,6 +18,8 @@ const DUEL_SELECT = {
   mode: true,
   status: true,
   questionCount: true,
+  secondsPerQuestion: true,
+  forfeitedById: true,
   expiresAt: true,
   acceptedAt: true,
   completedAt: true,
@@ -45,6 +48,11 @@ const DUEL_SELECT = {
 } as const;
 
 export type DuelRow = Prisma.DuelGetPayload<{ select: typeof DUEL_SELECT }>;
+
+/** A candidate for a live duel: enough to time it, in preference order. */
+export interface LivePoolRow extends TimedQuestion {
+  id: string;
+}
 
 /** Data access for duels (docs/02-domain/duel.md). */
 @Injectable()
@@ -177,6 +185,69 @@ export class DuelsRepository {
       ORDER BY seen.last_seen ASC NULLS FIRST, random()
     `);
     return drawKeepingPassages(rows, params.count);
+  }
+
+  /**
+   * Every published question of a subject or topic, with what it takes to time
+   * it (docs/02-domain/duel.md §5.2), in preference order: those the players
+   * met longest ago first, then random. The timing filter runs in code, so the
+   * estimate has one definition; the pool is a subject at most, a few thousand
+   * short rows.
+   *
+   * Without players the order is only random — that is the availability count.
+   */
+  async findLivePool(params: {
+    subjectId: string;
+    topicId: string | null;
+    userIds: string[];
+  }): Promise<LivePoolRow[]> {
+    const players =
+      params.userIds.length > 0
+        ? params.userIds
+        : ['00000000-0000-0000-0000-000000000000'];
+
+    const rows = await this.prisma.$queryRaw<
+      {
+        id: string;
+        type: LivePoolRow['type'];
+        difficulty: LivePoolRow['difficulty'];
+        subjectSlug: string;
+        textLength: number;
+        hasImage: boolean;
+        inPassage: boolean;
+      }[]
+    >(Prisma.sql`
+      SELECT q.id, q.type, q.difficulty, s.slug AS "subjectSlug",
+             (length(q.title) + COALESCE(o.text_length, 0))::int AS "textLength",
+             (q."imageUrl" IS NOT NULL OR COALESCE(o.has_image, false)) AS "hasImage",
+             (q."passageId" IS NOT NULL) AS "inPassage"
+      FROM questions q
+      JOIN topics t ON t.id = q."topicId"
+      JOIN subjects s ON s.id = t."subjectId"
+      LEFT JOIN LATERAL (
+        SELECT SUM(length(ao.content)) AS text_length,
+               BOOL_OR(ao."imageUrl" IS NOT NULL) AS has_image
+        FROM answer_options ao
+        WHERE ao."questionId" = q.id
+      ) o ON true
+      LEFT JOIN LATERAL (
+        SELECT MAX(e."shownAt") AS last_seen
+        FROM question_exposures e
+        WHERE e."questionId" = q.id
+          AND e."userId" = ANY(${players}::uuid[])
+      ) seen ON true
+      WHERE q."deletedAt" IS NULL AND q."isPublished" = true
+        AND t."deletedAt" IS NULL AND t."isPublished" = true
+        AND s."deletedAt" IS NULL AND s."isPublished" = true
+        AND s.id = ${params.subjectId}::uuid
+        ${
+          params.topicId === null
+            ? Prisma.empty
+            : Prisma.sql`AND t.id = ${params.topicId}::uuid`
+        }
+      ORDER BY seen.last_seen ASC NULLS FIRST, random()
+    `);
+    return rows;
   }
 
   /** Challenges nobody answered, so a stale list does not accumulate. */

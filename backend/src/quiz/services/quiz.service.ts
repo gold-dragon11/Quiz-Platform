@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import {
   Difficulty,
+  DuelMode,
   ExplanationVisibility,
   Language,
   Prisma,
@@ -107,6 +108,10 @@ const INSUFFICIENT_MISTAKES_MESSAGE =
 const INSUFFICIENT_IN_FORMAT_MESSAGE =
   'Завдань формату НМТ у цій темі поки бракує. Оберіть меншу кількість або звичайне тренування.';
 const SESSION_NOT_ACTIVE_MESSAGE = 'Ця сесія тесту неактивна.';
+// A live duel is played over its socket, one question at a time; the ordinary
+// routes would hand out the questions ahead and let an answer be changed.
+const LIVE_DUEL_IN_PLAY_MESSAGE =
+  'Ця дуель іде наживо — грайте на її сторінці.';
 const SESSION_NOT_COMPLETED_MESSAGE = 'Ця сесія тесту ще не завершена.';
 const QUESTION_NOT_IN_SESSION_MESSAGE = 'Це питання не належить до цієї сесії.';
 const QUIZ_NOT_FOUND_MESSAGE = 'Тест не знайдено.';
@@ -889,6 +894,11 @@ export class QuizService {
       subjectId: string;
       topicId: string | null;
       questionIds: string[];
+      /**
+       * A live duel's sessions close on their own when the last question has
+       * — so a game lost with the server still ends (duel.md §5.5).
+       */
+      expiresAt?: Date;
     },
   ): Promise<QuizSessionMetadata> {
     const resumable = await this.quizSessionRepository.findActiveForDuel(
@@ -912,9 +922,9 @@ export class QuizService {
           subjectId: params.subjectId,
           topicId: params.topicId,
           mode: QuizType.DUEL,
-          timerEnabled: false,
+          timerEnabled: params.expiresAt !== undefined,
           questionCount: params.questionIds.length,
-          expiresAt: null,
+          expiresAt: params.expiresAt ?? null,
           questionIds: params.questionIds,
         }),
       );
@@ -1211,7 +1221,7 @@ export class QuizService {
     sessionId: string,
     requestedLocale: string | undefined,
   ): Promise<QuizQuestionView[]> {
-    await this.loadCurrentSession(userId, sessionId);
+    assertNotLive(await this.loadCurrentSession(userId, sessionId));
     const locale = await this.settingsService.resolveLocale(
       requestedLocale,
       userId,
@@ -1236,6 +1246,7 @@ export class QuizService {
     requestedLocale: string | undefined,
   ): Promise<QuizResumeView> {
     const session = await this.loadCurrentSession(userId, sessionId);
+    assertNotLive(session);
     const locale = await this.settingsService.resolveLocale(
       requestedLocale,
       userId,
@@ -1301,18 +1312,35 @@ export class QuizService {
     dto: SubmitAnswerDto,
   ): Promise<{ questionId: string; selectedAnswer: Prisma.JsonValue }> {
     const session = await this.loadCurrentSession(userId, sessionId);
+    assertNotLive(session);
+    await this.saveAnswer(session, dto);
+
+    return {
+      questionId: dto.questionId,
+      selectedAnswer: dto.selectedAnswer as Prisma.JsonValue,
+    };
+  }
+
+  /** Evaluates and stores one answer; returns whether it was right. */
+  private async saveAnswer(
+    session: QuizSessionRecord,
+    dto: SubmitAnswerDto,
+  ): Promise<boolean> {
     if (session.status !== QuizStatus.ACTIVE) {
       throw new ConflictException(SESSION_NOT_ACTIVE_MESSAGE);
     }
 
     const snapshotIds =
-      await this.quizSessionRepository.findSnapshotQuestionIds(sessionId);
+      await this.quizSessionRepository.findSnapshotQuestionIds(session.id);
     if (!snapshotIds.includes(dto.questionId)) {
       // Indistinguishable from an unknown question — no leakage.
       throw new NotFoundException(QUESTION_NOT_IN_SESSION_MESSAGE);
     }
 
-    const question = await this.findSnapshotQuestion(sessionId, dto.questionId);
+    const question = await this.findSnapshotQuestion(
+      session.id,
+      dto.questionId,
+    );
     const isCorrect = evaluateAnswer(
       question.type,
       dto.selectedAnswer,
@@ -1321,17 +1349,75 @@ export class QuizService {
     );
 
     await this.questionAttemptRepository.upsert({
-      quizSessionId: sessionId,
+      quizSessionId: session.id,
       questionId: dto.questionId,
       selectedAnswer: dto.selectedAnswer as Prisma.InputJsonValue,
       isCorrect,
       timeSpentSeconds: dto.timeSpentSeconds,
     });
+    return isCorrect;
+  }
 
-    return {
-      questionId: dto.questionId,
-      selectedAnswer: dto.selectedAnswer as Prisma.JsonValue,
-    };
+  // ------------------------------------------------------------ live duels
+  // The live game (duels/live) drives a session itself: it deals the questions
+  // one at a time, decides which answer counts and times it. These are its
+  // doors into the engine; the ordinary routes stay shut while it plays.
+
+  /** Every question of a live session, keyless, in order. */
+  async liveQuestions(
+    userId: string,
+    sessionId: string,
+  ): Promise<QuizQuestionView[]> {
+    await this.loadSessionOrThrow(userId, sessionId);
+    const locale = await this.settingsService.resolveLocale(undefined, userId);
+    const questions = await this.quizSessionRepository.findSessionQuestions(
+      sessionId,
+      localeArg(locale),
+    );
+    return questions.map((question) =>
+      this.toQuestionView(question, sessionId),
+    );
+  }
+
+  /** Stores an answer the game has accepted; returns whether it was right. */
+  async recordLiveAnswer(
+    userId: string,
+    sessionId: string,
+    dto: SubmitAnswerDto,
+  ): Promise<boolean> {
+    const session = await this.loadSessionOrThrow(userId, sessionId);
+    return this.saveAnswer(session, dto);
+  }
+
+  /** The key to one question, for the reveal after it closes. */
+  async liveKey(
+    sessionId: string,
+    questionId: string,
+  ): Promise<Record<string, unknown>> {
+    const question = await this.findSnapshotQuestion(sessionId, questionId);
+    return correctAnswerFor(
+      question.type,
+      question.answerOptions,
+      question.configuration,
+    );
+  }
+
+  /**
+   * Completes a live session. `durationSeconds` is the time the player spent
+   * answering, not the length of the game — both players sit the same game,
+   * and the tie-break has to tell them apart (duel.md §5.4).
+   */
+  async completeLive(
+    userId: string,
+    sessionId: string,
+    durationSeconds: number,
+  ): Promise<void> {
+    const session = await this.loadSessionOrThrow(userId, sessionId);
+    await this.finalize(session);
+    await this.prisma.quizSession.update({
+      where: { id: sessionId },
+      data: { durationSeconds },
+    });
   }
 
   /**
@@ -1344,6 +1430,7 @@ export class QuizService {
     sessionId: string,
   ): Promise<QuizResultSummary> {
     const session = await this.loadSessionOrThrow(userId, sessionId);
+    assertNotLive(session);
     const summary = await this.finalize(session);
     if (!summary) {
       throw new ConflictException(SESSION_NOT_ACTIVE_MESSAGE);
@@ -1670,6 +1757,7 @@ export class QuizService {
       status: session.status,
       startedAt: session.startedAt.toISOString(),
       expiresAt: session.expiresAt ? session.expiresAt.toISOString() : null,
+      liveDuelId: session.duel?.mode === DuelMode.LIVE ? session.duelId : null,
     };
   }
 
@@ -1739,4 +1827,14 @@ function localeArg(locale: Language): Language | undefined {
 /** Round to two decimals for the Decimal(5,2) accuracy/score columns. */
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+/** A live duel's session is played over its socket only (duel.md §5.3). */
+function assertNotLive(session: QuizSessionRecord): void {
+  if (
+    session.duel?.mode === DuelMode.LIVE &&
+    session.status === QuizStatus.ACTIVE
+  ) {
+    throw new ConflictException(LIVE_DUEL_IN_PLAY_MESSAGE);
+  }
 }

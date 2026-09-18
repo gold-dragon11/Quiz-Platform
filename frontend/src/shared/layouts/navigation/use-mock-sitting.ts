@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
 import { matchPath, useLocation } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { QuizType } from '@/shared/types/enums';
@@ -21,8 +21,10 @@ export function useMockSittingOpen(): boolean {
 
   const { data } = useQuery<{ session?: { mode?: string } }>({
     queryKey: ['quiz', result ? 'result' : 'session', sessionId],
-    // Observe only: the page that owns this data fetches it.
-    enabled: false,
+    // Observe only: the page that owns this data fetches it. `skipToken`, not
+    // `enabled: false` alone — without a query function the library logged an
+    // error on every page, whenever it looked at this query.
+    queryFn: skipToken,
   });
 
   return sessionId !== '' && data?.session?.mode === QuizType.MOCK_EXAM;

@@ -4,13 +4,16 @@ import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { ActiveQuizBanner } from '@/features/quiz/components/ActiveQuizBanner';
 import { ChallengeForm } from '@/features/duels/components/ChallengeForm';
 import { DuelList } from '@/features/duels/components/DuelList';
+import { LivePlaySection } from '@/features/duels/live/LivePlaySection';
 
 /**
- * `/duels` (RequireAuth) — challenge somebody, and see every duel you are in.
+ * `/duels` (RequireAuth) — play somebody now, challenge somebody for later, and
+ * see every duel you are in (docs/02-domain/duel.md).
  *
- * Asynchronous by design: both players sit the same paper whenever they like
- * and the result is a comparison. Nothing here waits on anybody being online,
- * which is why this half exists before the live one.
+ * Live first: it is the one that needs the other person online this minute.
+ * The asynchronous challenge stays below — both sit the same paper whenever
+ * they like — and is what a live challenge falls back to when the opponent is
+ * away. The demo shows only that one (duel.md §6).
  */
 export function DuelsPage(): React.JSX.Element {
   const currentUser = useCurrentUser();
@@ -21,9 +24,20 @@ export function DuelsPage(): React.JSX.Element {
 
       <ActiveQuizBanner className="mt-8" />
 
-      <section className="mt-12">
+      {currentUser.data && !currentUser.data.isDemo && (
+        <section className="mt-12">
+          <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
+            Грати наживо
+          </h2>
+          <div className="mt-6">
+            <LivePlaySection />
+          </div>
+        </section>
+      )}
+
+      <section className="mt-16">
         <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-          Викликати
+          Викликати на потім
         </h2>
         <div className="mt-6">
           <ChallengeForm />

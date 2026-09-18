@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   Difficulty,
+  DuelMode,
   Language,
   Prisma,
   QuestionFormat,
@@ -51,6 +52,8 @@ export interface QuizSessionRecord {
   assignmentId: string | null;
   /** Set when the session is one player's half of a duel. */
   duelId: string | null;
+  /** That duel's mode: a live duel's session is played over a socket only. */
+  duel: { mode: DuelMode } | null;
   /** The joint NMT block this mock sitting belongs to; null otherwise. */
   nmtBlock: string | null;
 }
@@ -107,6 +110,7 @@ const SESSION_SELECT = {
   topicId: true,
   assignmentId: true,
   duelId: true,
+  duel: { select: { mode: true } },
   nmtBlock: true,
   mode: true,
   timerEnabled: true,

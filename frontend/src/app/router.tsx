@@ -26,7 +26,7 @@ import { DashboardPage } from '@/features/dashboard';
 import { QuizStartPage, QuizSessionPage, QuizResultPage } from '@/features/quiz';
 import { MockExamPage } from '@/features/mock-exam';
 import { MistakeReviewPage } from '@/features/mistake-review';
-import { DuelPage, DuelsPage } from '@/features/duels';
+import { DuelPage, DuelsPage, LiveDuelHost, LiveDuelPage } from '@/features/duels';
 import { StudentGroupsPage, TeacherGroupPage, TeacherGroupsPage } from '@/features/groups';
 import {
   AssignmentReviewPage,
@@ -126,123 +126,131 @@ export const router = createBrowserRouter([
         element: <RequireAuth />,
         children: [
           {
-            element: <MainLayout />,
+            // The live duel socket and its incoming-challenge dialog, on every
+            // page of the app (docs/02-domain/duel.md §5.1).
+            element: <LiveDuelHost />,
             children: [
-              // Open to every signed-in role.
-              { path: ROUTES.dashboard, element: page(<DashboardPage />) },
-              { path: ROUTES.subjects, element: page(<SubjectsBrowserPage />) },
               {
-                path: ROUTES.topicMaterial,
-                element: page(<MaterialPage />),
-              },
-              { path: ROUTES.statistics, element: page(<StatisticsPage />) },
-              { path: ROUTES.profile, element: page(<ProfilePage />) },
-              { path: ROUTES.settings, element: page(<SettingsPage />) },
-
-              // Sitting a test. The navigation has always hidden these from a
-              // teacher; until now the routes themselves were still served, so
-              // typing the address gave them a mock exam their own statistics
-              // page would never show them.
-              {
-                element: <RequireLearner />,
+                element: <MainLayout />,
                 children: [
-                  { path: ROUTES.quiz, element: page(<QuizStartPage />) },
+                  // Open to every signed-in role.
+                  { path: ROUTES.dashboard, element: page(<DashboardPage />) },
+                  { path: ROUTES.subjects, element: page(<SubjectsBrowserPage />) },
                   {
-                    path: ROUTES.mistakeReview,
-                    element: page(<MistakeReviewPage />),
+                    path: ROUTES.topicMaterial,
+                    element: page(<MaterialPage />),
                   },
-                  { path: ROUTES.duels, element: page(<DuelsPage />) },
-                  { path: ROUTES.duel, element: page(<DuelPage />) },
-                ],
-              },
+                  { path: ROUTES.statistics, element: page(<StatisticsPage />) },
+                  { path: ROUTES.profile, element: page(<ProfilePage />) },
+                  { path: ROUTES.settings, element: page(<SettingsPage />) },
 
-              // A mock exam, and the session and result screens it runs on:
-              // open to a teacher too, who sits a paper to see what they are
-              // about to set. The only sessions a teacher can start are mocks.
-              {
-                element: <RequireLearner roles={MOCK_EXAM_ROLES} />,
-                children: [
+                  // Sitting a test. The navigation has always hidden these from a
+                  // teacher; until now the routes themselves were still served, so
+                  // typing the address gave them a mock exam their own statistics
+                  // page would never show them.
                   {
-                    path: ROUTES.quizSession,
-                    element: page(<QuizSessionPage />),
+                    element: <RequireLearner />,
+                    children: [
+                      { path: ROUTES.quiz, element: page(<QuizStartPage />) },
+                      {
+                        path: ROUTES.mistakeReview,
+                        element: page(<MistakeReviewPage />),
+                      },
+                      { path: ROUTES.duels, element: page(<DuelsPage />) },
+                      { path: ROUTES.duel, element: page(<DuelPage />) },
+                      { path: ROUTES.liveDuel, element: page(<LiveDuelPage />) },
+                    ],
                   },
-                  {
-                    path: ROUTES.quizResult,
-                    element: page(<QuizResultPage />),
-                  },
-                  { path: ROUTES.mockExam, element: page(<MockExamPage />) },
-                ],
-              },
 
-              // Being taught: a student's own groups and homework. An
-              // administrator joins no groups, so this is USER alone rather
-              // than the learner set above.
-              {
-                element: <RequireRole role={UserRole.USER} />,
-                children: [
-                  { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
-                  { path: ROUTES.assignments, element: page(<StudentAssignmentsPage />) },
-                  { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
-                ],
-              },
+                  // A mock exam, and the session and result screens it runs on:
+                  // open to a teacher too, who sits a paper to see what they are
+                  // about to set. The only sessions a teacher can start are mocks.
+                  {
+                    element: <RequireLearner roles={MOCK_EXAM_ROLES} />,
+                    children: [
+                      {
+                        path: ROUTES.quizSession,
+                        element: page(<QuizSessionPage />),
+                      },
+                      {
+                        path: ROUTES.quizResult,
+                        element: page(<QuizResultPage />),
+                      },
+                      { path: ROUTES.mockExam, element: page(<MockExamPage />) },
+                    ],
+                  },
 
-              // Teacher routes — own role gate. Deliberately not open to
-              // administrators: the backend's @TeacherOnly() refuses them too,
-              // because an administrator owns no groups.
-              //
-              // The gates sit inside the shell, as the learner gates above do.
-              // Outside it, a wrong role got a 403 on a bare page with no way
-              // back but the one link, while the same refusal on a learner route
-              // kept the navigation.
-              {
-                element: <RequireTeacher />,
-                children: [
-                  { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
-                  { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
-                  { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
+                  // Being taught: a student's own groups and homework. An
+                  // administrator joins no groups, so this is USER alone rather
+                  // than the learner set above.
                   {
-                    path: ROUTES.teacherAssignmentNew,
-                    element: page(<NewAssignmentPage />),
+                    element: <RequireRole role={UserRole.USER} />,
+                    children: [
+                      { path: ROUTES.groups, element: page(<StudentGroupsPage />) },
+                      { path: ROUTES.assignments, element: page(<StudentAssignmentsPage />) },
+                      { path: ROUTES.assignment, element: page(<StudentAssignmentPage />) },
+                    ],
                   },
-                  {
-                    path: ROUTES.teacherAssignment,
-                    element: page(<AssignmentReviewPage />),
-                  },
-                  {
-                    path: ROUTES.teacherStudent,
-                    element: page(<StudentProfilePage />),
-                  },
-                ],
-              },
 
-              // Administrator routes.
-              {
-                element: <RequireAdmin />,
-                children: [
-                  { path: ROUTES.admin, element: page(<AdminPanelPage />) },
+                  // Teacher routes — own role gate. Deliberately not open to
+                  // administrators: the backend's @TeacherOnly() refuses them too,
+                  // because an administrator owns no groups.
+                  //
+                  // The gates sit inside the shell, as the learner gates above do.
+                  // Outside it, a wrong role got a 403 on a bare page with no way
+                  // back but the one link, while the same refusal on a learner route
+                  // kept the navigation.
                   {
-                    path: ROUTES.adminSubjects,
-                    element: withTransition('Керування предметами'),
+                    element: <RequireTeacher />,
+                    children: [
+                      { path: ROUTES.teacherGroups, element: page(<TeacherGroupsPage />) },
+                      { path: ROUTES.teacherQuestions, element: page(<QuestionBankPage />) },
+                      { path: ROUTES.teacherGroup, element: page(<TeacherGroupPage />) },
+                      {
+                        path: ROUTES.teacherAssignmentNew,
+                        element: page(<NewAssignmentPage />),
+                      },
+                      {
+                        path: ROUTES.teacherAssignment,
+                        element: page(<AssignmentReviewPage />),
+                      },
+                      {
+                        path: ROUTES.teacherStudent,
+                        element: page(<StudentProfilePage />),
+                      },
+                    ],
                   },
+
+                  // Administrator routes.
                   {
-                    path: ROUTES.adminTopics,
-                    element: withTransition('Керування темами'),
-                  },
-                  {
-                    path: ROUTES.adminQuizzes,
-                    element: withTransition('Керування шаблонами тестів'),
-                  },
-                  {
-                    path: ROUTES.adminQuestions,
-                    element: withTransition('Керування питаннями'),
-                  },
-                  {
-                    path: ROUTES.adminQuestionNew,
-                    element: withTransition('Створення питання'),
-                  },
-                  {
-                    path: ROUTES.adminQuestionEdit,
-                    element: withTransition('Редагування питання'),
+                    element: <RequireAdmin />,
+                    children: [
+                      { path: ROUTES.admin, element: page(<AdminPanelPage />) },
+                      {
+                        path: ROUTES.adminSubjects,
+                        element: withTransition('Керування предметами'),
+                      },
+                      {
+                        path: ROUTES.adminTopics,
+                        element: withTransition('Керування темами'),
+                      },
+                      {
+                        path: ROUTES.adminQuizzes,
+                        element: withTransition('Керування шаблонами тестів'),
+                      },
+                      {
+                        path: ROUTES.adminQuestions,
+                        element: withTransition('Керування питаннями'),
+                      },
+                      {
+                        path: ROUTES.adminQuestionNew,
+                        element: withTransition('Створення питання'),
+                      },
+                      {
+                        path: ROUTES.adminQuestionEdit,
+                        element: withTransition('Редагування питання'),
+                      },
+                    ],
                   },
                 ],
               },

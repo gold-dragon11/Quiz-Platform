@@ -15,6 +15,11 @@ export const env = {
   /** Base URL of the backend API, e.g. http://localhost:3000/api/v1 */
   apiUrl,
   /**
+   * The live duel socket: the API's own host, outside the /api/v1 prefix —
+   * socket.io serves its own path at the root.
+   */
+  liveUrl: `${new URL(apiUrl, globalThis.location?.href).origin}/live`,
+  /**
    * Where browser errors are reported, or undefined when they are not —
    * locally and in tests there is no DSN and the SDK stays inert.
    */

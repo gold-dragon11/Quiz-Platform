@@ -14,6 +14,8 @@ import { QUIZ_QUERY_KEYS } from '@/features/quiz/hooks/use-quiz';
 export const DUEL_QUERY_KEYS = {
   list: ['duels', 'list'] as const,
   one: (duelId: string) => ['duels', 'one', duelId] as const,
+  liveAvailability: (subjectId: string, topicId: string) =>
+    ['duels', 'live-availability', subjectId, topicId] as const,
 };
 
 export function useDuels() {
@@ -69,5 +71,15 @@ export function usePlayDuel(duelId: string) {
       void queryClient.invalidateQueries({ queryKey: DUEL_QUERY_KEYS.one(duelId) });
       void queryClient.invalidateQueries({ queryKey: DUEL_QUERY_KEYS.list });
     },
+  });
+}
+
+/** For each live time, how many questions of the subject (or topic) fit it. */
+export function useLiveAvailability(subjectId: string, topicId = '') {
+  return useQuery({
+    queryKey: DUEL_QUERY_KEYS.liveAvailability(subjectId, topicId),
+    queryFn: () => duelsApi.liveAvailability(subjectId, topicId || undefined),
+    enabled: subjectId !== '',
+    staleTime: 5 * 60 * 1000,
   });
 }

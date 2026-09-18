@@ -6,3 +6,8 @@ import { lazy } from 'react';
  */
 export const DuelsPage = lazy(() => import('./pages/DuelsPage').then((m) => ({ default: m.DuelsPage })));
 export const DuelPage = lazy(() => import('./pages/DuelPage').then((m) => ({ default: m.DuelPage })));
+export const LiveDuelPage = lazy(() =>
+  import('./live/LiveDuelPage').then((m) => ({ default: m.LiveDuelPage })),
+);
+/** Not lazy: it wraps every page of the app and holds the socket open. */
+export { LiveDuelHost } from './live/LiveDuelHost';

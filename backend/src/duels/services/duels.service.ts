@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AccountStatus, DuelStatus, QuizStatus } from '@prisma/client';
+import {
+  AccountStatus,
+  DuelMode,
+  DuelStatus,
+  QuizStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuizService } from '../../quiz/services/quiz.service';
 import { QuizSessionMetadata } from '../../quiz/types/quiz.types';
@@ -20,6 +25,7 @@ const NOT_PENDING_MESSAGE = 'На цей виклик уже відповіли.
 const NOT_ACCEPTED_MESSAGE = 'Виклик ще не прийнято.';
 const ALREADY_PLAYED_MESSAGE = 'Ви вже пройшли цю дуель.';
 const EXPIRED_MESSAGE = 'Термін цього виклику минув.';
+const LIVE_DUEL_MESSAGE = 'Ця дуель іде наживо — грайте на її сторінці.';
 const NOT_ENOUGH_QUESTIONS_MESSAGE =
   'Для дуелі з цієї теми бракує опублікованих питань.';
 
@@ -149,6 +155,10 @@ export class DuelsService {
   async play(userId: string, duelId: string): Promise<QuizSessionMetadata> {
     const duel = await this.requireParticipant(userId, duelId);
 
+    // A live duel's halves are opened by the game itself (duel.md §5.3).
+    if (duel.mode === DuelMode.LIVE) {
+      throw new ConflictException(LIVE_DUEL_MESSAGE);
+    }
     if (duel.status !== DuelStatus.ACCEPTED) {
       throw new ConflictException(
         duel.status === DuelStatus.PENDING
@@ -258,6 +268,8 @@ export class DuelsService {
       subject: duel.subject,
       topic: duel.topic,
       questionCount: duel.questionCount,
+      secondsPerQuestion: duel.secondsPerQuestion,
+      forfeitedById: duel.forfeitedById,
       challenger: this.toPlayer(duel, duel.challengerId, both),
       opponent: this.toPlayer(duel, duel.opponentId, both),
       winner: both ? this.outcome(duel) : null,
@@ -309,6 +321,12 @@ export class DuelsService {
    * only after correctness keeps the incentive on being right.
    */
   private outcome(duel: DuelRow): DuelOutcome {
+    // A live player who surrendered loses whatever the score (duel.md §5.4).
+    if (duel.forfeitedById) {
+      return duel.forfeitedById === duel.challengerId
+        ? 'OPPONENT'
+        : 'CHALLENGER';
+    }
     const challenger = duel.sessions.find(
       (session) => session.userId === duel.challengerId,
     );

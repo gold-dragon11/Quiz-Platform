@@ -89,6 +89,17 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
         </Alert>
       )}
 
+      {stance === 'LIVE_NOW' && (
+        <section className="mt-12">
+          <p className="text-text-secondary max-w-2xl">Ця дуель іде наживо просто зараз.</p>
+          <div className="mt-8">
+            <Button onClick={() => navigate(generatePath(ROUTES.liveDuel, { duelId: duel.id }))}>
+              Повернутися до гри
+            </Button>
+          </div>
+        </section>
+      )}
+
       {stance === 'INVITE_RECEIVED' && (
         <section className="mt-12">
           <p className="text-text-secondary max-w-2xl">
@@ -153,7 +164,11 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
       {stance === 'DECLINED' && <Waiting>Виклик відхилено. Можна викликати ще раз, якщо є настрій.</Waiting>}
 
       {stance === 'EXPIRED' && (
-        <Waiting>Виклик протермінувався — на відповідь було два дні. Можна викликати ще раз.</Waiting>
+        <Waiting>
+          {duel.mode === 'LIVE'
+            ? 'Гра не відбулася. Можна викликати ще раз.'
+            : 'Виклик протермінувався — на відповідь було два дні. Можна викликати ще раз.'}
+        </Waiting>
       )}
     </div>
   );

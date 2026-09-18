@@ -38,7 +38,11 @@ export function DuelScoreboard({ duel, userId }: DuelScoreboardProps): React.JSX
           {outcome === 'WON' && 'Ви виграли цю дуель.'}
           {outcome === 'LOST' && `Цього разу перемога за ${playerName(them)}.`}
           {outcome === 'DRAW' && 'Нічия — однакова точність за однаковий час.'}
-          {' Переможця визначає точність; за рівної точності — час.'}
+          {duel.forfeitedById
+            ? duel.forfeitedById === userId
+              ? ' Ви здалися посеред гри.'
+              : ` ${playerName(them)} — здача посеред гри.`
+            : ' Переможця визначає точність; за рівної точності — час.'}
         </p>
       )}
     </div>

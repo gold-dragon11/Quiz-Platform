@@ -86,11 +86,7 @@ export function ResultReview({
                   className="max-h-64 w-auto self-start rounded-lg object-contain"
                 />
               )}
-              {question.type === QuestionType.SINGLE_CHOICE && <SingleChoiceReview question={question} />}
-              {question.type === QuestionType.MATCHING && <MatchingReview question={question} />}
-              {question.type === QuestionType.ORDERING && <OrderingReview question={question} />}
-              {question.type === QuestionType.MULTIPLE_CHOICE && <MultipleChoiceReview question={question} />}
-              {question.type === QuestionType.NUMERIC && <NumericReview question={question} />}
+              <AnswerReview question={question} />
               {question.explanation && <Explanation text={question.explanation} />}
               {/* The review is where a wrong key actually shows itself: the
                 learner has just been told they were wrong and can see the
@@ -102,6 +98,28 @@ export function ResultReview({
       </ul>
     </section>
   );
+}
+
+/**
+ * What was chosen against what was right, in the shape of the question's own
+ * type. Also the reveal after each question of a live duel, so the two read
+ * the same way.
+ */
+export function AnswerReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element | null {
+  switch (question.type) {
+    case QuestionType.SINGLE_CHOICE:
+      return <SingleChoiceReview question={question} />;
+    case QuestionType.MATCHING:
+      return <MatchingReview question={question} />;
+    case QuestionType.ORDERING:
+      return <OrderingReview question={question} />;
+    case QuestionType.MULTIPLE_CHOICE:
+      return <MultipleChoiceReview question={question} />;
+    case QuestionType.NUMERIC:
+      return <NumericReview question={question} />;
+    default:
+      return null;
+  }
 }
 
 /**

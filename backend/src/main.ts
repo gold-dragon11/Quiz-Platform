@@ -9,6 +9,7 @@ import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { AppConfig } from './config/configuration';
+import { LiveSocketAdapter } from './duels/live/live-socket.adapter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -36,6 +37,13 @@ async function bootstrap(): Promise<void> {
     origin: configService.get('corsOrigin', { infer: true }),
     credentials: true,
   });
+  // The live duel socket (docs/02-domain/duel.md §5) accepts the same origin.
+  app.useWebSocketAdapter(
+    new LiveSocketAdapter(
+      app,
+      configService.get('corsOrigin', { infer: true }),
+    ),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({

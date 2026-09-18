@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerException, ThrottlerGuard } from '@nestjs/throttler';
 
 /**
@@ -17,6 +17,19 @@ const TOO_MANY_REQUESTS_MESSAGE =
 
 @Injectable()
 export class LocalizedThrottlerGuard extends ThrottlerGuard {
+  /**
+   * HTTP only. The guard is global, and Nest runs global guards on socket
+   * handlers too, where it would look for response headers that do not
+   * exist; the live duel socket keeps its own per-connection limit
+   * (duels/live/live.gateway.ts).
+   */
+  canActivate(context: ExecutionContext): Promise<boolean> {
+    if (context.getType() !== 'http') {
+      return Promise.resolve(true);
+    }
+    return super.canActivate(context);
+  }
+
   // The base signature takes the execution context and the limit detail;
   // neither is needed, and the rejection deliberately does not vary by route.
   protected throwThrottlingException(): Promise<void> {

@@ -27,6 +27,23 @@ export function ActiveQuizBanner({ className = '' }: { className?: string }): Re
   }
 
   const session = activeQuiz.data;
+
+  // A live duel's half is played on its own page; the quiz screen refuses it.
+  if (session.liveDuelId) {
+    return (
+      <p className={`border-primary text-text-secondary max-w-xl border-l pl-5 text-sm ${className}`}>
+        Ваша дуель наживо ще йде —{' '}
+        <Link
+          to={generatePath(ROUTES.liveDuel, { duelId: session.liveDuelId })}
+          className="text-primary underline underline-offset-4"
+        >
+          повернутися до гри
+        </Link>
+        .
+      </p>
+    );
+  }
+
   const subjectName = subjects.data?.find((subject) => subject.id === session.subjectId)?.name;
 
   return (
