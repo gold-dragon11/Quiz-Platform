@@ -16,12 +16,9 @@ import * as argon2 from 'argon2';
 @Injectable()
 export class PasswordUtil {
   async hashPassword(plainPassword: string): Promise<string> {
-    // argon2 types hash() as Promise<any> because its `raw` option switches the
-    // return between Buffer and string. We never pass `raw`, so the result is
-    // always the encoded hash string.
-    return (await argon2.hash(plainPassword, {
-      type: argon2.argon2id,
-    })) as string;
+    // Without `raw` the library returns the encoded hash string, and since
+    // argon2 0.45.1 its own types say so — no assertion needed.
+    return argon2.hash(plainPassword, { type: argon2.argon2id });
   }
 
   /**
