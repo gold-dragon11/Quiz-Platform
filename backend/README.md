@@ -39,8 +39,8 @@ everywhere except the test environment.
 | `npm run start:prod` | Run the compiled build |
 | `npm run lint` / `lint:check` | Lint, with and without autofix |
 | `npm run format` / `format:check` | Prettier, with and without writing |
-| `npm test` | Unit tests (67) |
-| `npm run test:e2e` | End-to-end tests (858 across 37 suites) |
+| `npm test` | Unit tests (84) |
+| `npm run test:e2e` | End-to-end tests (880 across 39 suites) |
 | `npm run prisma:seed` | Load the content into the database |
 | `npm run prisma:generate` | Regenerate the Prisma client |
 | `npm run prisma:migrate:dev` | Create and apply a migration in development |
@@ -92,10 +92,15 @@ deletes. Renaming a question's stem therefore creates a second question — see
 [`docs/08-development/deployment.md`](../docs/08-development/deployment.md)
 §17.1a and the repair script `prisma/scripts/sync-retitled-questions.ts`.
 
-Three tools guard the content, and CI runs the first two on every push:
+Four tools guard the content, and CI runs the first three on every push:
 
 - `prisma/lint-content.ts` — authoring quality: stray keys, leftover notes,
   mixed scripts, duplicated examples;
+- `prisma/lint-answer-length.ts` — the longest-answer giveaway: a correct
+  option far longer than the wrong ones can be picked without reading the
+  question. Fails on a new one, and holds each pool's share of «the correct
+  answer is the longest» at the level recorded in
+  `prisma/answer-length-baseline.json` (`--update-baseline` after a fix);
 - `prisma/scripts/audit/audit_nmt.py` — structure of the NMT-format bank;
 - `prisma/verify-seed.ts` — a read-only report against a seeded database:
   publication chain, per-type answer invariants, and whether the content is
