@@ -86,6 +86,11 @@ jobs:
       - name: Content — lint
         run: npx ts-node --compiler-options '{"module":"CommonJS","moduleResolution":"node"}' prisma/lint-content.ts
 
+      # A correct answer visibly longer than the wrong ones can be picked
+      # without reading the question (prisma/lint-answer-length.ts).
+      - name: Content — answer length
+        run: npx ts-node --compiler-options '{"module":"CommonJS","moduleResolution":"node"}' prisma/lint-answer-length.ts
+
       - name: Build
         run: npm run build
 

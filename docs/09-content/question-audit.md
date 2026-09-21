@@ -32,7 +32,7 @@ The tooling lives in `backend/prisma/scripts/` and the checks are reproducible.
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
 | 1 | No question has an explanation | High | Fixed — all 3 308 written |
-| 2 | The longest option is the correct one in 116 questions | Medium | 7 fixed, 109 open |
+| 2 | The longest option is the correct one — 64 % of history and 63 % of Ukrainian practice questions, against 25 % by chance | Medium | Fixed — 393 rewritten, every pool at or under 35 %, guarded in CI |
 | 3 | `пів` rule stated backwards in a learning material | High | Fixed |
 | 4 | Two orthography questions unanswerable or self-contradictory | High | Fixed |
 | 5 | A question whose stem contradicts its key | Medium | Fixed |
@@ -67,7 +67,7 @@ The platform already had a complete explanation feature: the field exists on the
 
 All 3 308 explanations have since been written — one or two sentences in Ukrainian saying *why* the correct answer is correct, not merely restating it. Mathematics explanations carry inline LaTeX between `$…$`, matching the questions themselves. The seed reports `900 updated, 2 408 unchanged` on the first run after the last batch and `3 308 unchanged` on the second, so the content is in the database and the upsert is idempotent.
 
-## 4.2 The longest option is the correct one — **116 questions, 7 fixed**
+## 4.2 The longest option is the correct one — **fixed, 21.09.2026**
 
 The classic multiple-choice tell. A question like
 
@@ -76,11 +76,30 @@ The classic multiple-choice tell. A question like
 
 can be answered correctly by someone who knows nothing about syntax: the elaborated option is the key.
 
-Distribution: українська мова 89, історія 21, англійська 3, математика 3.
+**How large it actually was.** Measured over the whole bank rather than by
+reading: with four options, chance puts the correct answer at the longest in
+25 % of questions. The practice questions of history and Ukrainian sat at 64 %
+and 63 % — a learner who always pressed the longest option scored about two
+thirds without reading anything. The NMT-format questions, taken from real
+papers, were at chance (22 % and 24 %), as were English (24 %) and mathematics
+(10 %). There was no positional tell at all: the key fell on А/Б/В/Г evenly.
 
-**Fixed (7):** the counting questions, where the elaboration could be cut safely, leaving four comparable options.
+**What was done.** 393 questions where the correct option was both the longest
+and far longer than the rest had their *distractors* rewritten — never the key,
+and never the stem, which the seed uses to identify a question. Each rewritten
+distractor states something plausible and clearly wrong at the length of the
+key, and in most of them one distractor is now the longest option on the
+screen. Automated truncation was tried and rejected earlier: it produced broken
+fragments such as «зворотна форма означає» and destroyed answers such as «уява
+— здатність творити образи, уявлення — знання про щось» → «уява».
 
-**Open (109):** these need the *distractors* rewritten to match the key's length and specificity, which is a judgement call per question. Automated truncation was tried and rejected — it produced broken fragments such as «зворотна форма означає» and destroyed answers such as «уява — здатність творити образи, уявлення — знання про щось» → «уява».
+**Where it stands now:** history 34 %, Ukrainian 35 %, English 24 %,
+mathematics 10 % — the remaining cases are questions whose true statement is
+simply longer, which is normal.
+
+**How it stays fixed.** `prisma/lint-answer-length.ts` runs in CI: a new
+question with the giveaway fails the build, and each pool's share may fall but
+never rise above what `prisma/answer-length-baseline.json` records.
 
 ## 4.3 The `пів` rule was stated backwards — **fixed**
 

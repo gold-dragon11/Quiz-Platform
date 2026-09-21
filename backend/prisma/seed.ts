@@ -442,9 +442,30 @@ async function seedQuestion(
     return;
   }
 
+  // Rewriting an option in place keeps its id, and with it every answer a
+  // learner has already given: an attempt stores the chosen option's id, so
+  // replacing the rows would leave old attempts pointing at nothing and the
+  // review of a finished test showing «ви не відповіли». Only a change in the
+  // number of options forces a replacement.
+  const sameShape =
+    !optionsMatch && existing.answerOptions.length === options.length;
+
   await prisma.$transaction(async (tx) => {
-    if (!optionsMatch) {
+    if (!optionsMatch && !sameShape) {
       await tx.answerOption.deleteMany({ where: { questionId: existing.id } });
+    }
+    if (sameShape) {
+      for (const [index, option] of options.entries()) {
+        await tx.answerOption.update({
+          where: { id: existing.answerOptions[index].id },
+          data: {
+            content: option.content,
+            imageUrl: option.imageUrl ?? null,
+            isCorrect: option.isCorrect,
+            order: option.order,
+          },
+        });
+      }
     }
     await tx.question.update({
       where: { id: existing.id },
@@ -459,7 +480,9 @@ async function seedQuestion(
         configuration: configuration ?? undefined,
         isPublished: true,
         deletedAt: null,
-        ...(optionsMatch ? {} : { answerOptions: { create: options } }),
+        ...(optionsMatch || sameShape
+          ? {}
+          : { answerOptions: { create: options } }),
       },
     });
   });
