@@ -8,8 +8,14 @@ import { AppModule } from './../src/app.module';
 import { AppConfig } from './../src/config/configuration';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
+import { sessionSetCookie, sessionToken } from './session-cookie';
 
-/** The documented login success body (docs/04-api/authentication.md §6). */
+/**
+ * What a successful login yields, gathered from both places it arrives: the
+ * access token from the body, the refresh token out of its `Set-Cookie`.
+ * Most tests here are about the tokens themselves and do not care which of
+ * the two carried them.
+ */
 interface LoginTokens {
   accessToken: string;
   refreshToken: string;
@@ -83,8 +89,21 @@ describe('Login (e2e)', () => {
       .send({ email, password })
       .expect(200);
 
-    return response.body as LoginTokens;
+    return {
+      accessToken: (response.body as { accessToken: string }).accessToken,
+      refreshToken: sessionToken(response),
+    };
   };
+
+  /** The raw response, for the tests that care how the session travelled. */
+  const loginRaw = async (
+    email: string,
+    password: string,
+  ): Promise<request.Response> =>
+    request(app.getHttpServer())
+      .post(LOGIN_URL)
+      .send({ email, password })
+      .expect(200);
 
   /** Performs a login expected to fail and returns the typed error body. */
   const failedLogin = async (
@@ -160,16 +179,31 @@ describe('Login (e2e)', () => {
       expect(tokens.refreshToken.length).toBeGreaterThan(0);
     });
 
-    it('returns only the two documented fields and no user object', async () => {
+    it('puts the access token in the body and nothing else', async () => {
       const account = await createAccount(AccountStatus.ACTIVE);
 
-      const tokens = await login(account.email, account.password);
+      const response = await loginRaw(account.email, account.password);
 
-      expect(Object.keys(tokens).sort()).toEqual([
-        'accessToken',
-        'refreshToken',
-      ]);
-      expect(tokens).not.toHaveProperty('user');
+      expect(Object.keys(response.body as object)).toEqual(['accessToken']);
+      expect(response.body).not.toHaveProperty('user');
+      // The refresh token is deliberately absent: it leaves as a cookie the
+      // page cannot read, which is what lets a session outlive the tab.
+      expect(response.body).not.toHaveProperty('refreshToken');
+      expect(JSON.stringify(response.body)).not.toContain(
+        sessionToken(response),
+      );
+    });
+
+    it('sends the session as a cookie a script cannot touch', async () => {
+      const account = await createAccount(AccountStatus.ACTIVE);
+
+      const line = sessionSetCookie(
+        await loginRaw(account.email, account.password),
+      )!;
+
+      expect(line).toMatch(/HttpOnly/i);
+      expect(line).toMatch(/SameSite=Lax/i);
+      expect(line).toMatch(/Expires=/i);
     });
 
     it('never exposes the password hash or the password', async () => {
@@ -345,14 +379,17 @@ describe('Login (e2e)', () => {
       );
     });
 
-    it('issues no tokens when credentials are rejected', async () => {
-      const body = await failedLogin(
-        { email: `${EMAIL_PREFIX}-none@example.com`, password: PASSWORD },
-        401,
-      );
+    it('issues no tokens and sets no session when credentials are rejected', async () => {
+      const response = await request(app.getHttpServer())
+        .post(LOGIN_URL)
+        .send({ email: `${EMAIL_PREFIX}-none@example.com`, password: PASSWORD })
+        .expect(401);
+      const body = response.body as ApiErrorBody;
 
       expect(body.accessToken).toBeUndefined();
       expect(body.refreshToken).toBeUndefined();
+      // A rejected login must not leave a cookie behind either.
+      expect(sessionSetCookie(response)).toBeUndefined();
     });
   });
 

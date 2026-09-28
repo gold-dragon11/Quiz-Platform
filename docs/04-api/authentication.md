@@ -165,21 +165,60 @@ Required fields:
 
 Returns:
 
-- Access Token
-- Refresh Token
+- Access Token, in the response body
+- Refresh Token, as the `quix_rt` cookie (§6.1)
 
-The response contains tokens only. Details of the authenticated user are retrieved separately through `GET /api/v1/auth/me`.
+The response body contains the access token only. Details of the authenticated
+user are retrieved separately through `GET /api/v1/auth/me`.
 
 Login succeeds only for Active accounts:
 
 | Account Status | Response |
 |---|---|
-| Active | 200 with tokens |
+| Active | 200 with an access token and a session cookie |
 | Pending Verification | 403 Email not verified |
 | Suspended | 403 Account suspended |
 | Deleted | 401 Unauthorized, identical to invalid credentials |
 
 An unknown email and an incorrect password return exactly the same 401 response, so neither reveals whether an account exists. Deleted accounts are treated the same way and never reveal that they once existed.
+
+## 6.1 The session cookie
+
+The refresh token never appears in a response body and is never handled by the
+client's JavaScript. It is set as a cookie:
+
+```http
+Set-Cookie: quix_rt=<token>; HttpOnly; Secure; SameSite=Lax;
+            Path=/api/v1/auth; Expires=<token exp>
+```
+
+- **`HttpOnly`** — the page cannot read it, so a cross-site scripting flaw
+  cannot steal it. An access token is worth fifteen minutes and lives in a
+  tab's memory; a refresh token is worth a week, and that difference is what
+  this attribute pays for. It is also what makes a session that survives the
+  browser being closed defensible at all (decision 36).
+- **`SameSite=Lax`** — the entire CSRF defence for these routes, and enough
+  because the site and the API share a registrable domain: `learn-ls.com` and
+  `api.learn-ls.com` are the same site, so the browser sends the cookie on our
+  own requests and withholds it from a POST made by anyone else's page. The
+  access token that refresh answers with is unreadable cross-origin in any
+  case, so a forged call would gain nothing. No separate CSRF token is used.
+- **No `Domain`** — the cookie is host-only. It is set by the API and sent
+  back to the API, and a browser attaches a cookie by where the request is
+  going rather than by which page made it, so the site renews the session
+  without the cookie ever being shared with another subdomain.
+  `SESSION_COOKIE_DOMAIN` can widen it and is expected to stay unset.
+- **`Path`** — narrowed to the auth routes: the cookie has no business
+  travelling with every request for a question.
+- **`Expires`** — the token's own `exp` claim, so the cookie, the JWT and the
+  session row cannot disagree about when the session ends.
+
+Because rotation issues a fresh seven-day token on every refresh, a reader who
+opens the app at least once a week is never asked to sign in again.
+
+Clients must send credentials on these requests (`withCredentials`, or
+`credentials: 'include'`); without it the browser attaches no cookie, whatever
+the cookie itself says.
 
 ---
 
@@ -191,17 +230,16 @@ An unknown email and an incorrect password return exactly the same 401 response,
 POST /api/v1/auth/logout
 ```
 
-Invalidates the current refresh token.
+Invalidates the current session and removes its cookie.
 
-Request body:
+No request body. The session cookie is the credential — no access token is
+required, so logout works even after the access token has expired.
 
-```json
-{ "refreshToken": "..." }
-```
-
-The refresh token itself is the credential — no access token is required, so logout works even after the access token has expired.
-
-Logout is idempotent and responds `204 No Content` whether the token was active, already revoked, unknown, or malformed. It therefore cannot be used to probe whether a token is valid.
+Logout is idempotent and responds `204 No Content` whether the session was
+active, already revoked, unknown, malformed, or absent entirely. It therefore
+cannot be used to probe whether a session is valid. The response clears the
+cookie in every one of those cases, so a reader holding something stale leaves
+without it.
 
 Access tokens expire naturally.
 
@@ -215,17 +253,22 @@ Access tokens expire naturally.
 POST /api/v1/auth/refresh
 ```
 
-Exchanges a valid Refresh Token for a new token pair.
+Exchanges the session cookie for a new access token and a rotated cookie.
 
 The user does not need to log in again.
 
-Request body:
+No request body: the cookie is the whole request. A token supplied in the body
+is ignored, and a request arriving without the cookie is answered `401` — which
+is how a client asks, on startup, whether anyone is signed in at all, since it
+cannot read the cookie to find out.
 
-```json
-{ "refreshToken": "..." }
-```
+Returns a new Access Token in the body and a new Refresh Token in the cookie.
+Refresh Token Rotation is enabled: the presented token is invalidated the moment
+it is used, and the browser replaces the cookie from the response.
 
-Returns both a new Access Token **and** a new Refresh Token. Refresh Token Rotation is enabled: the presented token is invalidated the moment it is used, and the client must store its replacement.
+A client must serialise its refreshes across tabs. Two tabs presenting the same
+cookie at once look exactly like a replay, and the reader is logged out
+everywhere — see reuse detection below.
 
 Refresh succeeds only when the presented token:
 

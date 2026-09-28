@@ -28,8 +28,14 @@ export interface Paginated<T> {
   totalPages: number;
 }
 
-/** The access + refresh token pair returned by login and refresh. */
-export interface TokenPair {
+/**
+ * What login, email verification and refresh answer with.
+ *
+ * Only the access token: the refresh token never reaches JavaScript at all —
+ * it arrives as an HttpOnly cookie the browser keeps and this code cannot
+ * read, which is what lets a session outlive the tab without becoming
+ * something a cross-site scripting flaw could steal.
+ */
+export interface AccessTokenResponse {
   accessToken: string;
-  refreshToken: string;
 }

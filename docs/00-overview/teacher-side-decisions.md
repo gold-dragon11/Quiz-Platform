@@ -146,6 +146,7 @@ letting a teacher account join groups later needs no migration.
 | 32 | Live duel questions | Only those whose estimated time fits the chosen seconds; passages never | Any question of the topic (a matching task in 10 seconds is a coin toss, not a contest) |
 | 33 | Answer in a live duel | The first one stands | Changeable until the deadline — speed stops meaning anything |
 | 34 | Random live opponent | A queue per subject, seconds and count; no topic; no confirmation after a match | Topic in the key (the queue splits into pieces too small to pair); an accept step (pairs lost to one slow click) |
+| 36 | Where the session lives | A host-only, HttpOnly, SameSite=Lax cookie, rotated on every refresh, seven days sliding | `sessionStorage` (the session died with the tab, which is what people were complaining about); `localStorage` (it survives, but any XSS then reads a week-long credential); a CSRF token beside the cookie (SameSite=Lax already blocks the cross-site POST, and the access token is unreadable cross-origin anyway); a «remember me» checkbox (on a phone the answer is always yes, so it only adds a decision nobody wants to make); a `Domain` attribute on the parent domain (measured as unnecessary — Lax already crosses subdomains for our own requests — and it would spread the cookie further than it needs to go) |
 
 ---
 

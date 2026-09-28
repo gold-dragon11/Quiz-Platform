@@ -432,6 +432,22 @@ next request pays roughly 50 seconds of start-up. Two consequences:
 A paid instance removes both. Before a live demonstration, send one request a
 few minutes ahead to wake the service.
 
+## 17.4b The session cookie
+
+The refresh token is an HttpOnly cookie (docs/04-api/authentication.md §6.1),
+and nothing new has to be set for it: it is host-only, so it needs no `Domain`,
+and `Secure` follows `NODE_ENV`. What it does depend on is `CORS_ORIGIN` being
+the site's exact origin, because the browser sends no cookies at all on a
+cross-origin request unless the server allows credentials for that origin.
+
+One consequence worth knowing before it surprises someone: a Vercel preview
+deployment is served from `*.vercel.app`, which is a different site from
+`learn-ls.com`, so `SameSite=Lax` withholds the cookie and nobody can sign in
+there. Previews already could not reach the API — `CORS_ORIGIN` is a single
+origin, not a list — so nothing was lost, but making previews work would now
+mean a staging API on a subdomain of `learn-ls.com` rather than one more
+allowed origin.
+
 ## 17.5 Secrets
 
 Signing secrets are declared with `generateValue: true`, so Render generates

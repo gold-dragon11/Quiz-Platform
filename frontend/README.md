@@ -31,7 +31,7 @@ time, so changing it requires a rebuild rather than a restart.
 | `npm run dev` | Start the dev server |
 | `npm run build` | `tsc -b` then `vite build` — type errors fail the build |
 | `npm run preview` | Serve the production build locally |
-| `npm test` / `test:watch` | Component tests (94), once or in watch mode |
+| `npm test` / `test:watch` | Component tests (99), once or in watch mode |
 | `npm run lint` / `lint:check` | Lint, with and without autofix |
 | `npm run format` / `format:check` | Prettier, with and without writing |
 
@@ -43,8 +43,9 @@ real Axios client, its interceptors and the query cache. Tests live beside what
 they cover; `src/test/` holds only the shared setup and the render helper. See
 [`docs/05-frontend/architecture.md`](../docs/05-frontend/architecture.md) §15.
 
-What the 94 tests hold: the API client (the token on every request, one
-refresh behind a burst of 401s, the logout when it fails), the way in
+What the 99 tests hold: the API client (the token on every request, one
+refresh behind a burst of 401s, the session restored on a cold start and given
+up when the cookie is stale), the way in
 (registration, login, password recovery) and the gates behind it, and the
 screens where a wrong state costs a learner something — an unfinished session
 blocking a new one, homework that is not open yet, a mock paper on its clock,

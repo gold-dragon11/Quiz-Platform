@@ -48,6 +48,17 @@ class EnvironmentVariables {
   @IsString()
   JWT_REFRESH_EXPIRES_IN?: string;
 
+  // The domain the session cookie is issued for. Unset in development, where
+  // it stays host-only on localhost (src/auth/session-cookie.ts).
+  @IsOptional()
+  @IsString()
+  SESSION_COOKIE_DOMAIN?: string;
+
+  // Overrides the `Secure` flag, which otherwise follows NODE_ENV.
+  @IsOptional()
+  @IsString()
+  SESSION_COOKIE_SECURE?: string;
+
   @IsNotEmpty()
   @IsString()
   @MinLength(MIN_SECRET_LENGTH)
