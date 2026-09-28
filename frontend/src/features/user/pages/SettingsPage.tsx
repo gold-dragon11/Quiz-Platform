@@ -1,5 +1,6 @@
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { PageHeader } from '@/shared/ui/PageHeader';
+import { AppearanceSection } from '@/features/user/components/AppearanceSection';
 import { ChangePasswordForm } from '@/features/user/components/ChangePasswordForm';
 import { DeleteAccountSection } from '@/features/user/components/DeleteAccountSection';
 import { PublicProfileSection } from '@/features/user/components/PublicProfileSection';
@@ -12,7 +13,8 @@ import { PublicProfileSection } from '@/features/user/components/PublicProfileSe
  *
  * There is no language preference: the interface is Ukrainian-only, so the
  * backend's `UserSettings.language` is set once at registration and never
- * shown. Theme remains a later feature.
+ * shown. The theme is here, but it is the one setting that never reaches the
+ * server — it belongs to the browser it was chosen in.
  */
 export function SettingsPage(): React.JSX.Element {
   const { data: user } = useCurrentUser();
@@ -27,6 +29,12 @@ export function SettingsPage(): React.JSX.Element {
           Це демо-акаунт. Пароль, публічність профілю й видалення акаунта тут вимкнені, а щоночі все
           повертається до початкового стану — тож тести й домашку можна проходити без жодних наслідків.
         </p>
+
+        {/* The theme lives in this browser and touches nothing the next
+            visitor will see, so the demo account keeps it. */}
+        <div className="mt-20">
+          <AppearanceSection />
+        </div>
       </div>
     );
   }
@@ -36,6 +44,10 @@ export function SettingsPage(): React.JSX.Element {
       <PageHeader eyebrow="Акаунт" title="Налаштування" />
 
       <div className="mt-14">
+        <AppearanceSection />
+      </div>
+
+      <div className="mt-20">
         <PublicProfileSection />
       </div>
 

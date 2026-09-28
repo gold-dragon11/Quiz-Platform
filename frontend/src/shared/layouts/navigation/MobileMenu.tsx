@@ -48,7 +48,7 @@ export function MobileMenu({
       {open && (
         <div className="lg:hidden">
           <motion.div
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-40 bg-scrim"
             aria-hidden="true"
             onClick={onClose}
             variants={fade}

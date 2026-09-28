@@ -173,7 +173,7 @@ export function MathSelect({
           id={listboxId}
           role="listbox"
           aria-label={ariaLabel}
-          className="border-border bg-surface-elevated absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border py-1 shadow-lg"
+          className="border-border bg-surface-overlay absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border py-1 shadow-lg"
         >
           {options.map((option, index) => (
             <li
