@@ -94,9 +94,17 @@ export function refreshSession(): Promise<string> {
     try {
       return await withRefreshLock(exchangeCookieForAccessToken);
     } catch (error) {
-      // A refused refresh means the session is over: expired, logged out
-      // elsewhere, or revoked because the backend saw a replay.
-      clearSession();
+      if (wasRefused(error)) {
+        // The server said no: expired, logged out elsewhere, or revoked
+        // because it saw a replay. The session is genuinely over.
+        clearSession();
+      } else {
+        // Nothing answered. The cookie may be perfectly good — this reader is
+        // in a lift. Forget the session for now, but keep the note that one
+        // exists, so coming back into signal restores it instead of asking
+        // for a password that was never wrong.
+        useAuthStore.getState().clearSession();
+      }
       throw error;
     } finally {
       refreshInFlight = null;
@@ -104,6 +112,11 @@ export function refreshSession(): Promise<string> {
   })();
 
   return refreshInFlight;
+}
+
+/** Whether the server refused the session, as opposed to never being reached. */
+function wasRefused(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response !== undefined;
 }
 
 async function exchangeCookieForAccessToken(): Promise<string> {

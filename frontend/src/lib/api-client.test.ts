@@ -184,6 +184,19 @@ describe('session lifecycle', () => {
     expect(sessionHint.exists()).toBe(false);
   });
 
+  it('keeps the session in mind when the network, not the server, said no', async () => {
+    sessionHint.remember();
+    server.use(http.post(api('/auth/refresh'), () => HttpResponse.error()));
+
+    await authService.bootstrap();
+
+    expect(useAuthStore.getState().status).toBe('unauthenticated');
+    // Installed on a phone, the app is routinely opened in a lift. The cookie
+    // may be perfectly good, and throwing the hint away here would mean
+    // asking for a password that was never wrong.
+    expect(sessionHint.exists()).toBe(true);
+  });
+
   it('asks the server to end the session even though it cannot see the cookie', async () => {
     signedIn();
     let calls = 0;

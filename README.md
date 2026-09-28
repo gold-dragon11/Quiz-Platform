@@ -68,6 +68,14 @@ accurate wins, and at equal accuracy the faster one.
 anyone, switched off by its owner in one click, and never indexed by search
 engines.
 
+**It installs, and it remembers you.** Added to a phone from the browser's own
+menu, it opens with its own icon and from its own cache, so it starts without a
+network and says so instead of showing placeholders that will never fill. The
+session survives the app being closed — a refresh token in a cookie the page
+itself cannot read, renewed on every visit — so a week never passes with a
+login screen in it. Answers are never cached: on a shared phone, the next
+person to pick it up finds nothing.
+
 The bank currently holds **5 399 published questions** across **4 subjects**,
 **76 topics**, with a learning material for every topic and 112 reading
 passages.
@@ -103,7 +111,7 @@ On a phone:
 
 | Layer | Choice |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, React Hook Form + Zod, Framer Motion, Socket.IO client |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query, Zustand, React Hook Form + Zod, Framer Motion, Socket.IO client, vite-plugin-pwa |
 | Backend | NestJS, TypeScript, Prisma ORM, Passport JWT, Argon2, Resend, Socket.IO (live duels) |
 | Database | PostgreSQL 16 |
 | Tests | Jest (unit and end-to-end), Vitest + Testing Library + MSW |
@@ -166,9 +174,9 @@ takes about a minute locally.
 ## Tests
 
 ```bash
-cd backend  && npm test          # 67 unit tests
-cd backend  && npm run test:e2e  # 858 tests, 37 suites — needs a migrated, seeded database
-cd frontend && npm test          # 17 component tests (jsdom, API mocked with MSW)
+cd backend  && npm test          # 84 unit tests
+cd backend  && npm run test:e2e  # 883 tests, 39 suites — needs a migrated, seeded database
+cd frontend && npm test          # 108 component tests (jsdom, API mocked with MSW)
 ```
 
 The end-to-end suite runs against a real database and a real HTTP server: it

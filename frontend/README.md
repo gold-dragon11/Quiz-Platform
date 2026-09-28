@@ -9,8 +9,8 @@ codebase follows: architecture in
 ## Stack
 
 React 19 · TypeScript · Vite · Tailwind CSS · React Router · TanStack Query ·
-Zustand · React Hook Form + Zod · Framer Motion · Vitest + Testing Library +
-MSW
+Zustand · React Hook Form + Zod · Framer Motion · vite-plugin-pwa · Vitest +
+Testing Library + MSW
 
 ## Getting started
 
@@ -31,7 +31,7 @@ time, so changing it requires a rebuild rather than a restart.
 | `npm run dev` | Start the dev server |
 | `npm run build` | `tsc -b` then `vite build` — type errors fail the build |
 | `npm run preview` | Serve the production build locally |
-| `npm test` / `test:watch` | Component tests (99), once or in watch mode |
+| `npm test` / `test:watch` | Component tests (108), once or in watch mode |
 | `npm run lint` / `lint:check` | Lint, with and without autofix |
 | `npm run format` / `format:check` | Prettier, with and without writing |
 
@@ -43,13 +43,16 @@ real Axios client, its interceptors and the query cache. Tests live beside what
 they cover; `src/test/` holds only the shared setup and the render helper. See
 [`docs/05-frontend/architecture.md`](../docs/05-frontend/architecture.md) §15.
 
-What the 99 tests hold: the API client (the token on every request, one
+What the 108 tests hold: the API client (the token on every request, one
 refresh behind a burst of 401s, the session restored on a cold start and given
 up when the cookie is stale), the way in
 (registration, login, password recovery) and the gates behind it, and the
 screens where a wrong state costs a learner something — an unfinished session
 blocking a new one, homework that is not open yet, a mock paper on its clock,
-a duel score revealed too early, and the demo account being read-only.
+a duel score revealed too early, and the demo account being read-only. Plus
+what being installable changed: saying «no connection» instead of showing
+skeletons that will never fill, offering an update rather than swapping the
+build underneath someone, and not mistaking a lift for a logout.
 
 ## Structure
 
@@ -63,7 +66,7 @@ src/
 ├── shared/       # UI kit, layouts, guards, hooks, constants — no business logic
 ├── pages/        # Error and placeholder pages
 ├── lib/          # Axios client and query client
-├── services/     # Auth service and token storage
+├── services/     # Auth service and the local session hint
 ├── stores/       # Zustand stores: auth, theme, toasts
 ├── styles/       # Design tokens and global styles
 ├── config/       # The only module that reads import.meta.env
@@ -74,6 +77,18 @@ src/
 Features: `landing`, `auth`, `dashboard`, `quiz`, `mock-exam`,
 `mistake-review`, `duels`, `subjects`, `learning-materials`, `statistics`,
 `groups`, `assignments`, `question-bank`, `question-reports`, `admin`, `user`.
+
+It installs. A reader adds it from the browser's own menu and it opens from
+its own cache, with its own icon, without an address bar — see
+[`docs/05-frontend/pwa.md`](../docs/05-frontend/pwa.md). The API is never
+cached: a page of someone's statistics should not outlive the session that
+fetched it on a shared phone.
+
+The session outlives the app being closed. The refresh token is an HttpOnly
+cookie the page cannot read, rotated on every renewal, seven days sliding — so
+opening the app at least once a week means never signing in again, and a
+cross-site scripting flaw still cannot lift the session
+([`docs/04-api/authentication.md`](../docs/04-api/authentication.md) §6.1).
 
 Two rules hold the layering. A feature is imported only through its barrel
 (`features/<name>/index.ts`). And `lib/api-client.ts` owns Axios —
