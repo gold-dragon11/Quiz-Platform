@@ -51,7 +51,7 @@ export function Modal({
       {open && (
         <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-4 sm:p-6">
           <motion.div
-            className="fixed inset-0 bg-black/60"
+            className="fixed inset-0 bg-scrim"
             aria-hidden="true"
             onClick={() => !busy && onClose()}
             variants={fade}

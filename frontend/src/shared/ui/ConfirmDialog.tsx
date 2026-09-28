@@ -57,7 +57,7 @@ export function ConfirmDialog({
       {open && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <motion.div
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-scrim"
             aria-hidden="true"
             onClick={() => !isLoading && onCancel()}
             variants={fade}

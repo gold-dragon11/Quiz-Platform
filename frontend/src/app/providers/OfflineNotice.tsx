@@ -41,7 +41,7 @@ export function OfflineNotice(): React.JSX.Element {
           transition={TRANSITION.fade}
           role="status"
           aria-live="polite"
-          className="border-warning/40 bg-surface text-text-secondary fixed inset-x-4 top-4 z-50 rounded-lg border px-4 py-2.5 text-center text-sm shadow-lg sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2"
+          className="border-warning/40 bg-surface-overlay text-text-secondary fixed inset-x-4 top-4 z-50 rounded-lg border px-4 py-2.5 text-center text-sm shadow-lg sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2"
         >
           Немає зв’язку. Застосунок відкрито, але нові дані не завантажаться.
         </motion.div>

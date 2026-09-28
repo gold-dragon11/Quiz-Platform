@@ -35,7 +35,7 @@ export function NewVersionPrompt(): React.JSX.Element {
           exit="exit"
           transition={TRANSITION.fade}
           role="status"
-          className="bg-surface border-border fixed inset-x-4 bottom-20 z-50 flex flex-col gap-3 rounded-xl border p-4 shadow-xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:max-w-sm lg:bottom-6"
+          className="bg-surface-overlay border-border fixed inset-x-4 bottom-20 z-50 flex flex-col gap-3 rounded-xl border p-4 shadow-xl sm:inset-x-auto sm:right-6 sm:bottom-6 sm:max-w-sm lg:bottom-6"
         >
           <div>
             <p className="text-text-primary text-sm font-medium">Є новіша версія</p>

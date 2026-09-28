@@ -32,13 +32,22 @@ Color should communicate hierarchy and meaning rather than decoration.
 
 # 3. Theme Strategy
 
-The MVP supports:
+Two themes ship:
 
-- Dark Theme
+- Dark Theme — the default, and the platform's own look.
+- Light Theme — a deliberate choice, offered in Settings → Вигляд alongside
+  «як у системі», which follows `prefers-color-scheme`.
 
-Light Theme may be introduced in the future.
+The landing page is pinned to dark whatever the preference: its backdrop and
+curves are a drawing made for a dark page, not an interface.
 
-All components must rely on color tokens instead of hardcoded values.
+All components must rely on color tokens instead of hardcoded values. Both
+themes define the same token names, so no component knows which is active —
+the theme is a `data-theme` attribute on `<html>` and nothing else.
+
+The preference lives in `localStorage` (`quix.theme`) and never reaches the
+server: the same account on a phone in daylight and a laptop at night wants
+different answers, and one account-wide setting would be wrong on one of them.
 
 ---
 
@@ -312,16 +321,44 @@ Icons or labels should accompany important color changes.
 
 ---
 
-# 14. Future Themes
+# 14. Light Theme
 
-Possible future additions include:
+The light palette mirrors the intent of the dark one rather than inverting its
+values. Two tokens deliberately change direction:
 
-- Light Theme
-- AMOLED Theme
-- Seasonal Themes
-- High Contrast Theme
+- `surface-elevated` is a step *lighter* than the page in dark and a step
+  *darker* than the card in light, because what it marks is a progress track, a
+  hovered row, a skeleton, a neutral chip — things that must sit back from the
+  white card they lie on. Panels that genuinely float use `surface-overlay`,
+  which stays white.
+- `primary-hover` and `primary-active` go deeper rather than lighter: on a
+  white page a pressed button darkens, it does not glow.
 
-These themes are outside the MVP.
+| Token | Dark | Light | Contrast on `surface` |
+|---|---|---|---|
+| `background` | `#0b0a0f` | `#f7f6f9` | — |
+| `surface` | `#131219` | `#ffffff` | — |
+| `surface-elevated` | `#1b1a23` | `#eeecf2` | — |
+| `surface-overlay` | `#1b1a23` | `#ffffff` | — |
+| `border` | `#272631` | `#e3e0ea` | — |
+| `border-subtle` | `#34333f` | `#d3cfdd` | — |
+| `text-primary` | `#f7f7fa` | `#1a1823` | 17.5 |
+| `text-secondary` | `#c3c2cf` | `#4b4857` | 8.9 |
+| `text-muted` | `#8b8a9b` | `#6b6878` | 5.4 |
+| `primary` | `#7c3aed` | `#6d28d9` | 7.1 |
+| `primary-hover` | `#8b5cf6` | `#5b21b6` | — |
+| `primary-active` | `#6d28d9` | `#4c1d95` | — |
+| `success` | `#22c55e` | `#15803d` | 5.0 |
+| `warning` | `#f59e0b` | `#b45309` | 5.0 |
+| `error` | `#ef4444` | `#c81e1e` | 5.7 |
+| `info` | `#3b82f6` | `#1d4ed8` | 6.7 |
+
+The semantic colors are darkened because they are used as text: `#22c55e` on
+white is 2.3:1 and `#f59e0b` is 2.2:1, neither of which is readable. White text
+on each of these fills clears 5.0:1, so the filled buttons and chips hold up too.
+
+Possible future additions: AMOLED, seasonal and high-contrast themes. These are
+outside the MVP.
 
 ---
 
