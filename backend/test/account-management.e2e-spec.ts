@@ -1,10 +1,12 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
+import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
+import { cookieFor, sessionToken } from './session-cookie';
 
 interface AccountBody {
   id: string;
@@ -55,7 +57,15 @@ describe('Account Management (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email, password: PASSWORD })
       .expect(200);
-    return { tokens: login.body as Tokens, userId: user.id, email, username };
+    return {
+      tokens: {
+        accessToken: (login.body as { accessToken: string }).accessToken,
+        refreshToken: sessionToken(login),
+      },
+      userId: user.id,
+      email,
+      username,
+    };
   };
 
   const removeTestData = async (): Promise<void> => {
@@ -69,6 +79,9 @@ describe('Account Management (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
+    // The session arrives as a cookie, so the app under test needs the same
+    // parser production mounts (src/main.ts).
+    app.use(cookieParser());
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -166,10 +179,10 @@ describe('Account Management (e2e)', () => {
         .send({ email, password: NEW_PASSWORD })
         .expect(200);
 
-      // The pre-change refresh token was revoked → 401.
+      // The pre-change session was revoked → 401.
       await request(app.getHttpServer())
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken: tokens.refreshToken })
+        .set('Cookie', cookieFor(tokens.refreshToken))
         .expect(401);
     });
 
@@ -235,7 +248,7 @@ describe('Account Management (e2e)', () => {
         .expect(401);
       await request(app.getHttpServer())
         .post('/api/v1/auth/refresh')
-        .send({ refreshToken: tokens.refreshToken })
+        .set('Cookie', cookieFor(tokens.refreshToken))
         .expect(401);
 
       // The old access token no longer authorizes (strategy rejects non-active).

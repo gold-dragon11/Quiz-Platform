@@ -26,7 +26,6 @@ import {
 import { ChangePasswordDto } from '../dto/change-password.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
@@ -264,8 +263,8 @@ export class AuthService implements OnModuleInit {
    * Every failure path returns the same bare 401 so the endpoint reveals
    * nothing about why a token was rejected.
    */
-  async refresh(dto: RefreshTokenDto): Promise<TokenPair> {
-    const payload = await this.verifyRefreshToken(dto.refreshToken);
+  async refresh(refreshToken: string): Promise<TokenPair> {
+    const payload = await this.verifyRefreshToken(refreshToken);
 
     if (!payload) {
       throw new UnauthorizedException();
@@ -282,7 +281,7 @@ export class AuthService implements OnModuleInit {
     // (docs/06-backend/security.md §5).
     const tokenMatchesStoredHash = await this.passwordUtil.verifyPassword(
       session.tokenHash,
-      dto.refreshToken,
+      refreshToken,
     );
 
     if (!tokenMatchesStoredHash || session.expiresAt <= new Date()) {
@@ -317,8 +316,8 @@ export class AuthService implements OnModuleInit {
    * token is silently ignored, so logout always succeeds and can never be used
    * to probe token validity. Access tokens are untouched and expire naturally.
    */
-  async logout(dto: RefreshTokenDto): Promise<void> {
-    const payload = await this.verifyRefreshToken(dto.refreshToken);
+  async logout(refreshToken: string): Promise<void> {
+    const payload = await this.verifyRefreshToken(refreshToken);
 
     if (!payload) {
       return;
@@ -332,7 +331,7 @@ export class AuthService implements OnModuleInit {
 
     const tokenMatchesStoredHash = await this.passwordUtil.verifyPassword(
       session.tokenHash,
-      dto.refreshToken,
+      refreshToken,
     );
 
     if (!tokenMatchesStoredHash) {
@@ -471,18 +470,21 @@ export class AuthService implements OnModuleInit {
     ]);
 
     // The session row mirrors the token's own exp claim so the database and
-    // the JWT can never disagree about the expiration time.
+    // the JWT can never disagree about the expiration time. The cookie that
+    // carries the token to the browser is given the same moment, so all three
+    // expire together (src/auth/session-cookie.ts).
     const { exp } = this.jwtService.decode<{ exp: number }>(refreshToken);
+    const refreshExpiresAt = new Date(exp * 1000);
     const tokenHash = await this.passwordUtil.hashPassword(refreshToken);
 
     await this.authRepository.createRefreshTokenSession({
       id: sessionId,
       userId: user.id,
       tokenHash,
-      expiresAt: new Date(exp * 1000),
+      expiresAt: refreshExpiresAt,
     });
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, refreshExpiresAt };
   }
 
   /**

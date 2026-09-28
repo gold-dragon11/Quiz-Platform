@@ -8,12 +8,17 @@ import {
   Param,
   Patch,
   Put,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { Response } from 'express';
+import { AppConfig } from '../../config/configuration';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ChangePasswordDto } from '../../auth/dto/change-password.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { NotDemoGuard } from '../../auth/guards/not-demo.guard';
+import { clearRefreshCookie } from '../../auth/session-cookie';
 import { AuthService } from '../../auth/services/auth.service';
 import { SelectAvatarDto } from '../dto/select-avatar.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
@@ -42,7 +47,19 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly authService: AuthService,
+    private readonly configService: ConfigService<AppConfig, true>,
   ) {}
+
+  /**
+   * Both routes below revoke every refresh session the account holds, so the
+   * cookie this browser still carries is already dead. Removing it stops the
+   * next call arriving with a spent token, which the refresh endpoint would
+   * otherwise read as a replay and answer by revoking sessions all over again
+   * (src/auth/session-cookie.ts).
+   */
+  private endSessionCookie(res: Response): void {
+    clearRefreshCookie(res, this.configService.get('session', { infer: true }));
+  }
 
   /** GET /api/v1/users/me — the authenticated user's account information. */
   @Get('me')
@@ -78,8 +95,10 @@ export class UsersController {
   async changePassword(
     @CurrentUser('id') userId: string,
     @Body() changePasswordDto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     await this.authService.changePassword(userId, changePasswordDto);
+    this.endSessionCookie(res);
   }
 
   /** GET /api/v1/users/me/avatar — the authenticated user's active avatar. */
@@ -107,8 +126,12 @@ export class UsersController {
   @Delete('me')
   @UseGuards(JwtAuthGuard, NotDemoGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteAccount(@CurrentUser('id') userId: string): Promise<void> {
+  async deleteAccount(
+    @CurrentUser('id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
     await this.authService.deleteAccount(userId);
+    this.endSessionCookie(res);
   }
 
   /**

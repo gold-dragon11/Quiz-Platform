@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -33,6 +34,13 @@ async function bootstrap(): Promise<void> {
   // and the pages that need a policy are served by the frontend host.
   app.use(helmet({ contentSecurityPolicy: false }));
 
+  // The session's refresh token travels as an HttpOnly cookie
+  // (src/auth/session-cookie.ts), so the auth routes need it parsed.
+  app.use(cookieParser());
+
+  // `credentials: true` is what lets the browser send that cookie at all:
+  // without it a cross-origin request from learn-ls.com to api.learn-ls.com
+  // carries no cookies, whatever the cookie itself says.
   app.enableCors({
     origin: configService.get('corsOrigin', { infer: true }),
     credentials: true,

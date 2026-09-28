@@ -1,8 +1,8 @@
 import axios, { AxiosError, type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import { env } from '@/config/env';
-import { tokenStorage } from '@/services/token-storage';
+import { sessionHint } from '@/services/session-hint';
 import { getAccessToken, useAuthStore } from '@/stores/auth-store';
-import type { ApiError, TokenPair } from '@/shared/types/api';
+import type { AccessTokenResponse, ApiError } from '@/shared/types/api';
 
 /**
  * The application's single Axios client and the ONLY module permitted to
@@ -15,12 +15,17 @@ import type { ApiError, TokenPair } from '@/shared/types/api';
  * - a response interceptor turns any error into a normalized `ApiError` and,
  *   on `401`, performs a single-flight token refresh, retries the original
  *   request exactly once, and logs out if the refresh fails;
- * - the refresh endpoint itself is never retried, and the rotated refresh
- *   token is persisted on every refresh (the backend rotates it each call).
+ * - the refresh endpoint itself is never retried.
+ *
+ * The refresh token is not handled here at all any more. It travels as an
+ * HttpOnly cookie the browser attaches by itself, which is why both clients
+ * are created with `withCredentials` — without it the browser sends no
+ * cookies on a cross-origin call, however the cookie itself is written.
  */
 export const apiClient = axios.create({
   baseURL: env.apiUrl,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 /**
@@ -31,19 +36,27 @@ export const apiClient = axios.create({
 const refreshClient = axios.create({
   baseURL: env.apiUrl,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
 // --- Session application ------------------------------------------------
 
-/** Applies a fresh token pair: access → memory (store), refresh → storage. */
-export function applyTokens(tokens: TokenPair): void {
-  tokenStorage.setRefreshToken(tokens.refreshToken);
+/**
+ * Takes up a session: the access token into memory, and a note that this
+ * browser has one so the next cold start knows to ask.
+ */
+export function applySession(tokens: AccessTokenResponse): void {
+  sessionHint.remember();
   useAuthStore.getState().setSession(tokens.accessToken);
 }
 
-/** Clears all session state (memory + storage) and marks unauthenticated. */
+/**
+ * Drops the session this tab can see. The cookie itself is the server's to
+ * remove — `/auth/logout` clears it — so this is about the page forgetting,
+ * not about the session being revoked.
+ */
 export function clearSession(): void {
-  tokenStorage.clearRefreshToken();
+  sessionHint.forget();
   useAuthStore.getState().clearSession();
 }
 
@@ -51,10 +64,26 @@ export function clearSession(): void {
 
 let refreshInFlight: Promise<string> | null = null;
 
+/** The name every tab of this app queues on while one of them refreshes. */
+const REFRESH_LOCK = 'quix.refresh';
+
 /**
  * Refreshes the session, coalescing concurrent callers onto one network call
  * (single-flight, decision F2). Resolves with the new access token; rejects
- * (and clears the session) if there is no refresh token or the refresh fails.
+ * and clears the session if the refresh fails.
+ *
+ * The coalescing has to reach across tabs, not just across callers in this
+ * one. The cookie is shared by every tab, and the backend rotates it on each
+ * refresh and treats a second presentation of an already-spent token as
+ * theft — by revoking every session the account holds. Two tabs waking up
+ * together with an expired access token would do exactly that and log the
+ * reader out everywhere. So the whole exchange runs inside a Web Lock: the
+ * second tab waits, and by the time it runs the browser hands it the rotated
+ * cookie, which is valid.
+ *
+ * The waiting tab then refreshes again rather than reading what the first one
+ * got — an access token lives in one tab's memory and cannot be shared. That
+ * costs one extra rotation and is the cheapest correct answer.
  */
 export function refreshSession(): Promise<string> {
   if (refreshInFlight) {
@@ -62,21 +91,20 @@ export function refreshSession(): Promise<string> {
   }
 
   refreshInFlight = (async () => {
-    const refreshToken = tokenStorage.getRefreshToken();
-    if (!refreshToken) {
-      clearSession();
-      throw new Error('No refresh token available.');
-    }
     try {
-      const { data } = await refreshClient.post<TokenPair>('/auth/refresh', {
-        refreshToken,
-      });
-      applyTokens(data);
-      return data.accessToken;
+      return await withRefreshLock(exchangeCookieForAccessToken);
     } catch (error) {
-      // A failed/replayed refresh means the session is dead (the backend also
-      // revokes all sessions on reuse) — log out.
-      clearSession();
+      if (wasRefused(error)) {
+        // The server said no: expired, logged out elsewhere, or revoked
+        // because it saw a replay. The session is genuinely over.
+        clearSession();
+      } else {
+        // Nothing answered. The cookie may be perfectly good — this reader is
+        // in a lift. Forget the session for now, but keep the note that one
+        // exists, so coming back into signal restores it instead of asking
+        // for a password that was never wrong.
+        useAuthStore.getState().clearSession();
+      }
       throw error;
     } finally {
       refreshInFlight = null;
@@ -84,6 +112,29 @@ export function refreshSession(): Promise<string> {
   })();
 
   return refreshInFlight;
+}
+
+/** Whether the server refused the session, as opposed to never being reached. */
+function wasRefused(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response !== undefined;
+}
+
+async function exchangeCookieForAccessToken(): Promise<string> {
+  const { data } = await refreshClient.post<AccessTokenResponse>('/auth/refresh');
+  applySession(data);
+  return data.accessToken;
+}
+
+/**
+ * Runs the exchange under a cross-tab lock where the browser has them, and
+ * directly where it does not — an older browser keeps the behaviour it had
+ * before, which is the one-tab guarantee rather than none.
+ */
+function withRefreshLock<T>(run: () => Promise<T>): Promise<T> {
+  if (typeof navigator === 'undefined' || !navigator.locks) {
+    return run();
+  }
+  return navigator.locks.request(REFRESH_LOCK, run) as Promise<T>;
 }
 
 // --- Interceptors -------------------------------------------------------

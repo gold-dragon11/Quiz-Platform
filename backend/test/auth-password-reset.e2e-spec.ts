@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import { createHmac } from 'node:crypto';
+import cookieParser from 'cookie-parser';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PASSWORD_RESET_PURPOSE } from './../src/auth/constants/auth.constants';
@@ -11,6 +12,7 @@ import { AppConfig } from './../src/config/configuration';
 import { EmailService } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
+import { cookieFor, sessionToken } from './session-cookie';
 
 /** One captured outbound email. */
 interface CapturedEmail {
@@ -106,6 +108,18 @@ describe('Password Reset (e2e)', () => {
     return response.body as Record<string, unknown>;
   };
 
+  /** Logs in and returns the refresh token the session cookie carries. */
+  const loginSession = async (
+    email: string,
+    password: string,
+  ): Promise<string> =>
+    sessionToken(
+      await request(app.getHttpServer())
+        .post(LOGIN_URL)
+        .send({ email, password })
+        .expect(200),
+    );
+
   const requestResetToken = async (email: string): Promise<string> => {
     await forgot(email);
     return tokenFromUrl(emailOutbox.lastResetFor(email)!.url);
@@ -168,6 +182,9 @@ describe('Password Reset (e2e)', () => {
       .compile();
 
     app = moduleFixture.createNestApplication();
+    // The session arrives as a cookie, so the app under test needs the same
+    // parser production mounts (src/main.ts).
+    app.use(cookieParser());
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
@@ -307,12 +324,8 @@ describe('Password Reset (e2e)', () => {
       const account = await registerActiveAccount();
 
       // Two devices log in.
-      const first = (await login(account.email, PASSWORD, 200)) as {
-        refreshToken: string;
-      };
-      const second = (await login(account.email, PASSWORD, 200)) as {
-        refreshToken: string;
-      };
+      const first = await loginSession(account.email, PASSWORD);
+      const second = await loginSession(account.email, PASSWORD);
 
       const token = await requestResetToken(account.email);
       await reset({ token, newPassword: NEW_PASSWORD }, 200);
@@ -324,11 +337,11 @@ describe('Password Reset (e2e)', () => {
 
       await request(app.getHttpServer())
         .post(REFRESH_URL)
-        .send({ refreshToken: first.refreshToken })
+        .set('Cookie', cookieFor(first))
         .expect(401);
       await request(app.getHttpServer())
         .post(REFRESH_URL)
-        .send({ refreshToken: second.refreshToken })
+        .set('Cookie', cookieFor(second))
         .expect(401);
     });
 
