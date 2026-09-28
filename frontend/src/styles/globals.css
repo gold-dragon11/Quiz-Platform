@@ -18,7 +18,9 @@
 
 /*
  * Design tokens from docs/07-design/colors.md and typography.md.
- * The MVP ships a single dark theme — see docs/07-design/design-system.md §11.
+ *
+ * Dark is the default theme and what `@theme` below declares; light is a
+ * deliberate choice, and overrides these same tokens under `[data-theme='light']`.
  *
  * The neutral scale carries a slight violet cast rather than the blue-slate it
  * had before, so the greys sit under the purple accent instead of competing
@@ -33,6 +35,11 @@
   --color-background: #0b0a0f;
   --color-surface: #131219;
   --color-surface-elevated: #1b1a23;
+  /* Floating panels — a toast, a dropdown — which must read as raised from
+     whatever is behind them rather than as one more step of the same stack. */
+  --color-surface-overlay: #1b1a23;
+  /* Behind a modal. Dark needs to sink the page; light needs to grey it. */
+  --color-scrim: rgb(0 0 0 / 0.6);
 
   --color-border: #272631;
   --color-border-subtle: #34333f;
@@ -51,7 +58,53 @@
   --color-info: #3b82f6;
 }
 
+/*
+ * Light theme. Not an inversion of the dark values but a mirror of their
+ * intent, and two tokens deliberately change direction:
+ *
+ * - `surface-elevated` is a step *lighter* than the page in the dark theme and
+ *   a step *darker* than the card here, because what it actually marks is a
+ *   progress track, a hovered row, a skeleton, a neutral chip — all of which
+ *   must sit back from the white card they lie on. Panels that genuinely float
+ *   use `surface-overlay`, which stays white.
+ * - `primary-hover` and `primary-active` go deeper rather than lighter: on a
+ *   white page a pressed button darkens, it does not glow.
+ *
+ * Every text token clears WCAG AA on `--color-surface` (muted ≈ 5.4:1,
+ * secondary ≈ 8.9:1, primary ≈ 17.5:1), and the semantic colours are darkened
+ * to stay legible as text — #22c55e on white is 2.3:1 and would not be.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-background: #f7f6f9;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #eeecf2;
+  --color-surface-overlay: #ffffff;
+  --color-scrim: rgb(26 24 35 / 0.35);
+
+  --color-border: #e3e0ea;
+  --color-border-subtle: #d3cfdd;
+
+  --color-text-primary: #1a1823;
+  --color-text-secondary: #4b4857;
+  --color-text-muted: #6b6878;
+
+  --color-primary: #6d28d9;
+  --color-primary-hover: #5b21b6;
+  --color-primary-active: #4c1d95;
+
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-error: #c81e1e;
+  --color-info: #1d4ed8;
+}
+
 @layer base {
+  :root {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-text-primary font-sans antialiased;
   }

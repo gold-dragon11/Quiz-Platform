@@ -146,6 +146,7 @@ letting a teacher account join groups later needs no migration.
 | 32 | Live duel questions | Only those whose estimated time fits the chosen seconds; passages never | Any question of the topic (a matching task in 10 seconds is a coin toss, not a contest) |
 | 33 | Answer in a live duel | The first one stands | Changeable until the deadline — speed stops meaning anything |
 | 34 | Random live opponent | A queue per subject, seconds and count; no topic; no confirmation after a match | Topic in the key (the queue splits into pieces too small to pair); an accept step (pairs lost to one slow click) |
+| 35 | Light theme | A `data-theme` attribute on `<html>` and one block of token overrides; kept in the browser (`localStorage`), never on the account; dark stays the default and the landing stays dark | A per-account setting (the same person wants different answers on a phone at noon and a laptop at night); following the OS by default (the platform's own look would never be seen first); a light landing (its backdrop and curves were drawn for a dark page) |
 
 ---
 
