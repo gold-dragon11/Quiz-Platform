@@ -10,6 +10,7 @@ import { AppConfig } from './../src/config/configuration';
 import { EmailService } from './../src/email/email.service';
 import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
+import { sessionSetCookie } from './session-cookie';
 
 /** One captured outbound email. */
 interface CapturedEmail {
@@ -100,15 +101,20 @@ describe('Email Verification (e2e)', () => {
     return { email, username, userId: user!.id };
   };
 
-  const verify = async (
+  const verifyRaw = async (
     token: string,
     expectedStatus: number,
-  ): Promise<Record<string, unknown>> => {
-    const response = await request(app.getHttpServer())
+  ): Promise<request.Response> =>
+    request(app.getHttpServer())
       .post(VERIFY_URL)
       .send({ token })
       .expect(expectedStatus);
 
+  const verify = async (
+    token: string,
+    expectedStatus: number,
+  ): Promise<Record<string, unknown>> => {
+    const response = await verifyRaw(token, expectedStatus);
     return response.body as Record<string, unknown>;
   };
 
@@ -206,13 +212,16 @@ describe('Email Verification (e2e)', () => {
       const token = tokenFromUrl(
         emailOutbox.lastFor(account.email)!.verificationUrl,
       );
-      const body = await verify(token, 200);
+      const response = await verifyRaw(token, 200);
 
       // Same shape as login (docs/04-api/authentication.md §5) — the reader
-      // is signed in as part of this same request, not sent to log in again.
-      expect(Object.keys(body).sort()).toEqual(['accessToken', 'refreshToken']);
-      expect(typeof body.accessToken).toBe('string');
-      expect(typeof body.refreshToken).toBe('string');
+      // is signed in as part of this same request, not sent to log in again:
+      // access token in the body, session in an HttpOnly cookie.
+      expect(Object.keys(response.body as object)).toEqual(['accessToken']);
+      expect(
+        typeof (response.body as { accessToken: unknown }).accessToken,
+      ).toBe('string');
+      expect(sessionSetCookie(response)).toMatch(/HttpOnly/i);
 
       expect(await accountState(account.userId)).toEqual({
         emailVerified: true,

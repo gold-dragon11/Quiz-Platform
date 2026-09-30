@@ -5,22 +5,28 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { AppConfig } from '../../config/configuration';
 import { byAccount, byAddress } from '../../common/throttle/request-trackers';
 import { CurrentUser } from '../decorators/current-user.decorator';
+import { RefreshCookie } from '../decorators/refresh-cookie.decorator';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { LoginDto } from '../dto/login.dto';
-import { RefreshTokenDto } from '../dto/refresh-token.dto';
 import { RegisterDto } from '../dto/register.dto';
 import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { AuthService } from '../services/auth.service';
+import { clearRefreshCookie, setRefreshCookie } from '../session-cookie';
 import { CurrentUserResponse } from '../types/current-user-response.type';
-import { TokenPair } from '../types/token-pair.type';
+import { AccessTokenResponse, TokenPair } from '../types/token-pair.type';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -69,7 +75,28 @@ const TOKEN_SUBMIT_LIMIT = {
  */
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService<AppConfig, true>,
+  ) {}
+
+  /**
+   * Splits a freshly issued pair the way it leaves the server: the access
+   * token in the body for the page to hold in memory, the refresh token into
+   * an HttpOnly cookie the page can never read (src/auth/session-cookie.ts).
+   */
+  private establishSession(
+    res: Response,
+    tokens: TokenPair,
+  ): AccessTokenResponse {
+    setRefreshCookie(
+      res,
+      tokens.refreshToken,
+      tokens.refreshExpiresAt,
+      this.configService.get('session', { infer: true }),
+    );
+    return { accessToken: tokens.accessToken };
+  }
 
   /**
    * POST /api/v1/auth/register — creates an account and the records it owns.
@@ -84,29 +111,37 @@ export class AuthController {
   }
 
   /**
-   * POST /api/v1/auth/login — authenticates a user and returns an access and
-   * refresh token pair (docs/04-api/authentication.md §6).
+   * POST /api/v1/auth/login — authenticates a user, returns an access token
+   * and sets the session cookie (docs/04-api/authentication.md §6).
    */
   @Post('login')
   @Throttle(LOGIN_LIMIT)
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: LoginDto): Promise<TokenPair> {
-    return this.authService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AccessTokenResponse> {
+    return this.establishSession(res, await this.authService.login(loginDto));
   }
 
   /**
    * POST /api/v1/auth/verify-email — activates the account identified by a
    * valid verification token and signs the reader straight into it
-   * (docs/04-api/authentication.md §5). Responds 200 with a token pair, the
-   * same shape as login; every failure is the same generic 400.
+   * (docs/04-api/authentication.md §5). Responds exactly as login does —
+   * access token in the body, session in the cookie; every failure is the
+   * same generic 400.
    */
   @Post('verify-email')
   @Throttle(TOKEN_SUBMIT_LIMIT)
   @HttpCode(HttpStatus.OK)
   async verifyEmail(
     @Body() verifyEmailDto: VerifyEmailDto,
-  ): Promise<TokenPair> {
-    return this.authService.verifyEmail(verifyEmailDto);
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AccessTokenResponse> {
+    return this.establishSession(
+      res,
+      await this.authService.verifyEmail(verifyEmailDto),
+    );
   }
 
   /**
@@ -152,25 +187,46 @@ export class AuthController {
   }
 
   /**
-   * POST /api/v1/auth/refresh — exchanges a valid refresh token for a new
-   * token pair; the presented token is rotated out in the same operation
-   * (docs/04-api/authentication.md §8).
+   * POST /api/v1/auth/refresh — exchanges the session cookie for a fresh
+   * access token and a rotated cookie (docs/04-api/authentication.md §8).
+   *
+   * No cookie is the same answer as a bad one: a bare 401. The page cannot
+   * see the cookie, so it calls this once on startup and reads the answer as
+   * «signed in» or «not signed in».
    */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokenPair> {
-    return this.authService.refresh(refreshTokenDto);
+  async refresh(
+    @RefreshCookie() refreshToken: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AccessTokenResponse> {
+    if (!refreshToken) {
+      throw new UnauthorizedException();
+    }
+    return this.establishSession(
+      res,
+      await this.authService.refresh(refreshToken),
+    );
   }
 
   /**
-   * POST /api/v1/auth/logout — invalidates the presented refresh token.
-   * Idempotent: responds 204 whether or not the token was active
+   * POST /api/v1/auth/logout — revokes the session and removes its cookie.
+   * Idempotent: responds 204 whether or not there was a session to end
    * (docs/04-api/authentication.md §7).
+   *
+   * The cookie is cleared even when no token arrived, so a reader who ends up
+   * here holding something expired or unrecognised leaves without it.
    */
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async logout(@Body() refreshTokenDto: RefreshTokenDto): Promise<void> {
-    await this.authService.logout(refreshTokenDto);
+  async logout(
+    @RefreshCookie() refreshToken: string | undefined,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+    clearRefreshCookie(res, this.configService.get('session', { infer: true }));
   }
 
   /**

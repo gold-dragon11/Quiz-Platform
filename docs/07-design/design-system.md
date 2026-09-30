@@ -157,18 +157,20 @@ Motion follows the principles defined in the Motion documentation.
 
 ---
 
-# 11. Dark Theme
+# 11. Themes
 
-The MVP supports a single dark theme.
+Dark is the default and the platform's own look; light is offered as a
+deliberate choice (docs/07-design/colors.md §3 and §14).
 
-The interface should use:
+Either way the interface should use:
 
 - layered surfaces;
 - restrained color accents;
 - high readability;
 - minimal visual noise.
 
-Future themes should reuse the same design tokens.
+Both themes define the same token names, so no component knows which is
+active. Any further theme reuses those same tokens.
 
 ---
 

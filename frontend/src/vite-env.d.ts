@@ -1,4 +1,6 @@
 /// <reference types="vite/client" />
+/* `virtual:pwa-register/react`, the hook that reports a waiting service worker. */
+/// <reference types="vite-plugin-pwa/react" />
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string;

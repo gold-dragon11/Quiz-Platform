@@ -51,7 +51,7 @@ function ToastItem({ toast }: { toast: Toast }): React.JSX.Element {
       transition={TRANSITION.fade}
       role="status"
       onClick={() => dismiss(toast.id)}
-      className={`bg-surface-elevated pointer-events-auto w-full max-w-sm cursor-pointer rounded-lg border px-4 py-3 text-sm shadow-lg ${VARIANT_CLASS[toast.variant]}`}
+      className={`bg-surface-overlay pointer-events-auto w-full max-w-sm cursor-pointer rounded-lg border px-4 py-3 text-sm shadow-lg ${VARIANT_CLASS[toast.variant]}`}
     >
       {toast.message}
     </motion.div>

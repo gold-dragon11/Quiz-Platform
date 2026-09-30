@@ -40,7 +40,7 @@ everywhere except the test environment.
 | `npm run lint` / `lint:check` | Lint, with and without autofix |
 | `npm run format` / `format:check` | Prettier, with and without writing |
 | `npm test` | Unit tests (84) |
-| `npm run test:e2e` | End-to-end tests (880 across 39 suites) |
+| `npm run test:e2e` | End-to-end tests (883 across 39 suites) |
 | `npm run prisma:seed` | Load the content into the database |
 | `npm run prisma:generate` | Regenerate the Prisma client |
 | `npm run prisma:migrate:dev` | Create and apply a migration in development |

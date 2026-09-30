@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="uk">
+<html lang="uk" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS ignores the manifest's icons and takes this one for the home
+         screen, so without it an installed app gets a screenshot instead. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0a0f" />
     <title>L&amp;S</title>
 
     <!--
@@ -17,8 +21,9 @@
       (docs/media/landing.png), served straight from `public/`. The SPA rewrite
       in vercel.json does not need an exception for it: Vercel checks the
       filesystem before applying rewrites, so a file that exists wins over the
-      catch-all. The `assets/` exception there is a different matter — it is
-      about files that have stopped existing after a deploy.
+      catch-all. The exceptions listed there earn their keep for a different
+      case — a file that has stopped existing after a deploy, which the
+      catch-all would otherwise answer with this page and a 200.
     -->
     <meta
       name="description"
@@ -43,6 +48,36 @@
       content="Практика за темами, пробні тести зі шкалою 100–200, повторення помилок і кабінет репетитора."
     />
     <meta name="twitter:image" content="https://learn-ls.com/og-image.png" />
+
+    <!--
+      The theme, before the first pixel. ThemeProvider sets the same attribute,
+      but it runs after React has mounted, and a reader who chose the light
+      theme would watch the dark one flash first. This reads the very same
+      persisted key and settles it in the document head instead.
+
+      Deliberately unguarded by a try/catch around the whole body: if storage
+      throws, the attribute already in the markup stands, which is the default.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('quix.theme');
+          var preference = stored ? JSON.parse(stored).state.preference : 'dark';
+          var light =
+            preference === 'light' ||
+            (preference === 'system' && matchMedia('(prefers-color-scheme: light)').matches);
+          // The landing page is pinned to dark (see usePinnedTheme). Honouring
+          // the preference here and then having React pin it back would be the
+          // very flash this script exists to prevent.
+          if (light && location.pathname !== '/') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f6f9');
+          }
+        } catch (error) {
+          /* No storage, or a key from an older version: the dark default stands. */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

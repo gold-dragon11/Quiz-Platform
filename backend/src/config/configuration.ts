@@ -80,6 +80,24 @@ export interface AppConfig {
    * (src/jobs). Unset means the sweep route answers 404: nothing can run it.
    */
   cronSecret?: string;
+  session: SessionCookieConfig;
+}
+
+/** How the refresh-token cookie is scoped (src/auth/session-cookie.ts). */
+export interface SessionCookieConfig {
+  /**
+   * Widens the cookie to a parent domain. Expected to stay unset: a host-only
+   * cookie is already returned to the API from the site, because a browser
+   * decides by where the request is going rather than by which page made it,
+   * and host-only keeps it off every other subdomain.
+   */
+  cookieDomain?: string;
+  /**
+   * Whether the cookie is marked `Secure`. True everywhere real; overridable
+   * because `http://localhost` is a secure context in Chrome and Firefox but
+   * has not always been in Safari.
+   */
+  cookieSecure: boolean;
 }
 
 export default (): AppConfig => ({
@@ -118,4 +136,10 @@ export default (): AppConfig => ({
     limit: parseInt(process.env.THROTTLE_LIMIT ?? '120', 10),
   },
   cronSecret: process.env.CRON_SECRET || undefined,
+  session: {
+    cookieDomain: process.env.SESSION_COOKIE_DOMAIN || undefined,
+    cookieSecure: process.env.SESSION_COOKIE_SECURE
+      ? process.env.SESSION_COOKIE_SECURE === 'true'
+      : process.env.NODE_ENV === 'production',
+  },
 });
