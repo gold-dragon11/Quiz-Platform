@@ -9,6 +9,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0a0f" />
     <title>L&amp;S</title>
+
+    <!--
+      How the site looks when someone pastes the link into Telegram, Viber,
+      LinkedIn or Slack. Those crawlers read the HTML as it is served — they do
+      not run JavaScript — so the tags have to live here rather than be set by
+      the app, and they describe the landing page whatever route the link
+      points at.
+
+      `og-image.png` is a 1200×630 crop of the landing page itself
+      (docs/media/landing.png), served straight from `public/`. The SPA rewrite
+      in vercel.json does not need an exception for it: Vercel checks the
+      filesystem before applying rewrites, so a file that exists wins over the
+      catch-all. The exceptions listed there earn their keep for a different
+      case — a file that has stopped existing after a deploy, which the
+      catch-all would otherwise answer with this page and a 200.
+    -->
+    <meta
+      name="description"
+      content="Підготовка до НМТ: практика за темами, пробні тести зі шкалою 100–200, повторення помилок, кабінет репетитора."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://learn-ls.com/" />
+    <meta property="og:site_name" content="L&amp;S" />
+    <meta property="og:title" content="L&amp;S — підготовка до НМТ" />
+    <meta
+      property="og:description"
+      content="Практика за темами, пробні тести зі шкалою 100–200, повторення помилок і кабінет репетитора."
+    />
+    <meta property="og:image" content="https://learn-ls.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="uk_UA" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="L&amp;S — підготовка до НМТ" />
+    <meta
+      name="twitter:description"
+      content="Практика за темами, пробні тести зі шкалою 100–200, повторення помилок і кабінет репетитора."
+    />
+    <meta name="twitter:image" content="https://learn-ls.com/og-image.png" />
+
     <!--
       The theme, before the first pixel. ThemeProvider sets the same attribute,
       but it runs after React has mounted, and a reader who chose the light
