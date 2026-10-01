@@ -32,6 +32,32 @@ import {
 } from './demo.constants';
 
 const DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Room for the demo wipe to finish on a cold instance.
+ *
+ * Prisma gives an interactive transaction five seconds by default, and on
+ * 01.10.2026 the nightly reset went over it — 6 339 ms — and was rolled back.
+ * The work itself is trivial (eight accounts, twenty-odd sessions, a few
+ * hundred rows, every affected table under 100 kB), and the database was
+ * awake and answering in 317 ms. The time went elsewhere: the cron is what
+ * wakes the free Render instance, so the job runs in the slowest half-minute
+ * of the day, and the pauses between seven awaited round-trips count against
+ * the transaction's budget just as query time would.
+ *
+ * Thirty seconds is roughly five times the worst measured run. A background
+ * job nobody is waiting on can afford to hold a transaction that long, and
+ * the alternative — splitting the wipe into pieces that can half-succeed —
+ * trades a rare failed reset for a demo in an inconsistent state.
+ *
+ * `maxWait` is the time allowed to acquire a connection before the clock even
+ * starts; its two-second default is tight on the same cold instance and
+ * fails with a different error that means the same thing.
+ *
+ * None of this is needed on an instance that does not sleep. It can go back
+ * to the default once the API moves off the free plan.
+ */
+const REMOVE_DEMO_TRANSACTION = { timeout: 30_000, maxWait: 10_000 };
 const daysAgo = (days: number, hour = 17): Date => {
   const at = new Date(Date.now() - days * DAY);
   at.setUTCHours(hour, (days * 7) % 60, 0, 0);
@@ -344,6 +370,10 @@ export class DemoService {
    * Removes every demo account and everything it made, in the order the
    * foreign keys allow. Sealing guarantees nothing here belongs to a real
    * account: a real learner can join neither the demo group nor a demo duel.
+   *
+   * The whole thing is one transaction on purpose. Half a demo — accounts gone
+   * but their group still standing — is worse than a reset that did not happen,
+   * because the next rebuild would then collide with the leftovers.
    */
   private async removeDemo(): Promise<void> {
     const users = await this.prisma.user.findMany({
@@ -377,7 +407,7 @@ export class DemoService {
       });
       // Profile, settings, statistics, ladder, exposures, tokens cascade.
       await tx.user.deleteMany({ where: { id: { in: ids } } });
-    });
+    }, REMOVE_DEMO_TRANSACTION);
   }
 
   private async createAccount(
