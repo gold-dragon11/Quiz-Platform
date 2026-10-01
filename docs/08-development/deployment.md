@@ -427,10 +427,17 @@ next request pays roughly 50 seconds of start-up. Two consequences:
 - the first visitor after a quiet period sees a long wait, which the frontend
   presents as a slow load rather than an error;
 - the token refresh flow inherits that delay, so a session resumed after
-  inactivity can appear to hang before it succeeds.
+  inactivity can appear to hang before it succeeds;
+- a scheduled job is itself what wakes the instance, so it runs in the
+  slowest half-minute of the day. On 01.10.2026 that was enough for the
+  nightly demo reset to exceed Prisma's five-second default for an
+  interactive transaction and be rolled back — with the database awake and
+  answering in 317 ms, and under a thousand rows to delete. The wipe now asks
+  for thirty seconds (`REMOVE_DEMO_TRANSACTION` in `src/demo/demo.service.ts`),
+  which can go back to the default once the instance stops sleeping.
 
-A paid instance removes both. Before a live demonstration, send one request a
-few minutes ahead to wake the service.
+A paid instance removes all three. Before a live demonstration, send one
+request a few minutes ahead to wake the service.
 
 ## 17.4b The session cookie
 
