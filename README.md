@@ -76,6 +76,15 @@ itself cannot read, renewed on every visit — so a week never passes with a
 login screen in it. Answers are never cached: on a shared phone, the next
 person to pick it up finds nothing.
 
+**It measures itself.** A registration reaches the owner's phone the moment it
+happens, and a short digest each morning says what the day held — or says
+nothing at all, because a message reporting a quiet day every day stops being
+read. The admin panel opens on the same figures in detail: where people stop
+between registering, confirming an address and finishing a first test. All of
+it is read from the tables the product already fills, so there is no
+third-party tracker anywhere near a sixteen-year-old's browser, and no cookie
+banner to dismiss.
+
 The bank currently holds **5 399 published questions** across **4 subjects**,
 **76 topics**, with a learning material for every topic and 112 reading
 passages.

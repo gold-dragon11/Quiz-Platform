@@ -54,7 +54,11 @@ the theme: that a chosen one reaches the document, that «як у системі
 the machine as it changes, and that the landing keeps its own. And what being
 installable changed: saying «no connection» instead of showing skeletons that
 will never fill, offering an update rather than swapping the build underneath
-someone, and not mistaking a lift for a logout.
+someone, and not mistaking a lift for a logout. And the administrator's
+overview: that the funnel names where people were lost rather than leaving two
+numbers to be subtracted, and that the page reads as quiet rather than broken
+on a day nothing happened — which, for a platform with no users yet, is most
+days.
 
 ## Structure
 
@@ -91,6 +95,16 @@ cookie the page cannot read, rotated on every renewal, seven days sliding — so
 opening the app at least once a week means never signing in again, and a
 cross-site scripting flaw still cannot lift the session
 ([`docs/04-api/authentication.md`](../docs/04-api/authentication.md) §6.1).
+
+The admin panel opens on figures rather than on the catalogue. Its first tab
+answers how the platform is doing — new accounts against the week, the funnel
+from registering to confirming an address to finishing a first test with the
+number lost at each step named, registrations by day, which subjects are
+actually sat, and the newest accounts by name. One request fills the whole
+screen, so no two figures on it can come from different moments
+([`docs/01-prd/admin-panel.md`](../docs/01-prd/admin-panel.md) §14a). Nothing
+there describes a visit before registration: an anonymous reader leaves no row,
+and the panel says so rather than guessing.
 
 Two rules hold the layering. A feature is imported only through its barrel
 (`features/<name>/index.ts`). And `lib/api-client.ts` owns Axios —
