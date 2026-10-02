@@ -553,6 +553,72 @@ minutes, so each run usually pays a cold start, which the workflow's 90-second
 timeout and retries allow for.
 
 
+## 17.7a Owner Alerts
+
+Two things reach whoever runs the platform without them going to look: a
+registration as it happens, and a summary in the morning.
+
+They go to Telegram rather than to email. It arrives on a phone in a second,
+costs nothing and has no sending quota — the platform's mail budget is for
+learners, and a notification competing with a verification letter for the same
+quota is a bad trade.
+
+**What is sent.** A username and a role, never an email address. The audience
+is school-age, their addresses are the most personal thing the platform holds,
+and a chat log is not where they belong; a username is already public, since it
+is the address of the public profile.
+
+| Moment | Message |
+| --- | --- |
+| Registration | Who, which role, how many accounts exist now |
+| Email confirmed | Who — the second half of the funnel's sharpest drop |
+| Every morning | New accounts, how many confirmed, tests completed, people behind them |
+| Sunday morning | The same over seven days, sent whether or not anything happened |
+
+A quiet day sends nothing at all. A daily message saying nothing happened
+trains its reader to stop opening the ones that do; the weekly summary goes
+out regardless, so silence stays distinguishable from a bot that died.
+
+**Where the numbers come from.** The existing tables — `users.createdAt`,
+`quiz_sessions` — with demo accounts excluded, since the demo's eight are
+rebuilt nightly and would drown everything else. Activity is counted from
+completed tests rather than from sign-ins: `lastLoginAt` stopped being a fair
+measure of who came back when sessions started surviving a closed browser
+(decision 36), because a reader can now return daily for a week without the
+login form being involved once.
+
+**The schedule.** `.github/workflows/daily-digest.yml` at 06:11 UTC — nine in
+the morning in Kyiv over summer, eight over winter. GitHub speaks only UTC, so
+the hour drifts with daylight saving; that is accepted rather than worked
+around. It sends
+
+```http
+POST /api/v1/jobs/daily
+Authorization: Bearer <CRON_SECRET>
+```
+
+and answers `{ sent: ['day'] }`, or `{ sent: [] }` on a quiet day, so an empty
+list is a real answer rather than an unanswered question about whether the job
+ran. Unlike the demo reset, a retry here is not harmless — it would send the
+digest twice — so only connection failures are retried, not a response the
+server actually gave.
+
+**Setup.** Both values are optional, and with either missing every message
+goes to the application log instead. That is what a laptop and CI want, and it
+means this can ship and deploy before the bot exists.
+
+1. Create a bot through [@BotFather](https://t.me/BotFather) and keep the token.
+2. Send the bot any message, then open
+   `https://api.telegram.org/bot<TOKEN>/getUpdates` and read `result[0].message.chat.id`.
+3. Render → the API service → Environment → `TELEGRAM_BOT_TOKEN` and
+   `TELEGRAM_CHAT_ID`.
+
+The test environment never binds Telegram even when a token is present, the
+same rule `EmailModule` follows: a suite that registers accounts by the dozen
+should not light up somebody's phone.
+
+---
+
 ## 17.8 Error Reporting
 
 Both applications report errors to Sentry, each to its own project, and each

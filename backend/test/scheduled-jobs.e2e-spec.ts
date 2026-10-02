@@ -45,6 +45,7 @@ describe('Scheduled jobs (e2e)', () => {
   const PREFIX = 'jobs-e2e';
   const PASSWORD = 'ValidPass1!';
   const SWEEP_URL = '/api/v1/jobs/hourly';
+  const DIGEST_URL = '/api/v1/jobs/daily';
   const previousSecret = process.env.CRON_SECRET;
 
   let app: INestApplication;
@@ -244,6 +245,43 @@ describe('Scheduled jobs (e2e)', () => {
       .post(SWEEP_URL)
       .set('Authorization', `Bearer ${token}`)
       .expect(401);
+  });
+
+  describe('the owner digest', () => {
+    it('is closed to anyone without the scheduler secret', async () => {
+      await request(app.getHttpServer()).post(DIGEST_URL).expect(401);
+      await request(app.getHttpServer())
+        .post(DIGEST_URL)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(401);
+    });
+
+    it('says which periods it sent', async () => {
+      const response = await request(app.getHttpServer())
+        .post(DIGEST_URL)
+        .set('Authorization', `Bearer ${CRON_SECRET}`)
+        .expect(200);
+
+      // An empty list is a real answer — a quiet day sends nothing — so what
+      // matters is that the shape says so rather than leaving the caller to
+      // guess whether the job ran at all.
+      const { sent } = response.body as { sent: string[] };
+      expect(Array.isArray(sent)).toBe(true);
+      for (const period of sent) {
+        expect(['day', 'week']).toContain(period);
+      }
+    });
+
+    it('speaks on a day this suite has registered somebody', async () => {
+      // The surrounding suite creates an account and sits tests, so the last
+      // twenty-four hours are never empty while it runs.
+      const response = await request(app.getHttpServer())
+        .post(DIGEST_URL)
+        .set('Authorization', `Bearer ${CRON_SECRET}`)
+        .expect(200);
+
+      expect((response.body as { sent: string[] }).sent).toContain('day');
+    });
   });
 
   it('reports what it did', async () => {

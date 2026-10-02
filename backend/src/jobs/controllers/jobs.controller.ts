@@ -6,6 +6,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { DemoService } from '../../demo/demo.service';
+import { DailyDigestService } from '../../owner-alerts/daily-digest.service';
 import { CronSecretGuard } from '../guards/cron-secret.guard';
 import { HourlySweepReport, JobsService } from '../services/jobs.service';
 
@@ -22,6 +23,7 @@ export class JobsController {
   constructor(
     private readonly jobsService: JobsService,
     private readonly demoService: DemoService,
+    private readonly dailyDigest: DailyDigestService,
   ) {}
 
   /** POST /api/v1/jobs/hourly */
@@ -42,5 +44,18 @@ export class JobsController {
   @HttpCode(HttpStatus.ACCEPTED)
   startDemoReset(): { started: boolean } {
     return { started: this.demoService.startInBackground() };
+  }
+
+  /**
+   * POST /api/v1/jobs/daily — the morning digest (§17.10).
+   *
+   * Answers with which periods were actually sent: a quiet day sends nothing
+   * and reports an empty list, which is the difference between «nothing
+   * happened» and «the job never ran».
+   */
+  @Post('daily')
+  @HttpCode(HttpStatus.OK)
+  runDaily(): Promise<{ sent: string[] }> {
+    return this.dailyDigest.run();
   }
 }
