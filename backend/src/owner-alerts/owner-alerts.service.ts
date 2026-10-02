@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
+import { REAL_ACCOUNT } from '../metrics/real-account';
 import { PrismaService } from '../prisma/prisma.service';
 import { OwnerAlertChannel } from './owner-alert.channel';
 
@@ -68,8 +69,8 @@ export class OwnerAlertsService {
   }
 
   /**
-   * Real accounts only. The demo's eight are rebuilt nightly and would make
-   * the total meaningless.
+   * Real accounts only — the demo's are rebuilt nightly, and a soft-deleted
+   * one is a person who left (see REAL_ACCOUNT).
    *
    * Returns null rather than throwing if the count fails: a notification is
    * worth sending without its last line, and is never worth failing a
@@ -77,7 +78,7 @@ export class OwnerAlertsService {
    */
   private async countAccounts(): Promise<number | null> {
     try {
-      return await this.prisma.user.count({ where: { isDemo: false } });
+      return await this.prisma.user.count({ where: REAL_ACCOUNT });
     } catch {
       return null;
     }

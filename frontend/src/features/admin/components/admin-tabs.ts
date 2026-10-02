@@ -1,4 +1,4 @@
-export type AdminTabId = 'subjects' | 'topics' | 'questions' | 'quizzes' | 'users';
+export type AdminTabId = 'overview' | 'subjects' | 'topics' | 'questions' | 'quizzes' | 'users';
 
 /**
  * The panel's sections, in order.
@@ -8,6 +8,9 @@ export type AdminTabId = 'subjects' | 'topics' | 'questions' | 'quizzes' | 'user
  * fast refresh, and the list is data rather than markup anyway.
  */
 export const ADMIN_TABS: { id: AdminTabId; label: string }[] = [
+  // First, and the panel's default. Editing a subject is a once-a-month job;
+  // «is anything happening» is why the page gets opened at all.
+  { id: 'overview', label: 'Огляд' },
   { id: 'subjects', label: 'Предмети' },
   { id: 'topics', label: 'Теми' },
   { id: 'questions', label: 'Питання' },

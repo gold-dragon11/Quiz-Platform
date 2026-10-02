@@ -20,6 +20,8 @@ export const ADMIN_QUERY_KEYS = {
   users: ['admin', 'users'] as const,
   usersList: (params: AdminListParams) => ['admin', 'users', 'list', params] as const,
 
+  metrics: ['admin', 'metrics'] as const,
+
   quizzes: ['admin', 'quizzes'] as const,
   quizzesList: (params: AdminListParams) => ['admin', 'quizzes', 'list', params] as const,
 };

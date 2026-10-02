@@ -248,6 +248,37 @@ The audit log helps track content changes over time.
 
 ---
 
+# 14a. Overview
+
+The panel opens on **Огляд** — how the platform is doing — rather than on the
+subject catalogue. Editing content is occasional work; «is anything happening»
+is why the page gets opened at all.
+
+It answers from rows the product already writes, so it starts at the moment
+somebody registers. What a visitor did before that — which page they landed
+on, whether they got as far as the form — leaves no row anywhere and is not
+guessed at here.
+
+| Panel | What it shows |
+|---|---|
+| Headline figures | New accounts, people, tests — the week, with today beside it |
+| Funnel | Registered → confirmed → took a test → came back, over 30 days, with the number lost at each step named |
+| Registrations | One column per day for 30 days, empty days included |
+| Subjects | Which subjects are actually sat, and by how many people |
+| Recent accounts | The newest twenty by name, each marked for whether the address was confirmed and whether a test was ever finished |
+
+Two exclusions run through every figure: the demo's accounts, rebuilt nightly
+with tests of their own, and accounts their owners have deleted. Both are
+shared with the morning digest (`src/metrics/real-account.ts`), because two
+places answering «how many accounts» differently is a bug nobody reports —
+each number looks plausible on its own.
+
+«Came back» is read as finishing tests on two different days. It undercounts
+somebody who returned only to read their notes, and that is the right
+direction for a figure used to decide whether any of this works.
+
+---
+
 # 15. Future Improvements
 
 Possible future enhancements include:

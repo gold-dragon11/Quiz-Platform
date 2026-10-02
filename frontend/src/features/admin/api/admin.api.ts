@@ -17,6 +17,7 @@ import type {
   UpdateSubjectPayload,
   UpdateTopicPayload,
 } from '@/features/admin/types/admin.types';
+import type { PlatformMetrics } from '@/features/admin/types/admin.types';
 
 /**
  * Admin API layer (Phase 6.8) — typed wrappers over the shared apiClient for
@@ -89,4 +90,14 @@ export const adminUsersApi = {
     (await apiClient.get<Paginated<AdminUserRecord>>('/admin/users', { params })).data,
   setRole: async (userId: string, role: AssignableRole): Promise<AdminUserRecord> =>
     (await apiClient.patch<AdminUserRecord>(`/admin/users/${userId}/role`, { role })).data,
+};
+
+/**
+ * How the platform is doing. One endpoint for the whole overview, so every
+ * figure on screen comes from the same instant and nothing can disagree with
+ * the rest of it.
+ */
+export const adminMetricsApi = {
+  overview: async (): Promise<PlatformMetrics> =>
+    (await apiClient.get<PlatformMetrics>('/admin/metrics')).data,
 };
