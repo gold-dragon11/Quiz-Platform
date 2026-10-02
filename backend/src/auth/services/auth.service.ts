@@ -19,6 +19,7 @@ import {
 import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../../config/configuration';
 import { EmailService } from '../../email/email.service';
+import { OwnerAlertsService } from '../../owner-alerts/owner-alerts.service';
 import {
   EMAIL_VERIFICATION_PURPOSE,
   PASSWORD_RESET_PURPOSE,
@@ -95,6 +96,7 @@ export class AuthService implements OnModuleInit {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly emailService: EmailService,
+    private readonly ownerAlerts: OwnerAlertsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -141,6 +143,15 @@ export class AuthService implements OnModuleInit {
     // endpoint is the documented recovery path
     // (docs/06-backend/authentication.md §8).
     await this.sendVerificationEmailSafely(createdUser.id, dto.email);
+
+    // Likewise a courtesy, to a different recipient: whoever runs the
+    // platform, so they learn about a new account without going to look
+    // (src/owner-alerts). It cannot throw, and is awaited rather than left
+    // floating so a serverless-style instance cannot be stopped mid-send.
+    await this.ownerAlerts.announceRegistration(
+      dto.username,
+      dto.role ?? UserRole.USER,
+    );
   }
 
   /**
@@ -189,6 +200,10 @@ export class AuthService implements OnModuleInit {
     });
 
     await this.authRepository.recordSuccessfulLogin(account.id);
+
+    // The half of the funnel an email provider can silently swallow: a letter
+    // in a spam folder looks exactly like somebody losing interest.
+    await this.ownerAlerts.announceVerification(account.id);
 
     return tokens;
   }

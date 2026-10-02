@@ -81,6 +81,18 @@ export interface AppConfig {
    */
   cronSecret?: string;
   session: SessionCookieConfig;
+  telegram: TelegramConfig;
+}
+
+/**
+ * The bot that carries registrations and the morning digest to the person who
+ * runs the platform (src/owner-alerts). Both values unset — the normal state
+ * on a laptop and in CI — sends every message to the log instead.
+ */
+export interface TelegramConfig {
+  botToken?: string;
+  /** Which chat receives them; a personal chat with the bot, not a channel. */
+  chatId?: string;
 }
 
 /** How the refresh-token cookie is scoped (src/auth/session-cookie.ts). */
@@ -136,6 +148,10 @@ export default (): AppConfig => ({
     limit: parseInt(process.env.THROTTLE_LIMIT ?? '120', 10),
   },
   cronSecret: process.env.CRON_SECRET || undefined,
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN || undefined,
+    chatId: process.env.TELEGRAM_CHAT_ID || undefined,
+  },
   session: {
     cookieDomain: process.env.SESSION_COOKIE_DOMAIN || undefined,
     cookieSecure: process.env.SESSION_COOKIE_SECURE

@@ -48,6 +48,16 @@ class EnvironmentVariables {
   @IsString()
   JWT_REFRESH_EXPIRES_IN?: string;
 
+  // The bot that carries owner alerts (src/owner-alerts). Both unset means
+  // every message goes to the log instead of a phone.
+  @IsOptional()
+  @IsString()
+  TELEGRAM_BOT_TOKEN?: string;
+
+  @IsOptional()
+  @IsString()
+  TELEGRAM_CHAT_ID?: string;
+
   // The domain the session cookie is issued for. Unset in development, where
   // it stays host-only on localhost (src/auth/session-cookie.ts).
   @IsOptional()
