@@ -52,7 +52,8 @@ Unit tests sit beside the code they cover. The end-to-end suite runs the real
 application against a real database and a real HTTP server — it needs
 PostgreSQL migrated and seeded first, and it is where authentication, the quiz
 engine, the teacher side, NMT scoring and the scheduled sweep are actually
-verified.
+verified — including who may read the administrator's overview, and that its
+figures leave out the demo's accounts and the ones their owners deleted.
 
 The rate limiter is disabled in the test environment, because five hundred
 requests from one address would trip it for reasons unrelated to what each test
@@ -76,7 +77,9 @@ src/
 ├── duels/                 # Asynchronous duels
 ├── statistics/            # XP, levels, per-subject and per-topic figures
 ├── notifications/ email/  # Assignment mail and its delivery
-├── jobs/                  # The hourly sweep, called by an external scheduler
+├── owner-alerts/          # Registrations and the morning digest, to the owner's Telegram
+├── metrics/               # The administrator's overview, read from the product's own tables
+├── jobs/                  # The hourly sweep and the daily digest, called by an external scheduler
 ├── settings/ health/      # Account settings, health check
 ├── common/ config/ prisma/# Guards, filters, throttling, configuration, Prisma provider
 ├── app.module.ts
