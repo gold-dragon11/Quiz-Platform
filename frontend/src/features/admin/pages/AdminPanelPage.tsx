@@ -9,6 +9,7 @@ import { TopicsSection } from '@/features/admin/components/topics/TopicsSection'
 import { QuestionsSection } from '@/features/admin/components/questions/QuestionsSection';
 import { QuizzesSection } from '@/features/admin/components/quizzes/QuizzesSection';
 import { UsersSection } from '@/features/admin/components/users/UsersSection';
+import { MetricsSection } from '@/features/admin/components/metrics/MetricsSection';
 
 /** Query parameter holding the open section. */
 const TAB_PARAM = 'tab';
@@ -37,7 +38,7 @@ function isTabId(value: string | null): value is AdminTabId {
 export function AdminPanelPage(): React.JSX.Element {
   const [searchParams, setSearchParams] = useSearchParams();
   const param = searchParams.get(TAB_PARAM);
-  const tab: AdminTabId = isTabId(param) ? param : 'subjects';
+  const tab: AdminTabId = isTabId(param) ? param : 'overview';
 
   const openTab = (next: AdminTabId): void => {
     setSearchParams(
@@ -53,7 +54,10 @@ export function AdminPanelPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader eyebrow="Адміністрування" title="Каталог" />
+      {/* «Каталог» named the four CRUD sections this page used to be. It is
+          now also where the platform's own numbers live, and a heading that
+          promises a catalogue over a funnel reads as the wrong page. */}
+      <PageHeader eyebrow="Адміністрування" title="Панель" />
 
       <div className="mt-10">
         <AdminTabs active={tab} onChange={openTab} />
@@ -69,6 +73,7 @@ export function AdminPanelPage(): React.JSX.Element {
           transition={TRANSITION.fade}
           className="mt-8"
         >
+          {tab === 'overview' && <MetricsSection />}
           {tab === 'subjects' && <SubjectsSection />}
           {tab === 'topics' && <TopicsSection />}
           {tab === 'questions' && <QuestionsSection />}

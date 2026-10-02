@@ -711,3 +711,30 @@ Administrator access is granted where the platform is deployed.
 | 400 | `role` is missing, unknown, or `ADMIN` |
 | 404 | No such account |
 | 409 | The account is an administrator, or has been deleted |
+
+---
+
+# 20. Platform Metrics
+
+```http
+GET /api/v1/admin/metrics
+```
+
+Everything the overview draws, in one read: `totals`, `today`, `week`,
+`funnel`, `registrations`, `subjects`, `recent`.
+
+One endpoint rather than one per panel, so every figure comes from the same
+instant and nothing on the screen can disagree with the rest of it.
+
+Administrator-only. A learner or teacher receives `403` — a teacher's own
+analytics are about their group, and how many people the platform has is not
+theirs to read.
+
+Demo accounts and deleted accounts are excluded from every figure
+(`src/metrics/real-account.ts`), the same rule the morning digest applies.
+
+| Status | Meaning |
+|---|---|
+| 200 | The overview |
+| 401 | Not signed in |
+| 403 | Signed in, but not an administrator |

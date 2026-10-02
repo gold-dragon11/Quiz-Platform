@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { QuizStatus, UserRole } from '@prisma/client';
+import { REAL_ACCOUNT } from '../metrics/real-account';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildDigest,
@@ -64,7 +65,7 @@ export class DailyDigestService {
    * being involved. A completed test is something they unambiguously did.
    */
   private async countSince(since: Date): Promise<DigestCounts> {
-    const real = { isDemo: false };
+    const real = REAL_ACCOUNT;
 
     const [newAccounts, verified, sittings, people, totalAccounts] =
       await Promise.all([

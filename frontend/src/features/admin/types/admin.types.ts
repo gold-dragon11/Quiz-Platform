@@ -203,3 +203,53 @@ export interface AdminListParams {
   difficulty?: Difficulty;
   role?: UserRole;
 }
+
+/* --- Platform metrics (docs/04-api/admin.md, GET /admin/metrics) --------- */
+
+/** Counts over one window; the three figures the morning digest also carries. */
+export interface PeriodCounts {
+  newAccounts: number;
+  testsCompleted: number;
+  activePeople: number;
+}
+
+/**
+ * Where people stop, over everybody who registered in the last thirty days.
+ * Each step is a subset of the one above it, so the gaps are the reading.
+ */
+export interface MetricsFunnel {
+  registered: number;
+  verified: number;
+  tookATest: number;
+  returned: number;
+}
+
+export interface DailyPoint {
+  /** `YYYY-MM-DD`, UTC. */
+  day: string;
+  count: number;
+}
+
+export interface SubjectUsage {
+  subject: string;
+  sessions: number;
+  people: number;
+}
+
+export interface RecentAccount {
+  username: string;
+  role: string;
+  createdAt: string;
+  verified: boolean;
+  tookATest: boolean;
+}
+
+export interface PlatformMetrics {
+  totals: { accounts: number; learners: number; teachers: number; testsCompleted: number };
+  today: PeriodCounts;
+  week: PeriodCounts;
+  funnel: MetricsFunnel;
+  registrations: DailyPoint[];
+  subjects: SubjectUsage[];
+  recent: RecentAccount[];
+}
