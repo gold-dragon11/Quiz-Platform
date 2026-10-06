@@ -23,21 +23,3 @@ export function useCatalogue() {
     retryDelay: (attempt) => Math.min(2000 * 2 ** attempt, 15000),
   });
 }
-
-/**
- * The bank, laid out as a table of contents rather than counted in tiles.
- *
- * The four tiles this replaced had two problems. The smaller one: «4 предмети»
- * shouted at the same size as «3308 запитань», advertising the weakest fact as
- * loudly as the strongest. The larger one: «76 тем» and «76 навчальних
- * матеріалів» were the *same fact counted twice* — every topic has exactly one
- * material — and nobody noticed, because tiles are looked at rather than read.
- *
- * Topic names can be read and judged: a candidate sees whether what they need
- * is covered. Four numbers never told them that. The numbers move into the one
- * sentence at the bottom, where the 76 = 76 coincidence becomes the claim it
- * always was: every topic has a material.
- *
- * Ordered by question count, so the strongest subject opens the list and «4
- * предмети» disappears as a figure — you can see there are four.
- */
