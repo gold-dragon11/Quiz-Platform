@@ -15,7 +15,7 @@ mistakes. Tutors run groups, set homework and see where a class actually broke.
 The interface is Ukrainian throughout; the code, comments and documentation are
 in English.
 
-![The landing page, with a test being sat in the hero](docs/media/landing.png)
+![The landing page: the headline and a stack of exam sheets, one per subject](docs/media/landing.png)
 
 ### Try it
 
