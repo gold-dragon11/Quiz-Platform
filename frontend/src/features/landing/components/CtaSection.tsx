@@ -1,38 +1,33 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { demoLoginPath } from '@/shared/constants/demo';
 import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/ui/Button';
-import { ArrowIcon } from '@/features/landing/components/ArrowIcon';
-import { DecorCurves } from '@/features/landing/components/DecorCurves';
 import { SECTION_CONTAINER } from '@/features/landing/constants';
 
 /**
- * Closing call to action: one line at display size and the button under it.
- *
- * The label matches the bar at the top of the page. The two do the same thing,
- * and calling it «Створити акаунт» here and «Зареєструватись» there made one
- * action look like two.
+ * The close: the hero's action again, on the page's one indigo band. On
+ * indigo Loom's button turns ecru with indigo text, and the link keeps the
+ * ecru with its rule.
  */
 export function CtaSection(): React.JSX.Element {
-  const navigate = useNavigate();
-
   return (
-    <section
-      aria-labelledby="cta-title"
-      className="border-border relative overflow-clip border-t py-[clamp(96px,12vw,180px)]"
-    >
-      <DecorCurves set="c" />
-
-      <div className={`${SECTION_CONTAINER} relative`}>
-        <h2
-          id="cta-title"
-          className="text-text-primary font-display mb-10 max-w-[12em] text-[clamp(48px,7vw,108px)] leading-[0.98] font-bold text-balance"
-        >
-          Почни навчатися вже <em className="text-primary italic">за хвилину.</em>
+    <section aria-labelledby="cta-title" className="bg-primary text-on-primary">
+      <div
+        className={`${SECTION_CONTAINER} flex flex-col gap-10 py-[clamp(80px,9vw,128px)] min-[60rem]:flex-row min-[60rem]:items-end min-[60rem]:justify-between`}
+      >
+        <h2 id="cta-title" className="lp-h2 max-w-[14ch]">
+          Почни навчатися вже за хвилину.
         </h2>
-        <Button size="xl" onClick={() => navigate(ROUTES.register)}>
-          Зареєструватись
-          <ArrowIcon />
-        </Button>
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-5">
+          <Link
+            to={ROUTES.register}
+            className="bg-on-primary text-primary hover:bg-surface-elevated focus-visible:ring-on-primary focus-visible:ring-offset-primary inline-flex h-12 items-center px-6 font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+          >
+            Зареєструватися
+          </Link>
+          <Link to={demoLoginPath('student')} className="lp-link" data-on-primary="">
+            Спробувати демо
+          </Link>
+        </div>
       </div>
     </section>
   );

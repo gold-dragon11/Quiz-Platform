@@ -42,10 +42,10 @@ export function useForcedTheme(): ResolvedTheme | null {
 
 /**
  * Pins the theme for as long as the calling screen is mounted, whatever the
- * reader's preference. The landing page uses it: it is a designed dark poster
- * — the violet strokes behind the hero, the backdrop, the mock test — and
- * none of that was drawn for a white page. The product behind the login is
- * where the preference applies.
+ * reader's preference: for a screen drawn for one theme only. No screen needs
+ * it today — the landing held the dark theme until its redesign in the same
+ * system as the product (decision 42) — and it stays for the next one that
+ * does.
  *
  * On leaving the screen the preference takes over again, because the pin is
  * released and ThemeProvider re-runs.

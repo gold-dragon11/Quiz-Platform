@@ -8,109 +8,107 @@
 # 1. Purpose
 
 `/` is the page a stranger sees first: a reviewer following a link from a CV,
-or a candidate who searched for НМТ preparation. It has one job — show what the
-product does, in its own interface, quickly enough that the reader decides to
-look further — and it does it in scenes rather than paragraphs.
+or a candidate who searched for НМТ preparation. Its job is sign up, and its
+second action is the demo: one click to the product with a demo account
+already filled in.
 
-The code lives in `frontend/src/features/landing/`. Decision 40 in
-`docs/00-overview/teacher-side-decisions.md` records why it is built this way.
+The code lives in `frontend/src/features/landing/`. Decision 42 in
+`docs/00-overview/teacher-side-decisions.md` records why it is built this way;
+decision 40, the earlier page of CSS 3D scenes on a dark ground, is what it
+replaced.
+
+The page was designed with Hallmark (`design.md`): Feature Stack in the Loom
+system the whole product uses. The stamp at the top of `landing.css` records
+the picks, and `.claude/skills/hallmark/scripts/sloplint.mjs` checks the page
+against them (0 Floor findings, 0 Reflex at the time of writing).
 
 ---
 
 # 2. Order of the page
 
-| Section | Component | What it shows |
+| Section | Component | Form |
 | --- | --- | --- |
-| Bar | `LandingNav` | «Увійти» and «Зареєструватись», sticky — the only actions until the end |
-| Hero | `HeroSection`, `HeroStack` | The headline and a stack of four exam sheets, one per subject |
-| Як це працює | `HowItWorksSection` | Topic, question, review — the three screens of a test |
-| Драбина помилок | `MistakeLadderSection` | A question card climbing the 1 / 3 / 7-day ladder and falling back |
-| Пробний НМТ | `MockExamSection` | A score on the 100–200 scale and four facts |
-| Дуель наживо | `DuelSection` | One round of a live duel, played out |
-| Для репетиторів | `TutorsSection` | A homework report: who handed it in, the group's worst question |
-| Банк питань | `StatsSection` | Questions, subjects and topics, live from `GET /catalogue` |
-| Closing | `CtaSection` | One line and the sign-up button |
-
-Every fact on the page is checked against the code: the ladder against
-`REVIEW_LADDER_DAYS`, the question counts against `COUNT_LADDER` on the quiz
-start screen, the scale against the mock exam's 2026 conversion table. The
-tasks printed on the sheets and in the duel are real tasks with correct
-answers, and the one wrong answer in the review (3,45 for 3,4567 «до сотих») is
-the mistake a candidate actually makes.
+| Masthead | `LandingNav` | The wordmark centred over a rule; the demo at the left, sign-in and sign-up at the right; all links |
+| Hero | `HeroSection`, `HeroSheets` | A Banner: the three words, one sentence, sign up and the demo; four NMT sheets on the right |
+| The product at work | `ProductStack` | A Feature Stack: the head pinned on the left, four captured screens passing on the right |
+| The mistake ladder | `MistakeLadderSection` | Time as a ruled scale: one question's days on the 1, 3, 7 ladder |
+| Mock NMT | `MockExamSection` | A specification in ruled rows, with an example score set largest |
+| Live duel | `DuelSection` | Status rows: the question, its clock, the two players |
+| Tutors | `TutorsSection` | A sample homework report as a table |
+| The bank | `BankSection` | The live catalogue as rows; absent if the catalogue cannot be read |
+| Questions | `FaqSection` | Five questions as rows, each answered with a fact the product holds |
+| Close | `CtaSection` | The hero's action on the page's one indigo band |
+| Footer | `FooterSection` | Index columns: students, tutors, the repository |
 
 ---
 
-# 3. The drawings
+# 3. What the page shows
 
-The scenes are axonometric drawings built from one primitive, `IsoTile`: a slab
-with a top face, a front (the spine) and a shaded side, placed in 3D by custom
-properties (`--w`, `--h`, `--d`, `--x`, `--y`, `--z`) defined in `landing.css`.
+**The product, not a drawing of it.** The four images in the Feature Stack
+are screens of the demo student, captured from the real app in the light
+theme at 1280 × 800 and cropped to the content column at 1.5× density
+(`assets/capture-*.jpg`, about 45 KB each). A picture of an interface built
+from styled boxes would be the one thing on the page that pretends.
 
-The faces carry live text and the product's own controls — chips, fields,
-progress bars — so the drawings stay sharp at any angle and read as the
-product, not as an illustration of it. That is why they are CSS 3D and not a
-WebGL canvas: a canvas would have to render text as texture, and would add a
-library the size of the rest of the page to draw four rectangles.
+**The exam's own sheets.** The hero's signature is four sheets, one per
+subject, in a slight perspective: three show only their heads, the top one a
+matching task in the exam's format with its answer grid filled. Every answer
+on a sheet and in every example is correct; the distractor (Д, 1240) is the
+kind the format always carries.
 
-`landing.css` is plain CSS scoped under the `lp-` prefix. The page is pinned
-dark (decision 35), so the few shades without a token — the slab's sides and
-the faces' gradient — are set there as `--lp-*` properties.
+**Every figure is real or named as an example.** The bank's numbers come from
+`/catalogue`; the mock score and the tutor's report are captioned «Приклад».
+Every claim in the questions is checked against the code or the data (every
+published question has an explanation, every topic a material).
+
+**The copy keeps Hallmark's rules:** no eyebrow over a heading, no tracked
+capitals, no word in a heading set apart, no middle dots and no dashes. A
+range is written «від 100 до 200». The page test fails on a stray `·`, `—` or
+`–`.
 
 ---
 
 # 4. Motion
 
-Each scene is driven by one number, its progress `p` from 0 to 1. The
-arithmetic — the ladder's keyframes, the deck's poses, the mapping from a list
-to a timeline — is in `lib/scene-math.ts` and tested on its own.
+Three primitives, the budget Hallmark allows, and nothing else:
 
-How a scene plays depends on the reader (`useSceneMode`):
+1. **The deal.** On load the four sheets land one after another and the last
+   answer on the top sheet is marked: 0.63 s for the sheets, 0.78 s with the
+   mark, once. Pure CSS (`lp-deal`, `lp-mark`), `transform` and `opacity` only.
+2. **The pinned stack.** The head of «Тест, розбір, повторення» holds while the
+   four screens scroll past at the reader's speed; the step of the screen in
+   view is marked by an `IntersectionObserver`, a threshold state rather than
+   a scroll handler. A pin, not a scrub.
+3. **The duel's clock.** A four-second loop, paused while the duel is pointed
+   at or focused.
 
-| Mode | When | Behaviour |
-| --- | --- | --- |
-| `pinned` | 900px and wider | The section is three screens tall and holds the scene sticky under the bar; `p` is how far through it the reader has scrolled |
-| `flow` | narrower | The scene sticks under the bar while its list scrolls beneath it; the item that has just slid under the scene picks the frame |
-| `static` | `prefers-reduced-motion` | The meaningful end frame; nothing moves |
-
-On a phone the two scroll scenes are staged differently rather than shrunk. A
-scaled-down copy of the wide drawing left the object a third of the frame with
-text too small to read, so «Як це працює» becomes a deck of the three screens
-seen close up, one sheet at a time, and the ladder is drawn in profile.
-
-The hero stack leans towards a mouse pointer; on a touch screen, where there is
-no pointer, it shuffles through the four subjects every 2.3 seconds while it is
-on screen. The duel loops through three rounds while it is on screen. Counters
-(the score, the bank) count up once, when they come into view.
-
-Scenes write their per-frame values straight to the DOM from a
-`requestAnimationFrame` callback; only discrete changes (a duel's round, a
-player answering) go through React state.
+What is not here, on purpose: a nudge of the stack towards the pointer (a
+cursor follower), parallax, a reveal on every section, a count-up of the
+bank's figures.
 
 ---
 
 # 5. Complete without motion
 
-The page must read correctly if no script-driven motion ever runs:
+Every animation sits under `prefers-reduced-motion: no-preference`, and the
+product's base layer ends every animation at once under reduced motion; a
+CSS animation needs no script, so the page is whole with JavaScript off. The
+steps of the pinned stack simply stay unmarked without an observer.
 
-- custom properties default to the end frame (`--p: 0.72` opens the stack);
-- counters hold their final value until they start, never zero;
-- without `IntersectionObserver` nothing waits on it — the duel shows a played
-  round, the score shows 172;
-- the bank disappears, heading included, if the catalogue cannot be read.
-
-The page test (`pages/LandingPage.test.tsx`) runs in an environment with no
-observer and a narrow screen, so it checks exactly this state.
+The page test (`pages/LandingPage.test.tsx`) runs with no observer and no
+animation, so it checks exactly that state.
 
 ---
 
 # 6. Changing it
 
-- A new scene: build it from `IsoTile`, give its progress to `useScrollScene`,
-  and give it a static frame for reduced motion.
-- New text on a sheet: check the answer, then check it again.
-- The breakpoint: 900px appears in `landing.css` and as `WIDE_QUERY` in
-  `hooks/use-scene-mode.ts`; change both.
-- The bar's height: `NAV_HEIGHT`, `NAV_PX` and `--lp-nav` must agree.
-- The screenshot in the README and `frontend/public/og-image.png` (a 1200×630
-  crop of its top 1600×840) are taken from this page; retake them when the hero
-  changes.
+- New text on a sheet or in an example: check the answer, then check it again.
+- A new capture: the demo student on the local stack, light theme, with a
+  correct answer chosen and no unfinished test open (its banner would show);
+  the content column is `x 300, y 64, 940 × 588` at 1.5× density.
+- A new section: count it. Hallmark asks for six to nine, hero and footer
+  included; the page is at the top of that range.
+- After any change: `node .claude/skills/hallmark/scripts/sloplint.mjs
+  frontend/src/features/landing --genre editorial --render --url <dev server>`.
+- The screenshot in the README and `frontend/public/og-image.png` are taken
+  from this page; retake them when the hero changes.

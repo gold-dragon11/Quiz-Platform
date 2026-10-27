@@ -6,7 +6,7 @@ Decision 41 in `docs/00-overview/teacher-side-decisions.md`; the reasoning and t
 
 ## System
 - Genre: editorial
-- Shape of the first page: app screens, the layout kept; the landing has its own shape and its own redesign
+- Shape of the first page: app screens, the layout kept; the landing is a Feature Stack (decision 42)
 - Theme: Loom, picked from the catalogue by request to match the references (Torino Outlet Village, Visit Bergamo)
 - Axes: light/roman-serif/cool · posture: committed
 - Colourways: `ecru` (the default, light) and `night` (dark, the same tokens re-derived, never inverted)
@@ -44,7 +44,8 @@ Fonts replace the theme's where the theme's have no Cyrillic: Playfair Display f
 - Ukrainian copy keeps its own typography, but follows gate 19: copy is written without dashes (in progress, decision 41).
 
 ## Motion
-- Character: still. State changes only (colour, underline), over `--dur-short`; under reduced motion everything ends at once. The landing's own motion budget is set by its redesign.
+- Character: still. State changes only (colour, underline), over `--dur-short`; under reduced motion everything ends at once.
+- The landing's three primitives, and no more: the sheets dealt in on load, the pinned stack of captures, the duel's four-second clock (docs/05-frontend/landing.md §4).
 
 ## Exports
 Tailwind v4 `@theme static` in `frontend/src/styles/globals.css`.

@@ -1,255 +1,109 @@
-import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'framer-motion';
-import { IsoTile } from '@/features/landing/components/scene/IsoTile';
-import { useInView } from '@/features/landing/hooks/use-in-view';
-import { plural } from '@/features/landing/lib/scene-math';
 import { SECTION_CONTAINER } from '@/features/landing/constants';
 
-type PlayerKey = 'a' | 'b';
-
-interface Round {
-  subject: string;
-  question: string;
-  options: [string, string, string, string];
-  right: number;
-  /** Which option each player picks, and after how many seconds. */
-  answers: Record<PlayerKey, { pick: number; seconds: number }>;
-}
-
-/**
- * Three rounds, chosen so the loop shows every case: one right and one wrong,
- * both right, one right again. Every answer marked right is right.
- */
-const ROUNDS: Round[] = [
-  {
-    subject: 'Історія України',
-    question: 'У якій битві 1362 року литовський князь Ольгерд розбив ординців?',
-    options: ['на Синіх Водах', 'під Грюнвальдом', 'під Оршею', 'на Калці'],
-    right: 0,
-    answers: { a: { pick: 0, seconds: 4.2 }, b: { pick: 2, seconds: 9.2 } },
-  },
-  {
-    subject: 'Математика',
-    question: 'Скільки становить 15 % від 240?',
-    options: ['24', '36', '32', '40'],
-    right: 1,
-    answers: { a: { pick: 1, seconds: 6.8 }, b: { pick: 1, seconds: 5.1 } },
-  },
-  {
-    subject: 'Англійська мова',
-    question: 'I have lived here ___ 2019.',
-    options: ['for', 'since', 'from', 'at'],
-    right: 1,
-    answers: { a: { pick: 1, seconds: 3.9 }, b: { pick: 0, seconds: 7.4 } },
-  },
-];
-
-const PLAYERS: { key: PlayerKey; initial: string; nick: string; answered: string; dot: string }[] = [
-  { key: 'a', initial: 'О', nick: '@olena_k', answered: 'відповіла', dot: 'var(--color-primary-hover)' },
-  { key: 'b', initial: 'М', nick: '@maks_t', answered: 'відповів', dot: 'var(--lp-blue)' },
-];
-
 const LETTERS = ['А', 'Б', 'В', 'Г'];
-const FIRST_QUESTION = 6;
-const START_SCORE: [number, number] = [4, 3];
-/** Seconds on the clock; the loop plays them at double speed. */
-const LIMIT = 15;
-const RING = 2 * Math.PI * 20;
-
-interface DuelView {
-  round: number;
-  answered: [boolean, boolean];
-  revealed: boolean;
-  score: [number, number];
-  secondsLeft: number;
-}
-
-/** The frame a reader sees with reduced motion or before the loop starts: the first round, opened. */
-const OPENED: DuelView = {
-  round: 0,
-  answered: [true, true],
-  revealed: true,
-  score: [START_SCORE[0] + 1, START_SCORE[1]],
-  secondsLeft: 6,
+const QUESTION = {
+  subject: 'Історія України',
+  text: 'У якій битві 1362 року литовський князь Ольгерд розбив ординців?',
+  options: ['на Синіх Водах', 'під Грюнвальдом', 'під Оршею', 'на Калці'],
+  /** На Синіх Водах: the battle of 1362 is the right answer. */
+  answer: 0,
 };
 
-const seconds = (value: number): string => `${value.toFixed(1).replace('.', ',')} с`;
+/** One round already played out, so the outcome is there without waiting. */
+const PLAYERS = [
+  { nick: '@olena_k', result: 'правильно, 4,2 с', points: 4 },
+  { nick: '@maks_t', result: 'помилка, 9,2 с', points: 3 },
+];
 
 /**
- * A live duel, played out: the question both players see, the clock, who has
- * answered and how fast — and then the answers open, each player's pick marked
- * on the option, and the score moves. The rule in the heading («точніший
- * перемагає») is shown rather than explained.
+ * A live duel as status rows: the question as it stands on both screens, the
+ * clock of the question running down, and the two players beneath it with
+ * their answer, their time and the score.
  *
- * The loop runs only while the scene is on screen, and not at all with reduced
- * motion: then the first round stands opened.
+ * The clock is the page's one loop (landing.css): four seconds, paused while
+ * the duel is pointed at or focused, still under reduced motion.
  */
 export function DuelSection(): React.JSX.Element {
-  const sceneRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<SVGCircleElement>(null);
-  const inView = useInView(sceneRef, 0.35);
-  const reduced = useReducedMotion() ?? false;
-  const [view, setView] = useState<DuelView>(OPENED);
-
-  useEffect(() => {
-    if (!inView || reduced) return;
-
-    let raf = 0;
-    let t0 = 0;
-    let round = 0;
-    let score: [number, number] = [...START_SCORE];
-    let revealed = false;
-    let secondsLeft = LIMIT;
-    let last = '';
-
-    const frame = (now: number): void => {
-      if (!t0) t0 = now;
-      const elapsed = (now - t0) / 1000;
-      const current = ROUNDS[round];
-      const done = Math.max(current.answers.a.seconds, current.answers.b.seconds) / 2 + 0.6;
-
-      if (!revealed) {
-        const left = Math.max(0, LIMIT - elapsed * 2);
-        secondsLeft = Math.ceil(left);
-        ringRef.current?.style.setProperty('stroke-dashoffset', String(RING * (1 - left / LIMIT)));
-      }
-      const answered: [boolean, boolean] = [
-        elapsed > current.answers.a.seconds / 2,
-        elapsed > current.answers.b.seconds / 2,
-      ];
-      if (!revealed && elapsed > done) {
-        revealed = true;
-        score = [
-          score[0] + (current.answers.a.pick === current.right ? 1 : 0),
-          score[1] + (current.answers.b.pick === current.right ? 1 : 0),
-        ];
-      }
-
-      const next: DuelView = { round, answered, revealed, score, secondsLeft };
-      const key = JSON.stringify(next);
-      if (key !== last) {
-        last = key;
-        setView(next);
-      }
-
-      if (elapsed > done + 3.4) {
-        t0 = now;
-        round = (round + 1) % ROUNDS.length;
-        if (round === 0) score = [...START_SCORE];
-        revealed = false;
-      }
-      raf = requestAnimationFrame(frame);
-    };
-
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [inView, reduced]);
-
-  const current = ROUNDS[view.round];
-
   return (
-    <section aria-labelledby="duel-title" className="border-border border-t py-[clamp(80px,10vw,140px)]">
-      <div className={`${SECTION_CONTAINER} lp-split`}>
-        <div className="lp-split__text">
-          <p className="lp-label">Дуель наживо</p>
+    <section aria-labelledby="duel-title" className="border-border border-t py-[clamp(120px,11vw,168px)]">
+      <div
+        className={`${SECTION_CONTAINER} grid gap-[clamp(40px,6vw,96px)] min-[60rem]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]`}
+      >
+        <div className="min-w-0">
           <h2 id="duel-title" className="lp-h2">
             Ті самі питання. Точніший перемагає.
           </h2>
+          <p className="text-text-secondary mt-6 max-w-[38ch] text-lg leading-relaxed">
+            Дуель наживо з випадковим суперником або другом, від 10 до 60 секунд на питання. За рівної
+            точності перемагає швидший.
+          </p>
         </div>
 
-        <div
-          ref={sceneRef}
-          className="lp-scene lp-duel-scene"
-          role="img"
-          aria-label="Дуель: одне питання для двох гравців, таймер, хто що обрав і рахунок"
-        >
-          <div
-            className="lp-lamp"
-            style={{ width: 560, height: 420, left: 'calc(50% - 280px)', top: '30%' }}
-          />
-
-          <div className="lp-duelq">
-            <div className="lp-duelq__head">
-              <span>
-                Питання {FIRST_QUESTION + view.round} з 10 · {current.subject}
-              </span>
-              <span className="lp-clock" data-low={view.secondsLeft <= 5 ? '' : undefined}>
-                <svg viewBox="0 0 44 44" aria-hidden="true">
-                  <circle className="lp-clock__bg" cx="22" cy="22" r="20" />
-                  <circle
-                    ref={ringRef}
-                    className="lp-clock__fg"
-                    cx="22"
-                    cy="22"
-                    r="20"
-                    strokeDasharray={RING}
-                    strokeDashoffset={RING * (1 - OPENED.secondsLeft / LIMIT)}
-                  />
-                </svg>
-                <b>{view.secondsLeft}</b>
-              </span>
+        <figure className="lp-duel border-rule-ink min-w-0 border-t-2" aria-label="Раунд дуелі наживо">
+          <div className="border-border flex items-center justify-between gap-6 border-b py-5">
+            <div className="min-w-0">
+              <p className="label">{QUESTION.subject}, питання 6 з 10</p>
+              <p className="text-text-primary mt-2 text-lg">{QUESTION.text}</p>
             </div>
-            <p className="lp-duelq__text">{current.question}</p>
-            <ol className="lp-duelq__opts">
-              {current.options.map((option, index) => {
-                const pickedBy = view.revealed
-                  ? PLAYERS.filter((player) => current.answers[player.key].pick === index)
-                  : [];
-                const verdict = !view.revealed
-                  ? undefined
-                  : index === current.right
-                    ? 'right'
-                    : pickedBy.length > 0
-                      ? 'wrong'
-                      : undefined;
-                return (
-                  <li key={index} data-verdict={verdict}>
-                    <i>{LETTERS[index]}</i>
-                    <span>{option}</span>
-                    <span className="lp-picks">
-                      {pickedBy.map((player) => (
-                        <b key={player.key} className="lp-avatar lp-avatar--small" data-player={player.key}>
-                          {player.initial}
-                        </b>
-                      ))}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            <svg
+              className="lp-clock shrink-0"
+              viewBox="0 0 44 44"
+              role="img"
+              aria-label="Час на питання спливає"
+            >
+              <circle className="lp-clock__track" cx="22" cy="22" r="18" />
+              <circle className="lp-clock__hand" cx="22" cy="22" r="18" />
+            </svg>
           </div>
 
-          <div className="lp-world">
-            {PLAYERS.map((player, index) => {
-              const answer = current.answers[player.key];
-              const right = answer.pick === current.right;
-              const state = view.revealed
-                ? `${right ? '✓ правильно' : '✗ помилка'} · ${seconds(answer.seconds)}`
-                : view.answered[index]
-                  ? `${player.answered} · ${seconds(answer.seconds)}`
-                  : '⋯ думає';
-              const tone = view.revealed ? (right ? 'ok' : 'bad') : undefined;
-              const points = view.score[index];
-              return (
-                <IsoTile key={player.key} className="lp-board" dot={player.dot}>
-                  <div className="lp-who">
-                    <i className="lp-avatar" data-player={player.key}>
-                      {player.initial}
-                    </i>
-                    <b>{player.nick}</b>
-                  </div>
-                  <div className="lp-state" data-tone={tone}>
-                    {state}
-                  </div>
-                  <div className="lp-pts">
-                    {points}
-                    <small>{plural(points, ['бал', 'бали', 'балів'])}</small>
-                  </div>
-                </IsoTile>
-              );
-            })}
-          </div>
-        </div>
+          <ol className="divide-border divide-y">
+            {QUESTION.options.map((option, index) => (
+              <li key={option} className="flex items-center gap-4 py-3">
+                <span
+                  aria-hidden="true"
+                  className={`flex size-7 shrink-0 items-center justify-center border text-sm ${
+                    index === QUESTION.answer
+                      ? 'bg-primary border-primary text-on-primary font-medium'
+                      : 'border-field text-text-muted'
+                  }`}
+                >
+                  {LETTERS[index]}
+                </span>
+                <span className={index === QUESTION.answer ? 'text-text-primary' : 'text-text-secondary'}>
+                  {option}
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <table className="mt-6 w-full border-collapse text-[15px]">
+            <caption className="sr-only">Рахунок раунду</caption>
+            <thead>
+              <tr className="label text-left">
+                <th scope="col" className="border-rule-ink border-b-2 pb-2 font-medium">
+                  Гравець
+                </th>
+                <th scope="col" className="border-rule-ink border-b-2 pb-2 font-medium">
+                  Відповідь
+                </th>
+                <th scope="col" className="border-rule-ink border-b-2 pb-2 text-right font-medium">
+                  Бали
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {PLAYERS.map((player) => (
+                <tr key={player.nick} className="border-border border-b">
+                  <td className="text-text-primary py-3">{player.nick}</td>
+                  <td className="text-text-secondary py-3">{player.result}</td>
+                  <td className="font-display text-text-primary py-3 text-right text-2xl tabular-nums">
+                    {player.points}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </figure>
       </div>
     </section>
   );

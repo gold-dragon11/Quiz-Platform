@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { demoAccountFor } from '@/shared/constants/demo';
 import { ROUTES } from '@/shared/constants/routes';
 import { toast } from '@/stores/toast-store';
 import { Alert } from '@/shared/ui/Alert';
@@ -22,10 +23,16 @@ interface FromState {
  * dashboard. Login-specific backend outcomes (401 invalid credentials, 403
  * unverified/suspended) surface as a form-level error and a toast, exactly as
  * the backend returns them (docs/04-api/authentication.md §6).
+ *
+ * `?demo=student` or `?demo=teacher` arrives with that public demo account
+ * already filled in: the landing's «Спробувати демо» is one click to the
+ * product, and the reader still sees which account they are entering.
  */
 export function LoginPage(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const demo = demoAccountFor(searchParams.get('demo'));
   const login = useLogin();
 
   const {
@@ -35,7 +42,7 @@ export function LoginPage(): React.JSX.Element {
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: demo ? { email: demo.email, password: demo.password } : { email: '', password: '' },
   });
 
   const redirectTo = (location.state as FromState | null)?.from?.pathname ?? ROUTES.dashboard;
@@ -74,6 +81,12 @@ export function LoginPage(): React.JSX.Element {
     >
       <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
+        {demo && (
+          <p className="text-text-secondary text-sm">
+            Демо-акаунт {demo.label}: дані вже підставлено. Щоночі він повертається до початкового стану, тож
+            можна пробувати все.
+          </p>
+        )}
         <Input
           label="Електронна пошта"
           type="email"
