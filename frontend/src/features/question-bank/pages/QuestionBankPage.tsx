@@ -245,9 +245,7 @@ function MatchingPreview({ question }: { question: BankQuestionWithOptions }): R
   const pairs = matchingPairs(question.configuration);
 
   if (pairs.length === 0) {
-    return (
-      <p className="text-text-muted mt-4 text-sm">Відповідність не задано — питання варто перевірити.</p>
-    );
+    return <p className="text-text-muted mt-4 text-sm">Відповідність не задано, питання варто перевірити.</p>;
   }
 
   return (
@@ -255,11 +253,11 @@ function MatchingPreview({ question }: { question: BankQuestionWithOptions }): R
       {pairs.map((pair) => (
         <li key={`${pair.left}-${pair.right}`} className="flex flex-wrap items-baseline gap-2 text-sm">
           <span className="text-text-primary">
-            <MathText>{byOrder.get(pair.left)?.content ?? '—'}</MathText>
+            <MathText>{byOrder.get(pair.left)?.content ?? 'немає'}</MathText>
           </span>
           <span className="text-text-muted">→</span>
           <span className="text-success">
-            <MathText>{byOrder.get(pair.right)?.content ?? '—'}</MathText>
+            <MathText>{byOrder.get(pair.right)?.content ?? 'немає'}</MathText>
           </span>
         </li>
       ))}

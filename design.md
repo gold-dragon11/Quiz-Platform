@@ -41,7 +41,7 @@ Fonts replace the theme's where the theme's have no Cyrillic: Playfair Display f
 - No eyebrow over a heading; a fact that sat there moves under the title as a caption.
 - No middle-dot meta strings: a list of facts is written with commas.
 - No glow, gradient, glass or shadow; depth is a paper step and a rule.
-- Ukrainian copy keeps its own typography, but follows gate 19: copy is written without dashes (in progress, decision 41).
+- Copy is written without dashes (gate 19): a comma, a colon, a full stop or a word in their place, and ranges in words («від 100 до 200»). An empty figure says «немає», a missing name «без імені». Citations of official documents are quoted as published (decision 43).
 
 ## Motion
 - Character: still. State changes only (colour, underline), over `--dur-short`; under reduced motion everything ends at once.

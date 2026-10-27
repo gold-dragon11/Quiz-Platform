@@ -45,7 +45,7 @@ export function GroupAnalyticsSection({ groupId }: { groupId: string }): React.J
           { value: studentCount, label: 'учнів' },
           { value: assignmentsIssued, label: 'завдань видано' },
           {
-            value: completionRate === null ? '—' : formatPercent(completionRate),
+            value: completionRate === null ? 'немає' : formatPercent(completionRate),
             label: 'здано вчасно чи пізніше',
             hint: 'частка виданої роботи, що повернулася',
           },

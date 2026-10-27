@@ -137,7 +137,7 @@ export function TopicsSection(): React.JSX.Element {
                   <tr key={topic.id}>
                     <td className="text-text-primary px-4 py-3 font-medium">{topic.name}</td>
                     <td className="text-text-secondary px-4 py-3">
-                      {subjectsById.get(topic.subjectId) ?? '—'}
+                      {subjectsById.get(topic.subjectId) ?? 'немає'}
                     </td>
                     <td className="text-text-muted px-4 py-3">{topic.slug}</td>
                     <td className="px-4 py-3">

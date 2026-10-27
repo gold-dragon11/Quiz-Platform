@@ -233,7 +233,7 @@ export class DemoService {
 
     // The class: one group, everyone in it.
     const group = await this.groupsService.create(teacher, {
-      name: '11-А · математика',
+      name: '11-А, математика',
       subjectId: mathematics,
     });
     for (const member of [student, ...classmates.map((one) => one.id)]) {

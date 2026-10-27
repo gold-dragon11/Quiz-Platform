@@ -11,7 +11,11 @@ import { playerName, stanceOf, theirSide } from '@/features/duels/lib/duel-state
 interface TodayItem {
   key: string;
   to: string;
+  /** What kind of thing it is: the column a reader scans first. */
+  kind: string;
   title: string;
+  /** When it is owed, in the column on the right. */
+  when: string;
   /** Omitted when the title already says everything. */
   detail?: string;
   /** `now` carries the accent rule; `soon` is worth knowing, not doing today. */
@@ -56,7 +60,9 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
     items.push({
       key: 'active',
       to: generatePath(ROUTES.quizSession, { sessionId: activeQuiz.data.sessionId }),
+      kind: 'Тест',
       title: 'Незавершений тест',
+      when: 'зараз',
       // Homework is not in this list: it has its own slot and starts regardless.
       detail: 'Поки він відкритий, новий тест, пробний чи дуель не почнуться. Домашки це не стосується.',
       urgency: 'now',
@@ -68,8 +74,10 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
     items.push({
       key: `overdue-${assignment.id}`,
       to: generatePath(ROUTES.assignment, { assignmentId: assignment.id }),
+      kind: assignment.mockExam ? 'Пробний НМТ' : 'Домашка',
       title: assignment.title,
-      detail: `${assignment.group.name}, дедлайн минув ${formatShortDate(assignment.dueAt)} — здати все одно можна`,
+      when: `минув ${formatShortDate(assignment.dueAt)}`,
+      detail: `${assignment.group.name}. Дедлайн минув, але здати все одно можна.`,
       urgency: 'now',
     });
   }
@@ -81,8 +89,10 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
     items.push({
       key: `open-${assignment.id}`,
       to: generatePath(ROUTES.assignment, { assignmentId: assignment.id }),
+      kind: assignment.mockExam ? 'Пробний НМТ' : 'Домашка',
       title: assignment.title,
-      detail: `${assignment.group.name}, до ${formatShortDate(assignment.dueAt)}`,
+      when: `до ${formatShortDate(assignment.dueAt)}`,
+      detail: assignment.group.name,
       urgency: 'now',
     });
   }
@@ -92,6 +102,8 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
     items.push({
       key: 'review',
       to: ROUTES.mistakeReview,
+      kind: 'Повторення',
+      when: 'сьогодні',
       title: `${due} ${pluralUk(due, 'помилка чекає', 'помилки чекають', 'помилок чекає')} повторення`,
       urgency: 'now',
     });
@@ -105,10 +117,12 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
     items.push({
       key: `duel-${duel.id}`,
       to: generatePath(ROUTES.duel, { duelId: duel.id }),
+      kind: 'Дуель',
+      when: `до ${formatShortDate(duel.expiresAt)}`,
       title:
         stance === 'INVITE_RECEIVED'
           ? `${playerName(theirSide(duel, userId))} викликає на дуель`
-          : `Дуель з ${playerName(theirSide(duel, userId))} — ваш хід`,
+          : `Дуель з ${playerName(theirSide(duel, userId))}: ваш хід`,
       detail: `${duel.subject.name}, ${duel.questionCount} ${pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}`,
       urgency: 'soon',
     });
@@ -119,20 +133,28 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
   }
 
   return (
-    <ul className="divide-border divide-y">
+    // A queue read in columns: what kind of thing, the thing, when it is owed.
+    // As one left-hand column of titles the list used a third of the screen
+    // and made the reader open each row to learn its deadline.
+    <ul className="divide-border border-border divide-y border-b">
       {items.map((item) => (
         <li key={item.key}>
           {/* No trailing "open" label: every row opens, so the word carried
               no information and repeated down the whole column. */}
-          <Link to={item.to} className="hover:bg-surface-elevated block py-5 pr-2 transition-colors">
-            <div
-              className={`min-w-0 self-stretch border-l-2 pl-4 ${
-                item.urgency === 'now' ? 'border-primary' : 'border-transparent'
-              }`}
-            >
-              <p className="text-text-primary truncate font-medium">{item.title}</p>
-              {item.detail && <p className="text-text-muted mt-1 text-xs">{item.detail}</p>}
-            </div>
+          <Link
+            to={item.to}
+            className={`hover:bg-surface-elevated grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-1 border-l-2 py-5 pr-3 pl-4 transition-colors sm:grid-cols-[8.5rem_minmax(0,1fr)_auto] ${
+              item.urgency === 'now' ? 'border-primary' : 'border-transparent'
+            }`}
+          >
+            <span className="text-text-muted text-sm sm:pt-0.5">{item.kind}</span>
+            <span className="text-text-secondary text-right text-sm tabular-nums sm:order-last sm:pt-0.5">
+              {item.when}
+            </span>
+            <span className="col-span-2 min-w-0 sm:col-span-1">
+              <span className="text-text-primary block truncate font-medium">{item.title}</span>
+              {item.detail && <span className="text-text-muted mt-1 block text-xs">{item.detail}</span>}
+            </span>
           </Link>
         </li>
       ))}
@@ -157,7 +179,7 @@ function NothingDue({ scheduled }: { scheduled: number }): React.JSX.Element {
     <div className="pt-2">
       <p className="text-text-primary font-display text-2xl">На сьогодні нічого не горить.</p>
       <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-        Ні прострочених робіт, ні помилок за розкладом. Якщо є час — ось що дає найбільше:
+        Ні прострочених робіт, ні помилок за розкладом. Якщо є час, ось що дає найбільше:
       </p>
       <ul className="mt-6 flex flex-col gap-3">
         {scheduled > 0 && (
@@ -165,8 +187,8 @@ function NothingDue({ scheduled }: { scheduled: number }): React.JSX.Element {
             <Link to={ROUTES.mistakeReview} className="text-primary text-sm underline underline-offset-4">
               Робота над помилками
             </Link>
-            <span className="text-text-muted ml-2 text-sm">
-              — {scheduled} {pluralUk(scheduled, 'помилка', 'помилки', 'помилок')} ще на драбині; розклад каже
+            <span className="text-text-muted text-sm">
+              : {scheduled} {pluralUk(scheduled, 'помилка', 'помилки', 'помилок')} ще на драбині; розклад каже
               «пізніше», але чекати не обовʼязково
             </span>
           </li>
@@ -175,15 +197,13 @@ function NothingDue({ scheduled }: { scheduled: number }): React.JSX.Element {
           <Link to={ROUTES.mockExam} className="text-primary text-sm underline underline-offset-4">
             Пробний НМТ
           </Link>
-          <span className="text-text-muted ml-2 text-sm">
-            — робота цілком, на один годинник, як на іспиті
-          </span>
+          <span className="text-text-muted text-sm">: робота цілком, на один годинник, як на іспиті</span>
         </li>
         <li>
           <Link to={ROUTES.quiz} className="text-primary text-sm underline underline-offset-4">
             Звичайний тест
           </Link>
-          <span className="text-text-muted ml-2 text-sm">— обрати предмет і тему самому</span>
+          <span className="text-text-muted text-sm">: обрати предмет і тему самому</span>
         </li>
       </ul>
     </div>

@@ -122,7 +122,7 @@ function GroupBlock({
                 hint: 'видано',
               },
               {
-                value: data.completionRate === null ? '—' : formatPercent(data.completionRate),
+                value: data.completionRate === null ? 'немає' : formatPercent(data.completionRate),
                 label: 'здано',
                 hint: 'частка виданої роботи, що повернулася',
               },
@@ -147,7 +147,7 @@ function GroupBlock({
           )}
 
           <p className="text-text-muted mt-10 text-sm">
-            Успішність кожного учня окремо —{' '}
+            Успішність кожного учня окремо видно{' '}
             <Link
               to={generatePath(ROUTES.teacherGroup, { groupId: group.id })}
               className="text-text-secondary underline underline-offset-4"

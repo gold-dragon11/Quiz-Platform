@@ -63,15 +63,15 @@ export function DashboardPage(): React.JSX.Element {
       <p className="text-text-muted mt-16 text-sm">
         {isTeacher ? (
           <>
-            Уся історія груп і розбір робіт —{' '}
+            Розбір кожної роботи й уся історія є{' '}
             <Link to={ROUTES.teacherGroups} className="text-text-secondary underline underline-offset-4">
-              у розділі «Групи»
+              на сторінці груп
             </Link>
             .
           </>
         ) : (
           <>
-            Цифри — рівень, точність, прогрес за предметами —{' '}
+            Рівень, точність і прогрес за предметами є{' '}
             <Link to={ROUTES.statistics} className="text-text-secondary underline underline-offset-4">
               на сторінці статистики
             </Link>

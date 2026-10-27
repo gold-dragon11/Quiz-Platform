@@ -65,7 +65,7 @@ export function MatchingAnswer({
         const choiceOptions: MathSelectOption[] = [
           // Offered only once something is chosen, so the reader can undo a
           // pairing — the native <select> did this with its empty option.
-          ...(current ? [{ value: '', label: '— зняти вибір —' }] : []),
+          ...(current ? [{ value: '', label: 'Зняти вибір' }] : []),
           ...right
             .filter((choice) => choice.id === current || !takenByOthers.has(choice.id))
             .map((choice) => ({ value: choice.id, label: choice.content })),

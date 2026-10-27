@@ -46,7 +46,7 @@ export function TeacherGroupsPage(): React.JSX.Element {
         ) : groups.data.length === 0 ? (
           <EmptyState
             title="Груп ще немає"
-            description="Створіть першу — код запрошення згенерується сам, лишиться поділитися ним з учнями."
+            description="Створіть першу: код запрошення згенерується сам, лишиться поділитися ним з учнями."
           />
         ) : (
           <>

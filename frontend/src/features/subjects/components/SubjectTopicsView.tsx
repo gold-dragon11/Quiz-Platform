@@ -71,7 +71,7 @@ export function SubjectTopicsView({
           {isLearner && <Button onClick={() => onStartQuiz(subject.id)}>Тест з усього предмета</Button>}
           {topicCount !== null && topicCount > 0 && (
             <p className="text-text-muted text-sm">
-              {isLearner ? 'або оберіть окрему тему — їх тут ' : 'Тем у предметі — '}
+              {isLearner ? 'або оберіть окрему тему, їх тут ' : 'Тем у предметі: '}
               {topicCount}
             </p>
           )}

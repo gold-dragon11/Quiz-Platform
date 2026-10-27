@@ -94,17 +94,17 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
           },
           mock
             ? {
-                value: averageScaled ?? '—',
+                value: averageScaled ?? 'немає',
                 label: 'середній бал',
                 // Short on purpose: in a third of a phone's width a longer hint broke
                 // over four lines. The count is only news when it is not zero.
                 hint:
                   scored.length > passedScores.length
                     ? `нижче порогу: ${scored.length - passedScores.length}`
-                    : 'за шкалою 100–200',
+                    : 'за шкалою від 100 до 200',
               }
             : {
-                value: averageAccuracy === null ? '—' : formatPercent(averageAccuracy),
+                value: averageAccuracy === null ? 'немає' : formatPercent(averageAccuracy),
                 label: 'середня точність',
                 hint:
                   assignment.attemptsAllowed > 1
@@ -127,8 +127,8 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
       <section className="mt-16">
         <h2 className="section-title">На чому посипалися</h2>
         <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-          Питання впорядковані від найгіршого. Це список того, що варто розібрати наступного разу — і те саме,
-          з чого складається робота в режимі «за помилками групи».
+          Питання впорядковані від найгіршого. Це список того, що варто розібрати наступного разу, і саме з
+          нього складається робота в режимі «за помилками групи».
         </p>
         <div className="mt-8">
           <QuestionBreakdown assignmentId={assignment.id} />

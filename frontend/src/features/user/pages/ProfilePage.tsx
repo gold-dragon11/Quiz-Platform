@@ -18,6 +18,7 @@ import { AccountAvatar } from '@/features/user/components/AccountAvatar';
 import { useUpdateProfile } from '@/features/user/hooks/use-account-mutations';
 import { editProfileSchema, type EditProfileFormValues } from '@/features/user/validation/user.schemas';
 import type { CurrentUser } from '@/shared/types/auth';
+import { avatarImage } from '@/shared/utils/avatar';
 
 /** What a non-active status means for the reader, in their own words. */
 const STATUS_NOTE: Partial<Record<AccountStatus, string>> = {
@@ -100,7 +101,7 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
             does — taken from the email here, the same account showed two
             different letters on one screen. */}
         <AccountAvatar
-          imageUrl={user.avatar?.imageUrl}
+          imageUrl={avatarImage(user.avatar)}
           fallback={(user.profile?.displayName ?? user.email).charAt(0)}
         />
         <div className="min-w-0">
@@ -142,7 +143,7 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
       )}
 
       <p className="text-text-muted mt-16 text-sm">
-        Пароль і видалення акаунта —{' '}
+        Пароль і видалення акаунта є{' '}
         <Link to={ROUTES.settings} className="text-text-secondary underline underline-offset-4">
           у налаштуваннях
         </Link>
@@ -162,7 +163,7 @@ function PublicProfileNote({ username, enabled }: { username: string; enabled: b
   if (!enabled) {
     return (
       <p className="text-text-muted mt-2 text-sm">
-        Публічний профіль приховано —{' '}
+        Публічний профіль приховано, його можна{' '}
         <Link to={ROUTES.settings} className="text-text-secondary underline underline-offset-4">
           показати в налаштуваннях
         </Link>
@@ -200,7 +201,7 @@ function VerificationBlock({ email }: { email: string }): React.JSX.Element {
       <h2 className="section-title">Підтвердження пошти</h2>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">
         На {email} ми надіслали лист із посиланням. Якщо він не дійшов, перевірте теку зі спамом або надішліть
-        новий — попереднє посилання після цього перестане діяти.
+        новий, і попереднє посилання після цього перестане діяти.
       </p>
       <button
         type="button"
@@ -294,7 +295,7 @@ function EditProfileSection({
         </p>
         {readOnly ? (
           <p className="text-text-muted mt-6 text-sm">
-            Імʼя та опис демо-акаунта змінити не можна — щоночі він повертається до початкового стану.
+            Імʼя та опис демо-акаунта змінити не можна: щоночі він повертається до початкового стану.
           </p>
         ) : (
           <button

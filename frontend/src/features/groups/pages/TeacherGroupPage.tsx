@@ -87,7 +87,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
 
       {archived && (
         <Alert variant="warning" className="mt-8">
-          Групу заархівовано. Нові учні приєднатися не можуть, а завдання видавати вже не можна — але вся
+          Групу заархівовано. Нові учні приєднатися не можуть, а завдання видавати вже не можна, але вся
           історія лишається на місці.
         </Alert>
       )}
@@ -157,7 +157,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
       <ConfirmDialog
         open={archiving}
         title="Заархівувати групу?"
-        description="Нові учні більше не приєднаються, а видавати завдання буде не можна. Усе, що вже зроблено — завдання, результати, склад — лишиться. Це не видалення."
+        description="Нові учні більше не приєднаються, а видавати завдання буде не можна. Усе, що вже зроблено (завдання, результати, склад), лишиться. Це не видалення."
         confirmLabel="Заархівувати"
         isLoading={actions.archive.isPending}
         onConfirm={() =>
@@ -178,7 +178,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
       <ConfirmDialog
         open={removing !== null}
         title="Прибрати учня з групи?"
-        description={`${removing?.displayName ?? removing?.username ?? 'Учень'} більше не отримуватиме завдань цієї групи. Обліковий запис, статистика й уся історія помилок лишаються — вони ніколи не належали групі.`}
+        description={`${removing?.displayName ?? removing?.username ?? 'Учень'} більше не отримуватиме завдань цієї групи. Обліковий запис, статистика й уся історія помилок лишаються: вони ніколи не належали групі.`}
         confirmLabel="Прибрати"
         confirmVariant="danger"
         isLoading={actions.removeStudent.isPending}

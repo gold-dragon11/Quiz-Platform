@@ -16,11 +16,14 @@ export function NmtResult({
   nmt,
   xpEarned,
   blankRows,
+  level = 1,
 }: {
   nmt: NmtResultView;
   xpEarned: number;
   /** Tasks — rows of the answer sheet — left without an answer. */
   blankRows: number;
+  /** 1 for a paper sat alone; 2 for each paper of a joint block, under the block's own heading. */
+  level?: 1 | 2;
 }): React.JSX.Element {
   const passed = nmt.scaledScore !== null;
   const taskCount = nmt.tasks.reduce((sum, task) => sum + labelCovers(task.label), 0);
@@ -29,19 +32,25 @@ export function NmtResult({
   // are the test points again, and the figure beside them would repeat them.
   // What the reader does not know yet is how much was simply left blank.
   const pointPerTask = nmt.maxTestPoints === taskCount;
+  const Title = level === 1 ? 'h1' : 'h2';
+  const Section = level === 1 ? 'h2' : 'h3';
 
   return (
     <div>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-text-muted text-xs">{nmt.title}</p>
-          <p className="text-text-primary font-display mt-3 text-6xl leading-none lining-nums sm:text-7xl">
+          <Title
+            className={`text-text-primary font-display leading-tight ${level === 1 ? 'text-2xl sm:text-3xl' : 'text-xl'}`}
+          >
+            {nmt.title}
+          </Title>
+          <p className="text-text-primary font-display mt-6 text-6xl leading-none lining-nums sm:text-7xl">
             {passed ? nmt.scaledScore : nmt.testPoints}
           </p>
           <p className="text-text-secondary mt-4 text-sm">
             {passed
-              ? 'балів за шкалою 100–200'
-              : `тестових ${pluralUk(nmt.testPoints, 'бал', 'бали', 'балів')} — поріг не подолано, потрібно щонайменше ${nmt.threshold}`}
+              ? 'балів за шкалою від 100 до 200'
+              : `тестових ${pluralUk(nmt.testPoints, 'бал', 'бали', 'балів')}, поріг не подолано, потрібно щонайменше ${nmt.threshold}`}
           </p>
         </div>
         {xpEarned > 0 && <XpReward xp={xpEarned} />}
@@ -58,7 +67,7 @@ export function NmtResult({
       />
 
       <section className="mt-10">
-        <h2 className="section-title">Бали за завданнями</h2>
+        <Section className="section-title">Бали за завданнями</Section>
         <ol className="border-border mt-4 grid grid-cols-6 border-t border-l sm:grid-cols-11">
           {nmt.tasks.map((task) => (
             <li

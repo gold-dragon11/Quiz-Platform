@@ -31,7 +31,7 @@ export function RecentActivitySection(): React.JSX.Element {
   if (recent.data.items.length === 0) {
     return (
       <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
-        Кожен пройдений тест лишає тут рядок — найновіший згори.
+        Кожен пройдений тест лишає тут рядок, найновіший згори.
       </p>
     );
   }

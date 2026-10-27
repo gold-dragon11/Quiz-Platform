@@ -76,7 +76,7 @@ export function TopicStandingSection(): React.JSX.Element {
   if (standings.length === 0) {
     return (
       <p className="border-border text-text-secondary max-w-2xl border-l pl-5 text-sm">
-        Тут зʼявиться кожна тема, яку ви проходили, — від найслабшої до найсильнішої.
+        Тут зʼявиться кожна тема, яку ви проходили, від найслабшої до найсильнішої.
       </p>
     );
   }
@@ -98,8 +98,8 @@ export function TopicStandingSection(): React.JSX.Element {
           the identical sentence four times down the page. */}
       {anyUnmeasured && (
         <p className="text-text-muted mt-5 text-xs">
-          «—» стоїть там, де ці питання траплялися лише в тестах з усього предмета, тож окремої точності по
-          темі ще немає.
+          «Немає» означає, що питання з цієї теми траплялися лише в тестах з усього предмета, тож окремої
+          точності по ній ще не порахувати.
         </p>
       )}
 
@@ -215,7 +215,7 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
             trouble ? 'text-warning' : 'text-text-primary'
           }`}
         >
-          {standing.accuracy === null ? '—' : formatPercent(standing.accuracy)}
+          {standing.accuracy === null ? 'немає' : formatPercent(standing.accuracy)}
         </p>
       </div>
 

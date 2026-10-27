@@ -97,7 +97,7 @@ export function MistakeReviewPage(): React.JSX.Element {
               ) : (
                 <p className="text-text-secondary text-sm">
                   {laterOn > 0
-                    ? `Сьогодні вільно. Ще ${formatNumber(laterOn)} ${pluralUk(laterOn, 'помилка чекає', 'помилки чекають', 'помилок чекає')} свого дня — загляньте завтра.`
+                    ? `Сьогодні вільно. Ще ${formatNumber(laterOn)} ${pluralUk(laterOn, 'помилка чекає', 'помилки чекають', 'помилок чекає')} свого дня, загляньте завтра.`
                     : 'Помилок на розкладі немає. Вони зʼявляться самі, щойно ви їх припуститеся.'}
                 </p>
               )}

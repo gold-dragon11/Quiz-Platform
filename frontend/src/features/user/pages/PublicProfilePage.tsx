@@ -10,6 +10,7 @@ import { formatNumber, formatPercent, formatShortDate, pluralUk } from '@/shared
 import { useAuthStore } from '@/stores/auth-store';
 import { usePublicProfile } from '@/features/user/hooks/use-public-profile';
 import type { PublicProfile } from '@/features/user/types/user.types';
+import { avatarImage } from '@/shared/utils/avatar';
 
 /**
  * `/u/:username` — an account as anyone may see it, signed in or not
@@ -34,7 +35,7 @@ export function PublicProfilePage(): React.JSX.Element {
     <div className="w-full max-w-2xl py-16">
       <Link
         to={ROUTES.home}
-        aria-label="L&S — на головну"
+        aria-label="L&S, на головну"
         className="bg-primary inline-flex h-10 items-center rounded-xl px-3 text-lg font-extrabold tracking-tight text-on-primary"
       >
         L&amp;S
@@ -63,7 +64,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
       <div className="mt-6 flex items-center gap-5">
         <Avatar
           size="lg"
-          imageUrl={profile.avatar?.imageUrl}
+          imageUrl={avatarImage(profile.avatar)}
           alt={`Аватар ${profile.displayName}`}
           fallback={profile.displayName.charAt(0)}
         />
@@ -102,7 +103,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
 
       {isOwner ? (
         <p className="border-primary text-text-secondary mt-12 max-w-xl border-l pl-5 text-sm">
-          Так ваш профіль бачать інші — навіть без акаунта. Приховати його можна{' '}
+          Так ваш профіль бачать інші, навіть без акаунта. Приховати його можна{' '}
           <Link to={ROUTES.settings} className="text-primary underline underline-offset-4">
             у налаштуваннях
           </Link>
@@ -116,7 +117,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
         </p>
       ) : (
         <p className="text-text-muted mt-12 max-w-xl text-sm">
-          L&amp;S — тести, пробний НМТ і повторення помилок з української, математики, історії та англійської.{' '}
+          L&amp;S: тести, пробний НМТ і повторення помилок з української, математики, історії та англійської.{' '}
           <Link to={ROUTES.register} className="text-primary underline underline-offset-4">
             Створити акаунт
           </Link>

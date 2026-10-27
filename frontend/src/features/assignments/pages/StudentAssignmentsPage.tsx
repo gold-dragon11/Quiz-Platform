@@ -37,7 +37,7 @@ export function StudentAssignmentsPage(): React.JSX.Element {
     <div className="mx-auto max-w-4xl">
       <PageHeader
         title="Домашні завдання"
-        lead="Роботи, які видали ваші репетитори. Пізню роботу приймають — вона просто позначається як пізня."
+        lead="Роботи, які видали ваші репетитори. Пізню роботу приймають, вона просто позначається як пізня."
       />
 
       <section className="mt-12">

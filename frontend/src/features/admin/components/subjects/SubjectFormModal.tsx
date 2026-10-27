@@ -128,7 +128,7 @@ export function SubjectFormModal({ open, subject, onClose }: SubjectFormModalPro
         <Textarea label="Опис" error={errors.description?.message} {...register('description')} />
         <Input
           label="Іконка"
-          helperText="Необовʼязково — емодзі або назва іконки."
+          helperText="Необовʼязково: емодзі або назва іконки."
           error={errors.icon?.message}
           {...register('icon')}
         />

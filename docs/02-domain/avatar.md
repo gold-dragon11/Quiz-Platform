@@ -209,3 +209,14 @@ The Avatar entity is considered successful if it:
 - validates uploaded files correctly;
 - remains scalable for future enhancements;
 - integrates seamlessly with the User Profile.
+---
+
+# What the interface shows (27.10.2026)
+
+No pictures are shipped behind the predefined paths (`/avatars/default.png`,
+`/avatars/avatar-1.png` and the rest), and the app has no picker for them. The
+frontend therefore shows a picture only for `CUSTOM_UPLOAD` and the initial for
+everything else (`frontend/src/shared/utils/avatar.ts`), instead of requesting
+a file that answers with the app's own HTML. When a set of predefined pictures
+is drawn and added under `frontend/public/avatars/`, that helper is the one
+place to change.

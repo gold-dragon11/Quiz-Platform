@@ -62,7 +62,7 @@ const INITIAL: LiveState = {
 const CLOSED_FOR_SENDER: Partial<Record<InviteClosed['reason'], string>> = {
   DECLINED: 'Виклик відхилено.',
   EXPIRED: 'На виклик не відповіли.',
-  CANCELLED: 'Суперник пішов із сайту — виклик скасовано.',
+  CANCELLED: 'Суперник пішов із сайту, виклик скасовано.',
 };
 
 export const useLiveStore = create<LiveState>(() => INITIAL);

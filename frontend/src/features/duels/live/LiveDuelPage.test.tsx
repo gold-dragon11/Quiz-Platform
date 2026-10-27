@@ -112,7 +112,7 @@ describe('LiveDuelPage', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Перемога' })).toBeInTheDocument();
-    expect(screen.getByText('Андрій — здача.')).toBeInTheDocument();
+    expect(screen.getByText('Андрій: здача.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Мій розбір' })).toBeInTheDocument();
   });
 
@@ -136,9 +136,9 @@ describe('LiveDuelPage', () => {
       }),
     );
 
-    expect(screen.getByText('Рахунок рівний — вирішив час.')).toBeInTheDocument();
+    expect(screen.getByText('Рахунок рівний, вирішив час.')).toBeInTheDocument();
     expect(
-      screen.getByText(/Ваш час — 1 хв 42 с, Андрій — 2 хв 5 с\. Ви швидші на 23 с\./),
+      screen.getByText(/Ваш час: 1 хв 42 с\. Андрій: 2 хв 5 с\. Ви швидші на 23 с\./),
     ).toBeInTheDocument();
     expect(screen.getByText(/без відповіді рахується повністю, 20 с/)).toBeInTheDocument();
     expect(screen.getAllByRole('row')).toHaveLength(3);

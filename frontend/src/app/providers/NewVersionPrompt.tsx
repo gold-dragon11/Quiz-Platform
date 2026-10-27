@@ -40,7 +40,7 @@ export function NewVersionPrompt(): React.JSX.Element {
           <div>
             <p className="text-text-primary text-sm font-medium">Є новіша версія</p>
             <p className="text-text-secondary mt-1 text-sm">
-              Оновлення застосується після перезавантаження. Незавершений тест на цьому не позначиться —
+              Оновлення застосується після перезавантаження. Незавершений тест на цьому не позначиться:
               відповіді зберігаються на сервері.
             </p>
           </div>

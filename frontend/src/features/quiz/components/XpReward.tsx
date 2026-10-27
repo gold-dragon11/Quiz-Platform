@@ -19,7 +19,7 @@ export function XpReward({ xp }: { xp: number }): React.JSX.Element {
       initial="initial"
       animate="animate"
       transition={{ duration: DURATION.base, ease: EASE.out }}
-      className="bg-primary/10 text-primary inline-flex items-center gap-2 rounded-full px-5 py-2 text-lg font-semibold"
+      className="text-primary text-lg font-medium tabular-nums"
     >
       +{formatNumber(value)} XP
     </motion.div>

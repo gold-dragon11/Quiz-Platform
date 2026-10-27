@@ -33,7 +33,7 @@ export function BottomNav(): React.JSX.Element {
                     <motion.span
                       layoutId="bottom-active"
                       transition={TRANSITION.fade}
-                      className="bg-primary absolute top-0 h-0.5 w-8 rounded-full"
+                      className="bg-primary absolute top-0 h-0.5 w-8"
                     />
                   )}
                   <span className={isActive ? 'text-primary' : 'text-text-muted'}>{item.icon}</span>

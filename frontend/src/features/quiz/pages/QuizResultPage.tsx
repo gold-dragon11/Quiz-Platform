@@ -75,13 +75,16 @@ export function QuizResultPage(): React.JSX.Element {
             {/* A joint block is one sitting and two exams: each paper keeps its
                 own score, threshold and table, and XP is earned once. */}
             {result.data.nmt.papers.length > 1 && (
-              <p className="text-text-secondary -mb-8 text-sm">{result.data.nmt.title}</p>
+              <h1 className="text-text-primary font-display text-2xl leading-tight sm:text-3xl -mb-8">
+                {result.data.nmt.title}
+              </h1>
             )}
-            {result.data.nmt.papers.map((paper, i) => (
+            {result.data.nmt.papers.map((paper, i, papers) => (
               <NmtResult
                 key={paper.subjectName}
                 nmt={paper}
                 xpEarned={i === 0 ? result.data.result.xpEarned : 0}
+                level={papers.length > 1 ? 2 : 1}
                 blankRows={paper.tasks.reduce((sum, task) => {
                   const question = result.data.questions.find((entry) => entry.id === task.questionId);
                   const covers = labelCovers(task.label);

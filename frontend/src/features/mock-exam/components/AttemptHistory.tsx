@@ -40,7 +40,7 @@ export function AttemptHistory({ subjectId, className = '' }: AttemptHistoryProp
     return (
       <EmptyState
         title="Не вдалося завантажити історію"
-        description="Спроби нікуди не зникли — оновіть сторінку трохи згодом."
+        description="Спроби нікуди не зникли, оновіть сторінку трохи згодом."
       />
     );
   }
@@ -148,11 +148,11 @@ function attemptLabel(attempt: MockExamAttempt): string {
 
 /**
  * The strip's own label. A column is four characters wide, and «нижче порогу»
- * broke over two lines and pushed its bar out of line with the rest; a dash
- * says «no score» in the space of one, and the row below spells it out.
+ * broke over two lines and pushed its bar out of line with the rest; «немає»
+ * says «no score» in one word, and the row below spells it out.
  */
 function stripLabel(attempt: MockExamAttempt): string {
-  return attempt.maxTestPoints !== null && attempt.scaledScore === null ? '—' : attemptLabel(attempt);
+  return attempt.maxTestPoints !== null && attempt.scaledScore === null ? 'немає' : attemptLabel(attempt);
 }
 
 /**

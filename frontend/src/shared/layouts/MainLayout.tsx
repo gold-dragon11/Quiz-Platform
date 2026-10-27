@@ -5,6 +5,7 @@ import { Sidebar } from '@/shared/layouts/navigation/Sidebar';
 import { TopHeader } from '@/shared/layouts/navigation/TopHeader';
 import { BottomNav } from '@/shared/layouts/navigation/BottomNav';
 import { MobileMenu } from '@/shared/layouts/navigation/MobileMenu';
+import { avatarImage } from '@/shared/utils/avatar';
 
 /**
  * The authenticated application shell (Phase 6.10) — one layout for every
@@ -21,7 +22,7 @@ export function MainLayout(): React.JSX.Element {
   const role = user?.role;
   const displayName = user?.profile?.displayName ?? 'Account';
   const username = user?.profile?.username ?? undefined;
-  const avatarUrl = user?.avatar?.imageUrl ?? undefined;
+  const avatarUrl = avatarImage(user?.avatar);
 
   return (
     <div className="bg-background text-text-primary flex min-h-screen">

@@ -135,10 +135,10 @@ export function QuizzesSection(): React.JSX.Element {
                   <tr key={quiz.id}>
                     <td className="text-text-primary px-4 py-3 font-medium">{quiz.title}</td>
                     <td className="text-text-secondary px-4 py-3">
-                      {subjectsById.get(quiz.subjectId) ?? '—'}
+                      {subjectsById.get(quiz.subjectId) ?? 'немає'}
                     </td>
                     <td className="text-text-secondary px-4 py-3">
-                      {quiz.topicId ? (topicsById.get(quiz.topicId) ?? '—') : '—'}
+                      {quiz.topicId ? (topicsById.get(quiz.topicId) ?? 'немає') : 'весь предмет'}
                     </td>
                     <td className="text-text-secondary px-4 py-3">{quiz.questionCount}</td>
                     <td className="text-text-secondary px-4 py-3">{MODE_LABEL[quiz.mode]}</td>

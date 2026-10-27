@@ -41,7 +41,7 @@ export function AppearanceSection(): React.JSX.Element {
     <section>
       <h2 className="section-title border-border border-b pb-3">Вигляд</h2>
       <p className="text-text-secondary mt-6 max-w-xl text-sm">
-        Тема зберігається в цьому браузері, а не в акаунті — на телефоні вдень і за ноутбуком увечері можна
+        Тема зберігається в цьому браузері, а не в акаунті, тож на телефоні вдень і за ноутбуком увечері можна
         тримати різну.
       </p>
 

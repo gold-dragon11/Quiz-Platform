@@ -45,7 +45,7 @@ export function GroupRoster({ groupId, onRemove }: GroupRosterProps): React.JSX.
     return (
       <EmptyState
         title="У групі поки нікого"
-        description="Поділіться кодом запрошення — щойно хтось увійде, він зʼявиться тут."
+        description="Поділіться кодом запрошення. Щойно хтось увійде, він зʼявиться тут."
       />
     );
   }
@@ -89,7 +89,7 @@ function RosterRow({
           to={generatePath(ROUTES.teacherStudent, { groupId, studentId: row.student.id })}
           className="text-text-primary hover:text-primary truncate font-medium transition-colors"
         >
-          {row.student.displayName ?? row.student.username ?? '—'}
+          {row.student.displayName ?? row.student.username ?? 'без імені'}
         </Link>
         <p className="text-text-muted mt-1 text-xs">
           {row.student.username && `@${row.student.username}, `}з {formatShortDate(row.student.joinedAt)}

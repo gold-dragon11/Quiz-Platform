@@ -70,14 +70,14 @@ export function QuestionPicker({ subjectId, selected, onChange }: QuestionPicker
         </div>
         <p className="text-text-secondary text-sm">
           Обрано {selected.length} {pluralUk(selected.length, 'питання', 'питання', 'питань')}
-          {atLimit && ` — це максимум`}
+          {atLimit && `, це максимум`}
         </p>
       </div>
 
       {!topicId ? (
         <EmptyState
           title="Оберіть тему"
-          description="Питання перелічені за темами — вибране з різних тем складається в одну роботу."
+          description="Питання перелічені за темами, а вибране з різних тем складається в одну роботу."
         />
       ) : questions.isPending ? (
         <div className="flex flex-col gap-2">

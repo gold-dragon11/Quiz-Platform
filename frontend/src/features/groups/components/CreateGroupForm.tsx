@@ -86,7 +86,7 @@ export function CreateGroupForm(): React.JSX.Element {
       </div>
 
       <p className="text-text-muted mt-3 text-xs">
-        Предмет групи змінити згодом не можна — для іншого предмета створіть окрему групу.
+        Предмет групи змінити згодом не можна, тож для іншого предмета створіть окрему групу.
       </p>
     </form>
   );

@@ -225,11 +225,11 @@ export function QuestionsSection(): React.JSX.Element {
                       )}
                     </td>
                     <td className="text-text-secondary px-4 py-3">
-                      {topicsById.get(question.topicId) ?? '—'}
+                      {topicsById.get(question.topicId) ?? 'немає'}
                     </td>
                     <td className="text-text-secondary px-4 py-3">{TYPE_LABEL[question.type]}</td>
                     <td className="text-text-secondary px-4 py-3">
-                      {question.difficulty ? DIFFICULTY_LABEL[question.difficulty] : '—'}
+                      {question.difficulty ? DIFFICULTY_LABEL[question.difficulty] : 'немає'}
                     </td>
                     <td className="px-4 py-3">
                       <Badge tone={question.isPublished ? 'success' : 'neutral'}>
@@ -276,7 +276,7 @@ export function QuestionsSection(): React.JSX.Element {
         open={Boolean(deleting)}
         title="Видалити питання?"
         description={
-          deleting ? `Питання буде прибрано. Це мʼяке видалення — історичні результати лишаються цілими.` : ''
+          deleting ? `Питання буде прибрано. Це мʼяке видалення: історичні результати лишаються цілими.` : ''
         }
         confirmLabel="Видалити"
         confirmVariant="danger"

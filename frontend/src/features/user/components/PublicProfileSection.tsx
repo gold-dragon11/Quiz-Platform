@@ -56,7 +56,7 @@ export function PublicProfileSection(): React.JSX.Element | null {
       </div>
       {!enabled && (
         <p className="text-text-muted mt-3 max-w-xl text-sm">
-          Зараз за посиланням показується «профіль недоступний» — так само, як для ніка, якого немає.
+          Зараз за посиланням показується «профіль недоступний», так само, як для ніка, якого немає.
         </p>
       )}
     </section>

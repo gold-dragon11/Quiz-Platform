@@ -69,7 +69,7 @@ export function InviteCode({
         </div>
       </div>
       <p className="text-text-secondary mt-5 max-w-2xl text-sm">
-        Поділіться кодом з учнями — за ним вони приєднаються до групи.
+        Поділіться кодом з учнями, і за ним вони приєднаються до групи.
       </p>
 
       <ConfirmDialog
