@@ -459,7 +459,7 @@ export function QuestionFormModal({
         <Select
           label="Формат"
           options={FORMAT_OPTIONS}
-          helperText="«Формат НМТ» — завдання, написане за специфікацією зовнішнього іспиту. Пробний іспит збиратиметься лише з таких."
+          helperText="«Формат НМТ» означає завдання, написане за специфікацією зовнішнього іспиту. Пробний іспит збиратиметься лише з таких."
           {...register('format')}
         />
 
@@ -528,7 +528,7 @@ function SingleChoiceEditor({
 
   return (
     <fieldset className="flex flex-col gap-3">
-      <legend className="text-text-secondary text-sm font-medium">Відповіді — позначте правильну</legend>
+      <legend className="text-text-secondary text-sm font-medium">Відповіді: позначте правильну</legend>
       {options.map((option, i) => (
         <div key={i} className="border-border flex flex-col gap-2 rounded-lg border p-3">
           <div className="flex items-center gap-3">
@@ -581,7 +581,7 @@ function NumericEditor({
 }): React.JSX.Element {
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="text-text-secondary text-sm font-medium">Правильна відповідь — число</legend>
+      <legend className="text-text-secondary text-sm font-medium">Правильна відповідь (число)</legend>
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -624,7 +624,7 @@ function SequenceEditor({
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-text-secondary text-sm font-medium">
-        Елементи в правильній послідовності — від найранішого до найпізнішого
+        Елементи в правильній послідовності, від найранішого до найпізнішого
       </legend>
       {options.map((option, i) => (
         <div key={i} className="border-border flex items-center gap-2 rounded-lg border p-3">
@@ -687,7 +687,7 @@ function MultipleChoiceEditor({
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-text-secondary text-sm font-medium">
-        Варіанти — позначте всі правильні (в НМТ їх три із семи)
+        Варіанти: позначте всі правильні (в НМТ їх три із семи)
       </legend>
       {options.map((option, i) => (
         <div key={i} className="border-border flex items-center gap-3 rounded-lg border p-3">
@@ -736,7 +736,7 @@ function MatchingEditor({
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-text-secondary text-sm font-medium">
-        Пари відповідностей — елемент ліворуч відповідає елементу праворуч у тому ж рядку
+        Пари відповідностей: елемент ліворуч відповідає елементу праворуч у тому ж рядку
       </legend>
       {pairs.map((pair, i) => (
         <div key={i} className="border-border flex items-center gap-2 rounded-lg border p-3">

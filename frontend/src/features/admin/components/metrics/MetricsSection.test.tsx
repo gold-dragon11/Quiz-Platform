@@ -64,7 +64,7 @@ describe('MetricsSection', () => {
     open();
 
     expect(await screen.findByText('нових за тиждень')).toBeInTheDocument();
-    expect(screen.getByText('сьогодні — 1')).toBeInTheDocument();
+    expect(screen.getByText('сьогодні 1')).toBeInTheDocument();
   });
 
   it('names where people were lost instead of leaving it to be subtracted', async () => {

@@ -98,7 +98,7 @@ export function StudentGroupsPage(): React.JSX.Element {
         ) : groups.data.length === 0 ? (
           <EmptyState
             title="Ви поки не в жодній групі"
-            description="Якщо ви займаєтеся з репетитором — попросіть у нього код запрошення."
+            description="Якщо ви займаєтеся з репетитором, попросіть у нього код запрошення."
           />
         ) : (
           <ul className="divide-border border-border divide-y border-t">
@@ -172,7 +172,7 @@ function JoinedNotice({
   return (
     <div className="border-primary/40 bg-primary/5 mt-6 rounded-xl border p-6">
       <p className="text-text-primary font-medium">
-        Ви у групі «{group.name}»{group.teacherName ? ` — репетитор ${group.teacherName}` : ''}
+        Ви у групі «{group.name}»{group.teacherName ? `, репетитор ${group.teacherName}` : ''}
       </p>
       <p className="text-text-secondary mt-3 text-sm">
         {group.selfStudyShared ? (
@@ -184,7 +184,7 @@ function JoinedNotice({
         ) : (
           <>
             Репетитор бачитиме лише те, що ви зробите за його завданнями. Вашу власну практику ви вимкнули в
-            налаштуваннях — вона лишається при вас.
+            налаштуваннях, і вона лишається при вас.
           </>
         )}
       </p>

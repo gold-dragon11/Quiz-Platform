@@ -71,7 +71,7 @@ export function StatisticsPage(): React.JSX.Element {
       </Section>
 
       <p className="text-text-muted mt-16 text-sm">
-        Розбір кожної помилки з поясненням —{' '}
+        Розбір кожної помилки з поясненням є{' '}
         <Link to={ROUTES.mistakeReview} className="text-text-secondary underline underline-offset-4">
           у роботі над помилками
         </Link>

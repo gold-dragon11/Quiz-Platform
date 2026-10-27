@@ -79,7 +79,7 @@ export function SubmissionList({
           >
             <div className="min-w-0">
               <p className="text-text-primary truncate font-medium">
-                {row.student.displayName ?? row.student.username ?? '—'}
+                {row.student.displayName ?? row.student.username ?? 'без імені'}
               </p>
               <p className="text-text-muted mt-1 text-xs">
                 {STATUS_LABEL[row.status]}
@@ -115,9 +115,8 @@ export function SubmissionList({
                   </p>
                   <p className="text-text-muted mt-1 text-xs">{formatPercent(row.score.accuracy)}</p>
                 </>
-              ) : (
-                <p className="text-text-muted font-display text-xl opacity-30">—</p>
-              )}
+              ) : // Nothing to show yet, and the row already says so («не розпочато»).
+              null}
             </div>
           </Link>
         </li>

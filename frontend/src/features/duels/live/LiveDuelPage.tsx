@@ -154,7 +154,7 @@ function Countdown({ game }: { game: LiveGameView }): React.JSX.Element {
         {Math.max(1, left)}
       </p>
       <p className="text-text-muted mt-6 text-sm">
-        {game.questionCount} {pluralUk(game.questionCount, 'питання', 'питання', 'питань')} — перше вже
+        {game.questionCount} {pluralUk(game.questionCount, 'питання', 'питання', 'питань')}, перше вже
         відкривається
       </p>
     </section>
@@ -180,10 +180,12 @@ function Clock({ game }: { game: LiveGameView }): React.JSX.Element {
           {Math.ceil(leftMs / 1000)} с
         </span>
       </div>
-      <div className="bg-border mt-2 h-1 w-full overflow-hidden rounded-full">
+      <div className="bg-border mt-2 h-1 w-full overflow-hidden">
+        {/* Scaled, not resized: a width change lays the row out again on
+            every tick, a transform only repaints the line. */}
         <div
-          className={`h-full ${low ? 'bg-error' : 'bg-primary'}`}
-          style={{ width: `${share * 100}%`, transition: 'width 100ms linear' }}
+          className={`h-full w-full origin-left motion-safe:transition-transform motion-safe:duration-100 motion-safe:ease-linear ${low ? 'bg-error' : 'bg-primary'}`}
+          style={{ transform: `scaleX(${share})` }}
         />
       </div>
     </div>
@@ -216,7 +218,7 @@ const REJECTED: Record<string, string> = {
   TOO_LATE: 'Час на це питання вже вийшов.',
   NOT_OPEN: 'Час на це питання вже вийшов.',
   ALREADY_ANSWERED: 'Відповідь на це питання вже зарахована.',
-  INVALID: 'Таку відповідь не вдалося прийняти — перевірте її.',
+  INVALID: 'Таку відповідь не вдалося прийняти, перевірте її.',
   WRONG_QUESTION: 'Питання вже змінилося.',
 };
 
@@ -276,7 +278,7 @@ function OpenQuestion({ game }: { game: LiveGameView }): React.JSX.Element | nul
             : game.opponent.answered
               ? 'Суперник уже відповів'
               : immediate
-                ? 'Перший вибір — остаточний'
+                ? 'Перший вибір остаточний'
                 : 'Відповідь надсилається один раз'}
         </p>
         {!immediate && !answered && (
@@ -366,9 +368,9 @@ function Finished({ game }: { game: LiveGameView }): React.JSX.Element | null {
     result.forfeit === 'ME'
       ? 'Ви здалися.'
       : result.forfeit === 'OPPONENT'
-        ? `${nameOf(game.opponent)} — здача.`
+        ? `${nameOf(game.opponent)}: здача.`
         : game.me.score === game.opponent.score && result.outcome !== 'DRAW'
-          ? 'Рахунок рівний — вирішив час.'
+          ? 'Рахунок рівний, вирішив час.'
           : null;
 
   return (
@@ -429,16 +431,16 @@ function TimeSummary({ game }: { game: LiveGameView }): React.JSX.Element | null
   return (
     <div className="border-border mt-8 border-l pl-5">
       <p className="text-text-primary">
-        Ваш час — {clock(mine)}, {them} — {clock(theirs)}.{' '}
+        Ваш час: {clock(mine)}. {them}: {clock(theirs)}.{' '}
         {gap === 0
           ? 'Однаково.'
           : mine < theirs
             ? `Ви швидші на ${clock(gap)}.`
-            : `${them} — на ${clock(gap)} швидше.`}
+            : `${them} швидше на ${clock(gap)}.`}
       </p>
       <p className="text-text-muted mt-2 text-sm">
-        Час — це сума часу на відповіді; питання без відповіді рахується повністю, {game.secondsPerQuestion}{' '}
-        с.
+        Час рахується як сума часу на відповіді; питання без відповіді рахується повністю,{' '}
+        {game.secondsPerQuestion} с.
       </p>
     </div>
   );

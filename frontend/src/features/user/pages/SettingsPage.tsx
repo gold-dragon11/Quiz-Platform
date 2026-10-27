@@ -27,7 +27,7 @@ export function SettingsPage(): React.JSX.Element {
         <PageHeader title="Налаштування" />
         <p className="border-primary text-text-secondary mt-14 max-w-xl border-l pl-5 text-sm">
           Це демо-акаунт. Пароль, публічність профілю й видалення акаунта тут вимкнені, а щоночі все
-          повертається до початкового стану — тож тести й домашку можна проходити без жодних наслідків.
+          повертається до початкового стану, тож тести й домашку можна проходити без жодних наслідків.
         </p>
 
         {/* The theme lives in this browser and touches nothing the next

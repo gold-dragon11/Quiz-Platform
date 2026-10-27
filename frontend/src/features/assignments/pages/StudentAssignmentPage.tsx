@@ -97,28 +97,28 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
       <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
         {notOpenYet ? (
           <>
-            Робота відкриється {formatShortDate(assignment.openAt ?? assignment.dueAt)} Дедлайн —{' '}
-            {formatShortDate(assignment.dueAt)}
+            Робота відкриється {formatShortDate(assignment.openAt ?? assignment.dueAt)}, дедлайн{' '}
+            {formatShortDate(assignment.dueAt)}.
           </>
         ) : overdue ? (
           <>
-            Дедлайн минув {formatShortDate(assignment.dueAt)}, але роботу все одно можна здати — вона буде
+            Дедлайн минув {formatShortDate(assignment.dueAt)}, але роботу все одно можна здати, вона буде
             позначена як пізня. Матеріал важливіший за позначку.
           </>
         ) : assignment.status === 'SUBMITTED' ? (
           <>
             Роботу здано{assignment.late ? ' із запізненням' : ''}.
-            {attemptsLeft > 0 ? ' Спроби ще лишилися — можна пройти ще раз.' : ' Спроби вичерпано.'}
+            {attemptsLeft > 0 ? ' Спроби ще лишилися, можна пройти ще раз.' : ' Спроби вичерпано.'}
           </>
         ) : (
-          <>Дедлайн — {formatShortDate(assignment.dueAt)}</>
+          <>Здати до {formatShortDate(assignment.dueAt)}.</>
         )}
       </p>
 
       {assignment.mockExam && !notOpenYet && (
         <p className="text-text-secondary mt-4 max-w-2xl pl-5 text-sm">
           Це пробний НМТ: годинник на {assignment.mockExam.minutes} хвилин запускається, щойно почнете, і не
-          зупиняється. Бал рахується за офіційною таблицею 100–200, як на іспиті.
+          зупиняється. Бал від 100 до 200 рахується за офіційною таблицею, як на іспиті.
         </p>
       )}
 

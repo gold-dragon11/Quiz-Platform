@@ -81,7 +81,7 @@ export function MockExamPage(): React.JSX.Element {
       {user?.role === UserRole.TEACHER && (
         <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
           Робота така сама, як в учнів: той самий зошит, годинник і розбір. XP і рівень вам не нараховуються.
-          Щоб дати пробний групі, видайте його як домашку — усі учні отримають однаковий варіант.
+          Щоб дати пробний групі, видайте його як домашку: усі учні отримають однаковий варіант.
         </p>
       )}
 
@@ -124,7 +124,7 @@ export function MockExamPage(): React.JSX.Element {
           <h2 className="section-title border-border border-b pb-3">Ваші спроби</h2>
           <p className="text-text-secondary mt-4 max-w-2xl text-sm">
             Там, де пробний НМТ відтворює зошит, бал рахується за офіційною таблицею переведення 2026 року.
-            Для предметів, які ще переносимо на структуру зошита, — лише частка правильних.
+            Для предметів, які ще переносимо на структуру зошита, рахується лише частка правильних.
           </p>
           <AttemptHistory subjectId={subjectId} className="mt-8" />
         </section>

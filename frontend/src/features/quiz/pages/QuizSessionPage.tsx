@@ -227,7 +227,7 @@ export function QuizSessionPage(): React.JSX.Element {
     return (
       <div className="mx-auto max-w-2xl">
         <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
-          У цій сесії немає жодного питання — показувати нічого.{' '}
+          У цій сесії немає жодного питання, показувати нічого.{' '}
           <button
             type="button"
             onClick={() => navigate(ROUTES.quiz)}

@@ -32,7 +32,7 @@ export function ActiveQuizBanner({ className = '' }: { className?: string }): Re
   if (session.liveDuelId) {
     return (
       <p className={`border-primary text-text-secondary max-w-xl border-l pl-5 text-sm ${className}`}>
-        Ваша дуель наживо ще йде —{' '}
+        Ваша дуель наживо ще йде:{' '}
         <Link
           to={generatePath(ROUTES.liveDuel, { duelId: session.liveDuelId })}
           className="text-primary hover:text-primary-hover active:text-primary-active underline underline-offset-4"
@@ -49,7 +49,7 @@ export function ActiveQuizBanner({ className = '' }: { className?: string }): Re
   return (
     <p className={`border-primary text-text-secondary max-w-xl border-l pl-5 text-sm ${className}`}>
       У вас є незавершений тест{subjectName ? ` з предмета «${subjectName}»` : ''}. Новий не почнеться, поки
-      цей триває —{' '}
+      цей триває:{' '}
       <Link
         to={generatePath(ROUTES.quizSession, { sessionId: session.sessionId })}
         className="text-primary hover:text-primary-hover active:text-primary-active underline underline-offset-4"

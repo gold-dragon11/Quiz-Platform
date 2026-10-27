@@ -44,7 +44,7 @@ export function MaterialPage(): React.JSX.Element {
       <div className="mx-auto max-w-3xl">
         <p className="border-border text-text-secondary max-w-xl border-l pl-5 text-sm">
           {notFound
-            ? 'Для цієї теми конспект ще не написано — тест із неї все одно можна пройти.'
+            ? 'Для цієї теми конспект ще не написано, але тест із неї все одно можна пройти.'
             : 'Не вдалося завантажити конспект. Спробуйте оновити сторінку за кілька секунд.'}{' '}
           <button
             type="button"

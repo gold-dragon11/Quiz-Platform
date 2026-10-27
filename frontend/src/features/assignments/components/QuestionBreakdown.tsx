@@ -93,7 +93,7 @@ function QuestionRow({ row }: { row: QuestionBreakdownRow }): React.JSX.Element 
             row.accuracy === null ? 'text-text-muted' : trouble ? 'text-warning' : 'text-text-primary'
           }`}
         >
-          {row.accuracy === null ? '—' : formatPercent(row.accuracy)}
+          {row.accuracy === null ? 'немає' : formatPercent(row.accuracy)}
         </p>
       </div>
 
@@ -110,7 +110,7 @@ function QuestionRow({ row }: { row: QuestionBreakdownRow }): React.JSX.Element 
 
       <p className="text-text-muted mt-2 text-xs">
         {row.topic?.name ?? 'Без теми'}, {row.correct} з {row.answered}
-        {row.answered === 0 && ' — ще не дійшли'}
+        {row.answered === 0 && ', ще не дійшли'}
       </p>
     </li>
   );

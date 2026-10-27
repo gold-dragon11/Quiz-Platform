@@ -37,7 +37,7 @@ export function MathSelect({
   value,
   onChange,
   disabled = false,
-  placeholder = '— оберіть відповідність —',
+  placeholder = 'Оберіть відповідність',
   'aria-label': ariaLabel,
 }: MathSelectProps): React.JSX.Element {
   const [isOpen, setIsOpen] = useState(false);

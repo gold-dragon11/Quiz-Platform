@@ -54,7 +54,7 @@ export function DuelList({ userId }: DuelListProps): React.JSX.Element {
     return (
       <EmptyState
         title="Дуелей ще не було"
-        description="Викличте когось за ніком — суперник отримає запрошення і два дні на відповідь."
+        description="Викличте когось за ніком, і суперник отримає запрошення і два дні на відповідь."
       />
     );
   }

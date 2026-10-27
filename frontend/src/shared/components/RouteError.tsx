@@ -30,7 +30,7 @@ export function RouteError(): React.JSX.Element {
   }, [error]);
 
   const message = isRouteErrorResponse(error)
-    ? `${error.status} — ${error.statusText}`
+    ? `Помилка ${error.status}${error.statusText ? ` (${error.statusText})` : ''}`
     : 'Під час завантаження сторінки сталася несподівана помилка.';
 
   return (

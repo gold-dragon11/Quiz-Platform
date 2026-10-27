@@ -91,5 +91,5 @@ export function myOutcome(duel: DuelView, userId: string): 'WON' | 'LOST' | 'DRA
 
 /** The name to show for a player — display name, then username, then a dash. */
 export function playerName(player: DuelPlayer): string {
-  return player.displayName ?? player.username ?? '—';
+  return player.displayName ?? player.username ?? 'без імені';
 }

@@ -122,7 +122,7 @@ export function MatchingGrid({
                       <button
                         type="button"
                         aria-pressed={marked}
-                        aria-label={`${row + rowFrom} — ${letters[column] ?? column + 1}`}
+                        aria-label={`${row + rowFrom}, ${letters[column] ?? column + 1}`}
                         disabled={disabled}
                         onClick={() => mark(prompt.id, choice.id)}
                         className={`focus-visible:ring-primary flex h-full w-full items-center justify-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-not-allowed ${

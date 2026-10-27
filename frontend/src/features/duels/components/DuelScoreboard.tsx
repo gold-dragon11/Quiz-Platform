@@ -37,12 +37,12 @@ export function DuelScoreboard({ duel, userId }: DuelScoreboardProps): React.JSX
         <p className="text-text-secondary mt-6 text-sm">
           {outcome === 'WON' && 'Ви виграли цю дуель.'}
           {outcome === 'LOST' && `Цього разу перемога за ${playerName(them)}.`}
-          {outcome === 'DRAW' && 'Нічия — однакова точність за однаковий час.'}
+          {outcome === 'DRAW' && 'Нічия: однакова точність за однаковий час.'}
           {duel.forfeitedById
             ? duel.forfeitedById === userId
               ? ' Ви здалися посеред гри.'
-              : ` ${playerName(them)} — здача посеред гри.`
-            : ' Переможця визначає точність; за рівної точності — час.'}
+              : ` ${playerName(them)}: здача посеред гри.`
+            : ' Переможця визначає точність; за рівної точності вирішує час.'}
         </p>
       )}
     </div>
@@ -102,7 +102,7 @@ function Side({
         <>
           {/* The withheld score keeps its slot at the same size, so the sheet
               does not jump when the second player finishes. */}
-          <p className="text-text-muted font-display mt-4 text-5xl leading-none opacity-25 sm:text-6xl">—</p>
+          <p className="text-text-muted font-display mt-4 text-5xl leading-none opacity-25 sm:text-6xl">?</p>
           <p className="text-text-muted mt-3 text-sm">{state}</p>
         </>
       )}

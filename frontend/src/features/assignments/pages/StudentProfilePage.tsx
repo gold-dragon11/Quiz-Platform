@@ -61,7 +61,7 @@ function ProfileDetail({
             ? `У групі з ${formatShortDate(student.joinedAt)} до ${formatShortDate(student.leftAt)}`
             : `У групі з ${formatShortDate(student.joinedAt)}`
         }
-        title={student.displayName ?? student.username ?? '—'}
+        title={student.displayName ?? student.username ?? 'без імені'}
       />
 
       <section className="mt-12">
@@ -75,7 +75,7 @@ function ProfileDetail({
                 profile.assignmentsLate > 0 ? `${profile.assignmentsLate} із запізненням` : 'без запізнень',
             },
             {
-              value: profile.overallAccuracy === null ? '—' : formatPercent(profile.overallAccuracy),
+              value: profile.overallAccuracy === null ? 'немає' : formatPercent(profile.overallAccuracy),
               label: 'точність',
               hint: 'за вашими роботами',
             },
@@ -122,17 +122,17 @@ function SelfStudySection({ summary }: { summary: SelfStudySummary }): React.JSX
       {!summary.visible ? (
         <p className="border-border text-text-secondary mt-6 max-w-2xl border-l pl-5 text-sm">
           Учень уже не в групі, тож його самостійна практика вам більше не видима. Результати ваших завдань
-          лишаються — вони належать роботі, а не членству.
+          лишаються: вони належать роботі, а не членству.
         </p>
       ) : !summary.shared ? (
         <p className="border-border text-text-secondary mt-6 max-w-2xl border-l pl-5 text-sm">
-          Учень вимкнув показ власної практики. Ви бачите тільки те, що він зробив за вашими завданнями — і це
+          Учень вимкнув показ власної практики. Ви бачите тільки те, що він зробив за вашими завданнями, і це
           його право.
         </p>
       ) : (
         <>
           <p className="text-text-secondary mt-4 max-w-2xl text-sm">
-            Те, що учень робить сам, поза вашими завданнями. Без окремих сесій і без відповідей — лише обсяг,
+            Те, що учень робить сам, поза вашими завданнями. Без окремих сесій і без відповідей, лише обсяг,
             точність і теми.
           </p>
 
@@ -151,7 +151,7 @@ function SelfStudySection({ summary }: { summary: SelfStudySummary }): React.JSX
                 label: pluralUk(summary.questionsAnswered ?? 0, 'відповідь', 'відповіді', 'відповідей'),
               },
               {
-                value: summary.accuracy === null ? '—' : formatPercent(summary.accuracy),
+                value: summary.accuracy === null ? 'немає' : formatPercent(summary.accuracy),
                 label: 'точність',
                 hint: summary.lastActivityAt
                   ? `останній раз ${formatShortDate(summary.lastActivityAt)}`

@@ -81,7 +81,7 @@ export function ReportQuestionButton({
   }
 
   if (sent) {
-    return <p className={`text-text-muted text-xs ${className}`}>Дякуємо — ми перевіримо це запитання.</p>;
+    return <p className={`text-text-muted text-xs ${className}`}>Дякуємо, ми перевіримо це запитання.</p>;
   }
 
   return (
@@ -137,7 +137,7 @@ export function ReportQuestionButton({
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             helperText={`${comment.length} / ${COMMENT_LIMIT}`}
-            placeholder="Напишіть, що саме викликало сумнів — це пришвидшить перевірку."
+            placeholder="Напишіть, що саме викликало сумнів. Це пришвидшить перевірку."
           />
         </div>
       </Modal>

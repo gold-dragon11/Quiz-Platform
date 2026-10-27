@@ -37,9 +37,24 @@ export function ResultReview({
   /** A heading before the question with this id — each paper of a joint block. */
   headings?: Map<string, string>;
 }): React.JSX.Element {
+  const wrong = questions.filter((question) => !question.isCorrect).length;
+
+  // A mock paper is 30 to 52 questions, and every one of them printed in full
+  // made the review the longest page in the app, with the mistakes somewhere
+  // inside it. Open are the questions worth reading again; a right answer is
+  // one line, and opens like the rest when its explanation is wanted.
   return (
     <section>
-      <h2 className="section-title border-border border-b pb-3">Розбір</h2>
+      <div className="border-border flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b pb-3">
+        <h2 className="section-title">Розбір</h2>
+        <p className="text-text-muted text-xs">
+          {wrong === 0
+            ? 'Усі відповіді правильні. Пояснення відкривається під кожним питанням.'
+            : wrong === questions.length
+              ? 'Розгорнуто всі питання: жодне не зараховано.'
+              : 'Розгорнуто питання з помилками. Правильні відкриваються натиском.'}
+        </p>
+      </div>
       <ul className="divide-border divide-y">
         {questions.map((question, i) => (
           <Fragment key={question.id}>
@@ -60,32 +75,42 @@ export function ResultReview({
                 </details>
               </li>
             )}
-            <li className="flex flex-col gap-4 py-8">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-text-primary whitespace-pre-wrap">
-                  <span className="text-text-muted mr-2">{numbers?.get(question.id) ?? i + 1}.</span>
-                  <MathText>{question.title}</MathText>
-                </h3>
-                <span className={`shrink-0 text-xs ${question.isCorrect ? 'text-success' : 'text-error'}`}>
-                  {question.isCorrect ? 'правильно' : 'неправильно'}
-                </span>
-              </div>
-              {/* A question read off a chart or a drawing cannot be checked
-                without it: the explanation says "дотична проходить через
-                (0; −3)", and the reader needs the picture to see why. */}
-              {question.imageUrl && (
-                <img
-                  src={question.imageUrl}
-                  alt=""
-                  className="max-h-64 w-auto self-start rounded-lg object-contain"
-                />
-              )}
-              <AnswerReview question={question} />
-              {question.explanation && <Explanation text={question.explanation} />}
-              {/* The review is where a wrong key actually shows itself: the
-                learner has just been told they were wrong and can see the
-                answer that says so. */}
-              <ReportQuestionButton questionId={question.id} className="self-start" />
+            <li>
+              <details open={!question.isCorrect} className="group">
+                <summary className="flex cursor-pointer list-none items-start gap-4 py-6 [&::-webkit-details-marker]:hidden">
+                  <h3 className="text-text-primary min-w-0 flex-1 whitespace-pre-wrap">
+                    <span className="text-text-muted mr-2">{numbers?.get(question.id) ?? i + 1}.</span>
+                    <MathText>{question.title}</MathText>
+                  </h3>
+                  <span
+                    className={`shrink-0 pt-0.5 text-xs ${question.isCorrect ? 'text-success' : 'text-error'}`}
+                  >
+                    {question.isCorrect ? 'правильно' : 'неправильно'}
+                  </span>
+                  <span aria-hidden="true" className="text-text-muted w-4 shrink-0 text-center">
+                    <span className="group-open:hidden">+</span>
+                    <span className="hidden group-open:inline">−</span>
+                  </span>
+                </summary>
+                <div className="flex flex-col gap-4 pb-8">
+                  {/* A question read off a chart or a drawing cannot be checked
+                    without it: the explanation says "дотична проходить через
+                    (0; −3)", and the reader needs the picture to see why. */}
+                  {question.imageUrl && (
+                    <img
+                      src={question.imageUrl}
+                      alt=""
+                      className="max-h-64 w-auto self-start rounded-lg object-contain"
+                    />
+                  )}
+                  <AnswerReview question={question} />
+                  {question.explanation && <Explanation text={question.explanation} />}
+                  {/* The review is where a wrong key actually shows itself: the
+                    learner has just been told they were wrong and can see the
+                    answer that says so. */}
+                  <ReportQuestionButton questionId={question.id} className="self-start" />
+                </div>
+              </details>
             </li>
           </Fragment>
         ))}
@@ -139,9 +164,9 @@ function optionMap(options: QuizAnswerOption[]): Map<string, QuizAnswerOption> {
 
 function contentOf(options: Map<string, QuizAnswerOption>, id: string | null): string {
   if (!id) {
-    return '—';
+    return 'немає';
   }
-  return options.get(id)?.content ?? '—';
+  return options.get(id)?.content ?? 'немає';
 }
 
 function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): React.JSX.Element {

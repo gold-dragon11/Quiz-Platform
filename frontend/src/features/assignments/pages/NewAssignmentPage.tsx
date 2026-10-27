@@ -38,8 +38,9 @@ const MODE_HINT: Record<QuestionSelectionMode, string> = {
   TOPIC: 'Система сама набере потрібну кількість питань з однієї теми.',
   DIFFICULTY: 'Ви задаєте, скільки питань кожного рівня. Тему можна не звужувати.',
   MISTAKES: 'Питання з тих тем, у яких група помиляється найчастіше. Потрібні попередні результати.',
-  MANUAL: 'Ви обираєте кожне питання самі — з будь-яких тем предмета.',
-  MOCK_EXAM: 'Зошит НМТ з предмета групи: один варіант для всіх, годинник і бал 100–200, як на іспиті.',
+  MANUAL: 'Ви обираєте кожне питання самі, з будь-яких тем предмета.',
+  MOCK_EXAM:
+    'Зошит НМТ з предмета групи: один варіант для всіх, годинник і бал від 100 до 200, як на іспиті.',
 };
 
 const SCORED_OPTIONS: SelectOption[] = [
@@ -188,7 +189,7 @@ export function NewAssignmentPage(): React.JSX.Element {
       <PageHeader
         meta={`${group.data.name}, ${group.data.subject.name}`}
         title="Нове завдання"
-        lead="Склад роботи й список адресатів фіксуються в момент видачі. Змінити потім можна лише назву, опис і дедлайн — решту варто вирішити тут."
+        lead="Склад роботи й список адресатів фіксуються в момент видачі. Змінити потім можна лише назву, опис і дедлайн, тож решту варто вирішити тут."
       />
 
       <form onSubmit={submit} noValidate>
@@ -239,7 +240,7 @@ export function NewAssignmentPage(): React.JSX.Element {
               <p className="text-text-secondary max-w-2xl text-sm">
                 {paper.title}: {paper.taskCount}{' '}
                 {pluralUk(paper.taskCount, 'завдання', 'завдання', 'завдань')}, {paper.maxTestPoints} тестових
-                балів, {spec.data.minutes} хвилин. Варіант добирається один раз, у момент видачі, — усі учні
+                балів, {spec.data.minutes} хвилин. Варіант добирається один раз, у момент видачі, тож усі учні
                 пишуть однаковий, тож бали можна порівнювати.
               </p>
             )}
@@ -305,14 +306,14 @@ export function NewAssignmentPage(): React.JSX.Element {
             <Input
               type="datetime-local"
               label="Відкрити (необовʼязково)"
-              helperText="Порожньо — доступне одразу"
+              helperText="Якщо порожньо, доступне одразу"
               value={openAt}
               onChange={(event) => setOpenAt(event.target.value)}
             />
             <Input
               type="datetime-local"
               label="Дедлайн"
-              helperText="Пізню роботу приймають — вона просто позначається як пізня"
+              helperText="Пізню роботу приймають, вона просто позначається як пізня"
               value={dueAt}
               onChange={(event) => setDueAt(event.target.value)}
             />
@@ -391,7 +392,7 @@ export function NewAssignmentPage(): React.JSX.Element {
                               : [...current, student.id],
                           )
                         }
-                        label={student.displayName ?? student.username ?? '—'}
+                        label={student.displayName ?? student.username ?? 'без імені'}
                       />
                     </li>
                   ))}

@@ -50,17 +50,17 @@ export function MetricsSection(): React.JSX.Element {
           {
             value: formatNumber(week.newAccounts),
             label: 'нових за тиждень',
-            hint: `сьогодні — ${formatNumber(today.newAccounts)}`,
+            hint: `сьогодні ${formatNumber(today.newAccounts)}`,
           },
           {
             value: formatNumber(week.activePeople),
             label: 'людей за тестами',
-            hint: `сьогодні — ${formatNumber(today.activePeople)}`,
+            hint: `сьогодні ${formatNumber(today.activePeople)}`,
           },
           {
             value: formatNumber(week.testsCompleted),
             label: 'тестів за тиждень',
-            hint: `сьогодні — ${formatNumber(today.testsCompleted)}`,
+            hint: `сьогодні ${formatNumber(today.testsCompleted)}`,
           },
         ]}
       />
@@ -118,9 +118,9 @@ function Funnel({ funnel }: { funnel: MetricsFunnel }): React.JSX.Element {
                   <span className="text-text-secondary">{step.label}</span>
                   <span className="text-text-primary lining-nums font-medium">{formatNumber(value)}</span>
                 </div>
-                <div className="bg-surface-elevated mt-2 h-1.5 w-full overflow-hidden rounded-full">
+                <div className="bg-surface-elevated mt-2 h-1.5 w-full overflow-hidden">
                   <div
-                    className="bg-primary h-full rounded-full"
+                    className="bg-primary h-full"
                     style={{ width: `${Math.round((value / top) * 100)}%` }}
                   />
                 </div>
@@ -158,8 +158,8 @@ function Registrations({ points }: { points: DailyPoint[] }): React.JSX.Element 
             {points.map((point) => (
               <div
                 key={point.day}
-                title={`${point.day} — ${point.count}`}
-                className={`flex-1 rounded-t-[2px] ${point.count > 0 ? 'bg-primary' : 'bg-surface-elevated'}`}
+                title={`${point.day}: ${point.count}`}
+                className={`flex-1 ${point.count > 0 ? 'bg-primary' : 'bg-surface-elevated'}`}
                 style={{ height: point.count > 0 ? `${Math.max(8, (point.count / peak) * 100)}%` : '2px' }}
               />
             ))}
@@ -199,9 +199,9 @@ function Subjects({ rows }: { rows: SubjectUsage[] }): React.JSX.Element {
                   {pluralUk(row.people, 'людина', 'людини', 'людей')}
                 </span>
               </div>
-              <div className="bg-surface-elevated mt-2 h-1 w-full overflow-hidden rounded-full">
+              <div className="bg-surface-elevated mt-2 h-1 w-full overflow-hidden">
                 <div
-                  className="bg-primary h-full rounded-full"
+                  className="bg-primary h-full"
                   style={{ width: `${Math.round((row.sessions / top) * 100)}%` }}
                 />
               </div>
@@ -229,7 +229,7 @@ function Recent({ rows }: { rows: RecentAccount[] }): React.JSX.Element {
       {rows.length === 0 ? (
         <EmptyState
           title="Поки нікого"
-          description="Коли хтось зареєструється, він зʼявиться тут — і одразу прилетить у Telegram."
+          description="Коли хтось зареєструється, він зʼявиться тут і одразу прилетить у Telegram."
           className="mt-6"
         />
       ) : (

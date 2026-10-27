@@ -51,7 +51,7 @@ export function TeacherOverview(): React.JSX.Element {
     return (
       <EmptyState
         title="Активних груп немає"
-        description="Створіть групу, поділіться кодом — далі можна видавати роботу й бачити, як вона йде."
+        description="Створіть групу, поділіться кодом, і далі можна видавати роботу й бачити, як вона йде."
         action={
           <Link to={ROUTES.teacherGroups} className="text-primary text-sm underline underline-offset-4">
             До груп
@@ -113,7 +113,7 @@ function GroupRow({
             <Skeleton className="mt-3 h-4 w-48" />
           ) : latest ? (
             <p className="text-text-secondary mt-3 text-sm">
-              «{latest.title}» — {overdue ? 'дедлайн минув' : 'до'} {formatShortDate(latest.dueAt)}
+              «{latest.title}», {overdue ? 'дедлайн минув' : 'до'} {formatShortDate(latest.dueAt)}
               {outstanding > 0 && (
                 <span className={overdue ? 'text-warning' : undefined}>, не здали {outstanding}</span>
               )}

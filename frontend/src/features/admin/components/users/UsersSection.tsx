@@ -113,7 +113,7 @@ export function UsersSection(): React.JSX.Element {
       ) : list.data.items.length === 0 ? (
         <EmptyState
           title="Нікого не знайдено"
-          description="Спробуйте інший запит — пошук працює за ніком, іменем і поштою."
+          description="Спробуйте інший запит: пошук працює за ніком, іменем і поштою."
         />
       ) : (
         <>
@@ -169,7 +169,7 @@ function UserRow({
   return (
     <tr>
       <td className="px-4 py-3">
-        <p className="text-text-primary font-medium">{user.displayName ?? user.username ?? '—'}</p>
+        <p className="text-text-primary font-medium">{user.displayName ?? user.username ?? 'без імені'}</p>
         <p className="text-text-muted text-xs">{user.email}</p>
       </td>
       <td className="px-4 py-3">

@@ -235,7 +235,7 @@ function LiveForm({ offline }: { offline: boolean }): React.JSX.Element {
       {subjectId && available !== null && !enough && (
         <p className="text-text-muted mt-4 text-sm">
           {available === 0
-            ? `За ${seconds} с тут не встигнути жодного питання — візьміть більше часу.`
+            ? `За ${seconds} с тут не встигнути жодного питання. Візьміть більше часу.`
             : `За ${seconds} с тут встигається лише ${questions(available)}. Візьміть більше часу або менше питань.`}
         </p>
       )}
@@ -275,7 +275,7 @@ function LiveForm({ offline }: { offline: boolean }): React.JSX.Element {
       )}
       {sentAsync && (
         <Alert variant="success" className="mt-6">
-          Звичайний виклик надіслано — він з’явиться в списку нижче.
+          Звичайний виклик надіслано, він з’явиться в списку нижче.
         </Alert>
       )}
 

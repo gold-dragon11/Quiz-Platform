@@ -44,7 +44,7 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
             {
               value: taskCount,
               label: pluralUk(taskCount, 'завдання', 'завдання', 'завдань'),
-              hint: block.papers.map((entry) => `${entry.subjectName} — ${entry.taskCount}`).join(', '),
+              hint: block.papers.map((entry) => `${entry.subjectName}: ${entry.taskCount}`).join(', '),
             },
             {
               value: block.papers.length,
@@ -79,7 +79,7 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
             {
               value: paper.maxTestPoints,
               label: 'тестових балів',
-              hint: 'Переводяться у шкалу 100–200 за офіційною таблицею',
+              hint: 'Переводяться у шкалу від 100 до 200 за офіційною таблицею',
             },
             {
               value: minutes,
@@ -103,7 +103,7 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
           {
             value: questionCount,
             label: pluralUk(questionCount, 'питання', 'питання', 'питань'),
-            hint: 'Склад роботи фіксований — обрати не можна',
+            hint: 'Склад роботи фіксований, обрати не можна',
           },
           {
             value: minutes,
@@ -115,7 +115,7 @@ export function MockExamBrief({ target, className = '' }: MockExamBriefProps): R
       {/* A rule on the left rather than a tinted box: the note is an aside to
           the figures above it, and boxing it would give it equal weight. */}
       <p className="border-border text-text-secondary mt-8 max-w-2xl border-l pl-5 text-sm">
-        Робота йде без пояснень і без підказок — розбір відкриється після завершення. Почавши, ви займаєте
+        Робота йде без пояснень і без підказок, розбір відкриється після завершення. Почавши, ви займаєте
         єдиний слот активної сесії: звичайна практика буде недоступна, доки не завершите.
       </p>
     </div>

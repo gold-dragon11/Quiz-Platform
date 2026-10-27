@@ -142,7 +142,7 @@ export function SubjectsSection(): React.JSX.Element {
         title="Видалити предмет?"
         description={
           deleting
-            ? `«${deleting.name}» буде прибрано. Це мʼяке видалення — slug лишається зарезервованим.`
+            ? `«${deleting.name}» буде прибрано. Це мʼяке видалення: slug лишається зарезервованим.`
             : ''
         }
         confirmLabel="Видалити"

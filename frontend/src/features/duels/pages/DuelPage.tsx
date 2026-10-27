@@ -103,7 +103,7 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
       {stance === 'INVITE_RECEIVED' && (
         <section className="mt-12">
           <p className="text-text-secondary max-w-2xl">
-            {playerName(them)} викликає вас на дуель. Папір складеться в момент, коли ви приймете виклик — і
+            {playerName(them)} викликає вас на дуель. Папір складеться в момент, коли ви приймете виклик, і
             буде однаковий для обох. Відповісти можна до {formatShortDate(duel.expiresAt)}
           </p>
           <div className="mt-8 flex gap-3">
@@ -119,15 +119,15 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
 
       {stance === 'INVITE_SENT' && (
         <Waiting>
-          Чекаємо, поки {playerName(them)} відповість. Виклик живе до {formatShortDate(duel.expiresAt)} —
-          після цього він згасне сам.
+          Чекаємо, поки {playerName(them)} відповість. Виклик живе до {formatShortDate(duel.expiresAt)}, після
+          цього він згасне сам.
         </Waiting>
       )}
 
       {stance === 'MY_TURN' && (
         <section className="mt-12">
           <p className="text-text-secondary max-w-2xl">
-            Ваша черга сідати за папір. Рахунок суперника буде закритий, доки ви обоє не завершите — тож грати
+            Ваша черга сідати за папір. Рахунок суперника буде закритий, доки ви обоє не завершите, тож грати
             доводиться проти самого завдання, а не проти чужої цифри.
           </p>
           <div className="mt-8">
@@ -167,7 +167,7 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
         <Waiting>
           {duel.mode === 'LIVE'
             ? 'Гра не відбулася. Можна викликати ще раз.'
-            : 'Виклик протермінувався — на відповідь було два дні. Можна викликати ще раз.'}
+            : 'Виклик протермінувався: на відповідь було два дні. Можна викликати ще раз.'}
         </Waiting>
       )}
     </div>

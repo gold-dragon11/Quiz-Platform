@@ -230,7 +230,7 @@ export function QuizStartPage(): React.JSX.Element {
               <div>
                 <Checkbox label={`Обмежити час: ${minutes} хв на весь тест`} {...register('timerEnabled')} />
                 <p className="text-text-muted mt-2 text-xs">
-                  Це спільний запас на всю роботу, а не на кожне питання окремо — на складному можна
+                  Це спільний запас на всю роботу, а не на кожне питання окремо: на складному можна
                   затриматись, якщо надолужити на легких.
                 </p>
               </div>
@@ -285,6 +285,6 @@ function poolHint(pool: number | undefined, subjectId: string): string | undefin
   }
   const largestRung = COUNT_LADDER[COUNT_LADDER.length - 1];
   return pool < largestRung
-    ? `Тут лише ${countLabel(pool)} — це весь вибір.`
+    ? `Тут лише ${countLabel(pool)} , це весь вибір.`
     : `Усього тут ${countLabel(pool)}.`;
 }
