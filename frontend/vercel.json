@@ -46,6 +46,10 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' 'sha256-j3A3euEuiEFRRRiqAi+Ey7gaAqHMohfOIKk1voBaG0M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.learn-ls.com wss://api.learn-ls.com https://o4512095080087552.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; report-uri https://o4512095080087552.ingest.de.sentry.io/api/4512095094243408/security/?sentry_key=da3944f07e90c33e45ab3bf9cf3f3b15&sentry_environment=production"
         }
       ]
     }

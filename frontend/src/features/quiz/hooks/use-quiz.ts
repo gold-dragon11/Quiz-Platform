@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { quizApi } from '@/features/quiz/api/quiz.api';
+import { createAnswerSaver, type AnswerSaver, type SaveStatus } from '@/features/quiz/lib/answer-saver';
 import type { SelectedAnswer, StartQuizPayload } from '@/features/quiz/types/quiz.types';
 
 /**
@@ -73,11 +75,34 @@ export function useStartQuiz() {
   });
 }
 
-export function useSubmitAnswer(sessionId: string) {
-  return useMutation({
-    mutationFn: (vars: { questionId: string; selectedAnswer: SelectedAnswer }) =>
-      quizApi.submitAnswer(sessionId, vars.questionId, vars.selectedAnswer),
+/**
+ * Autosave for the quiz runtime: one request per question at a time, newest
+ * value last (lib/answer-saver.ts). The callbacks are read through a ref, so a
+ * re-render never rebuilds the queue and drops what is waiting in it.
+ */
+export function useAnswerSaver(
+  sessionId: string,
+  callbacks: { onStatus: (status: SaveStatus) => void; onError: (error: unknown) => void },
+): AnswerSaver {
+  const callbacksRef = useRef(callbacks);
+  useEffect(() => {
+    callbacksRef.current = callbacks;
   });
+
+  const saver = useMemo(
+    () =>
+      createAnswerSaver({
+        send: (questionId, answer: SelectedAnswer) => quizApi.submitAnswer(sessionId, questionId, answer),
+        onStatus: (status) => callbacksRef.current.onStatus(status),
+        onError: (error) => callbacksRef.current.onError(error),
+      }),
+    [sessionId],
+  );
+
+  // Leaving the page sends whatever is still waiting instead of dropping it.
+  useEffect(() => () => void saver.flush(), [saver]);
+
+  return saver;
 }
 
 export function useCompleteQuiz(sessionId: string) {

@@ -31,7 +31,8 @@ async function bootstrap(): Promise<void> {
 
   // Sets the conservative security response headers (nosniff, frameguard,
   // HSTS, and similar). The CSP is left off: this process serves only JSON,
-  // and the pages that need a policy are served by the frontend host.
+  // and the pages that need a policy get it from the frontend host
+  // (frontend/vercel.json, docs/08-development/deployment.md §17.10).
   app.use(helmet({ contentSecurityPolicy: false }));
 
   // The session's refresh token travels as an HttpOnly cookie
