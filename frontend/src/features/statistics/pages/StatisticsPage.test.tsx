@@ -62,7 +62,7 @@ describe('StatisticsPage', () => {
     server.use(account('USER'), ...learnerData);
     open();
 
-    expect(await screen.findByText('Ваші цифри')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Статистика' })).toBeInTheDocument();
     // The XP figure counts up from zero, so the steady text is asserted instead.
     expect(await screen.findByText('Рівень 10')).toBeInTheDocument();
     expect(await screen.findByText('Ще 73 XP до рівня 11.')).toBeInTheDocument();
@@ -93,7 +93,6 @@ describe('StatisticsPage', () => {
     );
     open();
 
-    expect(await screen.findByText('Ваші цифри')).toBeInTheDocument();
     expect(await screen.findByText('Рівень 1')).toBeInTheDocument();
     expect(screen.queryByText('Рівень 10')).not.toBeInTheDocument();
   });
@@ -106,7 +105,8 @@ describe('StatisticsPage', () => {
     );
     open();
 
-    expect(await screen.findByText('Викладання')).toBeInTheDocument();
-    expect(screen.queryByText('Ваші цифри')).not.toBeInTheDocument();
+    // The groups, not a level: a teacher's statistics are about the class.
+    expect(await screen.findByText('Активних груп немає')).toBeInTheDocument();
+    expect(screen.queryByText(/^Рівень/)).not.toBeInTheDocument();
   });
 });

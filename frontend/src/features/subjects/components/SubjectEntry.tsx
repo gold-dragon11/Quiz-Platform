@@ -43,7 +43,7 @@ export function SubjectEntry({
         className="focus-visible:ring-primary focus-visible:ring-offset-background group w-full py-8 text-left outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
       >
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2">
-          <h2 className="text-text-primary group-hover:text-primary font-display text-3xl font-bold transition-colors sm:text-4xl">
+          <h2 className="text-text-primary group-hover:text-primary font-display text-3xl transition-colors sm:text-4xl">
             {subject.name}
           </h2>
           {topicsPending ? (
@@ -64,8 +64,8 @@ export function SubjectEntry({
             into its own column and brought the grid back. */}
         {topics.length > 0 && (
           <p className="text-text-muted mt-4 text-sm leading-relaxed">
-            {filtered && <span className="tracking-[0.18em] uppercase">збіги: </span>}
-            {topics.map((topic) => topic.name).join(' · ')}
+            {filtered && <span>збіги: </span>}
+            {topics.map((topic) => topic.name).join(', ')}
           </p>
         )}
       </button>

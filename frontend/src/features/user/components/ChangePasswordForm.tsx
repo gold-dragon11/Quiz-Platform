@@ -63,7 +63,7 @@ export function ChangePasswordForm(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Зміна пароля</h2>
+      <h2 className="section-title">Зміна пароля</h2>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">
         Сеанси на інших пристроях завершаться, і там доведеться увійти заново. Поточний пристрій лишиться в
         системі.

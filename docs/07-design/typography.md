@@ -1,263 +1,85 @@
 # Design System — Typography
 
-**Document Version:** 1.0  
-**Status:** Draft  
-**Last Updated:** July 2026
+**Document Version:** 2.0  
+**Status:** Implemented  
+**Last Updated:** October 2026
 
 ---
 
 # 1. Purpose
 
-This document defines the typography system used throughout the Quiz Platform.
-
-Typography establishes visual hierarchy, improves readability, and creates a consistent reading experience across the application.
-
-The typography system prioritizes clarity over decoration.
-
----
-
-# 2. Design Philosophy
-
-Typography should feel:
-
-- modern;
-- clean;
-- highly readable;
-- professional;
-- minimal.
-
-The interface should encourage focus on learning rather than visual styling.
+How L&S sets type: the faces, what each one is for, and the habits the
+system refuses. The faces and classes are declared in
+`frontend/src/styles/globals.css`; the system is locked in `design.md`
+(decision 41).
 
 ---
 
-# 3. Font Family
+# 2. Faces
 
-Primary font:
+| Face | Token | Carries |
+| --- | --- | --- |
+| Playfair Display | `--font-display`, `font-display` | Page titles, section heads, figures at title size and up |
+| Hanken Grotesk | `--font-sans`, the body default | Everything read: labels, controls, questions, reading passages |
+| IBM Plex Mono | `--font-mono`, `.figure` | Figures that compare in a row: task numbers, days, points |
 
-```text
-Inter
-```
+All three are self-hosted through Fontsource and ship per-script subsets, so
+a Ukrainian page downloads the Cyrillic files and nothing else; the site's
+CSP allows no font host.
 
-Fallback fonts:
-
-```text
-system-ui,
--apple-system,
-BlinkMacSystemFont,
-Segoe UI,
-sans-serif
-```
-
-The same font family should be used throughout the application.
+Two of Loom's own faces were replaced because they have no Cyrillic: Libre
+Caslon Display by Playfair Display, DM Mono by IBM Plex Mono. Hanken Grotesk
+is the theme's own. Manrope, the previous body face, is gone.
 
 ---
 
-# 4. Type Scale
+# 3. Rules
 
-| Style | Size | Weight | Line Height |
-|--------|-----:|-------:|------------:|
-| Display | 48 px | 700 | 56 px |
-| H1 | 36 px | 700 | 44 px |
-| H2 | 30 px | 700 | 38 px |
-| H3 | 24 px | 600 | 32 px |
-| H4 | 20 px | 600 | 28 px |
-| H5 | 18 px | 600 | 26 px |
-| Body Large | 18 px | 400 | 28 px |
-| Body | 16 px | 400 | 24 px |
-| Body Small | 14 px | 400 | 20 px |
-| Caption | 12 px | 500 | 16 px |
-
-The type scale should remain consistent across all screens.
-
----
-
-# 5. Font Weights
-
-Supported font weights:
-
-| Weight | Usage |
-|---------|------|
-| 400 | Body text |
-| 500 | Labels |
-| 600 | Section headings |
-| 700 | Main headings |
-
-Avoid unnecessary font weight variations.
+- **One display weight.** Playfair is set at 400 wherever it appears;
+  `font-synthesis: none` keeps a browser from faking a bold or an italic.
+  A head is one weight, one style and one colour: no word inside it is set
+  apart by colour, italic or weight.
+- **Sentence case, untracked.** No label, caption, table head, tab or nav
+  item is set in capitals or letter-spaced. A label is the body face a step
+  smaller in the muted ink (`.label`). The one exception is a figure being
+  read or typed as a code — an invite code — and the initial in an avatar.
+- **No eyebrow.** A page opens with its title. A fact that used to sit above
+  a title in small capitals (a date, a deadline, the group and its subject)
+  now sits under it as `meta` in `PageHeader`; a line that only named the
+  section was removed.
+- **A section head is a head.** Inside the app, `.section-title`: Playfair at
+  `text-2xl`, the ink. It replaced the 12px tracked capitals that opened
+  every section.
+- **Lists of facts take commas,** not middle dots: «11-А, математика, до
+  30 жовт.».
+- **Figures** use lining, tabular numerals where they line up in a column.
 
 ---
 
-# 6. Heading Usage
+# 4. Scale
 
-Headings establish content hierarchy.
+The app keeps Tailwind's steps (`text-xs` 12px to `text-5xl`): an app screen
+wants a fixed ratio around 1.125 to 1.2, not fluid heads. Running text is
+16px or more; functional text never under 11px.
 
-Examples:
-
-Display
-
-Landing pages.
-
-H1
-
-Primary page title.
-
-H2
-
-Major sections.
-
-H3
-
-Cards and subsections.
-
-H4–H5
-
-Small content groups.
-
-Heading levels should always follow semantic order.
+| Use | Size |
+| --- | --- |
+| Page title | `text-4xl`, `sm:text-5xl` |
+| Section head | `text-2xl` (`.section-title`) |
+| Body | `text-base`, a lead `text-lg` |
+| Label, caption | `text-sm` (`.label`) or `text-xs` in tight rows |
 
 ---
 
-# 7. Body Text
+# 5. Measure and rhythm
 
-Body text should prioritize readability.
-
-Recommended style:
-
-- 16 px
-- Weight 400
-- Line Height 24 px
-
-Long paragraphs should remain easy to scan.
+Prose holds to 45 to 75 characters (`max-w-xl` to `max-w-2xl`); body
+line-height 1.5 to 1.65. A head has at least twice the space above it as
+below.
 
 ---
 
-# 8. Labels
+# 6. Accessibility
 
-Labels are used for:
-
-- forms;
-- buttons;
-- navigation;
-- filters.
-
-Recommended style:
-
-- 14 px
-- Weight 500
-
-Labels should remain concise.
-
----
-
-# 9. Captions
-
-Captions are used for:
-
-- metadata;
-- timestamps;
-- helper text;
-- secondary information.
-
-Recommended style:
-
-- 12 px
-- Weight 500
-
-Captions should never compete with primary content.
-
----
-
-# 10. Alignment
-
-Preferred alignment:
-
-Left aligned.
-
-Center alignment may be used for:
-
-- onboarding;
-- empty states;
-- authentication screens.
-
-Justified text should be avoided.
-
----
-
-# 11. Line Length
-
-Recommended maximum line length:
-
-60–80 characters.
-
-Long text blocks should remain comfortable to read.
-
----
-
-# 12. Text Hierarchy
-
-Hierarchy should be created using:
-
-- size;
-- weight;
-- spacing.
-
-Avoid relying solely on color.
-
----
-
-# 13. Accessibility
-
-Typography should support accessibility.
-
-Requirements:
-
-- sufficient font size;
-- appropriate line height;
-- strong color contrast;
-- scalable text.
-
-Text should remain readable at browser zoom levels.
-
----
-
-# 14. Responsive Typography
-
-Typography should scale across devices.
-
-Desktop
-
-Full type scale.
-
-Tablet
-
-Slightly reduced headings.
-
-Mobile
-
-Compact headings while maintaining readability.
-
-Body text should remain at least 16 px whenever possible.
-
----
-
-# 15. Future Expansion
-
-The typography system should support future additions including:
-
-- learning materials;
-- documentation pages;
-- AI-generated content;
-- mobile applications.
-
-New screens should reuse the existing typography scale.
-
----
-
-# 16. Success Criteria
-
-The typography system is considered successful if it:
-
-- provides clear visual hierarchy;
-- maintains excellent readability;
-- remains consistent across the application;
-- supports accessibility;
-- scales with future product growth.
+Contrast is in `colors.md` §5. Text can be zoomed to 200% without loss; no
+text is set in an image; headings follow their levels without skipping.

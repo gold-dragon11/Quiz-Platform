@@ -186,7 +186,7 @@ export function NewAssignmentPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        eyebrow={`${group.data.name} · ${group.data.subject.name}`}
+        meta={`${group.data.name}, ${group.data.subject.name}`}
         title="Нове завдання"
         lead="Склад роботи й список адресатів фіксуються в момент видачі. Змінити потім можна лише назву, опис і дедлайн — решту варто вирішити тут."
       />
@@ -427,9 +427,7 @@ export function NewAssignmentPage(): React.JSX.Element {
 function Section({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
     <section className="mt-14">
-      <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-        {title}
-      </h2>
+      <h2 className="section-title border-border border-b pb-3">{title}</h2>
       <div className="mt-6 flex flex-col gap-5">{children}</div>
     </section>
   );

@@ -189,10 +189,10 @@ function AttemptRow({ attempt }: { attempt: MockExamAttempt }): React.JSX.Elemen
           <p className="text-text-primary truncate text-sm font-medium">{attempt.subject.name}</p>
           <p className="text-text-secondary mt-1 text-xs">
             {formatShortDate(attempt.completedAt)}
-            {attempt.blockTitle && ' · у спільному блоці'}
+            {attempt.blockTitle && ', у спільному блоці'}
             {attempt.durationSeconds !== null &&
               attempt.durationSeconds > 0 &&
-              ` · ${formatDuration(attempt.durationSeconds)}`}
+              `, ${formatDuration(attempt.durationSeconds)}`}
           </p>
         </div>
         <div className="text-right">

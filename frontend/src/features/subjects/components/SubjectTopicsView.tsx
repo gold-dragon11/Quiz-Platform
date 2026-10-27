@@ -53,13 +53,13 @@ export function SubjectTopicsView({
       <button
         type="button"
         onClick={onBack}
-        className="text-text-muted hover:text-text-primary focus-visible:ring-primary focus-visible:ring-offset-background -ml-1 inline-flex items-center gap-2 rounded text-xs tracking-[0.18em] uppercase transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
+        className="text-text-muted hover:text-text-primary focus-visible:ring-primary focus-visible:ring-offset-background -ml-1 inline-flex items-center gap-2 rounded text-xs transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
       >
         <span aria-hidden="true">←</span> Усі предмети
       </button>
 
       <header className="border-border mt-6 border-b pb-8">
-        <h1 className="text-text-primary font-display text-4xl font-bold tracking-[-0.01em] sm:text-5xl">
+        <h1 className="text-text-primary font-display text-4xl tracking-[-0.01em] sm:text-5xl">
           {subject.name}
         </h1>
         {subject.description && (
@@ -79,7 +79,7 @@ export function SubjectTopicsView({
       </header>
 
       <section className="mt-12">
-        <h2 className="text-text-muted mb-5 text-xs tracking-[0.18em] uppercase">Теми</h2>
+        <h2 className="section-title mb-5">Теми</h2>
 
         {!topics || topics.isPending ? (
           <div className="border-border flex flex-col border-t">

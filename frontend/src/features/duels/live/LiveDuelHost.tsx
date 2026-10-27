@@ -82,7 +82,7 @@ function IncomingInviteDialog(): React.JSX.Element | null {
     `${incoming.seconds} с на кожне`,
   ]
     .filter(Boolean)
-    .join(' · ');
+    .join(', ');
 
   return (
     <Modal

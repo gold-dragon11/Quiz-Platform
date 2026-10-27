@@ -47,11 +47,11 @@ function Standing({ data }: { data: OverallStatistics }): React.JSX.Element {
 
   return (
     <section aria-label="Рівень і досвід">
-      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Рівень {data.currentLevel}</p>
+      <p className="text-text-muted text-xs">Рівень {data.currentLevel}</p>
 
-      <p className="text-text-primary font-display mt-3 text-5xl font-bold lining-nums sm:text-6xl">
+      <p className="text-text-primary font-display mt-3 text-5xl lining-nums sm:text-6xl">
         {formatNumber(xp)}
-        <span className="text-text-muted ml-3 text-lg font-normal tracking-[0.18em] uppercase">XP</span>
+        <span className="text-text-muted ml-3 text-lg font-normal">XP</span>
       </p>
 
       <div className="bg-border mt-8 h-px w-full" aria-hidden="true">

@@ -90,7 +90,7 @@ export function QuestionBankPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Викладання" title="Банк питань" />
+      <PageHeader title="Банк питань" />
 
       {/* Two columns even on a phone. Stacked one per row, the four filters
           filled the entire first screen and the bank itself — the point of
@@ -147,9 +147,7 @@ export function QuestionBankPage(): React.JSX.Element {
           />
         ) : (
           <>
-            <p className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">
-              {bank.data.totalItems} питань
-            </p>
+            <p className="text-text-muted mb-6 text-xs">{bank.data.totalItems} питань</p>
             <ul className="divide-border border-border divide-y border-t">
               {bank.data.items.map((question) => (
                 <BankRow key={question.id} question={question} />
@@ -209,7 +207,7 @@ function BankRow({ question }: { question: BankQuestionWithOptions }): React.JSX
               {/* The key is marked with a word, not a colour alone: this screen
                   gets read quickly and often on a projector. */}
               <span
-                className={`mt-0.5 w-16 shrink-0 text-[11px] tracking-[0.14em] uppercase ${
+                className={`mt-0.5 w-16 shrink-0 text-[11px] ${
                   option.isCorrect ? 'text-success' : 'text-text-muted'
                 }`}
               >

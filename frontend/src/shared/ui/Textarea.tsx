@@ -35,7 +35,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={`bg-surface text-text-primary placeholder:text-text-muted w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 ${
             hasError
               ? 'border-error focus:ring-error'
-              : 'border-border focus:border-primary focus:ring-primary'
+              : 'border-field focus:border-primary focus:ring-primary'
           } ${className}`}
           {...props}
         />

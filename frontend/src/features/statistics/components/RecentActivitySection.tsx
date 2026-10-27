@@ -51,15 +51,15 @@ function ActivityRow({ item }: { item: RecentActivityItem }): React.JSX.Element 
       <div className="min-w-0">
         <p className="text-text-primary truncate text-sm">
           {item.topicName ?? item.subjectName}
-          {item.topicName && <span className="text-text-muted"> · {item.subjectName}</span>}
+          {item.topicName && <span className="text-text-muted">, {item.subjectName}</span>}
         </p>
         <p className="text-text-muted mt-1 text-xs">
-          {formatShortDate(item.completedAt)} · точність {formatPercent(item.accuracy)}
+          {formatShortDate(item.completedAt)}, точність {formatPercent(item.accuracy)}
         </p>
       </div>
-      <p className="text-text-secondary font-display shrink-0 text-base font-bold lining-nums">
+      <p className="text-text-secondary font-display shrink-0 text-base lining-nums">
         +{item.xpEarned}
-        <span className="text-text-muted ml-1.5 text-xs font-normal tracking-[0.18em] uppercase">XP</span>
+        <span className="text-text-muted ml-1.5 text-xs font-normal">XP</span>
       </p>
     </li>
   );

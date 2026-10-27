@@ -119,7 +119,7 @@ export function UsersSection(): React.JSX.Element {
         <>
           <div className="overflow-x-auto">
             <table className="border-border w-full border-t text-sm">
-              <thead className="text-text-muted border-border border-b text-left text-xs uppercase">
+              <thead className="text-text-muted border-border border-b text-left text-xs">
                 <tr>
                   <th className="px-4 py-3 font-medium">Обліковий запис</th>
                   <th className="px-4 py-3 font-medium">Роль</th>

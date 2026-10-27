@@ -57,16 +57,16 @@ function SubjectRow({ subject }: { subject: SubjectStatistics }): React.JSX.Elem
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-6">
       <div className="min-w-0">
-        <p className="text-text-primary font-display text-xl font-bold sm:text-2xl">{subject.subjectName}</p>
+        <p className="text-text-primary font-display text-xl sm:text-2xl">{subject.subjectName}</p>
         <p className="text-text-muted mt-2 text-sm">
           {formatNumber(subject.completedQuizzes)}{' '}
-          {pluralUk(subject.completedQuizzes, 'тест', 'тести', 'тестів')} ·{' '}
+          {pluralUk(subject.completedQuizzes, 'тест', 'тести', 'тестів')},{' '}
           {formatNumber(subject.totalQuestions)}{' '}
-          {pluralUk(subject.totalQuestions, 'питання', 'питання', 'питань')} ·{' '}
-          {formatNumber(subject.earnedXP)} XP
+          {pluralUk(subject.totalQuestions, 'питання', 'питання', 'питань')}, {formatNumber(subject.earnedXP)}{' '}
+          XP
         </p>
       </div>
-      <p className="text-text-primary font-display shrink-0 text-2xl font-bold lining-nums sm:text-3xl">
+      <p className="text-text-primary font-display shrink-0 text-2xl lining-nums sm:text-3xl">
         {formatPercent(subject.averageAccuracy)}
       </p>
     </li>

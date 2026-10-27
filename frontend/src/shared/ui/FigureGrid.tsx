@@ -43,7 +43,7 @@ export function FigureGrid({ figures, className = '', rule = 'both' }: FigureGri
           key={figure.label}
           className="border-border flex min-w-0 flex-col px-2.5 py-8 first:border-l-0 first:pl-0 sm:border-l sm:px-8"
         >
-          <dd className="text-text-primary font-display order-1 text-4xl font-bold lining-nums sm:text-5xl">
+          <dd className="text-text-primary font-display order-1 text-4xl lining-nums sm:text-5xl">
             {figure.value}
           </dd>
           {/* Tighter and smaller below `sm`. At 390px three columns leave each
@@ -51,9 +51,7 @@ export function FigureGrid({ figures, className = '', rule = 'both' }: FigureGri
               tracking needs more than that — it overflowed into the column
               beside it. The letterspacing is a house style, not a measurement,
               so it is the part that gives. */}
-          <dt className="text-text-muted order-2 mt-3 text-[0.625rem] tracking-[0.1em] break-words uppercase sm:text-xs sm:tracking-[0.18em]">
-            {figure.label}
-          </dt>
+          <dt className="text-text-muted order-2 mt-3 text-xs break-words sm:text-xs">{figure.label}</dt>
           {figure.hint && <p className="text-text-muted order-3 mt-2 text-xs">{figure.hint}</p>}
         </div>
       ))}

@@ -130,7 +130,7 @@ export function SubjectsBrowserPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto w-full max-w-4xl">
-      <PageHeader eyebrow="Каталог" title="Предмети" />
+      <PageHeader title="Предмети" />
 
       <div className="mt-10 max-w-md">
         <Input

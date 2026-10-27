@@ -56,7 +56,7 @@ function ProfileDetail({
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        eyebrow={
+        meta={
           student.leftAt
             ? `У групі з ${formatShortDate(student.joinedAt)} до ${formatShortDate(student.leftAt)}`
             : `У групі з ${formatShortDate(student.joinedAt)}`
@@ -65,7 +65,7 @@ function ProfileDetail({
       />
 
       <section className="mt-12">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Ваші завдання</h2>
+        <h2 className="section-title mb-6">Ваші завдання</h2>
         <FigureGrid
           figures={[
             {
@@ -84,7 +84,7 @@ function ProfileDetail({
 
         {profile.weakestTopics.length > 0 && (
           <div className="mt-12">
-            <h3 className="text-text-muted mb-4 text-xs tracking-[0.18em] uppercase">Найслабші теми</h3>
+            <h3 className="section-title mb-4">Найслабші теми</h3>
             <TopicPerformanceList topics={profile.weakestTopics} />
           </div>
         )}
@@ -117,7 +117,7 @@ function ProfileDetail({
 function SelfStudySection({ summary }: { summary: SelfStudySummary }): React.JSX.Element {
   return (
     <section className="mt-16">
-      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Самостійна практика</h2>
+      <h2 className="section-title">Самостійна практика</h2>
 
       {!summary.visible ? (
         <p className="border-border text-text-secondary mt-6 max-w-2xl border-l pl-5 text-sm">
@@ -162,9 +162,7 @@ function SelfStudySection({ summary }: { summary: SelfStudySummary }): React.JSX
 
           {summary.topics.length > 0 && (
             <div className="mt-12">
-              <h3 className="text-text-muted mb-4 text-xs tracking-[0.18em] uppercase">
-                Теми самостійної практики
-              </h3>
+              <h3 className="section-title mb-4">Теми самостійної практики</h3>
               <TopicPerformanceList topics={summary.topics} />
             </div>
           )}

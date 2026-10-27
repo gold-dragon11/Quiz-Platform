@@ -21,7 +21,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           ref={ref}
           id={checkboxId}
           type="checkbox"
-          className={`accent-primary border-border bg-surface mt-0.5 size-4 shrink-0 rounded outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
+          className={`accent-primary border-field bg-surface mt-0.5 size-4 shrink-0 rounded outline-none focus-visible:ring-2 focus-visible:ring-primary ${className}`}
           {...props}
         />
         <span className="text-text-secondary text-sm">{label}</span>

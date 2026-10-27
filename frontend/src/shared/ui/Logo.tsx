@@ -16,7 +16,7 @@ interface LogoProps {
 export function Logo({ className = '' }: LogoProps): React.JSX.Element {
   return (
     <span className={`inline-flex items-center ${className}`}>
-      <span className="bg-primary flex h-8 items-center justify-center rounded-lg px-2.5 text-sm font-bold tracking-tight text-white">
+      <span className="bg-primary flex h-8 items-center justify-center rounded-lg px-2.5 text-sm font-bold tracking-tight text-on-primary">
         L&amp;S
       </span>
     </span>

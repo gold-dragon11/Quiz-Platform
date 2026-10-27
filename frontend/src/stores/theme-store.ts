@@ -21,8 +21,8 @@ export const THEME_STORAGE_KEY = 'quix.theme';
 
 /** The choices offered in settings, in the order they are shown. */
 export const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'dark', label: 'Темна' },
   { value: 'light', label: 'Світла' },
+  { value: 'dark', label: 'Темна' },
   { value: 'system', label: 'Як у системі' },
 ];
 
@@ -34,8 +34,9 @@ interface ThemeState {
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
-      // Dark is the platform's own look; light is a deliberate choice.
-      preference: 'dark',
+      // Light — the ecru paper of the Loom system — is the platform's own
+      // look; dark is the same system re-derived, a deliberate choice.
+      preference: 'light',
       setPreference: (preference) => set({ preference }),
     }),
     { name: THEME_STORAGE_KEY },

@@ -84,7 +84,7 @@ function GroupBlock({
   return (
     <section>
       <div className="border-border flex items-baseline justify-between gap-4 border-b pb-3">
-        <h2 className="text-text-primary font-display text-2xl font-bold">
+        <h2 className="text-text-primary font-display text-2xl">
           <Link
             to={generatePath(ROUTES.teacherGroup, { groupId: group.id })}
             className="hover:text-primary transition-colors"
@@ -92,7 +92,7 @@ function GroupBlock({
             {group.name}
           </Link>
         </h2>
-        <p className="text-text-muted shrink-0 text-xs tracking-[0.18em] uppercase">{group.subject.name}</p>
+        <p className="text-text-muted shrink-0 text-xs">{group.subject.name}</p>
       </div>
 
       {loading ? (
@@ -131,7 +131,7 @@ function GroupBlock({
 
           {data.topics.length > 0 ? (
             <div className="mt-12">
-              <h3 className="text-text-muted mb-4 text-xs tracking-[0.18em] uppercase">Найслабші теми</h3>
+              <h3 className="section-title mb-4">Найслабші теми</h3>
               <TopicPerformanceList topics={data.topics} />
               {/* The action belongs here, next to the evidence for it: the
                   MISTAKES draw builds a paper from exactly these topics. */}

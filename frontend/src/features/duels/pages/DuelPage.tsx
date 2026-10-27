@@ -73,13 +73,13 @@ function DuelDetail({ duel, userId }: { duel: DuelView; userId: string }): React
     });
   }
 
-  const paper = `${duel.subject.name}${duel.topic ? ` · ${duel.topic.name}` : ''} · ${
+  const paper = `${duel.subject.name}${duel.topic ? `, ${duel.topic.name}` : ''}, ${
     duel.questionCount
   } ${pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}`;
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow={paper} title={`Дуель з ${playerName(them)}`} />
+      <PageHeader meta={paper} title={`Дуель з ${playerName(them)}`} />
 
       <ActiveQuizBanner className="mt-8" />
 

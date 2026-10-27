@@ -46,7 +46,7 @@ export function ReviewLadder({ rungs, cleared }: ReviewLadderProps): React.JSX.E
               draws a staircase instead of four numbers on one baseline. */}
           <div className="border-border border-t pt-4" style={{ paddingBottom: `${index * 30}px` }}>
             <span
-              className={`font-display block text-3xl font-bold lining-nums sm:text-4xl ${
+              className={`font-display block text-3xl lining-nums sm:text-4xl ${
                 step.terminal ? 'text-success' : 'text-text-primary'
               } ${step.count === 0 ? 'opacity-35' : ''}`}
             >
@@ -56,9 +56,7 @@ export function ReviewLadder({ rungs, cleared }: ReviewLadderProps): React.JSX.E
                 leave about 85px and the label needed more, so it ran off the
                 right edge. The letterspacing is decoration and gives way
                 first; it comes back at `sm`. */}
-            <span className="text-text-muted mt-2 block text-[10px] tracking-[0.04em] uppercase sm:text-[11px] sm:tracking-[0.14em]">
-              {step.label}
-            </span>
+            <span className="text-text-muted mt-2 block text-xs sm:text-[11px]">{step.label}</span>
           </div>
         </li>
       ))}

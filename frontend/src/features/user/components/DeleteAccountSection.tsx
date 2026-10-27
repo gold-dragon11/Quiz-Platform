@@ -44,7 +44,7 @@ export function DeleteAccountSection(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-error text-xs tracking-[0.18em] uppercase">Видалення акаунта</h2>
+      <h2 className="section-title text-error">Видалення акаунта</h2>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">
         Дію не можна скасувати. Ваша електронна адреса та імʼя користувача лишаються зарезервованими назавжди
         — зареєструватися з ними знову не вийде. Історія навчання зберігається, але доступу до неї у вас

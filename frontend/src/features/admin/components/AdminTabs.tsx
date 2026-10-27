@@ -29,7 +29,7 @@ export function AdminTabs({ active, onChange }: AdminTabsProps): React.JSX.Eleme
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
-            className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-xs tracking-[0.18em] uppercase outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`-mb-px shrink-0 border-b-2 px-4 py-3 text-xs outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
               selected
                 ? 'border-primary text-text-primary'
                 : 'text-text-muted hover:text-text-secondary border-transparent'

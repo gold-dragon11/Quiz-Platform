@@ -104,13 +104,13 @@ describe('ThemeProvider', () => {
   it('updates the colour of the phone’s address bar too', () => {
     const meta = document.createElement('meta');
     meta.setAttribute('name', 'theme-color');
-    meta.setAttribute('content', '#0b0a0f');
+    meta.setAttribute('content', '#f4f0e6');
     document.head.append(meta);
-    useThemeStore.setState({ preference: 'light' });
+    useThemeStore.setState({ preference: 'dark' });
 
     render(<ThemeProvider>ok</ThemeProvider>);
 
-    expect(meta.getAttribute('content')).toBe('#f7f6f9');
+    expect(meta.getAttribute('content')).toBe('#0f0d08');
     meta.remove();
   });
 });
@@ -161,10 +161,10 @@ describe('AppearanceSection', () => {
       </ThemeProvider>,
     );
 
-    screen.getByRole('radio', { name: /Темна/ }).focus();
+    screen.getByRole('radio', { name: /Світла/ }).focus();
     await user.keyboard('{ArrowRight}');
 
-    expect(useThemeStore.getState().preference).toBe('light');
-    expect(screen.getByRole('radio', { name: /Світла/ })).toHaveFocus();
+    expect(useThemeStore.getState().preference).toBe('dark');
+    expect(screen.getByRole('radio', { name: /Темна/ })).toHaveFocus();
   });
 });

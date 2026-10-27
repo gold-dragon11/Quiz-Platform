@@ -12,8 +12,8 @@ import type { ResolvedTheme } from '@/stores/theme-store';
 
 /** The address bar and task switcher on a phone, which read this meta tag. */
 const BAR_COLOR: Record<ResolvedTheme, string> = {
-  dark: '#0b0a0f',
-  light: '#f7f6f9',
+  dark: '#0f0d08',
+  light: '#f4f0e6',
 };
 
 /**

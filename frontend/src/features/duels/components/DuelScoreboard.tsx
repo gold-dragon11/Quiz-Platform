@@ -77,12 +77,12 @@ function Side({
       {/* Not uppercased: one side of this pair is a person's chosen
           username, and shouting it back at them in capitals is both ugly and
           wrong — usernames are not ours to re-case. */}
-      <p className="text-text-muted text-xs tracking-[0.14em]">{caption}</p>
+      <p className="text-text-muted text-xs">{caption}</p>
 
       {player.score ? (
         <>
           <p
-            className={`font-display mt-4 text-5xl leading-none font-bold lining-nums sm:text-6xl ${
+            className={`font-display mt-4 text-5xl leading-none lining-nums sm:text-6xl ${
               highlight ? 'text-primary' : 'text-text-primary'
             }`}
           >
@@ -95,16 +95,14 @@ function Side({
             {formatPercent(player.score.accuracy)}
             {player.score.durationSeconds !== null &&
               player.score.durationSeconds > 0 &&
-              ` · ${formatDuration(player.score.durationSeconds)}`}
+              `, ${formatDuration(player.score.durationSeconds)}`}
           </p>
         </>
       ) : (
         <>
           {/* The withheld score keeps its slot at the same size, so the sheet
               does not jump when the second player finishes. */}
-          <p className="text-text-muted font-display mt-4 text-5xl leading-none font-bold opacity-25 sm:text-6xl">
-            —
-          </p>
+          <p className="text-text-muted font-display mt-4 text-5xl leading-none opacity-25 sm:text-6xl">—</p>
           <p className="text-text-muted mt-3 text-sm">{state}</p>
         </>
       )}

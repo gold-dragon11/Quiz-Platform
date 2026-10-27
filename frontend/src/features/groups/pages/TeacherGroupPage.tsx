@@ -83,7 +83,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow={group.subject.name} title={group.name} />
+      <PageHeader meta={group.subject.name} title={group.name} />
 
       {archived && (
         <Alert variant="warning" className="mt-8">
@@ -146,7 +146,7 @@ function GroupDetail({ group }: { group: TeacherGroup }): React.JSX.Element {
       </div>
 
       <section className="mt-16">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Учні</h2>
+        <h2 className="section-title mb-6">Учні</h2>
         <GroupRoster groupId={group.id} onRemove={setRemoving} />
       </section>
 

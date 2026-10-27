@@ -24,10 +24,10 @@ export function ProgressBar({ value, label, className = '' }: ProgressBarProps):
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label}
-      className={`bg-surface-elevated h-2 w-full overflow-hidden rounded-full ${className}`}
+      className={`bg-surface-elevated h-2 w-full overflow-hidden ${className}`}
     >
       <motion.div
-        className="bg-primary h-full rounded-full"
+        className="bg-primary h-full"
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}
         transition={{ duration: DURATION.slow, ease: EASE.out }}

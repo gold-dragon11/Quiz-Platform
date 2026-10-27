@@ -167,7 +167,7 @@ export function QuizStartPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader eyebrow="Тренування" title="Тест" />
+      <PageHeader title="Тест" />
 
       <ActiveQuizBanner className="mt-10" />
 

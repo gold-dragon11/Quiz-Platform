@@ -37,9 +37,7 @@ export function AuthCard({ title, subtitle, footer, children }: AuthCardProps): 
       </Link>
 
       <header className="border-border mt-10 border-b pb-6">
-        <h1 className="text-text-primary font-display text-3xl font-bold tracking-[-0.01em] sm:text-4xl">
-          {title}
-        </h1>
+        <h1 className="text-text-primary font-display text-3xl tracking-[-0.01em] sm:text-4xl">{title}</h1>
         {subtitle && <p className="text-text-secondary mt-3 text-sm text-pretty">{subtitle}</p>}
       </header>
 

@@ -28,7 +28,7 @@ export function GroupAssignments({ groupId, archived }: GroupAssignmentsProps): 
   return (
     <section className="mt-16">
       <div className="mb-6 flex items-center justify-between gap-4">
-        <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Завдання</h2>
+        <h2 className="section-title">Завдання</h2>
         {!archived && (
           <Button size="sm" onClick={() => navigate(generatePath(ROUTES.teacherAssignmentNew, { groupId }))}>
             Видати завдання
@@ -78,16 +78,14 @@ function AssignmentRow({ assignment }: { assignment: TeacherAssignment }): React
           <p className="text-text-muted mt-1 text-xs">
             {assignment.mockExam
               ? `пробний НМТ, ${assignment.mockExam.taskCount} ${pluralUk(assignment.mockExam.taskCount, 'завдання', 'завдання', 'завдань')}`
-              : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')}`}{' '}
-            · дедлайн {formatShortDate(assignment.dueAt)}
-            {overdue && ' · минув'}
+              : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')}`}
+            , дедлайн {formatShortDate(assignment.dueAt)}
+            {overdue && ', минув'}
           </p>
         </div>
         <div className="shrink-0 text-right">
           <p
-            className={`font-display text-2xl font-bold lining-nums ${
-              complete ? 'text-success' : 'text-text-primary'
-            }`}
+            className={`font-display text-2xl lining-nums ${complete ? 'text-success' : 'text-text-primary'}`}
           >
             {assignment.submittedCount}
             <span className="text-text-muted text-base font-normal">/{assignment.targetCount}</span>

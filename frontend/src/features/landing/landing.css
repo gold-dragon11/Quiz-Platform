@@ -24,6 +24,35 @@
   --lp-top-b: #17161e;
   --lp-gutter: 24px;
   --lp-nav: 80px;
+
+  /*
+   * The landing keeps its previous look until its own redesign lands: the
+   * product moved to the Loom system (src/styles/globals.css), and these are
+   * the tokens the page was drawn with. Scoped here so the product never sees
+   * them; removed together with the old page.
+   */
+  --color-background: #0b0a0f;
+  --color-surface: #131219;
+  --color-surface-elevated: #1b1a23;
+  --color-surface-overlay: #1b1a23;
+  --color-border: #272631;
+  --color-border-subtle: #34333f;
+  --color-text-primary: #f7f7fa;
+  --color-text-secondary: #c3c2cf;
+  --color-text-muted: #8b8a9b;
+  --color-primary: #7c3aed;
+  --color-primary-hover: #8b5cf6;
+  --color-primary-active: #6d28d9;
+  --color-on-primary: #ffffff;
+  --color-focus: #7c3aed;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
 }
 @media (min-width: 640px) {
   .lp {

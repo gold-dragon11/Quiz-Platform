@@ -59,7 +59,7 @@ export function MistakeReviewPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Інтервальне повторення" title="Повторення помилок" />
+      <PageHeader title="Повторення помилок" />
 
       <ActiveQuizBanner className="mt-8" />
 
@@ -81,10 +81,10 @@ export function MistakeReviewPage(): React.JSX.Element {
               with the action beside it rather than buried under a panel. */}
           <div className="border-border mt-12 flex flex-col gap-8 border-b pb-10 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-text-primary font-display text-7xl leading-none font-bold lining-nums sm:text-8xl">
+              <p className="text-text-primary font-display text-7xl leading-none lining-nums sm:text-8xl">
                 {formatNumber(due)}
               </p>
-              <p className="text-text-muted mt-4 text-xs tracking-[0.18em] uppercase">
+              <p className="text-text-muted mt-4 text-xs">
                 {due === 1 ? 'питання на сьогодні' : 'питань на сьогодні'}
               </p>
             </div>
@@ -105,7 +105,7 @@ export function MistakeReviewPage(): React.JSX.Element {
           </div>
 
           <section className="mt-16">
-            <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Сходинки</h2>
+            <h2 className="section-title">Сходинки</h2>
             <div className="mt-8">
               <ReviewLadder rungs={summary.data.ladder} cleared={summary.data.cleared} />
             </div>

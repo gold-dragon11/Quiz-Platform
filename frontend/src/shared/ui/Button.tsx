@@ -13,12 +13,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
+/*
+ * Loom's controls: square, flat, one filled primary. The secondary is a
+ * transparent square with an edge in the field colour (3:1 against every
+ * surface) that takes the ink on hover; nothing lifts, glows or rounds.
+ */
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white hover:bg-primary-hover active:bg-primary-active',
-  secondary: 'bg-surface-elevated text-text-primary border border-border hover:border-border-subtle',
-  ghost: 'bg-transparent text-text-secondary hover:text-text-primary',
-  outline: 'bg-transparent text-text-primary border border-border hover:border-border-subtle',
-  danger: 'bg-error text-white hover:opacity-90',
+  primary: 'bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-active',
+  secondary:
+    'bg-transparent text-text-primary border border-field hover:border-text-primary active:bg-surface-elevated',
+  ghost: 'bg-transparent text-text-secondary hover:text-text-primary active:text-text-primary',
+  outline:
+    'bg-transparent text-text-primary border border-field hover:border-text-primary active:bg-surface-elevated',
+  danger: 'bg-error text-on-primary hover:opacity-90 active:opacity-80',
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {
@@ -56,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={disabled || isLoading}
         aria-busy={isLoading}
-        className={`focus-visible:ring-primary inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT_CLASS[variant]} ${SIZE_CLASS[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
+        className={`focus-visible:ring-focus inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 ${VARIANT_CLASS[variant]} ${SIZE_CLASS[size]} ${fullWidth ? 'w-full' : ''} ${className}`}
         {...props}
       >
         {isLoading && <Spinner />}

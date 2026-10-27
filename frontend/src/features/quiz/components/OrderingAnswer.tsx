@@ -59,16 +59,14 @@ export function OrderingAnswer({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-text-muted text-xs tracking-[0.14em] uppercase">
-        Розставте в правильній послідовності
-      </p>
+      <p className="text-text-muted text-xs">Розставте в правильній послідовності</p>
       {ordered.map((option, index) => {
         const current = positions[option.id] ?? 0;
         return (
           <div key={option.id} className="border-border flex items-start gap-3 border-b pb-3 last:border-b-0">
             <span
               aria-hidden="true"
-              className="text-text-muted border-border mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full border text-sm"
+              className="text-text-muted border-field mt-0.5 flex size-7 shrink-0 items-center justify-center border text-sm"
             >
               {letters[index] ?? index + 1}
             </span>
@@ -95,7 +93,7 @@ export function OrderingAnswer({
                     onClick={() => choose(option.id, active ? 0 : position)}
                     className={`focus-visible:ring-primary size-8 rounded-lg text-sm outline-none transition-colors focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
                       active
-                        ? 'bg-primary font-medium text-white'
+                        ? 'bg-primary font-medium text-on-primary'
                         : 'border-border text-text-muted hover:bg-surface-elevated border'
                     }`}
                   >

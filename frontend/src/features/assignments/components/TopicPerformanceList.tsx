@@ -22,7 +22,7 @@ export function TopicPerformanceList({ topics }: { topics: TopicPerformance[] })
             <div className="flex items-baseline justify-between gap-4">
               <p className="text-text-primary min-w-0 truncate text-sm">{topic.topicName}</p>
               <p
-                className={`font-display shrink-0 text-lg font-bold lining-nums ${
+                className={`font-display shrink-0 text-lg lining-nums ${
                   trouble ? 'text-warning' : 'text-text-primary'
                 }`}
               >

@@ -25,7 +25,7 @@ export function ServerErrorPage({
         <button
           type="button"
           onClick={onAction}
-          className="bg-primary hover:bg-primary-hover rounded-md px-4 py-2 text-sm font-medium text-white transition-colors"
+          className="bg-primary hover:bg-primary-hover rounded-md px-4 py-2 text-sm font-medium text-on-primary transition-colors"
         >
           {actionLabel}
         </button>

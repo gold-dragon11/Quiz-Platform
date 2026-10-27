@@ -83,10 +83,10 @@ export function SubmissionList({
               </p>
               <p className="text-text-muted mt-1 text-xs">
                 {STATUS_LABEL[row.status]}
-                {row.score && ` · ${formatShortDate(row.score.completedAt)}`}
-                {row.score?.late && ' · із запізненням'}
-                {row.attempts > 1 && ` · спроб: ${row.attempts}`}
-                {!row.student.stillInGroup && ' · уже не в групі'}
+                {row.score && `, ${formatShortDate(row.score.completedAt)}`}
+                {row.score?.late && ', із запізненням'}
+                {row.attempts > 1 && `, спроб: ${row.attempts}`}
+                {!row.student.stillInGroup && ', уже не в групі'}
               </p>
             </div>
 
@@ -95,7 +95,7 @@ export function SubmissionList({
                 // A mock is read the exam's way: the 100–200 score, or the
                 // test points when the threshold was not reached.
                 <>
-                  <p className="text-text-primary font-display text-xl font-bold lining-nums">
+                  <p className="text-text-primary font-display text-xl lining-nums">
                     {row.score.scaledScore ?? row.score.testPoints}
                     {row.score.scaledScore === null && (
                       <span className="text-text-muted text-sm font-normal">/{row.score.maxTestPoints}</span>
@@ -109,14 +109,14 @@ export function SubmissionList({
                 </>
               ) : row.score ? (
                 <>
-                  <p className="text-text-primary font-display text-xl font-bold lining-nums">
+                  <p className="text-text-primary font-display text-xl lining-nums">
                     {row.score.correctAnswers}
                     <span className="text-text-muted text-sm font-normal">/{row.score.totalQuestions}</span>
                   </p>
                   <p className="text-text-muted mt-1 text-xs">{formatPercent(row.score.accuracy)}</p>
                 </>
               ) : (
-                <p className="text-text-muted font-display text-xl font-bold opacity-30">—</p>
+                <p className="text-text-muted font-display text-xl opacity-30">—</p>
               )}
             </div>
           </Link>

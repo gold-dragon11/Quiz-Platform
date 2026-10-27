@@ -60,7 +60,7 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
   return (
     <div className="mx-auto max-w-3xl">
       <PageHeader
-        eyebrow={`${assignment.group.name} · ${assignment.subject.name}`}
+        meta={`${assignment.group.name}, ${assignment.subject.name}`}
         title={assignment.title}
         lead={assignment.description ?? undefined}
       />
@@ -77,7 +77,7 @@ function AssignmentDetail({ assignment }: { assignment: StudentAssignment }): Re
             ? {
                 value: assignment.mockExam.taskCount,
                 label: pluralUk(assignment.mockExam.taskCount, 'завдання', 'завдання', 'завдань'),
-                hint: `пробний НМТ · ${assignment.mockExam.minutes} хв на весь зошит`,
+                hint: `пробний НМТ, ${assignment.mockExam.minutes} хв на весь зошит`,
               }
             : {
                 value: assignment.questionCount,

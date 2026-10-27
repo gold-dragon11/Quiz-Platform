@@ -118,8 +118,8 @@ const nameOf = (player: LivePlayerView): string =>
 function Scoreline({ game }: { game: LiveGameView }): React.JSX.Element {
   return (
     <header className="border-border border-b pb-6">
-      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">
-        {game.subject.name} · {game.secondsPerQuestion} с на питання
+      <p className="text-text-muted text-xs">
+        {game.subject.name}, {game.secondsPerQuestion} с на питання
       </p>
       <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-end gap-4">
         <div className="min-w-0">
@@ -127,7 +127,7 @@ function Scoreline({ game }: { game: LiveGameView }): React.JSX.Element {
           <p className="text-text-muted text-xs">ви</p>
         </div>
         <p
-          className="font-display text-text-primary text-4xl leading-none font-bold tabular-nums"
+          className="font-display text-text-primary text-4xl leading-none tabular-nums"
           aria-label={`Рахунок ${game.me.score} на ${game.opponent.score}`}
         >
           {game.me.score}
@@ -150,7 +150,7 @@ function Countdown({ game }: { game: LiveGameView }): React.JSX.Element {
 
   return (
     <section className="py-20 text-center">
-      <p className="font-display text-text-primary text-7xl font-bold tabular-nums" aria-live="polite">
+      <p className="font-display text-text-primary text-7xl tabular-nums" aria-live="polite">
         {Math.max(1, left)}
       </p>
       <p className="text-text-muted mt-6 text-sm">
@@ -374,9 +374,7 @@ function Finished({ game }: { game: LiveGameView }): React.JSX.Element | null {
   return (
     <section className="py-12">
       <h1
-        className={`font-display text-5xl font-bold ${
-          result.outcome === 'WIN' ? 'text-primary' : 'text-text-primary'
-        }`}
+        className={`font-display text-5xl ${result.outcome === 'WIN' ? 'text-primary' : 'text-text-primary'}`}
       >
         {HEADLINE[result.outcome]}
       </h1>
@@ -469,9 +467,7 @@ function QuestionBreakdown({ game }: { game: LiveGameView }): React.JSX.Element 
   return (
     <div className="mt-10 overflow-x-auto">
       <table className="w-full min-w-[22rem] text-sm">
-        <caption className="text-text-muted mb-3 text-left text-xs tracking-[0.18em] uppercase">
-          По питаннях
-        </caption>
+        <caption className="text-text-muted mb-3 text-left text-xs">По питаннях</caption>
         <thead>
           <tr className="text-text-muted border-border border-b text-left">
             <th scope="col" className="py-2 pr-4 font-normal">

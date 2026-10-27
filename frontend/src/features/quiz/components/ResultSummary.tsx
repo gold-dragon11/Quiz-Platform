@@ -20,8 +20,8 @@ export function ResultSummary({ result }: { result: QuizResultSummary }): React.
     <div>
       <div className="border-border flex flex-wrap items-end justify-between gap-6 border-b pb-8">
         <div>
-          <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Тест пройдено</p>
-          <p className="text-text-primary font-display mt-3 text-6xl leading-none font-bold lining-nums sm:text-7xl">
+          <p className="text-text-muted text-xs">Тест пройдено</p>
+          <p className="text-text-primary font-display mt-3 text-6xl leading-none lining-nums sm:text-7xl">
             {formatPercent(result.accuracy)}
           </p>
           <p className="text-text-secondary mt-4 text-sm">

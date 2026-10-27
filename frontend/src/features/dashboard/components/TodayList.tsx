@@ -69,7 +69,7 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
       key: `overdue-${assignment.id}`,
       to: generatePath(ROUTES.assignment, { assignmentId: assignment.id }),
       title: assignment.title,
-      detail: `${assignment.group.name} · дедлайн минув ${formatShortDate(assignment.dueAt)} — здати все одно можна`,
+      detail: `${assignment.group.name}, дедлайн минув ${formatShortDate(assignment.dueAt)} — здати все одно можна`,
       urgency: 'now',
     });
   }
@@ -82,7 +82,7 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
       key: `open-${assignment.id}`,
       to: generatePath(ROUTES.assignment, { assignmentId: assignment.id }),
       title: assignment.title,
-      detail: `${assignment.group.name} · до ${formatShortDate(assignment.dueAt)}`,
+      detail: `${assignment.group.name}, до ${formatShortDate(assignment.dueAt)}`,
       urgency: 'now',
     });
   }
@@ -109,7 +109,7 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
         stance === 'INVITE_RECEIVED'
           ? `${playerName(theirSide(duel, userId))} викликає на дуель`
           : `Дуель з ${playerName(theirSide(duel, userId))} — ваш хід`,
-      detail: `${duel.subject.name} · ${duel.questionCount} ${pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}`,
+      detail: `${duel.subject.name}, ${duel.questionCount} ${pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}`,
       urgency: 'soon',
     });
   }

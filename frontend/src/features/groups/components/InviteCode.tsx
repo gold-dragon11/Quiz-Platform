@@ -48,9 +48,9 @@ export function InviteCode({
 
   return (
     <div className="border-border border-y py-8">
-      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Код запрошення</p>
+      <p className="text-text-muted text-xs">Код запрошення</p>
       <div className="mt-4 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <p className="text-text-primary font-display text-4xl font-bold tracking-[0.2em] lining-nums sm:text-5xl">
+        <p className="text-text-primary font-display text-4xl tracking-[0.2em] lining-nums sm:text-5xl">
           {code}
         </p>
         <div className="flex gap-3">

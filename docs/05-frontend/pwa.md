@@ -28,7 +28,7 @@ and all three are produced at build time by `vite-plugin-pwa`, configured in
 | `start_url` | `/dashboard` | Whoever installed this already read the landing page. Signed-out readers are sent to `/login` by the route guard, as they would be anywhere. |
 | `display` | `standalone` | No address bar. |
 | `orientation` | `portrait` | Every screen is designed down to 390px; a rotated phone gains nothing. |
-| `theme_color`, `background_color` | `#0b0a0f` | The splash screen and the task switcher, painted before any CSS has run. Dark because dark is the default theme — the light theme repaints the address bar at runtime through the `theme-color` meta tag. |
+| `theme_color`, `background_color` | `#f4f0e6` | The splash screen and the task switcher, painted before any CSS has run. The ecru paper, because light is the default theme (decision 41); the dark theme repaints the address bar at runtime through the `theme-color` meta tag. |
 | `lang` | `uk` | The interface is Ukrainian-only. |
 
 ## Icons

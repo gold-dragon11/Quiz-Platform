@@ -53,12 +53,10 @@ export function StudentGroupsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Навчання" title="Мої групи" />
+      <PageHeader title="Мої групи" />
 
       <section className="mt-12">
-        <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-          Приєднатися
-        </h2>
+        <h2 className="section-title border-border border-b pb-3">Приєднатися</h2>
 
         <form onSubmit={submit} noValidate className="mt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
@@ -70,10 +68,6 @@ export function StudentGroupsPage(): React.JSX.Element {
                 maxLength={32}
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                // The wide spacing is for the code once it is typed; the hint
-                // is a sentence and must not inherit it, or it runs past the
-                // edge of the field.
-                className="tracking-[0.2em] uppercase placeholder:normal-case placeholder:tracking-normal"
               />
             </div>
             <Button type="submit" disabled={!code.trim()} isLoading={join.isPending}>
@@ -92,7 +86,7 @@ export function StudentGroupsPage(): React.JSX.Element {
       </section>
 
       <section className="mt-16">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Ваші групи</h2>
+        <h2 className="section-title mb-6">Ваші групи</h2>
 
         {groups.isPending ? (
           <div className="flex flex-col gap-2">
@@ -114,7 +108,7 @@ export function StudentGroupsPage(): React.JSX.Element {
                   <p className="text-text-primary font-medium break-words">{group.name}</p>
                   <p className="text-text-muted mt-1 text-xs">
                     {group.subject.name}
-                    {group.teacherName && ` · ${group.teacherName}`} · з {formatShortDate(group.joinedAt)}
+                    {group.teacherName && `, ${group.teacherName}`}, з {formatShortDate(group.joinedAt)}
                   </p>
                 </div>
                 {/* Not «Вийти»: that word already means signing out of the

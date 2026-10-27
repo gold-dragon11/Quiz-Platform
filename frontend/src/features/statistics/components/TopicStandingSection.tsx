@@ -208,10 +208,10 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
               (198…» on a phone, and the topic name is the thing the reader
               navigates by — there is nowhere else on this row to learn it. */}
           <p className="text-text-primary break-words">{standing.topicName}</p>
-          <p className="text-text-muted mt-1 text-xs tracking-[0.18em] uppercase">{standing.subjectName}</p>
+          <p className="text-text-muted mt-1 text-xs">{standing.subjectName}</p>
         </div>
         <p
-          className={`font-display shrink-0 text-2xl font-bold lining-nums ${
+          className={`font-display shrink-0 text-2xl lining-nums ${
             trouble ? 'text-warning' : 'text-text-primary'
           }`}
         >
@@ -231,7 +231,7 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
           {standing.accuracy !== null && (
             <>
               {standing.answered} {pluralUk(standing.answered, 'відповідь', 'відповіді', 'відповідей')}
-              {standing.mistakeCount > 0 && ' · '}
+              {standing.mistakeCount > 0 && ', '}
             </>
           )}
           {standing.mistakeCount > 0 && (
