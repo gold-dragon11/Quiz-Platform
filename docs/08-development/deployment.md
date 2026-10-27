@@ -298,6 +298,20 @@ database (`quix-postgres`) and wires `DATABASE_URL` to it. Production does not
 use it: the live data is on Neon, and `DATABASE_URL` is set by hand on the
 Render service.
 
+The live API service was not created from the blueprint either. It was made by
+hand in the dashboard, and differs from the file in three ways that matter:
+
+| | Blueprint | Live service (checked 27.10.2026) |
+| --- | --- | --- |
+| Name | `quix-api` | `ls-backend` |
+| Region | `ohio`, next to the database | `oregon` — every query crosses the continent (§17.6) |
+| Health check | `/health` | none: set it under Settings → Health Checks |
+
+Without a health check Render cannot tell a container that boots but never
+answers from a healthy one, and switches traffic to it anyway. The region
+cannot be changed on an existing Render service; moving next to the database
+means a new service and pointing `api.learn-ls.com` at it.
+
 ## 17.1 Order of Operations
 
 ### First deployment
@@ -480,9 +494,18 @@ the exposure is believed to be contained.
 ## 17.6 Database (Neon)
 
 The production database is a Neon project named `L&S`, branch `production`, in
-AWS us-east-2 (Ohio). The API runs in Render's Frankfurt region, so every query
-crosses the Atlantic — unnoticeable per request, but the reason a full seed of
-5 399 questions from a laptop takes about an hour.
+AWS us-east-2 (Ohio). The API runs in Render's Oregon region (§17), so every
+query crosses the continent. A full seed of 5 399 questions from a laptop takes
+about an hour for the same reason.
+
+Inside an interactive transaction that distance is a budget, not a detail:
+Prisma closes one after five seconds by default. On 27.10.2026 completing a
+52-question NMT block took 5.4 s and was rolled back — the review ladder was
+written one statement per answer. It is now a handful of set-based statements
+(`MistakeReviewRepository.recordAnswers`), and the completion asks for twenty
+seconds (`FINALIZE_TIMEOUT_MS` in `src/quiz/services/quiz.service.ts`). Any new
+transaction that loops over rows should be written the same way: count its
+round trips, not its rows.
 
 **Two connection strings.** Neon's Connect dialog offers a pooled string (the
 host ends in `-pooler`, PgBouncer in transaction mode) and a direct one. Use the
@@ -708,6 +731,41 @@ so however often it runs, exactly one demo exists afterwards.
 
 **First run after a deploy.** Actions → «Demo reset» → Run workflow. Until then
 the demo accounts do not exist.
+
+## 17.10 Content Security Policy
+
+The site's pages carry a CSP from `frontend/vercel.json`. The API sends none
+(`helmet({ contentSecurityPolicy: false })` in `main.ts`): it answers JSON only,
+and a policy protects the document that runs scripts, which Vercel serves.
+
+**It is in report-only mode** (`Content-Security-Policy-Report-Only`, since
+27.10.2026). The browser enforces nothing yet; it reports what the policy would
+have blocked to the frontend's Sentry project, where each violation arrives as
+a «CSP» issue naming the directive and the blocked address. The public screens
+were checked with the policy enforced on a production build, with no
+violations; the signed-in screens — KaTeX in questions, the live duel socket,
+avatars — are what the report-only week is for.
+
+**Switching it on.** After a week with no reports that point at the
+application's own code, rename the header key to `Content-Security-Policy` and
+remove `report-uri` only if the reports are no longer wanted. A report that
+names a browser extension (`chrome-extension://…`) is noise and can be ignored.
+
+**What it allows, and why.**
+
+| Directive | Value | Reason |
+| --- | --- | --- |
+| `script-src` | `'self'` + one hash | The theme snippet in `index.html` runs inline before React; it is allowed by its hash and nothing else inline is |
+| `style-src` | `'self' 'unsafe-inline'` | KaTeX's output carries `style` attributes and is inserted as HTML |
+| `connect-src` | `'self'`, the API over `https` and `wss`, Sentry's ingest host | XHR, the live duel socket, error reports |
+| `img-src` / `font-src` | `'self' data: blob:` | Question images, avatars and fonts are all served by the site itself |
+| `frame-ancestors` | `'none'` | Same intent as `X-Frame-Options: DENY` |
+
+**The hash has to follow the snippet.** Any edit to the inline `<script>` in
+`index.html` changes its SHA-256, and the old hash would then block the theme
+script — the light theme would flash dark on every load.
+`src/lib/csp.test.ts` fails when the two disagree, and its message names the
+`'sha256-…'` value the policy should contain; copy it into `vercel.json`.
 
 ---
 

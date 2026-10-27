@@ -17,13 +17,17 @@ databases:
     plan: free
 
 services:
+  # The live service is `ls-backend` in Oregon, created by hand rather than
+  # from this file (docs/08-development/deployment.md §17). This entry is what
+  # a new service should be: in Ohio, next to the Neon database in us-east-2,
+  # so the queries of one request stop crossing the continent.
   - type: web
     name: quix-api
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: free
-    region: frankfurt
+    region: ohio
     # Excluded from the API prefix in main.ts, and exempt from rate limiting,
     # so a frequent probe can never be rejected as abuse.
     healthCheckPath: /health
