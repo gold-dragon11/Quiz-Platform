@@ -93,6 +93,41 @@ describe('QuizSessionPage', () => {
     await waitFor(() => expect(screen.getByText('Результат')).toBeInTheDocument());
   });
 
+  it('hands in a typed number only after its last keystroke has been saved', async () => {
+    const numeric = {
+      ...question('q-1', 'Обчисліть 25 : 2.'),
+      type: 'NUMERIC',
+      subjectSlug: 'mathematics',
+      answerOptions: [],
+    };
+    const events: string[] = [];
+    server.use(
+      http.get(api('/quiz/s-1'), () =>
+        HttpResponse.json({ ...resume(), questions: [numeric, question('q-2', 'Друге питання')] }),
+      ),
+      http.post(api('/quiz/s-1/answers'), async ({ request }) => {
+        const body = (await request.json()) as { selectedAnswer: { numericAnswer: string } };
+        // Slower than typing, the way a phone on the metro is.
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        events.push(`answer ${body.selectedAnswer.numericAnswer}`);
+        return HttpResponse.json(body);
+      }),
+      http.post(api('/quiz/s-1/complete'), () => {
+        events.push('complete');
+        return HttpResponse.json({});
+      }),
+    );
+    const { user } = openSession();
+
+    await user.type(await screen.findByLabelText('Відповідь'), '12,5');
+    await user.click(screen.getByRole('button', { name: 'Завершити тест зараз' }));
+    await user.click(await screen.findByRole('button', { name: 'Завершити тест' }));
+
+    await waitFor(() => expect(screen.getByText('Результат')).toBeInTheDocument());
+    expect(events.at(-1)).toBe('complete');
+    expect(events.filter((event) => event.startsWith('answer')).at(-1)).toBe('answer 12,5');
+  });
+
   it('tells the owner of a session closed by the sweep what happened', async () => {
     server.use(http.get(api('/quiz/s-1'), () => HttpResponse.json(resume('ABANDONED'))));
 

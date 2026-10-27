@@ -10,7 +10,8 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { Spinner } from '@/shared/ui/Spinner';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { QuestionType, QuizStatus } from '@/shared/types/enums';
-import { useQuizSession, useSubmitAnswer, useCompleteQuiz } from '@/features/quiz/hooks/use-quiz';
+import { useAnswerSaver, useQuizSession, useCompleteQuiz } from '@/features/quiz/hooks/use-quiz';
+import type { SaveStatus } from '@/features/quiz/lib/answer-saver';
 import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { QuestionCard } from '@/features/quiz/components/QuestionCard';
 import { QuestionStrip } from '@/features/quiz/components/QuestionStrip';
@@ -18,7 +19,12 @@ import { PassagePanel } from '@/features/quiz/components/PassagePanel';
 import { filledRows, labelCovers } from '@/features/quiz/lib/answer-rows';
 import { QuizTimer } from '@/features/quiz/components/QuizTimer';
 
-type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+/**
+ * How long a typed number waits for the next keystroke before it is saved.
+ * Short enough that «Збережено» follows the last digit almost at once, long
+ * enough that «12,5» goes out as one answer rather than four.
+ */
+const NUMERIC_SAVE_DELAY_MS = 400;
 
 /**
  * `/quiz/:sessionId` (RequireAuth). The full quiz runtime (docs/04-api/quiz.md
@@ -38,15 +44,17 @@ export function QuizSessionPage(): React.JSX.Element {
   const { sessionId = '' } = useParams();
   const navigate = useNavigate();
   const session = useQuizSession(sessionId);
-  const submitAnswer = useSubmitAnswer(sessionId);
   const complete = useCompleteQuiz(sessionId);
 
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, SelectedAnswer>>({});
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Handing in starts with the last saves, before the completion is sent.
+  const [handingIn, setHandingIn] = useState(false);
   const initializedRef = useRef(false);
   const redirectedRef = useRef(false);
+  const inactiveRef = useRef(false);
 
   const resultPath = generatePath(ROUTES.quizResult, { sessionId });
 
@@ -78,6 +86,12 @@ export function QuizSessionPage(): React.JSX.Element {
   const refetchSession = session.refetch;
   const handleInactive = useCallback(
     (error: unknown) => {
+      // Saves still queued and the completion would each come back with the
+      // same 409; one explanation is enough.
+      if (inactiveRef.current) {
+        return;
+      }
+      inactiveRef.current = true;
       if (isApiError(error) && error.status === 404) {
         toast.error('Цю сесію тесту не знайдено.');
         navigate(ROUTES.quiz, { replace: true });
@@ -96,40 +110,54 @@ export function QuizSessionPage(): React.JSX.Element {
     [navigate, goToResult, refetchSession],
   );
 
-  const handleAnswerChange = (questionId: string, selectedAnswer: SelectedAnswer): void => {
+  const saver = useAnswerSaver(sessionId, {
+    onStatus: setSaveStatus,
+    onError: (error) => {
+      if (isApiError(error) && (error.status === 409 || error.status === 404)) {
+        saver.cancel();
+        handleInactive(error);
+      } else if (isApiError(error)) {
+        toast.error(error.message);
+      }
+    },
+  });
+
+  const handleAnswerChange = (
+    questionId: string,
+    type: QuestionType,
+    selectedAnswer: SelectedAnswer,
+  ): void => {
     setAnswers((prev) => ({ ...prev, [questionId]: selectedAnswer }));
-    setSaveStatus('saving');
-    submitAnswer.mutate(
-      { questionId, selectedAnswer },
-      {
-        onSuccess: () => setSaveStatus('saved'),
+    saver.save(questionId, selectedAnswer, type === QuestionType.NUMERIC ? NUMERIC_SAVE_DELAY_MS : 0);
+  };
+
+  const { mutate: completeQuiz } = complete;
+  const handleComplete = useCallback(() => {
+    setConfirmOpen(false);
+    setHandingIn(true);
+    // The completion scores what the server holds, so every answer still on
+    // its way has to arrive first — otherwise the last one typed is the one
+    // that goes missing.
+    void saver.flush().then(() => {
+      if (inactiveRef.current) {
+        setHandingIn(false);
+        return;
+      }
+      completeQuiz(undefined, {
+        onSuccess: () => goToResult(),
         onError: (error) => {
-          setSaveStatus('error');
-          if (isApiError(error) && (error.status === 409 || error.status === 404)) {
+          // Already completed (e.g. timer expiry auto-completed it) → the
+          // result still exists; closed for inactivity → there is none to go to.
+          if (isApiError(error) && error.status === 409) {
             handleInactive(error);
           } else if (isApiError(error)) {
             toast.error(error.message);
           }
         },
-      },
-    );
-  };
-
-  const handleComplete = useCallback(() => {
-    setConfirmOpen(false);
-    complete.mutate(undefined, {
-      onSuccess: () => goToResult(),
-      onError: (error) => {
-        // Already completed (e.g. timer expiry auto-completed it) → the result
-        // still exists; closed for inactivity → there is none to go to.
-        if (isApiError(error) && error.status === 409) {
-          handleInactive(error);
-        } else if (isApiError(error)) {
-          toast.error(error.message);
-        }
-      },
+        onSettled: () => setHandingIn(false),
+      });
     });
-  }, [complete, goToResult, handleInactive]);
+  }, [saver, completeQuiz, goToResult, handleInactive]);
 
   // --- Loading / empty / error states -----------------------------------
 
@@ -311,8 +339,10 @@ export function QuizSessionPage(): React.JSX.Element {
             <QuestionCard
               question={current}
               answer={answers[current.id]}
-              disabled={complete.isPending}
-              onAnswerChange={(selectedAnswer) => handleAnswerChange(current.id, selectedAnswer)}
+              disabled={handingIn}
+              onAnswerChange={(selectedAnswer) =>
+                handleAnswerChange(current.id, current.type, selectedAnswer)
+              }
               matchingLayout={sitting ? 'grid' : 'list'}
               matchingRowFrom={runFrom}
             />
@@ -329,7 +359,7 @@ export function QuizSessionPage(): React.JSX.Element {
           <SaveIndicator status={saveStatus} />
 
           {isLast ? (
-            <Button onClick={() => setConfirmOpen(true)} isLoading={complete.isPending}>
+            <Button onClick={() => setConfirmOpen(true)} isLoading={handingIn}>
               Завершити тест
             </Button>
           ) : (
@@ -343,7 +373,7 @@ export function QuizSessionPage(): React.JSX.Element {
           <button
             type="button"
             onClick={() => setConfirmOpen(true)}
-            disabled={complete.isPending}
+            disabled={handingIn}
             className="text-text-muted hover:text-text-primary mt-5 text-sm underline underline-offset-4 transition-colors disabled:opacity-60"
           >
             Завершити тест зараз
@@ -361,7 +391,7 @@ export function QuizSessionPage(): React.JSX.Element {
         }
         confirmLabel="Завершити тест"
         cancelLabel="Продовжити"
-        isLoading={complete.isPending}
+        isLoading={handingIn}
         onConfirm={handleComplete}
         onCancel={() => setConfirmOpen(false)}
       />

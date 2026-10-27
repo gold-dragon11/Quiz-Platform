@@ -38,62 +38,97 @@ export class MistakeReviewRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Records a wrong answer: puts the question on the first rung, whether it is
-   * new, part-way up the ladder, or already cleared. Getting something wrong
-   * again means it was not learnt, however convincing the earlier run looked.
-   */
-  async demote(
-    tx: PrismaTransactionClient,
-    userId: string,
-    questionId: string,
-  ): Promise<void> {
-    const dueAt = nextDueDate(1);
-    await tx.mistakeReview.upsert({
-      where: { userId_questionId: { userId, questionId } },
-      create: { userId, questionId, stage: 1, dueAt },
-      update: {
-        stage: 1,
-        dueAt,
-        clearedAt: null,
-        timesWrong: { increment: 1 },
-      },
-    });
-  }
-
-  /**
-   * Records a correct answer, but only for a question already on the ladder —
-   * getting an unseen question right is not an achievement worth tracking.
+   * Moves the ladder for every answer of a finished session.
    *
-   * Correct answers count wherever they happen, not only inside a review
-   * session. A learner who meets the question in ordinary practice and gets it
-   * right has demonstrated the same thing, and a schedule that ignored that
-   * would keep nagging them about material they have plainly recovered.
+   * A wrong answer puts the question on the first rung, whether it is new,
+   * part-way up the ladder, or already cleared: getting something wrong again
+   * means it was not learnt, however convincing the earlier run looked.
+   *
+   * A correct answer moves a question one rung up, but only one already on the
+   * ladder — getting an unseen question right is not an achievement worth
+   * tracking. Correct answers count wherever they happen, not only inside a
+   * review session: a learner who meets the question in ordinary practice and
+   * gets it right has demonstrated the same thing.
+   *
+   * Written as a handful of set-based statements rather than one per answer.
+   * It runs inside the completion transaction, and the database is an ocean
+   * away from the API (docs/08-development/deployment.md §17.6): one round
+   * trip per answer put a 52-question block over Prisma's five-second limit,
+   * and the whole completion rolled back.
    */
-  async promote(
+  async recordAnswers(
     tx: PrismaTransactionClient,
     userId: string,
-    questionId: string,
+    answers: { questionId: string; isCorrect: boolean }[],
   ): Promise<void> {
-    const existing = await tx.mistakeReview.findUnique({
-      where: { userId_questionId: { userId, questionId } },
-      select: { stage: true, clearedAt: true },
-    });
-    if (!existing || existing.clearedAt) {
+    if (answers.length === 0) {
       return;
     }
 
-    const nextStage = existing.stage + 1;
-    const cleared = nextStage > REVIEW_LADDER_DAYS.length;
-
-    await tx.mistakeReview.update({
-      where: { userId_questionId: { userId, questionId } },
-      data: {
-        stage: cleared ? REVIEW_LADDER_DAYS.length : nextStage,
-        dueAt: cleared ? new Date() : nextDueDate(nextStage),
-        clearedAt: cleared ? new Date() : null,
-        timesCorrect: { increment: 1 },
+    const now = new Date();
+    const existing = await tx.mistakeReview.findMany({
+      where: {
+        userId,
+        questionId: { in: answers.map((answer) => answer.questionId) },
       },
+      select: { questionId: true, stage: true, clearedAt: true },
     });
+    const onLadder = new Map(existing.map((row) => [row.questionId, row]));
+
+    const wrong = answers
+      .filter((answer) => !answer.isCorrect)
+      .map((answer) => answer.questionId);
+    const wrongAgain = wrong.filter((id) => onLadder.has(id));
+    const wrongFirstTime = wrong.filter((id) => !onLadder.has(id));
+
+    // Everyone on one rung moves to the same next rung, so a correct answer
+    // costs one statement per rung rather than one per question.
+    const climbingByStage = new Map<number, string[]>();
+    for (const answer of answers) {
+      const row = answer.isCorrect ? onLadder.get(answer.questionId) : null;
+      if (row && !row.clearedAt) {
+        const rung = climbingByStage.get(row.stage) ?? [];
+        rung.push(answer.questionId);
+        climbingByStage.set(row.stage, rung);
+      }
+    }
+
+    const firstRungDue = nextDueDate(1, now);
+    if (wrongAgain.length > 0) {
+      await tx.mistakeReview.updateMany({
+        where: { userId, questionId: { in: wrongAgain } },
+        data: {
+          stage: 1,
+          dueAt: firstRungDue,
+          clearedAt: null,
+          timesWrong: { increment: 1 },
+        },
+      });
+    }
+    if (wrongFirstTime.length > 0) {
+      await tx.mistakeReview.createMany({
+        data: wrongFirstTime.map((questionId) => ({
+          userId,
+          questionId,
+          stage: 1,
+          dueAt: firstRungDue,
+        })),
+        skipDuplicates: true,
+      });
+    }
+    for (const [stage, questionIds] of climbingByStage) {
+      const nextStage = stage + 1;
+      const cleared = nextStage > REVIEW_LADDER_DAYS.length;
+      await tx.mistakeReview.updateMany({
+        where: { userId, questionId: { in: questionIds } },
+        data: {
+          stage: cleared ? REVIEW_LADDER_DAYS.length : nextStage,
+          dueAt: cleared ? now : nextDueDate(nextStage, now),
+          clearedAt: cleared ? now : null,
+          timesCorrect: { increment: 1 },
+        },
+      });
+    }
   }
 
   /** Questions due for review now, longest overdue first. */

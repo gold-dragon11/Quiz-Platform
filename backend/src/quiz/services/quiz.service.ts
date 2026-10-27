@@ -71,6 +71,13 @@ const HIGH_ACCURACY_THRESHOLD = 90;
 const HIGH_ACCURACY_BONUS_XP = 25;
 /** An untimed session untouched this long is closed (decision 23). */
 const ABANDON_AFTER_DAYS = 7;
+/**
+ * How long the completion transaction may stay open. Prisma's default is five
+ * seconds; the completion now takes a dozen round trips, but each of them
+ * crosses to another region, and a learner who has just sat a three-hour
+ * paper must not lose the result to a slow moment on the network.
+ */
+const FINALIZE_TIMEOUT_MS = 20_000;
 
 const SESSION_NOT_FOUND_MESSAGE = 'Сесію тесту не знайдено.';
 const SUBJECT_NOT_FOUND_MESSAGE =
@@ -154,6 +161,18 @@ interface Sitting {
   papers: SittingPaper[];
   /** The block's slug; null for a sitting of one subject. */
   blockSlug: string | null;
+}
+
+/** A sitting together with the session's questions, read ahead of scoring. */
+interface LoadedSitting {
+  sitting: Sitting;
+  questions: SessionQuestionRecord[];
+}
+
+/** A sitting scored paper by paper. */
+interface ScoredSitting {
+  sitting: Sitting;
+  scores: (SittingPaper & { score: NmtPaperScore })[];
 }
 
 /** Aggregate counts derived from a session's snapshot and attempts. */
@@ -562,10 +581,19 @@ export class QuizService {
   private async scoreSitting(
     session: QuizSessionRecord,
     attempts: { questionId: string; selectedAnswer: Prisma.JsonValue }[],
-  ): Promise<{
-    sitting: Sitting;
-    scores: (SittingPaper & { score: NmtPaperScore })[];
-  } | null> {
+  ): Promise<ScoredSitting | null> {
+    const loaded = await this.loadSitting(session);
+    return loaded ? this.scoreLoadedSitting(loaded, attempts) : null;
+  }
+
+  /**
+   * The paper a mock sitting follows, with the session's questions; null when
+   * it follows none. Both are fixed once the session exists, which is what
+   * lets the completion read them before its transaction opens.
+   */
+  private async loadSitting(
+    session: QuizSessionRecord,
+  ): Promise<LoadedSitting | null> {
     const sitting = await this.sittingFor(session);
     if (!sitting) {
       return null;
@@ -573,6 +601,13 @@ export class QuizService {
     const questions = await this.quizSessionRepository.findSessionQuestions(
       session.id,
     );
+    return { sitting, questions };
+  }
+
+  private scoreLoadedSitting(
+    { sitting, questions }: LoadedSitting,
+    attempts: { questionId: string; selectedAnswer: Prisma.JsonValue }[],
+  ): ScoredSitting {
     const answers = new Map(
       attempts.map((attempt) => [attempt.questionId, attempt.selectedAnswer]),
     );
@@ -1589,99 +1624,97 @@ export class QuizService {
       0,
       Math.floor((completedAt.getTime() - session.startedAt.getTime()) / 1000),
     );
+    // The paper and the session's questions are fixed from the moment the
+    // session exists, so they are read before the transaction opens: every
+    // round trip inside it counts against Prisma's transaction limit.
+    const sitting = await this.loadSitting(session);
 
-    return this.prisma.$transaction(async (tx) => {
-      const won = await this.quizSessionRepository.markCompletedIfActive(tx, {
-        id: session.id,
-        completedAt,
-        durationSeconds,
-      });
-      if (!won) {
-        return null;
-      }
-
-      const [snapshotIds, attempts] = await Promise.all([
-        this.quizSessionRepository.findSnapshotQuestionIds(session.id, tx),
-        this.questionAttemptRepository.findBySession(session.id, tx),
-      ]);
-      const tally = this.tally(snapshotIds.length, attempts);
-      const accuracy = round2(tally.exactAccuracy);
-      // A mock sitting of an NMT paper is also scored the exam's way, in the
-      // same transaction, so its history never disagrees with its review.
-      const nmt = await this.scoreSitting(session, attempts);
-      // A teacher sits a paper to see what their students will face
-      // (decision 29). The score is theirs to read, but XP, a level, the
-      // review ladder and the running totals are a learner's progress — a
-      // teacher's statistics are about their groups, so none of it moves.
-      const sitter = await tx.user.findUnique({
-        where: { id: session.userId },
-        select: { role: true },
-      });
-      const learner = sitter?.role !== UserRole.TEACHER;
-      const awards = learner ? this.xpAwards(tally.exactAccuracy) : [];
-
-      const result = await this.resultRepository.create(tx, {
-        quizSessionId: session.id,
-        correctAnswers: tally.correctAnswers,
-        incorrectAnswers: tally.incorrectAnswers,
-        unansweredQuestions: tally.unansweredQuestions,
-        totalQuestions: tally.totalQuestions,
-        accuracy,
-        score: accuracy,
-        paperScores: (nmt?.scores ?? []).map(({ subjectId, score }) => ({
-          subjectId,
-          testPoints: score.testPoints,
-          maxTestPoints: score.maxTestPoints,
-          scaledScore: score.scaledScore,
-        })),
-        completedAt,
-      });
-
-      // The review ladder moves with the same transaction that writes the
-      // result: a session that counted towards statistics but left the
-      // schedule untouched would keep asking about material the learner has
-      // just recovered.
-      for (const attempt of learner ? attempts : []) {
-        if (attempt.isCorrect) {
-          await this.mistakeReviewRepository.promote(
-            tx,
-            session.userId,
-            attempt.questionId,
-          );
-        } else {
-          await this.mistakeReviewRepository.demote(
-            tx,
-            session.userId,
-            attempt.questionId,
-          );
-        }
-      }
-
-      if (learner) {
-        await this.statisticsService.applyQuizCompletion(tx, {
-          userId: session.userId,
-          quizSessionId: session.id,
-          resultId: result.id,
-          totalQuestions: tally.totalQuestions,
-          correctAnswers: tally.correctAnswers,
-          incorrectAnswers: tally.incorrectAnswers + tally.unansweredQuestions,
-          learningTimeSeconds: durationSeconds,
-          awards,
+    return this.prisma.$transaction(
+      async (tx) => {
+        const won = await this.quizSessionRepository.markCompletedIfActive(tx, {
+          id: session.id,
+          completedAt,
+          durationSeconds,
         });
-      }
+        if (!won) {
+          return null;
+        }
 
-      const xpEarned = awards.reduce((sum, award) => sum + award.amount, 0);
-      return {
-        correctAnswers: tally.correctAnswers,
-        incorrectAnswers: tally.incorrectAnswers,
-        unansweredQuestions: tally.unansweredQuestions,
-        totalQuestions: tally.totalQuestions,
-        accuracy: accuracy.toFixed(2),
-        score: accuracy.toFixed(2),
-        xpEarned,
-        completedAt: completedAt.toISOString(),
-      };
-    });
+        const [snapshotIds, attempts] = await Promise.all([
+          this.quizSessionRepository.findSnapshotQuestionIds(session.id, tx),
+          this.questionAttemptRepository.findBySession(session.id, tx),
+        ]);
+        const tally = this.tally(snapshotIds.length, attempts);
+        const accuracy = round2(tally.exactAccuracy);
+        // A mock sitting of an NMT paper is also scored the exam's way, from
+        // the answers this transaction read, so its history never disagrees
+        // with its review.
+        const nmt = sitting ? this.scoreLoadedSitting(sitting, attempts) : null;
+        // A teacher sits a paper to see what their students will face
+        // (decision 29). The score is theirs to read, but XP, a level, the
+        // review ladder and the running totals are a learner's progress — a
+        // teacher's statistics are about their groups, so none of it moves.
+        const sitter = await tx.user.findUnique({
+          where: { id: session.userId },
+          select: { role: true },
+        });
+        const learner = sitter?.role !== UserRole.TEACHER;
+        const awards = learner ? this.xpAwards(tally.exactAccuracy) : [];
+
+        const result = await this.resultRepository.create(tx, {
+          quizSessionId: session.id,
+          correctAnswers: tally.correctAnswers,
+          incorrectAnswers: tally.incorrectAnswers,
+          unansweredQuestions: tally.unansweredQuestions,
+          totalQuestions: tally.totalQuestions,
+          accuracy,
+          score: accuracy,
+          paperScores: (nmt?.scores ?? []).map(({ subjectId, score }) => ({
+            subjectId,
+            testPoints: score.testPoints,
+            maxTestPoints: score.maxTestPoints,
+            scaledScore: score.scaledScore,
+          })),
+          completedAt,
+        });
+
+        // The review ladder moves with the same transaction that writes the
+        // result: a session that counted towards statistics but left the
+        // schedule untouched would keep asking about material the learner has
+        // just recovered.
+        if (learner) {
+          await this.mistakeReviewRepository.recordAnswers(
+            tx,
+            session.userId,
+            attempts,
+          );
+          await this.statisticsService.applyQuizCompletion(tx, {
+            userId: session.userId,
+            quizSessionId: session.id,
+            resultId: result.id,
+            totalQuestions: tally.totalQuestions,
+            correctAnswers: tally.correctAnswers,
+            incorrectAnswers:
+              tally.incorrectAnswers + tally.unansweredQuestions,
+            learningTimeSeconds: durationSeconds,
+            awards,
+          });
+        }
+
+        const xpEarned = awards.reduce((sum, award) => sum + award.amount, 0);
+        return {
+          correctAnswers: tally.correctAnswers,
+          incorrectAnswers: tally.incorrectAnswers,
+          unansweredQuestions: tally.unansweredQuestions,
+          totalQuestions: tally.totalQuestions,
+          accuracy: accuracy.toFixed(2),
+          score: accuracy.toFixed(2),
+          xpEarned,
+          completedAt: completedAt.toISOString(),
+        };
+      },
+      { timeout: FINALIZE_TIMEOUT_MS },
+    );
   }
 
   private tally(
