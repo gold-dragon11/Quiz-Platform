@@ -39,9 +39,7 @@ export function AppearanceSection(): React.JSX.Element {
 
   return (
     <section>
-      <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-        Вигляд
-      </h2>
+      <h2 className="section-title border-border border-b pb-3">Вигляд</h2>
       <p className="text-text-secondary mt-6 max-w-xl text-sm">
         Тема зберігається в цьому браузері, а не в акаунті — на телефоні вдень і за ноутбуком увечері можна
         тримати різну. Головна сторінка завжди лишається темною.
@@ -96,14 +94,13 @@ function ThemeOption({ option, selected, onSelect, onKeyDown }: ThemeOptionProps
  * the page rather than a word. The `system` sample is split down the middle,
  * which is the only honest picture of an answer that depends on the machine.
  *
- * The one place in the app where a colour is written out rather than taken
- * from a token: these squares must show the *other* theme's background while
- * standing in this one, so a token — which always resolves to the current
- * theme — is precisely the wrong thing here.
+ * These squares must show the *other* theme's background while standing in
+ * this one, so they read the two `preview` tokens, which hold each theme's
+ * paper and, unlike every other colour, do not change with the theme.
  */
 function Swatch({ theme }: { theme: ThemePreference }): React.JSX.Element {
-  const dark = <span className="block h-full w-1/2 bg-[#0b0a0f]" />;
-  const light = <span className="block h-full w-1/2 bg-[#f7f6f9]" />;
+  const dark = <span className="block h-full w-1/2 bg-preview-dark" />;
+  const light = <span className="block h-full w-1/2 bg-preview-light" />;
 
   return (
     <span

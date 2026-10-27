@@ -22,7 +22,7 @@ const TONE_CLASS: Record<BadgeTone, string> = {
 export function Badge({ tone = 'neutral', className = '', children }: BadgeProps): React.JSX.Element {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${TONE_CLASS[tone]} ${className}`}
+      className={`inline-flex items-center border px-2.5 py-0.5 text-xs font-medium ${TONE_CLASS[tone]} ${className}`}
     >
       {children}
     </span>

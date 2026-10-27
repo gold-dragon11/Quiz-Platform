@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk" data-theme="dark">
+<html lang="uk" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -7,7 +7,7 @@
          screen, so without it an installed app gets a screenshot instead. -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b0a0f" />
+    <meta name="theme-color" content="#f4f0e6" />
     <title>L&amp;S</title>
 
     <!--
@@ -62,19 +62,19 @@
       (function () {
         try {
           var stored = localStorage.getItem('quix.theme');
-          var preference = stored ? JSON.parse(stored).state.preference : 'dark';
-          var light =
-            preference === 'light' ||
-            (preference === 'system' && matchMedia('(prefers-color-scheme: light)').matches);
-          // The landing page is pinned to dark (see usePinnedTheme). Honouring
-          // the preference here and then having React pin it back would be the
-          // very flash this script exists to prevent.
-          if (light && location.pathname !== '/') {
-            document.documentElement.setAttribute('data-theme', 'light');
-            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f7f6f9');
+          var preference = stored ? JSON.parse(stored).state.preference : 'light';
+          var dark =
+            preference === 'dark' ||
+            (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          // The landing page is pinned to dark until its own redesign (see
+          // usePinnedTheme). Honouring the preference here and then having
+          // React pin it back would be the very flash this script prevents.
+          if (dark || location.pathname === '/') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f0d08');
           }
         } catch (error) {
-          /* No storage, or a key from an older version: the dark default stands. */
+          /* No storage, or a key from an older version: the light default stands. */
         }
       })();
     </script>

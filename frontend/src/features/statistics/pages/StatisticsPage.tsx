@@ -38,7 +38,7 @@ export function StatisticsPage(): React.JSX.Element {
   if (user.role === UserRole.TEACHER) {
     return (
       <div className="mx-auto max-w-4xl">
-        <PageHeader eyebrow="Викладання" title="Статистика" />
+        <PageHeader title="Статистика" />
         <div className="mt-12">
           <TeacherStatistics />
         </div>
@@ -48,7 +48,7 @@ export function StatisticsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Ваші цифри" title="Статистика" />
+      <PageHeader title="Статистика" />
 
       <div className="mt-12">
         <LevelStanding />
@@ -98,7 +98,7 @@ function Section({
   return (
     <section className="mt-16">
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-        <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">{title}</h2>
+        <h2 className="section-title">{title}</h2>
         {note && <p className="text-text-muted text-xs">{note}</p>}
       </div>
       {children}

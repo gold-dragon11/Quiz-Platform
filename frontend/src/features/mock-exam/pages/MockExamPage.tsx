@@ -74,7 +74,7 @@ export function MockExamPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Пробна робота" title="Пробний НМТ" />
+      <PageHeader title="Пробний НМТ" />
 
       <ActiveQuizBanner className="mt-8" />
 
@@ -121,9 +121,7 @@ export function MockExamPage(): React.JSX.Element {
           about their groups, and XP is not awarded to them. */}
       {user?.role !== UserRole.TEACHER && (
         <section className="mt-20">
-          <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-            Ваші спроби
-          </h2>
+          <h2 className="section-title border-border border-b pb-3">Ваші спроби</h2>
           <p className="text-text-secondary mt-4 max-w-2xl text-sm">
             Там, де пробний НМТ відтворює зошит, бал рахується за офіційною таблицею переведення 2026 року.
             Для предметів, які ще переносимо на структуру зошита, — лише частка правильних.

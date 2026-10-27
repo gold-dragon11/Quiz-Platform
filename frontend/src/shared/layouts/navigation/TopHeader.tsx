@@ -43,7 +43,7 @@ export function TopHeader({
   avatarUrl,
 }: TopHeaderProps): React.JSX.Element {
   return (
-    <header className="border-border bg-background/80 sticky top-0 z-30 border-b backdrop-blur">
+    <header className="border-border bg-background sticky top-0 z-30 border-b">
       <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
         <button
           type="button"

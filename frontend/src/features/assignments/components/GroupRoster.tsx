@@ -92,8 +92,8 @@ function RosterRow({
           {row.student.displayName ?? row.student.username ?? '—'}
         </Link>
         <p className="text-text-muted mt-1 text-xs">
-          {row.student.username && `@${row.student.username} · `}з {formatShortDate(row.student.joinedAt)}
-          {row.assignmentsLate > 0 && ` · ${row.assignmentsLate} із запізненням`}
+          {row.student.username && `@${row.student.username}, `}з {formatShortDate(row.student.joinedAt)}
+          {row.assignmentsLate > 0 && `, ${row.assignmentsLate} із запізненням`}
         </p>
       </div>
 
@@ -101,7 +101,7 @@ function RosterRow({
         {row.assignmentsIssued > 0 ? (
           <div className="text-right">
             <p
-              className={`font-display text-xl font-bold lining-nums ${
+              className={`font-display text-xl lining-nums ${
                 behind > 0 ? 'text-warning' : 'text-text-primary'
               }`}
             >

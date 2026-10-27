@@ -35,7 +35,7 @@ export function PublicProfilePage(): React.JSX.Element {
       <Link
         to={ROUTES.home}
         aria-label="L&S — на головну"
-        className="bg-primary inline-flex h-10 items-center rounded-xl px-3 text-lg font-extrabold tracking-tight text-white"
+        className="bg-primary inline-flex h-10 items-center rounded-xl px-3 text-lg font-extrabold tracking-tight text-on-primary"
       >
         L&amp;S
       </Link>
@@ -58,7 +58,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
 
   return (
     <>
-      <p className="text-text-muted mt-14 text-xs tracking-[0.18em] uppercase">Профіль на L&amp;S</p>
+      <p className="text-text-muted mt-14 text-xs">Профіль на L&amp;S</p>
 
       <div className="mt-6 flex items-center gap-5">
         <Avatar
@@ -68,11 +68,11 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
           fallback={profile.displayName.charAt(0)}
         />
         <div className="min-w-0">
-          <h1 className="text-text-primary font-display text-3xl font-bold break-words sm:text-4xl">
+          <h1 className="text-text-primary font-display text-3xl break-words sm:text-4xl">
             {profile.displayName}
           </h1>
           <p className="text-text-muted mt-1 text-sm">
-            @{profile.username} · з {formatShortDate(profile.registrationDate)}
+            @{profile.username}, з {formatShortDate(profile.registrationDate)}
           </p>
         </div>
       </div>
@@ -129,7 +129,7 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
 function Unavailable({ notFound }: { notFound: boolean }): React.JSX.Element {
   return (
     <div className="mt-14">
-      <h1 className="text-text-primary font-display text-3xl font-bold">
+      <h1 className="text-text-primary font-display text-3xl">
         {notFound ? 'Профіль недоступний' : 'Не вдалося завантажити профіль'}
       </h1>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">

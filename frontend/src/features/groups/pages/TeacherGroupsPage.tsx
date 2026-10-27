@@ -24,19 +24,17 @@ export function TeacherGroupsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Викладання" title="Групи" />
+      <PageHeader title="Групи" />
 
       <section className="mt-12">
-        <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-          Нова група
-        </h2>
+        <h2 className="section-title border-border border-b pb-3">Нова група</h2>
         <div className="mt-6">
           <CreateGroupForm />
         </div>
       </section>
 
       <section className="mt-16">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Ваші групи</h2>
+        <h2 className="section-title mb-6">Ваші групи</h2>
 
         {groups.isPending ? (
           <div className="flex flex-col gap-2">
@@ -60,7 +58,7 @@ export function TeacherGroupsPage(): React.JSX.Element {
 
             {archived.length > 0 && (
               <div className="mt-12">
-                <h3 className="text-text-muted mb-4 text-xs tracking-[0.18em] uppercase">Заархівовані</h3>
+                <h3 className="section-title mb-4">Заархівовані</h3>
                 <ul className="divide-border border-border divide-y border-t opacity-60">
                   {archived.map((group) => (
                     <GroupRow key={group.id} group={group} />
@@ -88,14 +86,12 @@ function GroupRow({ group }: { group: TeacherGroup }): React.JSX.Element {
               «11-А, підготовка до…» on a phone. */}
           <p className="text-text-primary font-medium break-words">{group.name}</p>
           <p className="text-text-muted mt-1 text-xs">
-            {group.subject.name} · створено {formatShortDate(group.createdAt)}
-            {group.archivedAt && ` · заархівовано ${formatShortDate(group.archivedAt)}`}
+            {group.subject.name}, створено {formatShortDate(group.createdAt)}
+            {group.archivedAt && `, заархівовано ${formatShortDate(group.archivedAt)}`}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-text-primary font-display text-2xl font-bold lining-nums">
-            {group.studentCount}
-          </p>
+          <p className="text-text-primary font-display text-2xl lining-nums">{group.studentCount}</p>
           <p className="text-text-muted text-xs">{pluralUk(group.studentCount, 'учень', 'учні', 'учнів')}</p>
         </div>
       </Link>

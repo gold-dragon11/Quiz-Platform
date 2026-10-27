@@ -74,7 +74,7 @@ export function Modal({
             className="bg-surface border-border relative my-4 flex w-full max-w-2xl flex-col rounded-xl border shadow-xl outline-none"
           >
             <div className="border-border flex items-center justify-between gap-4 border-b px-6 py-4">
-              <h2 id={titleId} className="text-text-primary text-lg font-semibold">
+              <h2 id={titleId} className="section-title">
                 {title}
               </h2>
               <button

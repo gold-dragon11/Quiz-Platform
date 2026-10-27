@@ -544,7 +544,7 @@ function SingleChoiceEditor({
               value={option.content}
               onChange={(e) => update(i, { content: e.target.value })}
               placeholder={`Варіант ${i + 1}`}
-              className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+              className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
             />
             {options.length > 2 && (
               <Button variant="ghost" size="sm" onClick={() => remove(i)}>
@@ -556,7 +556,7 @@ function SingleChoiceEditor({
             value={option.imageUrl}
             onChange={(e) => update(i, { imageUrl: e.target.value })}
             placeholder="Посилання на зображення (необовʼязково)"
-            className="bg-surface text-text-muted border-border focus:border-primary focus:ring-primary h-9 w-full rounded-lg border px-3 text-xs outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+            className="bg-surface text-text-muted border-field focus:border-primary focus:ring-primary h-9 w-full rounded-lg border px-3 text-xs outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
         </div>
       ))}
@@ -587,7 +587,7 @@ function NumericEditor({
         onChange={(e) => onChange(e.target.value)}
         placeholder="напр. 12,5"
         inputMode="decimal"
-        className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-48 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+        className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-48 rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
       />
       <p className="text-text-muted text-xs">
         Учень уводить число сам, варіантів відповіді немає. Кому й крапку зараховуємо однаково.
@@ -633,7 +633,7 @@ function SequenceEditor({
             value={option.content}
             onChange={(e) => update(i, { content: e.target.value })}
             placeholder={`Елемент ${i + 1}`}
-            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+            className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           <Button variant="ghost" size="sm" onClick={() => move(i, -1)} disabled={i === 0}>
             Вище
@@ -702,7 +702,7 @@ function MultipleChoiceEditor({
             value={option.content}
             onChange={(e) => update(i, { content: e.target.value })}
             placeholder={`Варіант ${i + 1}`}
-            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+            className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           {options.length > 3 && (
             <Button variant="ghost" size="sm" onClick={() => remove(i)}>
@@ -744,14 +744,14 @@ function MatchingEditor({
             value={pair.leftContent}
             onChange={(e) => update(i, { leftContent: e.target.value })}
             placeholder={`Ліворуч ${i + 1}`}
-            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+            className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           <span className="text-text-muted shrink-0">→</span>
           <input
             value={pair.rightContent}
             onChange={(e) => update(i, { rightContent: e.target.value })}
             placeholder={`Праворуч ${i + 1}`}
-            className="bg-surface text-text-primary border-border focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
+            className="bg-surface text-text-primary border-field focus:border-primary focus:ring-primary h-10 w-full rounded-lg border px-3 text-sm outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
           />
           {pairs.length > 2 && (
             <Button variant="ghost" size="sm" onClick={() => remove(i)}>

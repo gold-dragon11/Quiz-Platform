@@ -38,7 +38,7 @@ export function MultipleChoiceAnswer({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-text-muted text-xs tracking-[0.14em] uppercase">Обрано {chosen.size} із трьох</p>
+      <p className="text-text-muted text-xs">Обрано {chosen.size} із трьох</p>
       <div role="group" aria-label="Варіанти відповіді" className="divide-border divide-y">
         {ordered.map((option, index) => {
           const selected = chosen.has(option.id);
@@ -57,7 +57,9 @@ export function MultipleChoiceAnswer({
               <span
                 aria-hidden="true"
                 className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-md text-sm transition-colors ${
-                  selected ? 'bg-primary font-medium text-white' : 'border-border text-text-muted border'
+                  selected
+                    ? 'bg-primary border border-primary font-medium text-on-primary'
+                    : 'border-field text-text-muted border'
                 }`}
               >
                 {index + 1}

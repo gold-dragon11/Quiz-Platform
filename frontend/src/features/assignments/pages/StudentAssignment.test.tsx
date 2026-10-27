@@ -129,7 +129,7 @@ describe('StudentAssignmentPage', () => {
     openOne();
 
     expect(await screen.findByText(/годинник на 180 хвилин/)).toBeInTheDocument();
-    expect(screen.getByText(/пробний НМТ · 180 хв на весь зошит/)).toBeInTheDocument();
+    expect(screen.getByText(/пробний НМТ, 180 хв на весь зошит/)).toBeInTheDocument();
   });
 
   it('says so when the work belongs to somebody else', async () => {

@@ -20,15 +20,13 @@ export function DuelsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader eyebrow="Змагання" title="Дуелі" />
+      <PageHeader title="Дуелі" />
 
       <ActiveQuizBanner className="mt-8" />
 
       {currentUser.data && !currentUser.data.isDemo && (
         <section className="mt-12">
-          <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-            Грати наживо
-          </h2>
+          <h2 className="section-title border-border border-b pb-3">Грати наживо</h2>
           <div className="mt-6">
             <LivePlaySection />
           </div>
@@ -36,16 +34,14 @@ export function DuelsPage(): React.JSX.Element {
       )}
 
       <section className="mt-16">
-        <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-          Викликати на потім
-        </h2>
+        <h2 className="section-title border-border border-b pb-3">Викликати на потім</h2>
         <div className="mt-6">
           <ChallengeForm />
         </div>
       </section>
 
       <section className="mt-16">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Ваші дуелі</h2>
+        <h2 className="section-title mb-6">Ваші дуелі</h2>
         {currentUser.data ? <DuelList userId={currentUser.data.id} /> : <Skeleton className="h-40" />}
       </section>
     </div>

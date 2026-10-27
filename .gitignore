@@ -54,3 +54,9 @@ docker-compose.override.yml
 # Python bytecode from the content scripts
 __pycache__/
 *.pyc
+
+# Hallmark, the design skill (design.md). Installed into the project for
+# local use and pinned to the commit it was reviewed at (7ec8682); third-party
+# code, so it is not part of the repository. `.hallmark/` holds its run state.
+.claude/skills/hallmark/
+.hallmark/

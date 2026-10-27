@@ -71,11 +71,11 @@ export function MaterialPage(): React.JSX.Element {
   return (
     <article className="mx-auto w-full max-w-3xl">
       <header className="border-border border-b pb-8">
-        <p className="text-text-muted text-xs tracking-[0.18em] uppercase">
+        <p className="text-text-muted text-xs">
           Конспект
-          {estimatedReadingTime !== null && ` · ${estimatedReadingTime} хв читання`}
+          {estimatedReadingTime !== null && `, ${estimatedReadingTime} хв читання`}
         </p>
-        <h1 className="text-text-primary font-display mt-3 text-4xl font-bold tracking-[-0.01em] sm:text-5xl">
+        <h1 className="text-text-primary font-display mt-3 text-4xl tracking-[-0.01em] sm:text-5xl">
           {title}
         </h1>
         {description && (

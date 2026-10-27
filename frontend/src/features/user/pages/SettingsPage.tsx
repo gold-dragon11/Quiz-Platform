@@ -24,7 +24,7 @@ export function SettingsPage(): React.JSX.Element {
   if (user?.isDemo) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeader eyebrow="Акаунт" title="Налаштування" />
+        <PageHeader title="Налаштування" />
         <p className="border-primary text-text-secondary mt-14 max-w-xl border-l pl-5 text-sm">
           Це демо-акаунт. Пароль, публічність профілю й видалення акаунта тут вимкнені, а щоночі все
           повертається до початкового стану — тож тести й домашку можна проходити без жодних наслідків.
@@ -41,7 +41,7 @@ export function SettingsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader eyebrow="Акаунт" title="Налаштування" />
+      <PageHeader title="Налаштування" />
 
       <div className="mt-14">
         <AppearanceSection />

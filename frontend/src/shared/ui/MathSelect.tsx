@@ -146,7 +146,7 @@ export function MathSelect({
         disabled={disabled}
         onClick={() => (isOpen ? setIsOpen(false) : open())}
         onKeyDown={onKeyDown}
-        className={`bg-surface text-text-primary border-border focus:border-primary focus:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm outline-none transition-colors focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`bg-surface text-text-primary border-field focus:border-primary focus:ring-primary focus-visible:ring-offset-background flex h-11 w-full items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm outline-none transition-colors focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`}
       >
         <span className={`truncate ${selected ? '' : 'text-text-muted'}`}>
           {selected ? <MathText>{selected.label}</MathText> : placeholder}

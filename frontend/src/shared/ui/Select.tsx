@@ -40,7 +40,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={`bg-surface text-text-primary h-11 w-full rounded-lg border px-3 text-sm outline-none transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60 ${
             hasError
               ? 'border-error focus:ring-error'
-              : 'border-border focus:border-primary focus:ring-primary'
+              : 'border-field focus:border-primary focus:ring-primary'
           } ${className}`}
           {...props}
         >

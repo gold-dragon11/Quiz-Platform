@@ -75,8 +75,8 @@ export function QuestionStrip({
         {/* A slash, not «з». Uppercased and letterspaced, the Ukrainian «З»
             is indistinguishable from a 3 — and it sat between two numerals,
             so «ПИТАННЯ 1 З 5» read as «1 3 5». */}
-        <span className="tracking-[0.18em] uppercase">
-          {currentRow.label && `${currentRow.label} · `}
+        <span>
+          {currentRow.label && `${currentRow.label}, `}
           {noun} {label(index)} / {currentRow.size ?? currentRow.count}
         </span>
         <span className="shrink-0 whitespace-nowrap">
@@ -107,7 +107,7 @@ export function QuestionStrip({
                         ? 'border-primary text-text-primary border-2 font-medium'
                         : isAnswered
                           ? 'bg-primary/25 text-text-primary hover:bg-primary/40 border-transparent'
-                          : 'border-border text-text-muted hover:border-border-subtle border'
+                          : 'border-field text-text-muted hover:border-text-primary border'
                     }`}
                   >
                     {label(position)}

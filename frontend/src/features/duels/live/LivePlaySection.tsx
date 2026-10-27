@@ -254,7 +254,7 @@ function LiveForm({ offline }: { offline: boolean }): React.JSX.Element {
                   setCount(group.count);
                 }}
               >
-                {group.seconds} с · {questions(group.count)}
+                {group.seconds} с, {questions(group.count)}
               </button>
             </span>
           ))}
@@ -310,7 +310,7 @@ function Choice({
       onClick={onClick}
       className={`focus-visible:ring-primary h-9 min-w-12 rounded-lg px-3 text-sm tabular-nums outline-none transition-colors focus-visible:ring-2 disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
         active && !disabled
-          ? 'bg-primary font-medium text-white'
+          ? 'bg-primary font-medium text-on-primary'
           : 'border-border text-text-secondary hover:bg-surface-elevated border'
       }`}
     >
@@ -344,7 +344,7 @@ function Searching(): React.JSX.Element {
         Шукаємо суперника <span className="text-text-muted tabular-nums">{formatCountdown(elapsed)}</span>
       </p>
       <p className="text-text-muted mt-1 text-sm">
-        {subject ?? 'Предмет'} · {queue.seconds} с на питання · {questions(queue.count)}
+        {subject ?? 'Предмет'}, {queue.seconds} с на питання, {questions(queue.count)}
       </p>
       <Button className="mt-5" variant="ghost" size="sm" onClick={() => void liveActions.leaveQueue()}>
         Скасувати

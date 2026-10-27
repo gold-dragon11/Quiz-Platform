@@ -38,7 +38,7 @@ export function GroupAnalyticsSection({ groupId }: { groupId: string }): React.J
 
   return (
     <section className="mt-16">
-      <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Як іде група</h2>
+      <h2 className="section-title mb-6">Як іде група</h2>
 
       <FigureGrid
         figures={[
@@ -54,7 +54,7 @@ export function GroupAnalyticsSection({ groupId }: { groupId: string }): React.J
 
       {topics.length > 0 && (
         <div className="mt-12">
-          <h3 className="text-text-muted mb-4 text-xs tracking-[0.18em] uppercase">Теми, від найслабшої</h3>
+          <h3 className="section-title mb-4">Теми, від найслабшої</h3>
           <TopicPerformanceList topics={topics} />
         </div>
       )}

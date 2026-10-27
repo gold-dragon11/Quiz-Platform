@@ -57,7 +57,7 @@ export function AdminPanelPage(): React.JSX.Element {
       {/* «Каталог» named the four CRUD sections this page used to be. It is
           now also where the platform's own numbers live, and a heading that
           promises a catalogue over a funnel reads as the wrong page. */}
-      <PageHeader eyebrow="Адміністрування" title="Панель" />
+      <PageHeader title="Панель" />
 
       <div className="mt-10">
         <AdminTabs active={tab} onChange={openTab} />

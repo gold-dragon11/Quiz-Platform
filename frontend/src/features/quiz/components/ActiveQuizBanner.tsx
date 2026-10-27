@@ -35,7 +35,7 @@ export function ActiveQuizBanner({ className = '' }: { className?: string }): Re
         Ваша дуель наживо ще йде —{' '}
         <Link
           to={generatePath(ROUTES.liveDuel, { duelId: session.liveDuelId })}
-          className="text-primary underline underline-offset-4"
+          className="text-primary hover:text-primary-hover active:text-primary-active underline underline-offset-4"
         >
           повернутися до гри
         </Link>
@@ -52,7 +52,7 @@ export function ActiveQuizBanner({ className = '' }: { className?: string }): Re
       цей триває —{' '}
       <Link
         to={generatePath(ROUTES.quizSession, { sessionId: session.sessionId })}
-        className="text-primary underline underline-offset-4"
+        className="text-primary hover:text-primary-hover active:text-primary-active underline underline-offset-4"
       >
         повернутися до нього
       </Link>

@@ -205,7 +205,7 @@ export function QuestionsSection(): React.JSX.Element {
         <>
           <div className="overflow-x-auto">
             <table className="border-border w-full border-t min-w-[52rem] text-left text-sm">
-              <thead className="text-text-muted border-border border-b text-xs uppercase">
+              <thead className="text-text-muted border-border border-b text-xs">
                 <tr>
                   <th className="px-4 py-3 font-medium">Заголовок</th>
                   <th className="px-4 py-3 font-medium">Тема</th>
@@ -221,9 +221,7 @@ export function QuestionsSection(): React.JSX.Element {
                     <td className="text-text-primary max-w-xs px-4 py-3 font-medium">
                       <span className="block truncate">{question.title}</span>
                       {question.format === QuestionFormat.NMT && (
-                        <span className="text-text-muted mt-0.5 block text-[0.65rem] font-normal tracking-[0.14em] uppercase">
-                          Формат НМТ
-                        </span>
+                        <span className="text-text-muted mt-0.5 block text-xs font-normal">Формат НМТ</span>
                       )}
                     </td>
                     <td className="text-text-secondary px-4 py-3">

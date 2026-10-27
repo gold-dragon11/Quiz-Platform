@@ -22,7 +22,7 @@ export function SectionHeader({
   return (
     <div className={`mb-4 flex items-end justify-between gap-4 ${className}`}>
       <div className="flex flex-col gap-1">
-        <h2 className="text-text-primary text-lg font-semibold">{title}</h2>
+        <h2 className="section-title">{title}</h2>
         {description && <p className="text-text-muted text-sm">{description}</p>}
       </div>
       {action && <div className="shrink-0">{action}</div>}

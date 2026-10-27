@@ -77,7 +77,7 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        eyebrow={`Дедлайн ${formatShortDate(assignment.dueAt)}`}
+        meta={`Дедлайн ${formatShortDate(assignment.dueAt)}`}
         title={assignment.title}
         lead={assignment.description ?? undefined}
       />
@@ -89,7 +89,7 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
             value: `${assignment.submittedCount}/${assignment.targetCount}`,
             label: 'здали',
             hint: mock
-              ? `пробний НМТ · ${mock.taskCount} ${pluralUk(mock.taskCount, 'завдання', 'завдання', 'завдань')}`
+              ? `пробний НМТ, ${mock.taskCount} ${pluralUk(mock.taskCount, 'завдання', 'завдання', 'завдань')}`
               : `${assignment.questionCount} ${pluralUk(assignment.questionCount, 'питання', 'питання', 'питань')} у роботі`,
           },
           mock
@@ -120,12 +120,12 @@ function ReviewDetail({ assignment }: { assignment: TeacherAssignment }): React.
       />
 
       <section className="mt-16">
-        <h2 className="text-text-muted mb-6 text-xs tracking-[0.18em] uppercase">Хто здав</h2>
+        <h2 className="section-title mb-6">Хто здав</h2>
         <SubmissionList assignmentId={assignment.id} groupId={assignment.groupId} />
       </section>
 
       <section className="mt-16">
-        <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">На чому посипалися</h2>
+        <h2 className="section-title">На чому посипалися</h2>
         <p className="text-text-secondary mt-4 max-w-2xl text-sm">
           Питання впорядковані від найгіршого. Це список того, що варто розібрати наступного разу — і те саме,
           з чого складається робота в режимі «за помилками групи».

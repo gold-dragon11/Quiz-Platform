@@ -167,7 +167,7 @@ function Registrations({ points }: { points: DailyPoint[] }): React.JSX.Element 
           <div className="text-text-muted mt-2 flex justify-between text-xs">
             <span>{points[0]?.day}</span>
             <span>
-              разом {formatNumber(total)} · найбільше за день {formatNumber(peak)}
+              разом {formatNumber(total)}, найбільше за день {formatNumber(peak)}
             </span>
             <span>{points[points.length - 1]?.day}</span>
           </div>
@@ -195,7 +195,7 @@ function Subjects({ rows }: { rows: SubjectUsage[] }): React.JSX.Element {
               <div className="flex items-baseline justify-between gap-4 text-sm">
                 <span className="text-text-primary">{row.subject}</span>
                 <span className="text-text-muted lining-nums">
-                  {formatNumber(row.sessions)} · {formatNumber(row.people)}{' '}
+                  {formatNumber(row.sessions)}, {formatNumber(row.people)}{' '}
                   {pluralUk(row.people, 'людина', 'людини', 'людей')}
                 </span>
               </div>
@@ -238,8 +238,8 @@ function Recent({ rows }: { rows: RecentAccount[] }): React.JSX.Element {
             <li key={row.username} className="flex items-center justify-between gap-4 py-4 text-sm">
               <div className="min-w-0">
                 <p className="text-text-primary truncate">
-                  @{row.username}{' '}
-                  <span className="text-text-muted">· {ROLE_LABEL[row.role] ?? row.role}</span>
+                  @{row.username}
+                  <span className="text-text-muted">, {ROLE_LABEL[row.role] ?? row.role}</span>
                 </p>
                 <p className="text-text-muted mt-0.5 text-xs">{formatShortDate(row.createdAt)}</p>
               </div>
@@ -267,7 +267,7 @@ function Recent({ rows }: { rows: RecentAccount[] }): React.JSX.Element {
 function Heading({ title, note }: { title: string; note: string }): React.JSX.Element {
   return (
     <div className="border-border flex items-baseline justify-between gap-4 border-b pb-3">
-      <h3 className="text-text-muted text-xs tracking-[0.18em] uppercase">{title}</h3>
+      <h3 className="section-title">{title}</h3>
       <span className="text-text-muted text-xs">{note}</span>
     </div>
   );

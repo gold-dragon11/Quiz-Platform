@@ -119,7 +119,7 @@ export function QuizzesSection(): React.JSX.Element {
         <>
           <div className="overflow-x-auto">
             <table className="border-border w-full border-t min-w-[48rem] text-left text-sm">
-              <thead className="text-text-muted border-border border-b text-xs uppercase">
+              <thead className="text-text-muted border-border border-b text-xs">
                 <tr>
                   <th className="px-4 py-3 font-medium">Заголовок</th>
                   <th className="px-4 py-3 font-medium">Предмет</th>

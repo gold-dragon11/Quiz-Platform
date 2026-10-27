@@ -23,7 +23,7 @@ export function MaterialLink({ topicId }: MaterialLinkProps): React.JSX.Element 
 
   return (
     <section className="border-border border-t pt-8">
-      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Повторити теорію</h2>
+      <h2 className="section-title">Повторити теорію</h2>
       <p className="text-text-primary mt-4">{material.data.title}</p>
       <Link
         to={generatePath(ROUTES.topicMaterial, { topicId })}

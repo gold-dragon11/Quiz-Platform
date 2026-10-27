@@ -98,7 +98,7 @@ export function SubjectsSection(): React.JSX.Element {
         <>
           <div className="overflow-x-auto">
             <table className="border-border w-full border-t min-w-[36rem] text-left text-sm">
-              <thead className="text-text-muted border-border border-b text-xs uppercase">
+              <thead className="text-text-muted border-border border-b text-xs">
                 <tr>
                   <th className="px-4 py-3 font-medium">Назва</th>
                   <th className="px-4 py-3 font-medium">Slug</th>

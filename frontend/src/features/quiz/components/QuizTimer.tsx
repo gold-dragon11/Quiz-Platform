@@ -45,13 +45,13 @@ export function QuizTimer({ expiresAt, onExpire }: QuizTimerProps): React.JSX.El
   return (
     <div role="timer" aria-live="off" className="shrink-0 text-right">
       <p
-        className={`font-display text-2xl leading-none font-bold tabular-nums ${
+        className={`font-display text-2xl leading-none tabular-nums ${
           low ? 'text-error' : 'text-text-primary'
         }`}
       >
         {formatCountdown(remaining)}
       </p>
-      <p className="text-text-muted mt-1.5 text-xs tracking-[0.18em] uppercase">лишилось</p>
+      <p className="text-text-muted mt-1.5 text-xs">лишилось</p>
     </div>
   );
 }

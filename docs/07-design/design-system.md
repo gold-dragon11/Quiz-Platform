@@ -18,10 +18,10 @@ It serves as the single source of truth for designers and developers.
 
 # 2. Design Philosophy
 
-The Quiz Platform follows a modern interface inspired by:
-
-- Apple
-- Linear
+The interface is set in Hallmark's Loom material (decision 41): ecru paper,
+a warm ink, one indigo, a display serif over a plain grotesk, square and flat.
+The system is locked in `design.md` at the repository root; the references it
+was chosen against are Torino Outlet Village and Visit Bergamo.
 
 The user experience should feel:
 
@@ -159,12 +159,12 @@ Motion follows the principles defined in the Motion documentation.
 
 # 11. Themes
 
-Dark is the default and the platform's own look; light is offered as a
-deliberate choice (docs/07-design/colors.md §3 and §14).
+Light, the ecru paper, is the default; dark is the same tokens re-derived
+and offered as a choice (docs/07-design/colors.md §3).
 
 Either way the interface should use:
 
-- layered surfaces;
+- paper steps instead of shadows;
 - restrained color accents;
 - high readability;
 - minimal visual noise.

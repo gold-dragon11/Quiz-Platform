@@ -42,7 +42,7 @@ export function DashboardPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        eyebrow={todayLabel()}
+        meta={todayLabel()}
         title={isTeacher ? 'Ваші групи' : 'Що робити'}
         lead={
           isTeacher

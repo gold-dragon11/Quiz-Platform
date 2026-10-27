@@ -28,9 +28,7 @@ export function PublicProfileSection(): React.JSX.Element | null {
 
   return (
     <section>
-      <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-        Публічний профіль
-      </h2>
+      <h2 className="section-title border-border border-b pb-3">Публічний профіль</h2>
       <p className="text-text-secondary mt-6 max-w-xl text-sm">
         За адресою{' '}
         <Link to={path} className="text-text-primary underline underline-offset-4 break-all">

@@ -1,111 +1,222 @@
+/* Hallmark · shape: kept · genre: editorial · theme: Loom (by request) · redesign: restyle · scope: app
+ * hero: kept · nav: kept · footer: kept · imagery: the product · signature: answer rows ruled like the NMT sheet · loom: ecru, night for dark
+ * axes: light/roman-serif/cool · posture: committed · contrast: pass · fold: kept · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, the layout is kept by design; the system carries the change and the landing's own redesign follows */
+
 /*
- * Manrope (variable, self-hosted). Self-hosted rather than loaded from a CDN
- * so the app makes no third-party request and works offline. The package ships
- * per-script subsets with `unicode-range`, so a Ukrainian page downloads the
- * Cyrillic file and nothing else.
+ * The faces (docs/07-design/typography.md), self-hosted so the app makes no
+ * third-party request, works offline and stays inside the site's CSP. Every
+ * package ships per-script subsets with `unicode-range`, so a Ukrainian page
+ * downloads the Cyrillic files and nothing else.
+ *
+ * - Playfair Display: the display voice — page titles, section heads, figures.
+ *   It replaces the theme's Libre Caslon, which has no Cyrillic.
+ * - Hanken Grotesk: everything read, from a label to a reading passage.
+ * - IBM Plex Mono: figures that compare in a row — task numbers, days, points.
+ *   It replaces the theme's DM Mono, which also has no Cyrillic.
  *
  * Must precede the Tailwind import: CSS requires @import rules to come first.
  */
-@import '@fontsource-variable/manrope';
-/* Playfair Display carries every display-size line on the landing: the hero
-   headline, the section headings, the statistics. A high-contrast serif at
-   that scale reads as a voice rather than as interface copy, and it separates
-   the marketing page from the product, which stays entirely in Manrope.
-   Ukrainian is covered — the Cyrillic subset spans U+0400-045F and U+0490-0491,
-   so і, ї, є and ґ all have real glyphs rather than fallbacks. */
+@import '@fontsource-variable/hanken-grotesk';
 @import '@fontsource-variable/playfair-display';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
 @import 'tailwindcss';
 
 /*
- * Design tokens from docs/07-design/colors.md and typography.md.
+ * Design tokens (docs/07-design/colors.md), the Loom material on the
+ * project's own token names, so every existing utility — `bg-surface`,
+ * `text-text-muted`, `border-border` — takes the new system without a
+ * component changing what it asks for.
  *
- * Dark is the default theme and what `@theme` below declares; light is a
- * deliberate choice, and overrides these same tokens under `[data-theme='light']`.
+ * Light is the default and the theme's own colourway («ecru»): ecru paper,
+ * a warm near-black ink and one deep indigo that arrives as a fill, a line or
+ * the focus ring, never as a wash. Depth is a paper step, not a shadow.
  *
- * The neutral scale carries a slight violet cast rather than the blue-slate it
- * had before, so the greys sit under the purple accent instead of competing
- * with it. Steps are spaced evenly enough that adjacent surfaces stay
- * distinguishable; every text token clears WCAG AA on `--color-background`
- * (muted ≈ 5.6:1, secondary ≈ 11:1, primary ≈ 18:1).
+ * Every text token clears WCAG AA on every surface it is drawn on (muted
+ * ≥ 5.6:1, the indigo 10.6:1 on the page); `field` is the edge of an input and
+ * clears 3:1, which the hairline `border` deliberately does not.
+ *
+ * `static` keeps each token a CSS variable even where no utility uses it.
  */
-@theme {
-  --font-sans: 'Manrope Variable', 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+@theme static {
+  --font-sans:
+    'Hanken Grotesk Variable', 'Hanken Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   --font-display: 'Playfair Display Variable', 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', monospace;
 
-  --color-background: #0b0a0f;
-  --color-surface: #131219;
-  --color-surface-elevated: #1b1a23;
-  /* Floating panels — a toast, a dropdown — which must read as raised from
-     whatever is behind them rather than as one more step of the same stack. */
-  --color-surface-overlay: #1b1a23;
-  /* Behind a modal. Dark needs to sink the page; light needs to grey it. */
-  --color-scrim: rgb(0 0 0 / 0.6);
+  --color-background: oklch(95.5% 0.014 85);
+  --color-surface: oklch(97.5% 0.009 85);
+  /* A sand step below the paper: a progress track, a hovered row, a well. */
+  --color-surface-elevated: oklch(92% 0.022 84);
+  /* Floating panels — a toast, a dropdown, a dialog. Flat like everything
+     else; the edge and the scrim say it floats, not a shadow. */
+  --color-surface-overlay: oklch(97.5% 0.009 85);
+  --color-scrim: oklch(21% 0.012 60 / 0.35);
 
-  --color-border: #272631;
-  --color-border-subtle: #34333f;
+  --color-border: oklch(85% 0.022 84);
+  --color-border-subtle: oklch(76% 0.026 82);
+  --color-field: oklch(60% 0.02 75);
+  /* The one heavier line: under a table's head, over a list's first row. */
+  --color-rule-ink: oklch(21% 0.012 60);
 
-  --color-text-primary: #f7f7fa;
-  --color-text-secondary: #c3c2cf;
-  --color-text-muted: #8b8a9b;
+  --color-text-primary: oklch(21% 0.012 60);
+  --color-text-secondary: oklch(33% 0.012 60);
+  --color-text-muted: oklch(46% 0.014 62);
 
-  --color-primary: #7c3aed;
-  --color-primary-hover: #8b5cf6;
-  --color-primary-active: #6d28d9;
+  --color-primary: oklch(34% 0.115 267);
+  --color-primary-hover: oklch(43% 0.125 267);
+  --color-primary-active: oklch(29% 0.105 267);
+  --color-on-primary: oklch(97.5% 0.009 85);
+  --color-focus: oklch(43% 0.15 267);
 
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-error: #ef4444;
-  --color-info: #3b82f6;
+  --color-success: oklch(46% 0.11 150);
+  --color-warning: oklch(50% 0.11 65);
+  --color-error: oklch(50% 0.18 27);
+  --color-info: oklch(43% 0.125 267);
+
+  /* Each theme's paper, for the theme picker's swatches: the one pair that
+     must not follow the current theme. */
+  --color-preview-light: oklch(95.5% 0.014 85);
+  --color-preview-dark: oklch(16% 0.01 85);
+
+  /* Square everywhere (Loom). A round thing that is round by nature — an
+     avatar, a dot, a toggle — keeps `rounded-full`, which is not a token. */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+
+  /* Flat: nothing casts a shadow. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /*
- * Light theme. Not an inversion of the dark values but a mirror of their
- * intent, and two tokens deliberately change direction:
- *
- * - `surface-elevated` is a step *lighter* than the page in the dark theme and
- *   a step *darker* than the card here, because what it actually marks is a
- *   progress track, a hovered row, a skeleton, a neutral chip — all of which
- *   must sit back from the white card they lie on. Panels that genuinely float
- *   use `surface-overlay`, which stays white.
- * - `primary-hover` and `primary-active` go deeper rather than lighter: on a
- *   white page a pressed button darkens, it does not glow.
- *
- * Every text token clears WCAG AA on `--color-surface` (muted ≈ 5.4:1,
- * secondary ≈ 8.9:1, primary ≈ 17.5:1), and the semantic colours are darkened
- * to stay legible as text — #22c55e on white is 2.3:1 and would not be.
+ * Dark: the same system re-derived, never inverted (Hallmark's dark-mode
+ * parity). Paper drops to L 16 and elevation steps lighter; the ink rises to
+ * L 94; the indigo lifts in lightness and loses chroma so it does not glare,
+ * and the text on it turns to the paper. No hue moves between the modes.
  */
-[data-theme='light'] {
-  color-scheme: light;
+[data-theme='dark'] {
+  color-scheme: dark;
 
-  --color-background: #f7f6f9;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #eeecf2;
-  --color-surface-overlay: #ffffff;
-  --color-scrim: rgb(26 24 35 / 0.35);
+  --color-background: oklch(16% 0.01 85);
+  --color-surface: oklch(19.5% 0.011 85);
+  --color-surface-elevated: oklch(23.5% 0.012 85);
+  --color-surface-overlay: oklch(23.5% 0.012 85);
+  --color-scrim: oklch(8% 0.008 85 / 0.6);
 
-  --color-border: #e3e0ea;
-  --color-border-subtle: #d3cfdd;
+  --color-border: oklch(30% 0.012 84);
+  --color-border-subtle: oklch(38% 0.014 84);
+  --color-field: oklch(55% 0.016 80);
+  --color-rule-ink: oklch(94% 0.012 85);
 
-  --color-text-primary: #1a1823;
-  --color-text-secondary: #4b4857;
-  --color-text-muted: #6b6878;
+  --color-text-primary: oklch(94% 0.012 85);
+  --color-text-secondary: oklch(82% 0.012 85);
+  --color-text-muted: oklch(68% 0.014 80);
 
-  --color-primary: #6d28d9;
-  --color-primary-hover: #5b21b6;
-  --color-primary-active: #4c1d95;
+  --color-primary: oklch(72% 0.1 267);
+  --color-primary-hover: oklch(79% 0.085 267);
+  --color-primary-active: oklch(66% 0.105 267);
+  --color-on-primary: oklch(16% 0.01 85);
+  --color-focus: oklch(72% 0.1 267);
 
-  --color-success: #15803d;
-  --color-warning: #b45309;
-  --color-error: #c81e1e;
-  --color-info: #1d4ed8;
+  --color-success: oklch(74% 0.13 150);
+  --color-warning: oklch(80% 0.12 75);
+  --color-error: oklch(72% 0.15 27);
+  --color-info: oklch(79% 0.085 267);
 }
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
+  }
+
+  /* Never a horizontal scroll, and never by hiding it: `clip` keeps sticky
+     elements working where `hidden` would break them. */
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  html {
+    scrollbar-color: var(--color-text-muted) var(--color-background);
   }
 
   body {
     @apply bg-background text-text-primary font-sans antialiased;
+    caret-color: var(--color-primary);
+  }
+
+  /* Playfair carries one weight wherever it sets a head; a synthesised bold
+     or italic would blur its hairlines. */
+  .font-display {
+    font-synthesis: none;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-primary) 22%, transparent);
+    color: var(--color-text-primary);
+  }
+
+  :focus-visible {
+    outline-color: var(--color-focus);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *:not(.keep-motion),
+    *:not(.keep-motion)::before,
+    *:not(.keep-motion)::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+   * A section's head inside the app. It replaced the small tracked capitals
+   * the screens used to open every section with — the most machine-made line
+   * a page can carry. A head is a head: the display face, at the size a
+   * section deserves, in the ink.
+   */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    line-height: 1.15;
+    font-weight: 400;
+    color: var(--color-text-primary);
+    font-synthesis: none;
+  }
+
+  /* A label, caption or table head: the body face a step smaller, sentence
+     case, untracked, in the muted ink. */
+  .label {
+    font-size: var(--text-sm);
+    line-height: 1.4;
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+
+  /* Figures that compare in a row: task numbers, days, points. */
+  .figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }

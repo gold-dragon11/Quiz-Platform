@@ -39,9 +39,7 @@ export function ResultReview({
 }): React.JSX.Element {
   return (
     <section>
-      <h2 className="text-text-muted border-border border-b pb-3 text-xs tracking-[0.18em] uppercase">
-        Розбір
-      </h2>
+      <h2 className="section-title border-border border-b pb-3">Розбір</h2>
       <ul className="divide-border divide-y">
         {questions.map((question, i) => (
           <Fragment key={question.id}>
@@ -55,7 +53,7 @@ export function ResultReview({
             {question.passage && question.passage.id !== questions[i - 1]?.passage?.id && (
               <li className="py-8">
                 <details open>
-                  <summary className="text-text-muted hover:text-text-primary cursor-pointer text-xs tracking-[0.18em] uppercase">
+                  <summary className="text-text-muted hover:text-text-primary cursor-pointer text-xs">
                     Текст до завдань
                   </summary>
                   <PassagePanel passage={question.passage} className="mt-5" />
@@ -68,11 +66,7 @@ export function ResultReview({
                   <span className="text-text-muted mr-2">{numbers?.get(question.id) ?? i + 1}.</span>
                   <MathText>{question.title}</MathText>
                 </h3>
-                <span
-                  className={`shrink-0 text-xs tracking-[0.14em] uppercase ${
-                    question.isCorrect ? 'text-success' : 'text-error'
-                  }`}
-                >
+                <span className={`shrink-0 text-xs ${question.isCorrect ? 'text-success' : 'text-error'}`}>
                   {question.isCorrect ? 'правильно' : 'неправильно'}
                 </span>
               </div>
@@ -131,7 +125,7 @@ export function AnswerReview({ question }: { question: QuizReviewQuestion }): Re
 function Explanation({ text }: { text: string }): React.JSX.Element {
   return (
     <div className="border-border border-l pl-5">
-      <p className="text-text-muted text-xs tracking-[0.18em] uppercase">Пояснення</p>
+      <p className="text-text-muted text-xs">Пояснення</p>
       <p className="text-text-secondary mt-2 text-sm whitespace-pre-wrap">
         <MathText>{text}</MathText>
       </p>
@@ -166,12 +160,12 @@ function SingleChoiceReview({ question }: { question: QuizReviewQuestion }): Rea
           <div key={option.id} className="flex items-start gap-4 py-2 text-sm">
             <span
               aria-hidden="true"
-              className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm ${
+              className={`flex size-7 shrink-0 items-center justify-center text-sm ${
                 isCorrect
-                  ? 'bg-success font-medium text-white'
+                  ? 'bg-success font-medium text-on-primary'
                   : wrongPick
-                    ? 'bg-error font-medium text-white'
-                    : 'border-border text-text-muted border'
+                    ? 'bg-error font-medium text-on-primary'
+                    : 'border-field text-text-muted border'
               }`}
             >
               {letters[position] ?? position + 1}
@@ -216,7 +210,7 @@ function OrderingReview({ question }: { question: QuizReviewQuestion }): React.J
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Правильна послідовність</p>
+        <p className="text-text-muted text-xs font-medium">Правильна послідовність</p>
         {correct.map((id, i) => (
           <div
             key={id}
@@ -228,7 +222,7 @@ function OrderingReview({ question }: { question: QuizReviewQuestion }): React.J
         ))}
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Ваша відповідь</p>
+        <p className="text-text-muted text-xs font-medium">Ваша відповідь</p>
         {submitted.length === 0 ? (
           <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>
         ) : (
@@ -305,7 +299,7 @@ function NumericReview({ question }: { question: QuizReviewQuestion }): React.JS
   return (
     <div className="flex flex-wrap gap-3 text-sm">
       <div className="border-success/40 bg-success/10 text-text-primary rounded-lg border px-4 py-2.5">
-        <span className="text-text-muted mr-2 text-xs uppercase">правильна</span>
+        <span className="text-text-muted mr-2 text-xs">правильна</span>
         <span className="tabular-nums">{correct}</span>
       </div>
       {submitted === '' ? (
@@ -316,7 +310,7 @@ function NumericReview({ question }: { question: QuizReviewQuestion }): React.JS
             question.isCorrect ? 'border-success/40 bg-success/10' : 'border-error/40 bg-error/10'
           }`}
         >
-          <span className="text-text-muted mr-2 text-xs uppercase">ваша</span>
+          <span className="text-text-muted mr-2 text-xs">ваша</span>
           <span className="tabular-nums">{submitted}</span>
         </div>
       )}
@@ -335,7 +329,7 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Правильні відповідності</p>
+        <p className="text-text-muted text-xs font-medium">Правильні відповідності</p>
         {correctPairs.map((pair, i) => (
           <div
             key={`${pair.left}-${i}`}
@@ -348,7 +342,7 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
         ))}
       </div>
       <div className="flex flex-col gap-2">
-        <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Ваша відповідь</p>
+        <p className="text-text-muted text-xs font-medium">Ваша відповідь</p>
         {submittedPairs.length === 0 ? (
           <p className="text-text-muted text-xs">Ви не відповіли на це питання.</p>
         ) : (
@@ -369,11 +363,7 @@ function MatchingReview({ question }: { question: QuizReviewQuestion }): React.J
                 <MathText>{contentOf(options, pair.left)}</MathText>
                 <span className="text-text-muted">→</span>
                 <MathText>{contentOf(options, pair.right)}</MathText>
-                <span
-                  className={`ml-auto shrink-0 text-xs tracking-[0.14em] uppercase ${
-                    isPairCorrect ? 'text-success' : 'text-error'
-                  }`}
-                >
+                <span className={`ml-auto shrink-0 text-xs ${isPairCorrect ? 'text-success' : 'text-error'}`}>
                   {isPairCorrect ? 'правильно' : 'неправильно'}
                 </span>
               </div>

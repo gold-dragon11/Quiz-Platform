@@ -105,7 +105,7 @@ function GroupRow({
               «11-А, підготовка до…» on a phone. */}
           <p className="text-text-primary font-medium break-words">{group.name}</p>
           <p className="text-text-muted mt-1 text-xs">
-            {group.subject.name} · {group.studentCount}{' '}
+            {group.subject.name}, {group.studentCount}{' '}
             {pluralUk(group.studentCount, 'учень', 'учні', 'учнів')}
           </p>
 
@@ -115,7 +115,7 @@ function GroupRow({
             <p className="text-text-secondary mt-3 text-sm">
               «{latest.title}» — {overdue ? 'дедлайн минув' : 'до'} {formatShortDate(latest.dueAt)}
               {outstanding > 0 && (
-                <span className={overdue ? 'text-warning' : undefined}> · не здали {outstanding}</span>
+                <span className={overdue ? 'text-warning' : undefined}>, не здали {outstanding}</span>
               )}
             </p>
           ) : (
@@ -126,7 +126,7 @@ function GroupRow({
         <div className="shrink-0 text-right">
           {latest && !loading && (
             <>
-              <p className="text-text-primary font-display text-2xl font-bold lining-nums">
+              <p className="text-text-primary font-display text-2xl lining-nums">
                 {latest.submittedCount}
                 <span className="text-text-muted text-base font-normal">/{latest.targetCount}</span>
               </p>

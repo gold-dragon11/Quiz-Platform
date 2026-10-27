@@ -63,7 +63,7 @@ export function QuestionBreakdown({ assignmentId }: { assignmentId: string }): R
 
       {untouched.length > 0 && (
         <div>
-          <p className="text-text-muted mb-3 text-xs tracking-[0.18em] uppercase">Ще ніхто не відповідав</p>
+          <p className="text-text-muted mb-3 text-xs">Ще ніхто не відповідав</p>
           <ul className="divide-border border-border divide-y border-t">
             {untouched.map((row) => (
               <QuestionRow key={row.questionId} row={row} />
@@ -89,7 +89,7 @@ function QuestionRow({ row }: { row: QuestionBreakdownRow }): React.JSX.Element 
           <MathText>{row.title}</MathText>
         </p>
         <p
-          className={`font-display shrink-0 text-lg font-bold lining-nums ${
+          className={`font-display shrink-0 text-lg lining-nums ${
             row.accuracy === null ? 'text-text-muted' : trouble ? 'text-warning' : 'text-text-primary'
           }`}
         >
@@ -109,7 +109,7 @@ function QuestionRow({ row }: { row: QuestionBreakdownRow }): React.JSX.Element 
       </div>
 
       <p className="text-text-muted mt-2 text-xs">
-        {row.topic?.name ?? 'Без теми'} · {row.correct} з {row.answered}
+        {row.topic?.name ?? 'Без теми'}, {row.correct} з {row.answered}
         {row.answered === 0 && ' — ще не дійшли'}
       </p>
     </li>

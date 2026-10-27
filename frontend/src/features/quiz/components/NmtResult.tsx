@@ -34,8 +34,8 @@ export function NmtResult({
     <div>
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-text-muted text-xs tracking-[0.18em] uppercase">{nmt.title}</p>
-          <p className="text-text-primary font-display mt-3 text-6xl leading-none font-bold lining-nums sm:text-7xl">
+          <p className="text-text-muted text-xs">{nmt.title}</p>
+          <p className="text-text-primary font-display mt-3 text-6xl leading-none lining-nums sm:text-7xl">
             {passed ? nmt.scaledScore : nmt.testPoints}
           </p>
           <p className="text-text-secondary mt-4 text-sm">
@@ -58,7 +58,7 @@ export function NmtResult({
       />
 
       <section className="mt-10">
-        <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Бали за завданнями</h2>
+        <h2 className="section-title">Бали за завданнями</h2>
         <ol className="border-border mt-4 grid grid-cols-6 border-t border-l sm:grid-cols-11">
           {nmt.tasks.map((task) => (
             <li

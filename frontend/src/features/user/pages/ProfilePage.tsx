@@ -70,7 +70,7 @@ export function ProfilePage(): React.JSX.Element {
   if (isError || !user) {
     return (
       <div className="mx-auto max-w-2xl">
-        <PageHeader eyebrow="Акаунт" title="Профіль" />
+        <PageHeader title="Профіль" />
         <p className="border-error text-text-secondary mt-10 border-l pl-5 text-sm">
           Не вдалося завантажити акаунт.{' '}
           <button
@@ -93,7 +93,7 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader eyebrow="Акаунт" title="Профіль" />
+      <PageHeader title="Профіль" />
 
       <div className="mt-12 flex items-center gap-5">
         {/* The initial follows the display name, the way the sidebar's avatar
@@ -110,7 +110,7 @@ function ProfileView({ user }: { user: CurrentUser }): React.JSX.Element {
               address is the half a reader actually needs to check. */}
           <p className="text-text-muted mt-1 text-sm">
             {user.profile && <span className="block sm:inline">@{user.profile.username}</span>}
-            {user.profile && <span className="hidden sm:inline"> · </span>}
+            {user.profile && <span className="hidden sm:inline">, </span>}
             <span className="block break-all sm:inline">{user.email}</span>
           </p>
         </div>
@@ -197,7 +197,7 @@ function VerificationBlock({ email }: { email: string }): React.JSX.Element {
 
   return (
     <section className="border-border mt-12 border-t pt-8">
-      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Підтвердження пошти</h2>
+      <h2 className="section-title">Підтвердження пошти</h2>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">
         На {email} ми надіслали лист із посиланням. Якщо він не дійшов, перевірте теку зі спамом або надішліть
         новий — попереднє посилання після цього перестане діяти.
@@ -287,7 +287,7 @@ function EditProfileSection({
   if (!open) {
     return (
       <section className="border-border mt-12 border-t pt-8">
-        <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Про себе</h2>
+        <h2 className="section-title">Про себе</h2>
         <p className={`mt-4 max-w-xl text-sm ${bio ? 'text-text-secondary' : 'text-text-muted'}`}>
           {bio ??
             'Ви ще нічого про себе не написали. Опис бачать викладачі у ваших групах і всі, хто відкриє ваш публічний профіль.'}
@@ -311,7 +311,7 @@ function EditProfileSection({
 
   return (
     <section className="border-border mt-12 border-t pt-8">
-      <h2 className="text-text-muted text-xs tracking-[0.18em] uppercase">Як вас видно</h2>
+      <h2 className="section-title">Як вас видно</h2>
       <form onSubmit={onSubmit} noValidate className="mt-6 flex flex-col gap-5">
         {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
         <Input

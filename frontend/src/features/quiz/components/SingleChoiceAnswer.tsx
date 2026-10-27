@@ -114,8 +114,10 @@ function Letter({ letter, selected }: { letter: string; selected: boolean }): Re
   return (
     <span
       aria-hidden="true"
-      className={`flex size-7 shrink-0 items-center justify-center rounded-full text-sm transition-colors ${
-        selected ? 'bg-primary font-medium text-white' : 'border-border text-text-muted border'
+      className={`flex size-7 shrink-0 items-center justify-center text-sm transition-colors ${
+        selected
+          ? 'bg-primary border border-primary font-medium text-on-primary'
+          : 'border-field text-text-muted border'
       }`}
     >
       {letter}

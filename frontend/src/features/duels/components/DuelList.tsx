@@ -93,9 +93,9 @@ function DuelRow({ duel, userId }: { duel: DuelView; userId: string }): React.JS
           <p className="text-text-primary font-medium">{playerName(opponent)}</p>
           <p className="text-text-muted mt-1 text-xs">
             {duel.subject.name}
-            {duel.topic && ` · ${duel.topic.name}`} · {duel.questionCount}{' '}
+            {duel.topic && `, ${duel.topic.name}`}, {duel.questionCount}{' '}
             {pluralUk(duel.questionCount, 'питання', 'питання', 'питань')}
-            {duel.mode === DuelMode.LIVE && ` · наживо, ${duel.secondsPerQuestion ?? ''} с`} ·{' '}
+            {duel.mode === DuelMode.LIVE && `, наживо, ${duel.secondsPerQuestion ?? ''} с`},{' '}
             {formatShortDate(duel.createdAt)}
           </p>
         </div>
@@ -103,7 +103,7 @@ function DuelRow({ duel, userId }: { duel: DuelView; userId: string }): React.JS
         <div className="shrink-0 text-right">
           {outcome ? (
             <p
-              className={`font-display text-lg font-bold ${
+              className={`font-display text-lg ${
                 outcome === 'WON'
                   ? 'text-primary'
                   : outcome === 'LOST'
@@ -114,11 +114,7 @@ function DuelRow({ duel, userId }: { duel: DuelView; userId: string }): React.JS
               {outcome === 'WON' ? 'Виграш' : outcome === 'LOST' ? 'Поразка' : 'Нічия'}
             </p>
           ) : (
-            <p
-              className={`text-xs tracking-[0.14em] uppercase ${
-                actionable ? 'text-primary' : 'text-text-muted'
-              }`}
-            >
+            <p className={`text-xs ${actionable ? 'text-primary' : 'text-text-muted'}`}>
               {STANCE_LABEL[stance]}
             </p>
           )}
