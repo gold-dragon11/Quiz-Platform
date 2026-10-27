@@ -51,9 +51,9 @@ drops and elevation steps *lighter*; the indigo rises in lightness and loses
 chroma so it does not glare; no hue moves between the modes.
 
 The preference lives in `localStorage` (`quix.theme`) and never reaches the
-server (decision 35). `index.html` applies it before the first paint. Until
-its own redesign, the landing stays dark and keeps its previous tokens,
-scoped under `.lp` in `features/landing/landing.css`.
+server (decision 35). `index.html` applies it before the first paint. The
+landing follows it like every other screen (decision 42); it used to be
+pinned to dark.
 
 ---
 

@@ -66,10 +66,7 @@
           var dark =
             preference === 'dark' ||
             (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-          // The landing page is pinned to dark until its own redesign (see
-          // usePinnedTheme). Honouring the preference here and then having
-          // React pin it back would be the very flash this script prevents.
-          if (dark || location.pathname === '/') {
+          if (dark) {
             document.documentElement.setAttribute('data-theme', 'dark');
             document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f0d08');
           }

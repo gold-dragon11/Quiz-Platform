@@ -21,6 +21,31 @@ describe('LoginPage', () => {
     expect(screen.getByText('Вкажіть пароль')).toBeInTheDocument();
   });
 
+  it('arrives from «Спробувати демо» with the demo account filled in', async () => {
+    let sent: { email: string; password: string } | null = null;
+    server.use(
+      http.post(api('/auth/login'), async ({ request }) => {
+        sent = (await request.json()) as typeof sent;
+        return HttpResponse.json({ accessToken: 'token' });
+      }),
+    );
+    const { user } = renderScreen(<LoginPage />, { path: '/login', route: '/login?demo=teacher' });
+
+    expect(screen.getByLabelText('Електронна пошта')).toHaveValue('demo-teacher@learn-ls.com');
+    expect(screen.getByText(/Демо-акаунт вчителя/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Увійти' }));
+
+    await waitFor(() =>
+      expect(sent).toEqual({ email: 'demo-teacher@learn-ls.com', password: 'LsDemo2026!' }),
+    );
+  });
+
+  it('ignores a ?demo= value that names no demo account', () => {
+    renderScreen(<LoginPage />, { path: '/login', route: '/login?demo=admin' });
+
+    expect(screen.getByLabelText('Електронна пошта')).toHaveValue('');
+  });
+
   it('shows the server’s refusal once, not twice', async () => {
     // The shared error helper used to raise a toast as well as the form
     // error, so the same sentence appeared over the form and in the corner.
