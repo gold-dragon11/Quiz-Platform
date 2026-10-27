@@ -34,6 +34,11 @@ RUN npx prisma generate
 
 COPY --from=build /app/dist ./dist
 
+# The image's own unprivileged user. Everything above stays owned by root and
+# is only read at runtime, so a flaw in the API cannot rewrite the code it
+# runs, and a breakout from the process starts without root in the container.
+USER node
+
 EXPOSE 3000
 
 # Pending migrations are applied before the server accepts traffic. Without
