@@ -9,14 +9,24 @@ const DAYS = 12;
  * (1, 3 and 7 days, backend REVIEW_LADDER_DAYS); the days are where each
  * answer lands on it.
  */
-const ROWS: { label: string; from?: number; to?: number; at?: number; wrong?: boolean; cleared?: boolean }[] =
-  [
-    { label: 'Помилка', at: 0, wrong: true },
-    { label: 'Через 1 день', from: 0, to: 1, at: 1 },
-    { label: 'Через 3 дні', from: 1, to: 4, at: 4 },
-    { label: 'Через 7 днів', from: 4, to: 11, at: 11 },
-    { label: 'Виправлено', from: 11, to: 12, cleared: true },
-  ];
+const ROWS: {
+  label: string;
+  short: string;
+  from?: number;
+  to?: number;
+  at?: number;
+  wrong?: boolean;
+  cleared?: boolean;
+}[] = [
+  { label: 'Помилка', short: 'Помилка', at: 0, wrong: true },
+  { label: 'Через 1 день', short: '1 день', from: 0, to: 1, at: 1 },
+  { label: 'Через 3 дні', short: '3 дні', from: 1, to: 4, at: 4 },
+  { label: 'Через 7 днів', short: '7 днів', from: 4, to: 11, at: 11 },
+  { label: 'Виправлено', short: 'Виправлено', from: 11, to: 12, cleared: true },
+];
+
+/** The days something happens on: the only ones a phone has room to number. */
+const MARKED = new Set(ROWS.flatMap((row) => [row.at, row.to]).filter((day) => day !== undefined));
 
 const vars = (values: Record<string, number | undefined>): CSSProperties => values as CSSProperties;
 
@@ -34,11 +44,11 @@ export function MistakeLadderSection(): React.JSX.Element {
           </p>
         </div>
 
-        <div className="mt-[clamp(48px,6vw,80px)] overflow-x-auto">
+        <div className="mt-[clamp(48px,6vw,80px)]">
           {/* A real table laid out on a grid. The rows keep their roles
               explicitly: `display: contents` on a row has cost it its role in
               some browsers. */}
-          <table className="lp-scale min-w-[640px]">
+          <table className="lp-scale">
             <caption className="sr-only">Шлях одного питання драбиною помилок, у днях від помилки</caption>
             <thead>
               <tr role="row">
@@ -46,7 +56,13 @@ export function MistakeLadderSection(): React.JSX.Element {
                   День
                 </th>
                 {Array.from({ length: DAYS }, (_, day) => (
-                  <th key={day} scope="col" role="columnheader" className="figure">
+                  <th
+                    key={day}
+                    scope="col"
+                    role="columnheader"
+                    className="figure"
+                    data-minor={MARKED.has(day) ? undefined : ''}
+                  >
                     {day}
                   </th>
                 ))}
@@ -56,7 +72,8 @@ export function MistakeLadderSection(): React.JSX.Element {
               {ROWS.map((row) => (
                 <tr key={row.label} role="row">
                   <th scope="row" role="rowheader">
-                    {row.label}
+                    <span className="lp-scale__long">{row.label}</span>
+                    <span className="lp-scale__short">{row.short}</span>
                   </th>
                   <td className="lp-scale__track" colSpan={DAYS} role="cell" style={vars({ '--days': DAYS })}>
                     {row.from !== undefined && row.to !== undefined && (
