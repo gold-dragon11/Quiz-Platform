@@ -31,7 +31,7 @@ against them (0 Floor findings, 0 Reflex at the time of writing).
 | Masthead | `LandingNav` | The wordmark centred over a rule; the demo at the left, sign-in and sign-up at the right; all links |
 | Hero | `HeroSection`, `HeroSheets` | A Banner: the three words, one sentence, sign up and the demo; four NMT sheets on the right |
 | The product at work | `ProductStack` | A Feature Stack: the head pinned on the left, four captured screens passing on the right |
-| The mistake ladder | `MistakeLadderSection` | Time as a ruled scale: one question's days on the 1, 3, 7 ladder |
+| The mistake ladder | `MistakeLadderSection` | Time as a ruled scale: one question's days on the 1, 3, 7 ladder; it fits every width, and a phone gets short labels and numbers only the days an answer lands on |
 | Mock NMT | `MockExamSection` | A specification in ruled rows, with an example score set largest |
 | Live duel | `DuelSection` | Status rows: the question, its clock, the two players |
 | Tutors | `TutorsSection` | A sample homework report as a table |
@@ -78,7 +78,9 @@ Three primitives, the budget Hallmark allows, and nothing else:
 2. **The pinned stack.** The head of «Тест, розбір, повторення» holds while the
    four screens scroll past at the reader's speed; the step of the screen in
    view is marked by an `IntersectionObserver`, a threshold state rather than
-   a scroll handler. A pin, not a scrub.
+   a scroll handler. A pin, not a scrub. Below 60rem nothing is pinned, so
+   the list is not shown: each screen carries its own step («1 Тест») above
+   it, since a list that scrolls away could only ever mark its first item.
 3. **The duel's clock.** A four-second loop, paused while the duel is pointed
    at or focused.
 
@@ -108,6 +110,8 @@ animation, so it checks exactly that state.
   the content column is `x 300, y 64, 940 × 588` at 1.5× density.
 - A new section: count it. Hallmark asks for six to nine, hero and footer
   included; the page is at the top of that range.
+- Nothing scrolls sideways on a phone, not even a table in its own box:
+  check 360 and 390 px, and a figure that does not fit is redrawn to fit.
 - After any change: `node .claude/skills/hallmark/scripts/sloplint.mjs
   frontend/src/features/landing --genre editorial --render --url <dev server>`.
 - The screenshot in the README and `frontend/public/og-image.png` are taken

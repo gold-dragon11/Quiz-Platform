@@ -3,7 +3,6 @@
  * axes: light/roman-serif/cool · posture: committed · contrast: pass · fold: pass · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H5 E4 S5 R4 V4 · weakest: P, a sign-up page argues little; it leads with the exam's own sheet and the product's real screens instead of claims */
 /* Hallmark · waive 77 · the indigo closing band, one line and the hero's action, once on the page · it repeats «Зареєструватися» where the page ends */
-/* Hallmark · answered F25 · the ladder's twelve days scroll sideways on a phone; the rungs and the rule under the table stay readable */
 
 /*
  * The landing (docs/05-frontend/landing.md, decision 42). The page is set in
@@ -262,8 +261,11 @@
   }
 }
 
+/* The list marks the screen in view only where it is pinned beside them; on
+   a narrower screen it would scroll away after its first item, so each
+   capture carries its own step instead (.lp-capture__step). */
 .lp-steps {
-  display: grid;
+  display: none;
   margin: 40px 0 0;
   padding: 0;
   list-style: none;
@@ -289,6 +291,30 @@
   color: var(--color-primary);
 }
 
+.lp-capture__step {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  margin: 0 0 16px;
+  padding-top: 16px;
+  border-top: 2px solid var(--color-rule-ink);
+  font-size: 17px;
+  color: var(--color-text-primary);
+}
+.lp-capture__step span {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--color-primary);
+}
+@media (min-width: 60rem) {
+  .lp-steps {
+    display: grid;
+  }
+  .lp-capture__step {
+    display: none;
+  }
+}
+
 .lp-capture img {
   display: block;
   width: 100%;
@@ -311,11 +337,40 @@
  * days a question waits as a sand bar and the day it is cleared as the indigo
  * line. Drawn from the schedule itself (1, 3, 7 days), not a picture of one.
  */
+/* It fits the screen at every width: a phone gets a narrower label column
+   and the short labels, and the twelve days share what is left, about 17px
+   each at 360px. No sideways scroll. */
 .lp-scale {
   --days: 12;
   display: grid;
-  grid-template-columns: minmax(9rem, 14rem) repeat(var(--days), minmax(0, 1fr));
-  font-size: 15px;
+  grid-template-columns: 6rem repeat(var(--days), minmax(0, 1fr));
+  font-size: 14px;
+}
+.lp-scale__long {
+  display: none;
+}
+/* Twelve numbers do not fit 17px columns: a phone numbers only the days an
+   answer lands on. The column stays, so the grid lines still count days. */
+.lp-scale thead th[data-minor] {
+  color: transparent;
+}
+@media (min-width: 40rem) {
+  .lp-scale {
+    grid-template-columns: minmax(9rem, 14rem) repeat(var(--days), minmax(0, 1fr));
+    font-size: 15px;
+  }
+  .lp-scale tbody th {
+    padding-right: 16px;
+  }
+  .lp-scale thead th[data-minor] {
+    color: var(--color-text-muted);
+  }
+  .lp-scale__long {
+    display: inline;
+  }
+  .lp-scale__short {
+    display: none;
+  }
 }
 .lp-scale thead,
 .lp-scale tbody,
@@ -333,7 +388,7 @@
   color: var(--color-text-muted);
 }
 .lp-scale tbody th {
-  padding: 16px 16px 16px 0;
+  padding: 16px 8px 16px 0;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-text-primary);
 }
