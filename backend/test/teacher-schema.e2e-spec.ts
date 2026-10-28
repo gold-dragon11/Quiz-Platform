@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -23,7 +24,7 @@ import { listenOnLoopback } from './loopback';
 describe('Teacher schema (e2e)', () => {
   const PREFIX = 'teacher-schema';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let teacherId: string;

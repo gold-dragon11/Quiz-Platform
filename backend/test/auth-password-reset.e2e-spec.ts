@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
@@ -67,7 +68,7 @@ describe('Password Reset (e2e)', () => {
   const REFRESH_URL = '/api/v1/auth/refresh';
   const GENERIC_ERROR = 'Недійсний або протермінований токен відновлення.';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let emailOutbox: CapturingEmailService;
   let resetSecret: string;

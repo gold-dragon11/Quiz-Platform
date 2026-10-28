@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, QuestionType, UserRole } from '@prisma/client';
 import type { AddressInfo } from 'node:net';
@@ -56,7 +57,7 @@ describe('Duels — live (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const SHORT_QUESTIONS = 12;
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let baseUrl: string;
   let subjectId: string;

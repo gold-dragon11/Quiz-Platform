@@ -110,13 +110,8 @@ Administrator routes require admin permissions.
 
 | Route | Purpose |
 |---------|---------|
-| `/admin` | Admin dashboard |
-| `/admin/subjects` | Subject management |
-| `/admin/topics` | Topic management |
-| `/admin/quizzes` | Quiz template management |
-| `/admin/questions` | Question management |
-| `/admin/questions/new` | Create question |
-| `/admin/questions/:id/edit` | Edit question |
+| `/admin` | The admin panel: one page, its section in `?tab=` (overview, subjects, topics, questions, quizzes, users) |
+| `/admin/subjects`, `/admin/topics`, `/admin/quizzes`, `/admin/questions`, `/admin/questions/new`, `/admin/questions/:id/edit` | Redirect to `/admin?tab=…` for that section. They were planned before the panel existed and never had pages of their own; questions are created and edited in a modal on the questions tab |
 
 Users without administrator permissions receive:
 

@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -64,7 +65,7 @@ describe('Quiz Engine (e2e)', () => {
   const SLUG_PREFIX = 'p51';
   const PASSWORD = 'ValidPass1!';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
   let subjectId: string;

@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
@@ -40,7 +41,7 @@ describe('Refresh & Logout (e2e)', () => {
   const LOGOUT_URL = '/api/v1/auth/logout';
   const ME_URL = '/api/v1/auth/me';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let refreshSecret: string;
   let counter = 0;

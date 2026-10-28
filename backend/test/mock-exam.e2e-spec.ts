@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -148,7 +149,7 @@ describe('Mock exam (e2e)', () => {
     subjectSlugs: [PAPER_SLUG, GAP_SLUG],
   };
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let thinSubjectId: string;

@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -39,7 +40,7 @@ describe('Teacher question bank (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const URL = '/api/v1/teacher/questions';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let teacherToken: string;
   let studentToken: string;

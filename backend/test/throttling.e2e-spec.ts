@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -19,7 +20,7 @@ import { listenOnLoopback } from './loopback';
  * factory reads `process.env` at construction time.
  */
 describe('Rate limiting (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
   const previous = process.env.THROTTLE_ENABLED;
   const previousLimit = process.env.THROTTLE_LIMIT;
   // A small per-person allowance, so the tests reach it in a few requests.

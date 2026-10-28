@@ -1,0 +1,21 @@
+# learn-ls.com. The landing, sign-in, sign-up and public profiles are open to
+# crawlers; everything behind a sign-in, and the one-time links sent by email,
+# are not. The API lives on api.learn-ls.com and is not a site to index.
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /subjects
+Disallow: /topics/
+Disallow: /quiz
+Disallow: /mock-exam
+Disallow: /mistake-review
+Disallow: /duels
+Disallow: /groups
+Disallow: /assignments
+Disallow: /statistics
+Disallow: /profile
+Disallow: /settings
+Disallow: /teacher/
+Disallow: /admin
+Disallow: /verify-email
+Disallow: /reset-password

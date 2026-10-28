@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
@@ -71,7 +72,7 @@ describe('Email Verification (e2e)', () => {
   const RESEND_URL = '/api/v1/auth/resend-verification';
   const GENERIC_ERROR = 'Недійсний або протермінований токен підтвердження.';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let emailOutbox: CapturingEmailService;
   let verificationSecret: string;

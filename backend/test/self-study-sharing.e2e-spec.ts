@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, QuestionType, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -40,7 +41,7 @@ describe('Self-study sharing (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const SETTINGS_URL = '/api/v1/users/me/settings';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let otherSubjectId: string;

@@ -291,7 +291,7 @@ function readMatchingPairs(
 
   const orderById = new Map(options.map((option) => [option.id, option.order]));
 
-  return pairs.map((pair): OrderPair => {
+  return pairs.map((pair: unknown): OrderPair => {
     if (typeof pair !== 'object' || pair === null || Array.isArray(pair)) {
       throw new BadRequestException(INVALID_ANSWER_MESSAGE);
     }

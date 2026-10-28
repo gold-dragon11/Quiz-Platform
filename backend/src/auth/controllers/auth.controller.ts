@@ -69,9 +69,9 @@ const TOKEN_SUBMIT_LIMIT = {
 /**
  * Authentication endpoints (docs/04-api/authentication.md).
  *
- * Registration is implemented here. The remaining documented endpoints —
- * verify-email, resend-verification, login, logout, refresh, forgot-password,
- * reset-password, and me — are added in later phases.
+ * Registration, email verification and its resend, login, refresh, logout,
+ * forgot-password, reset-password and me. The session lives in an HttpOnly
+ * cookie (decision 36); see the handlers below for the details of each.
  */
 @Controller('auth')
 export class AuthController {

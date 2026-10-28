@@ -1,11 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { App } from 'supertest/types';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { listenOnLoopback } from './loopback';
 
 describe('Health (e2e)', () => {
-  let app: INestApplication;
+  let app: INestApplication<App>;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({

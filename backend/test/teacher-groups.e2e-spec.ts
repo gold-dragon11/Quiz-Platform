@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -44,7 +45,7 @@ describe('Groups (e2e)', () => {
   const TEACHER_URL = '/api/v1/teacher/groups';
   const STUDENT_URL = '/api/v1/groups';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let counter = 0;

@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -54,7 +55,7 @@ describe('Learning Materials (e2e)', () => {
   const SLUG_PREFIX = 'lm-e2e';
   const PASSWORD = 'ValidPass1!';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
   let userToken: string;
