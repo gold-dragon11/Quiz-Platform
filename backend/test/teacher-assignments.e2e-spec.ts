@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -52,7 +53,7 @@ describe('Assignments (e2e)', () => {
   const TEACHER_URL = '/api/v1/teacher';
   const STUDENT_URL = '/api/v1/assignments';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let otherSubjectId: string;

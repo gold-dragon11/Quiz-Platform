@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -24,7 +25,7 @@ describe('Public demo (e2e)', () => {
   const REAL_EMAIL = 'demo-e2e-real@example.com';
   const REAL_PASSWORD = 'ValidPass1!';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let demo: DemoService;
 

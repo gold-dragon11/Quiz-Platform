@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, QuestionType, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -31,7 +32,7 @@ describe('Question exposure (e2e)', () => {
   const TOTAL_QUESTIONS = 12;
   const PER_SITTING = 4;
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let topicId: string;

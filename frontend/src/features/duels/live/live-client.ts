@@ -1,4 +1,4 @@
-import { io, type Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { create } from 'zustand';
 import { env } from '@/config/env';
 import { refreshSession } from '@/lib/api-client';
@@ -77,25 +77,52 @@ export function serverNow(): number {
 let socket: Socket | null = null;
 /** One refresh per refusal, so an expired session cannot loop. */
 let refreshedAfterRefusal = false;
+/** Bumped by every disconnect, so a library that arrives late opens nothing. */
+let generation = 0;
+let loading = false;
 
+/**
+ * Opens the socket. The client library is fetched here, on first use, rather
+ * than imported at the top: the host that calls this wraps every signed-in
+ * page, so a static import put socket.io in the main bundle for everyone,
+ * the landing, guests, teachers and demo accounts included, none of whom
+ * ever open a socket.
+ */
 export function connectLive(): void {
-  if (socket) {
+  if (socket || loading) {
     return;
   }
+  loading = true;
+  const mine = generation;
   set({ connection: 'connecting' });
 
-  // Read at every (re)connect, so a token refreshed in the meantime is used.
-  socket = io(env.liveUrl, {
-    auth: (callback) => callback({ token: getAccessToken() }),
-    transports: ['websocket', 'polling'],
-  });
+  import('socket.io-client')
+    .then(({ io }) => {
+      loading = false;
+      if (mine !== generation || socket) {
+        return;
+      }
+      // Read at every (re)connect, so a token refreshed in the meantime is used.
+      socket = io(env.liveUrl, {
+        auth: (callback) => callback({ token: getAccessToken() }),
+        transports: ['websocket', 'polling'],
+      });
+      listen(socket);
+    })
+    .catch(() => {
+      // The chunk did not load (offline, a deploy in between): the next
+      // mount of the host tries again.
+      loading = false;
+    });
+}
 
-  socket.on('live:ready', () => {
+function listen(live: Socket): void {
+  live.on('live:ready', () => {
     refreshedAfterRefusal = false;
     set({ connection: 'ready' });
   });
 
-  socket.on('live:refused', (body: { code?: string }) => {
+  live.on('live:refused', (body: { code?: string }) => {
     set({ connection: 'refused' });
     // An access token lives fifteen minutes; a socket reconnecting after a
     // dropped network may present a stale one. One refresh, then one retry.
@@ -107,15 +134,15 @@ export function connectLive(): void {
     }
   });
 
-  socket.on('disconnect', () => {
+  live.on('disconnect', () => {
     if (useLiveStore.getState().connection !== 'refused') {
       set({ connection: 'connecting' });
     }
   });
 
-  socket.on('live:lobby', (lobby: LobbyState) => set({ lobby }));
+  live.on('live:lobby', (lobby: LobbyState) => set({ lobby }));
 
-  socket.on('live:queue', (event: QueueEvent) => {
+  live.on('live:queue', (event: QueueEvent) => {
     if (event.state === 'waiting') {
       set({ queue: event, clockOffset: event.serverNow - Date.now() });
     } else if (event.state === 'left') {
@@ -125,11 +152,11 @@ export function connectLive(): void {
     }
   });
 
-  socket.on('live:invite:incoming', (invite: IncomingInvite) =>
+  live.on('live:invite:incoming', (invite: IncomingInvite) =>
     set({ incoming: invite, clockOffset: invite.serverNow - Date.now() }),
   );
 
-  socket.on('live:invite:closed', (closed: InviteClosed) => {
+  live.on('live:invite:closed', (closed: InviteClosed) => {
     const state = useLiveStore.getState();
     if (state.incoming?.inviteId === closed.inviteId) {
       set({ incoming: null });
@@ -148,7 +175,7 @@ export function connectLive(): void {
     }
   });
 
-  socket.on('live:game', (game: LiveGameView) =>
+  live.on('live:game', (game: LiveGameView) =>
     set({
       game,
       clockOffset: game.serverNow - Date.now(),
@@ -161,6 +188,8 @@ export function connectLive(): void {
 }
 
 export function disconnectLive(): void {
+  generation += 1;
+  loading = false;
   socket?.disconnect();
   socket = null;
   useLiveStore.setState(INITIAL);

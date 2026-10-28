@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { server } from './server';
 import { useAuthStore } from '@/stores/auth-store';
@@ -11,6 +11,15 @@ import { useToastStore } from '@/stores/toast-store';
  * fails instead of hanging on a request that never resolves.
  */
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+
+/*
+ * `findBy…` waits 1 s by default. With 28 files running in parallel a mocked
+ * response can take longer than that to land, and the tests that open a
+ * subject list and look for «Математика» failed at random, a different one
+ * each run, while each passed alone. Three seconds is still well inside the
+ * per-test timeout, and a query that never matches still fails.
+ */
+configure({ asyncUtilTimeout: 3000 });
 
 afterEach(() => {
   server.resetHandlers();

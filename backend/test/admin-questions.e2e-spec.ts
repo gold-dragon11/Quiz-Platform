@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -61,7 +62,7 @@ describe('Admin Questions (e2e)', () => {
   const TOPICS_URL = '/api/v1/admin/topics';
   const QUESTIONS_URL = '/api/v1/admin/questions';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let adminToken: string;
   let userToken: string;

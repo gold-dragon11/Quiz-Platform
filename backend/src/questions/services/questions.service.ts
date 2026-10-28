@@ -840,7 +840,7 @@ export class QuestionsService {
       throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
     }
 
-    return pairs.map((pair): MatchingPair => {
+    return pairs.map((pair: unknown): MatchingPair => {
       if (typeof pair !== 'object' || pair === null || Array.isArray(pair)) {
         throw new BadRequestException(CONFIGURATION_INVALID_MESSAGE);
       }

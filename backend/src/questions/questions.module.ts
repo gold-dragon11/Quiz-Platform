@@ -9,8 +9,8 @@ import { QuestionsService } from './services/questions.service';
 
 /**
  * Questions module (docs/06-backend/architecture.md §6) — owns the Question
- * and AnswerOption domain: administrative CRUD now, public read endpoints in
- * a later phase. Depends on the Topics module only through its public
+ * and AnswerOption domain: administrative CRUD, the public read endpoint
+ * under a topic and the teacher's bank view. Depends on the Topics module only through its public
  * service interface, to validate the parent topic
  * (docs/06-backend/architecture.md §11).
  */

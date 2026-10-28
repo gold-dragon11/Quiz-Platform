@@ -6,6 +6,7 @@ import {
   UseGuards,
   ValidationPipe,
 } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, UserRole } from '@prisma/client';
@@ -61,7 +62,7 @@ describe('Authorization (e2e)', () => {
   const AUTHENTICATED_URL = '/api/v1/authz-probe/authenticated';
   const PUBLIC_URL = '/api/v1/authz-probe/public';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let accessSecret: string;
   let refreshSecret: string;

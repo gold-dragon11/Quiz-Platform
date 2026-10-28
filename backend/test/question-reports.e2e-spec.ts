@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -42,7 +43,7 @@ describe('Question reports (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const ADMIN_URL = '/api/v1/admin/question-reports';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let topicId: string;

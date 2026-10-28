@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, QuestionType, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -47,7 +48,7 @@ describe('Mistake review (e2e)', () => {
   const START_URL = '/api/v1/quiz/mistake-review/start';
   const SUMMARY_URL = '/api/v1/quiz/mistake-review';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let subjectId: string;
   let topicId: string;

@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { MOCK_EXAM_ROLES } from '@/shared/constants/roles';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { RootLayout } from '@/shared/layouts/RootLayout';
 import { PublicLayout } from '@/shared/layouts/PublicLayout';
 import { MainLayout } from '@/shared/layouts/MainLayout';
@@ -50,25 +50,21 @@ import { LandingPage } from '@/features/landing';
  *   boundary, and its `errorElement` (RouteError) is the routing error layer;
  * - route groups are gated by guards — RequireGuest (auth-only pages),
  *   RequireAuth (member area), RequireAdmin (admin area);
- * - pages are code-split with React.lazy. Leaves still render the shared
- *   PlaceholderPage — real feature pages replace it one phase at a time and
- *   follow the same lazy pattern, without touching this file's shape.
+ * - pages are code-split with React.lazy.
  */
-const PlaceholderPage = lazy(() =>
-  import('@/pages/PlaceholderPage').then((m) => ({ default: m.PlaceholderPage })),
-);
 const NotFoundPage = lazy(() =>
   import('@/pages/not-found/NotFoundPage').then((m) => ({
     default: m.NotFoundPage,
   })),
 );
 
-function withTransition(title: string): React.JSX.Element {
-  return (
-    <PageTransition>
-      <PlaceholderPage title={title} />
-    </PageTransition>
-  );
+/**
+ * The admin panel is one page with its section in `?tab=`. The per-section
+ * paths were planned before it existed and only ever showed a stub; they now
+ * open the panel at that section, so an old bookmark still lands somewhere.
+ */
+function adminTab(tab: string): React.JSX.Element {
+  return <Navigate to={`${ROUTES.admin}?tab=${tab}`} replace />;
 }
 
 /** Wraps an implemented feature page in the shared route transition. */
@@ -228,27 +224,27 @@ export const router = createBrowserRouter([
                       { path: ROUTES.admin, element: page(<AdminPanelPage />) },
                       {
                         path: ROUTES.adminSubjects,
-                        element: withTransition('Керування предметами'),
+                        element: adminTab('subjects'),
                       },
                       {
                         path: ROUTES.adminTopics,
-                        element: withTransition('Керування темами'),
+                        element: adminTab('topics'),
                       },
                       {
                         path: ROUTES.adminQuizzes,
-                        element: withTransition('Керування шаблонами тестів'),
+                        element: adminTab('quizzes'),
                       },
                       {
                         path: ROUTES.adminQuestions,
-                        element: withTransition('Керування питаннями'),
+                        element: adminTab('questions'),
                       },
                       {
                         path: ROUTES.adminQuestionNew,
-                        element: withTransition('Створення питання'),
+                        element: adminTab('questions'),
                       },
                       {
                         path: ROUTES.adminQuestionEdit,
-                        element: withTransition('Редагування питання'),
+                        element: adminTab('questions'),
                       },
                     ],
                   },

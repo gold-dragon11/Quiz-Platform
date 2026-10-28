@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
@@ -29,7 +30,7 @@ describe('Public catalogue (e2e)', () => {
   const PREFIX = 'cat-e2e';
   const URL = '/api/v1/catalogue';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let publishedSubjectId: string;
   let hiddenSubjectId: string;

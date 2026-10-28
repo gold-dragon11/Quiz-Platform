@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus } from '@prisma/client';
 import cookieParser from 'cookie-parser';
@@ -30,7 +31,7 @@ describe('Account Management (e2e)', () => {
   const PASSWORD = 'ValidPass1!';
   const NEW_PASSWORD = 'NewValid2@';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let counter = 0;
 

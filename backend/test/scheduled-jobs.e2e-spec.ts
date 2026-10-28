@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   AccountStatus,
@@ -48,7 +49,7 @@ describe('Scheduled jobs (e2e)', () => {
   const DIGEST_URL = '/api/v1/jobs/daily';
   const previousSecret = process.env.CRON_SECRET;
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let notifications: SwitchableNotifications;
   let subjectId: string;

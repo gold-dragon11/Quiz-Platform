@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
@@ -48,7 +49,7 @@ describe('Current User (e2e)', () => {
   const LOGIN_URL = '/api/v1/auth/login';
   const REGISTER_URL = '/api/v1/auth/register';
 
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let accessSecret: string;
   let refreshSecret: string;

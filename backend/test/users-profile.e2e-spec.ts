@@ -1,4 +1,5 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import type { App } from 'supertest/types';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AccountStatus, QuestionType, UserRole } from '@prisma/client';
 import request from 'supertest';
@@ -40,7 +41,7 @@ describe('User Profile & Settings (e2e)', () => {
   const EMAIL_PREFIX = 'phase53-usr';
   const USERNAME_PREFIX = 'phase53usr';
   const PASSWORD = 'ValidPass1!';
-  let app: INestApplication;
+  let app: INestApplication<App>;
   let prisma: PrismaService;
   let counter = 0;
 

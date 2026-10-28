@@ -75,8 +75,8 @@ const PASSWORD_MUST_DIFFER_MESSAGE =
 /**
  * Authentication use cases (docs/06-backend/authentication.md §2).
  *
- * Registration, login, token refresh, and logout are implemented here; email
- * verification and password reset belong to later phases.
+ * Registration, email verification, login, token refresh, logout, password
+ * change and reset, and account deletion.
  */
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -109,8 +109,8 @@ export class AuthService implements OnModuleInit {
    * Registers a new account and the records it owns
    * (docs/01-prd/authentication.md §3, docs/04-api/authentication.md §4).
    *
-   * The account is created in a Pending Verification state; sending the
-   * verification email is a later phase.
+   * The account is created in a Pending Verification state and the
+   * verification email goes out from here (sendVerificationEmailSafely).
    */
   async register(dto: RegisterDto): Promise<void> {
     await this.assertCredentialsAvailable(dto.email, dto.username);
