@@ -738,18 +738,30 @@ The site's pages carry a CSP from `frontend/vercel.json`. The API sends none
 (`helmet({ contentSecurityPolicy: false })` in `main.ts`): it answers JSON only,
 and a policy protects the document that runs scripts, which Vercel serves.
 
-**It is in report-only mode** (`Content-Security-Policy-Report-Only`, since
-27.10.2026). The browser enforces nothing yet; it reports what the policy would
-have blocked to the frontend's Sentry project, where each violation arrives as
-a «CSP» issue naming the directive and the blocked address. The public screens
-were checked with the policy enforced on a production build, with no
-violations; the signed-in screens — KaTeX in questions, the live duel socket,
-avatars — are what the report-only week is for.
+**It is enforced** (`Content-Security-Policy`, since 29.10.2026). It ran in
+report-only mode from 27.10.2026. Before the switch, production was walked with
+the header rewritten to the enforced key on the way in: the guest pages, the
+demo student's screens (results with KaTeX, the mock exam, statistics, mistake
+review, duels) and the demo teacher's (the question bank, a group, homework
+reviews), 26 pages at desktop and phone width, with no violation. The same
+walk raises one as soon as an inline script is added to a page, so a clean run
+means something. `src/lib/csp.test.ts` fails if the key goes back to
+report-only.
 
-**Switching it on.** After a week with no reports that point at the
-application's own code, rename the header key to `Content-Security-Policy` and
-remove `report-uri` only if the reports are no longer wanted. A report that
-names a browser extension (`chrome-extension://…`) is noise and can be ignored.
+**Reports.** `report-uri` stays: the browser still sends every blocked load to
+the frontend's Sentry project, where it arrives as a «CSP» issue naming the
+directive and the blocked address. Now each one is something a reader could
+not load. A report that names a browser extension (`chrome-extension://…`) is
+noise and can be ignored.
+
+**If something breaks.** The quick way back is to rename the key to
+`Content-Security-Policy-Report-Only` and redeploy, which keeps the reports;
+then widen the one directive the report names, never the whole policy.
+
+**Not walked before the switch:** the live duel socket, since the demo
+accounts get none. `connect-src` names `wss://api.learn-ls.com`, and the
+socket's client library is a same-origin chunk, so it is allowed; a real
+learner's game would show up in Sentry first if not.
 
 **What it allows, and why.**
 
