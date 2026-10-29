@@ -5,13 +5,14 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Req,
   Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { AppConfig } from '../../config/configuration';
 import { byAccount, byAddress } from '../../common/throttle/request-trackers';
 import { CurrentUser } from '../decorators/current-user.decorator';
@@ -23,6 +24,7 @@ import { ResendVerificationDto } from '../dto/resend-verification.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { VerifyEmailDto } from '../dto/verify-email.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { LoginLockedException } from '../errors/login-locked.exception';
 import { AuthService } from '../services/auth.service';
 import { clearRefreshCookie, setRefreshCookie } from '../session-cookie';
 import { CurrentUserResponse } from '../types/current-user-response.type';
@@ -43,16 +45,18 @@ const HOUR = 60 * MINUTE;
  * the address limits are sized for a class of about thirty-five signing up,
  * confirming and logging in from one room (docs/06-backend/security.md §12).
  *
- * - Login: ten attempts a minute per account, wherever they come from, and a
- *   hundred per address — enough for a class, not for guessing across many
- *   accounts from one machine.
+ * - Login: a hundred per address a minute, enough for a class and not for
+ *   guessing across many accounts from one machine. Guessing one account is
+ *   stopped by failed attempts rather than by requests (LoginAttemptsService,
+ *   decision 44): a per-account request limit let anybody lock a person, or
+ *   the public demo, out with ten wrong passwords.
  * - Registration and token submission: per address, and explicitly so — a
  *   bearer token would otherwise buy a fresh allowance per account.
  * - Email-sending routes: three a message per address of mail an hour, so one
  *   inbox cannot be flooded, and twenty per network address.
  */
 const LOGIN_LIMIT = {
-  default: { limit: 10, ttl: MINUTE, getTracker: byAccount },
+  default: { limit: 100, ttl: MINUTE, getTracker: byAddress },
   address: { limit: 100, ttl: MINUTE },
 };
 const REGISTER_LIMIT = {
@@ -119,9 +123,19 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() loginDto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AccessTokenResponse> {
-    return this.establishSession(res, await this.authService.login(loginDto));
+    try {
+      // TRUST_PROXY makes this the client's address behind Render.
+      const tokens = await this.authService.login(loginDto, String(req.ip));
+      return this.establishSession(res, tokens);
+    } catch (error) {
+      if (error instanceof LoginLockedException) {
+        res.setHeader('Retry-After', String(error.retryAfterSeconds));
+      }
+      throw error;
+    }
   }
 
   /**

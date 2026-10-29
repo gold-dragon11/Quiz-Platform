@@ -2,8 +2,12 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import type { App } from 'supertest/types';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AccountStatus } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { LOGIN_LOCKED_MESSAGE } from './../src/auth/errors/login-locked.exception';
+import { PasswordUtil } from './../src/auth/utils/password.util';
+import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
 
 /**
@@ -47,6 +51,9 @@ describe('Rate limiting (e2e)', () => {
   });
 
   afterAll(async () => {
+    await app
+      .get(PrismaService)
+      .user.deleteMany({ where: { email: { startsWith: 'throttle-owner' } } });
     await app.close();
     if (previous === undefined) {
       delete process.env.THROTTLE_ENABLED;
@@ -82,36 +89,28 @@ describe('Rate limiting (e2e)', () => {
       .post('/api/v1/auth/login')
       .send({ email: 'throttle-probe@example.com', password: 'WrongPass1!' });
 
-  it('rejects a burst of login attempts with 429 once the limit is passed', async () => {
-    const LOGIN_LIMIT = 10;
-    const statuses: number[] = [];
+  it('locks an address out of one account after five failed attempts', async () => {
+    const statuses = await burst(7, attemptLogin);
 
-    for (let i = 0; i < LOGIN_LIMIT + 2; i += 1) {
-      statuses.push((await attemptLogin()).status);
-    }
-
-    // The allowance itself must not be spent by the limiter: the first ten
-    // attempts reach the handler and fail on the credentials, not on 429.
-    expect(statuses.slice(0, LOGIN_LIMIT).every((s) => s === 401)).toBe(true);
-    expect(statuses.slice(LOGIN_LIMIT)).toEqual([429, 429]);
+    // The attempts themselves reach the handler and fail on the credentials;
+    // only the ones after the fifth failure are turned away (decision 44).
+    expect(statuses.slice(0, 5)).toEqual([401, 401, 401, 401, 401]);
+    expect(statuses.slice(5)).toEqual([429, 429]);
   });
 
-  it('answers 429 with a retry hint rather than a bare rejection', async () => {
+  it('answers a locked sign-in with how long to wait', async () => {
     const response = await attemptLogin();
 
     expect(response.status).toBe(429);
-    expect(response.headers['retry-after']).toBeDefined();
+    const wait = Number(response.headers['retry-after']);
+    expect(wait).toBeGreaterThan(0);
+    expect(wait).toBeLessThanOrEqual(15 * 60);
   });
 
-  it('rejects in Ukrainian, without naming the exception or the limit', async () => {
+  it('says so in Ukrainian, without a number that would pace the guessing', async () => {
     const body = (await attemptLogin()).body as { message: string };
 
-    // The frontend renders the server's message verbatim, so the default
-    // `ThrottlerException: Too Many Requests` would surface to the user.
-    expect(body.message).toBe(
-      'Забагато запитів. Зачекайте трохи та спробуйте ще раз.',
-    );
-    // Saying how many attempts remain would tell an attacker their budget.
+    expect(body.message).toBe(LOGIN_LOCKED_MESSAGE);
     expect(body.message).not.toMatch(/\d/);
   });
 
@@ -139,13 +138,22 @@ describe('Rate limiting (e2e)', () => {
       secret: 'not-the-app-secret-at-all-xxxxxxxx',
     });
     const statuses: number[] = [];
+    let last: request.Response | undefined;
     for (let i = 0; i <= PERSON_LIMIT; i += 1) {
-      const response = await request(app.getHttpServer())
+      last = await request(app.getHttpServer())
         .get('/api/v1/auth/me')
         .set('Authorization', `Bearer ${forged.sign({ sub: `fake-${i}` })}`);
-      statuses.push(response.status);
+      statuses.push(last.status);
     }
     expect(statuses[PERSON_LIMIT]).toBe(429);
+    // The frontend renders the server's message verbatim, so the default
+    // `ThrottlerException: Too Many Requests` would surface to the user, and
+    // a count of what remains would tell an attacker their budget.
+    const message = (last?.body as { message: string }).message;
+    expect(message).toBe(
+      'Забагато запитів. Зачекайте трохи та спробуйте ще раз.',
+    );
+    expect(message).not.toMatch(/\d/);
   });
 
   it('limits login attempts per account, not for the whole address', async () => {
@@ -154,12 +162,44 @@ describe('Rate limiting (e2e)', () => {
         .post('/api/v1/auth/login')
         .send({ email, password: 'WrongPass1!' });
 
-    const target = await burst(11, loginAs('throttle-target@example.com'));
-    expect(target[10]).toBe(429);
+    const target = await burst(6, loginAs('throttle-target@example.com'));
+    expect(target[5]).toBe(429);
 
     // The next person in the room is not locked out by someone else's typos.
     const neighbour = await loginAs('throttle-neighbour@example.com')();
     expect(neighbour.status).toBe(401);
+  });
+
+  it('lets a correct password clear the failures on the account', async () => {
+    // Created in the database rather than through /auth/register: that route
+    // has its own allowance per address, which the next test measures.
+    const owner = {
+      email: 'throttle-owner@example.com',
+      password: 'RightPass1!',
+    };
+    await app.get(PrismaService).user.create({
+      data: {
+        email: owner.email,
+        passwordHash: await app.get(PasswordUtil).hashPassword(owner.password),
+        accountStatus: AccountStatus.ACTIVE,
+        emailVerified: true,
+      },
+    });
+    const wrong = () =>
+      request(app.getHttpServer())
+        .post('/api/v1/auth/login')
+        .send({ email: owner.email, password: 'WrongPass1!' });
+
+    expect(await burst(4, wrong)).toEqual([401, 401, 401, 401]);
+    await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ email: owner.email, password: owner.password })
+      .expect(200);
+
+    // Without the reset the fifth of these would already be turned away: the
+    // count began again, so five more fail on the password and only then the
+    // address waits.
+    expect(await burst(6, wrong)).toEqual([401, 401, 401, 401, 401, 429]);
   });
 
   it('lets a class of thirty-five register from one address', async () => {

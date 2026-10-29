@@ -20,6 +20,8 @@ import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../../config/configuration';
 import { EmailService } from '../../email/email.service';
 import { OwnerAlertsService } from '../../owner-alerts/owner-alerts.service';
+import { LoginLockedException } from '../errors/login-locked.exception';
+import { LoginAttemptsService } from './login-attempts.service';
 import {
   EMAIL_VERIFICATION_PURPOSE,
   PASSWORD_RESET_PURPOSE,
@@ -97,6 +99,7 @@ export class AuthService implements OnModuleInit {
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly emailService: EmailService,
     private readonly ownerAlerts: OwnerAlertsService,
+    private readonly loginAttempts: LoginAttemptsService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -235,7 +238,13 @@ export class AuthService implements OnModuleInit {
    * the same 401 and all perform one Argon2 verification, so neither the
    * response nor its timing reveals whether an account exists.
    */
-  async login(dto: LoginDto): Promise<TokenPair> {
+  async login(dto: LoginDto, address: string): Promise<TokenPair> {
+    // Asked before any hashing: a locked pair costs the server nothing.
+    const wait = this.loginAttempts.retryAfter(dto.email, address);
+    if (wait > 0) {
+      throw new LoginLockedException(wait);
+    }
+
     const user = await this.authRepository.findUserForAuthentication(dto.email);
 
     // A deleted account must be indistinguishable from one that never existed,
@@ -249,9 +258,15 @@ export class AuthService implements OnModuleInit {
     );
 
     if (!candidate || !passwordMatches) {
+      // An email with no account counts the same as a wrong password, so the
+      // lock cannot be used to learn which addresses are registered.
+      this.loginAttempts.recordFailure(dto.email, address);
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
+    // The right password, even on an account that cannot sign in yet, is the
+    // owner: the count on this account goes.
+    this.loginAttempts.forget(dto.email);
     this.assertAccountCanLogIn(candidate.accountStatus);
 
     const tokens = await this.issueTokens({
@@ -574,6 +589,9 @@ export class AuthService implements OnModuleInit {
     // Documented consequence: previous sessions are invalidated. Access tokens
     // are untouched and expire naturally; no new tokens are issued here.
     await this.authRepository.revokeAllRefreshTokensForUser(user.id);
+    // A new password is the owner taking the account back: whatever lock the
+    // old one was under no longer applies.
+    this.loginAttempts.forget(user.email);
   }
 
   /**

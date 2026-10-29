@@ -6,6 +6,7 @@ import type { SignOptions } from 'jsonwebtoken';
 import { AppConfig } from '../config/configuration';
 import { EmailModule } from '../email/email.module';
 import { OwnerAlertsModule } from '../owner-alerts/owner-alerts.module';
+import { LoginAttemptsService } from './services/login-attempts.service';
 import { JWT_STRATEGY } from './constants/auth.constants';
 import { AuthController } from './controllers/auth.controller';
 import { AuthRepository } from './repositories/auth.repository';
@@ -56,6 +57,7 @@ import { PasswordUtil } from './utils/password.util';
     JwtStrategy,
     PasswordUtil,
     AccessTokenVerifier,
+    LoginAttemptsService,
   ],
   exports: [
     AuthService,
