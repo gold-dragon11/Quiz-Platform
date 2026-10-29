@@ -69,6 +69,35 @@ export class OwnerAlertsService {
   }
 
   /**
+   * One account has taken fifty wrong passwords in an hour from many
+   * addresses, and stopped answering until the hour is out (decision 44).
+   * Sent once per wave. The email stays out of the chat like everywhere else:
+   * the account is named by its username, or said not to exist.
+   */
+  async announceLoginPressure(email: string): Promise<void> {
+    let username: string | null = null;
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        select: { profile: { select: { username: true } } },
+      });
+      username = user?.profile?.username ?? null;
+    } catch {
+      // Sent without the name rather than not at all.
+    }
+
+    await this.channel.send(
+      [
+        'Перебір паролів',
+        username === null
+          ? 'Пошта, для якої акаунта немає'
+          : `@${username}: вхід зупинено на годину`,
+        'Багато невдалих спроб з різних адрес',
+      ].join('\n'),
+    );
+  }
+
+  /**
    * Real accounts only — the demo's are rebuilt nightly, and a soft-deleted
    * one is a person who left (see REAL_ACCOUNT).
    *

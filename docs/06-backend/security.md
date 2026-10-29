@@ -196,7 +196,7 @@ with `@Throttle` in `auth.controller.ts`:
 
 | Route | Limit | Why |
 | --- | --- | --- |
-| `POST /auth/login` | 10 / minute per account, 100 / minute per address | Guessing one account's password is stopped wherever it comes from; a class logging in at once is not stopped as one |
+| `POST /auth/login` | 100 / minute per address | A class logging in at once is not stopped as one; guessing one account is stopped by failed attempts, below |
 | `POST /auth/register` | 40 / hour per address | Bulk account creation, sized so a class of 35 can sign up from one room |
 | `POST /auth/verify-email` | 40 / hour per address | Token guessing, sized for the same class confirming its email |
 | `POST /auth/reset-password` | 40 / hour per address | Token guessing |
@@ -207,6 +207,35 @@ Registration and token submission are counted by address explicitly, not by
 person: otherwise any valid bearer token would buy a fresh allowance per
 account.
 
+## Failed sign-ins (decision 44)
+
+A request limit per account was the wrong tool for guessing: it counted every
+attempt, from anywhere, so ten wrong passwords for someone's email locked that
+person out, and the public demo accounts, whose credentials are on the
+landing page, could be switched off for every visitor the same way.
+
+`LoginAttemptsService` (`src/auth/services/login-attempts.service.ts`) counts
+failures only, and a correct password or a password reset clears them:
+
+| Lock | Counted per | Threshold | Wait |
+| --- | --- | --- | --- |
+| Pair | email and client address | 5 failures in 15 minutes | 15 minutes, for that address on that account |
+| Account | email, from every address | 50 failures in an hour | until the hour is out, for everyone; the owner gets a Telegram message once |
+
+- Whoever guesses locks out themselves: the owner on their own phone is a
+  different pair. Only a distributed attack reaches the account lock, and the
+  owner can still get back in by resetting the password.
+- The demo accounts have no account lock. Their password is public, so there
+  is nothing to guess, and a lock would be the off switch the old limit was.
+- An email with no account is counted exactly like a wrong password, so a
+  lock cannot tell anybody which addresses are registered. A locked attempt
+  is answered before any hashing.
+- The answer is 429 with `Retry-After` and one message for both locks, with
+  no number in it.
+- Counted in memory: the API is one instance, and a restart forgetting a
+  quarter of an hour of failures costs nothing. A second instance would need
+  a shared store. Off, like the limiter, when `THROTTLE_ENABLED` is off.
+
 `GET /health` is exempt via `@SkipThrottle({ default: true, address: true })`.
 A bare `@SkipThrottle()` skips only `default`. The hosting platform polls the
 endpoint on a fixed schedule, and a 429 would read as an unhealthy instance.
@@ -215,13 +244,14 @@ endpoint on a fixed schedule, and a 429 would read as an unhealthy instance.
 
 Covered by `test/throttling.e2e-spec.ts`:
 
-- **The allowance is not spent by the limiter.** The first ten login attempts
-  must reach the handler and fail on credentials, not on 429.
+- **Five failures, then a wait.** The first five wrong passwords reach the
+  handler and fail on credentials; the sixth is a 429 with `Retry-After` and
+  the Ukrainian message, which carries no number.
+- **A correct password starts the count again.**
 - **Two people on one address are counted separately**, and a forged token
   earns no allowance of its own.
-- **A locked account does not lock out the room:** after ten failed logins on
-  one account, the next account from the same address still reaches the
-  handler.
+- **A locked account does not lock out the room:** after one account is
+  locked, the next account from the same address still reaches the handler.
 - **A class can register:** forty registrations from one address pass the
   limiter before the forty-first is refused.
 - **The rejection is Ukrainian and says nothing quantitative.** The library's

@@ -209,6 +209,7 @@ export class AuthRepository {
    */
   async findUserCredentialsById(userId: string): Promise<{
     id: string;
+    email: string;
     passwordHash: string;
     accountStatus: AccountStatus;
     isDemo: boolean;
@@ -217,6 +218,7 @@ export class AuthRepository {
       where: { id: userId },
       select: {
         id: true,
+        email: true,
         passwordHash: true,
         accountStatus: true,
         isDemo: true,
