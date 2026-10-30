@@ -22,8 +22,8 @@ interface PublicProfileBody {
   bio: string | null;
   avatar: { type: string; imageUrl: string };
   registrationDate: string;
-  currentLevel: number;
-  totalXP: number;
+  masteredTopics: number;
+  mistakesFixed: number;
   completedQuizzes: number;
   averageAccuracy: string;
 }
@@ -369,15 +369,15 @@ describe('User Profile & Settings (e2e)', () => {
           'bio',
           'avatar',
           'registrationDate',
-          'currentLevel',
-          'totalXP',
+          'masteredTopics',
+          'mistakesFixed',
           'completedQuizzes',
           'averageAccuracy',
         ].sort(),
       );
       expect(body.username).toBe(username);
-      expect(body.currentLevel).toBe(1);
-      expect(body.totalXP).toBe(0);
+      expect(body.masteredTopics).toBe(0);
+      expect(body.mistakesFixed).toBe(0);
       expect(body.completedQuizzes).toBe(0);
       expect(body.averageAccuracy).toBe('0.00');
       // No private data leaks.
@@ -497,15 +497,14 @@ describe('User Profile & Settings (e2e)', () => {
         .set('Authorization', `Bearer ${player.token}`)
         .expect(200);
 
-      // 100% of 4 → 100 XP + 25 bonus = 125 XP → level 2.
       const body = (
         await request(app.getHttpServer())
           .get(`/api/v1/users/${player.username}`)
           .expect(200)
       ).body as PublicProfileBody;
       expect(body.completedQuizzes).toBe(1);
-      expect(body.totalXP).toBe(125);
-      expect(body.currentLevel).toBe(2);
+      // Four answers are not ten: the topic is under way, not mastered.
+      expect(body.masteredTopics).toBe(0);
       expect(body.averageAccuracy).toBe('100.00');
       // Content and sessions are cleaned by afterAll (phase53- slug + user).
     });

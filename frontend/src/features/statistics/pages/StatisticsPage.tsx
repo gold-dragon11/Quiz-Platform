@@ -4,7 +4,7 @@ import { PageHeader } from '@/shared/ui/PageHeader';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { UserRole } from '@/shared/types/enums';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
-import { LevelStanding } from '@/features/statistics/components/LevelStanding';
+import { ProgressStanding } from '@/features/statistics/components/ProgressStanding';
 import { OverallStatisticsSection } from '@/features/statistics/components/OverallStatisticsSection';
 import { TopicStandingSection } from '@/features/statistics/components/TopicStandingSection';
 import { SubjectStatisticsSection } from '@/features/statistics/components/SubjectStatisticsSection';
@@ -51,7 +51,7 @@ export function StatisticsPage(): React.JSX.Element {
       <PageHeader title="Статистика" />
 
       <div className="mt-12">
-        <LevelStanding />
+        <ProgressStanding />
       </div>
 
       <div className="mt-14">

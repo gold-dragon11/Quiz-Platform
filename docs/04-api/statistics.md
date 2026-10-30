@@ -58,28 +58,15 @@ Returns the authenticated user's overall learning statistics.
 
 Response fields:
 
-- totalXP;
-- currentLevel;
 - completedQuizzes;
 - averageAccuracy (cumulative: correctAnswers ÷ totalQuestions × 100);
 - totalQuestions;
 - correctAnswers;
-- totalStudyTime (seconds);
-- xpForCurrentLevel, xpForNextLevel, xpIntoLevel, completionPercent.
+- totalStudyTime (seconds).
 
-Internal fields (incorrect answers, streaks, raw records) are never exposed. A user with no completed quizzes receives a well-formed zero payload (level 1, 0 XP) rather than an empty response.
+Internal fields (incorrect answers, streaks, raw records) are never exposed. A user with no completed quizzes receives a well-formed zero payload rather than an empty response.
 
-### Level formula
-
-Level is derived from total XP with a linear MVP progression of 100 XP per level:
-
-- `currentLevel = floor(totalXP / 100) + 1`
-- `xpForCurrentLevel = (currentLevel - 1) × 100`
-- `xpForNextLevel = currentLevel × 100`
-- `xpIntoLevel = totalXP - xpForCurrentLevel`
-- `completionPercent = (xpIntoLevel / 100) × 100`
-
-The formula is isolated in a dedicated service so the curve can evolve without changing the API.
+XP and the level are gone since 30.10.2026 (decision 46): XP was the quiz's accuracy paid out as points, so a five-question test at 100% outearned a mock paper at 80%, and the level unlocked nothing. What a learner has learned is in §7. The `xp_transactions` rows and `Statistics.totalXP` already written are kept as history; nothing reads or writes them.
 
 ---
 
@@ -99,8 +86,7 @@ Each subject includes:
 - subjectName;
 - completedQuizzes;
 - totalQuestions;
-- averageAccuracy (correctAnswers ÷ totalQuestions × 100 for that subject);
-- earnedXP.
+- averageAccuracy (correctAnswers ÷ totalQuestions × 100 for that subject).
 
 ---
 
@@ -122,29 +108,37 @@ Each topic includes:
 - subjectName;
 - completedQuizzes;
 - totalQuestions;
-- averageAccuracy;
-- earnedXP.
+- averageAccuracy.
 
 This endpoint supports progress tracking within individual topics.
 
 ---
 
-# 7. Progress Summary
+# 7. Progress
 
-## Retrieve Progress Overview
+## Retrieve What the Learner Has Learned
 
 ```http
 GET /api/v1/statistics/progress
 ```
 
-Returns high-level progress information.
+Topics mastered per subject, each answered topic's state, and mistakes fixed (decision 46). Optional `locale`.
 
-Typical response includes:
+```json
+{
+  "subjects": [
+    { "subjectId": "…", "subjectName": "Математика", "topicsTotal": 31, "mastered": 5, "inProgress": 3 }
+  ],
+  "topics": [{ "topicId": "…", "state": "MASTERED" }],
+  "mistakesFixed": 37
+}
+```
 
-- current level;
-- total XP;
-- XP required for next level;
-- completion percentage.
+- **A topic is `MASTERED`** when its last ten answers are at least 80% right and none of its questions waits on the mistake ladder. Answers count by the question's own topic, whatever the session was: a test, a mock paper, a review, homework or a duel. A topic with answers but not that yet is `IN_PROGRESS`; a topic never answered is not listed.
+- **`subjects`** lists every published subject with its count of published topics, so a subject not started reads as «0 з 31» rather than missing.
+- **`mistakesFixed`** counts the questions once answered wrong that have since cleared the whole ladder (1, 3 and 7 days).
+
+The thresholds are `MASTERY_WINDOW` and `MASTERY_ACCURACY` in `statistics.service.ts`; the statistics page prints the rule under the figure, so the two must change together.
 
 ---
 
@@ -165,7 +159,6 @@ Each item includes:
 - topicId, topicName (null for Random Quizzes);
 - score;
 - accuracy;
-- xpEarned;
 - completedAt.
 
 Names are localized (see §10a). In-progress sessions never appear.
@@ -202,7 +195,7 @@ Accepts the optional `locale` query parameter (§9a).
 GET /api/v1/statistics/trends
 ```
 
-**Deferred.** Trend/chart data (quiz activity over time, accuracy trend, XP progression) is not part of the MVP statistics API; it is deferred to the future analytics phase, where its bucket granularity, time window, and response schema will be specified. This endpoint is not implemented.
+**Deferred.** Trend/chart data (quiz activity over time, accuracy trend, mastery over time) is not part of the MVP statistics API; it is deferred to the future analytics phase, where its bucket granularity, time window, and response schema will be specified. This endpoint is not implemented.
 
 ---
 

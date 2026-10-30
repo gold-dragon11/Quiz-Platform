@@ -109,11 +109,5 @@ export const slideSwap: Variants = {
   exit: { opacity: 0, x: -16, transition: { duration: DURATION.fast, ease: EASE.out } },
 };
 
-/** Celebratory pop-in (e.g. the XP reward). */
-export const pop: Variants = {
-  initial: { opacity: 0, scale: 0.9 },
-  animate: { opacity: 1, scale: 1, transition: { duration: DURATION.slow, ease: EASE.out } },
-};
-
 /** Subtle hover lift for interactive cards. Pair with `TRANSITION.fade`. */
 export const HOVER_LIFT = { y: -3 } as const;

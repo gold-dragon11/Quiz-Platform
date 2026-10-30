@@ -4,6 +4,8 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { formatNumber, formatPercent, pluralUk } from '@/shared/utils/format';
 import { useSubjectStatistics } from '@/features/statistics/hooks/use-statistics';
 import { SectionError } from '@/features/statistics/components/SectionError';
+import { useMockExamHistory } from '@/features/mock-exam/hooks/use-mock-exam';
+import type { MockExamAttempt } from '@/features/mock-exam/types/mock-exam.types';
 import type { SubjectStatistics } from '@/features/statistics/types/statistics.types';
 
 /**
@@ -17,6 +19,8 @@ import type { SubjectStatistics } from '@/features/statistics/types/statistics.t
  */
 export function SubjectStatisticsSection(): React.JSX.Element {
   const subjects = useSubjectStatistics();
+  // The mock score is extra: a failed or slow history leaves the rows as they are.
+  const mocks = useMockExamHistory();
 
   if (subjects.isPending) {
     return <Skeleton className="h-40" />;
@@ -42,7 +46,11 @@ export function SubjectStatisticsSection(): React.JSX.Element {
   return (
     <ul className="divide-border border-border divide-y border-t">
       {ranked.map((subject) => (
-        <SubjectRow key={subject.subjectId} subject={subject} />
+        <SubjectRow
+          key={subject.subjectId}
+          subject={subject}
+          mocks={(mocks.data ?? []).filter((attempt) => attempt.subject.id === subject.subjectId)}
+        />
       ))}
     </ul>
   );
@@ -53,7 +61,29 @@ function accuracyOf(subject: SubjectStatistics): number {
   return Number.isFinite(value) ? value : 0;
 }
 
-function SubjectRow({ subject }: { subject: SubjectStatistics }): React.JSX.Element {
+/**
+ * A mock sitting as its score: the 100–200 figure where the paper is scored
+ * the exam's way, «нижче порогу» where it fell short, and the share of right
+ * answers for subjects still on the provisional sitting.
+ */
+function mockLabel(attempt: MockExamAttempt): string {
+  if (attempt.maxTestPoints === null) {
+    return formatPercent(attempt.accuracy);
+  }
+  return attempt.scaledScore !== null ? String(attempt.scaledScore) : 'нижче порогу';
+}
+
+function SubjectRow({
+  subject,
+  mocks,
+}: {
+  subject: SubjectStatistics;
+  /** This subject's mock sittings, oldest first. */
+  mocks: MockExamAttempt[];
+}): React.JSX.Element {
+  const latest = mocks.at(-1);
+  const previous = mocks.at(-2);
+
   return (
     <li className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 py-6">
       <div className="min-w-0">
@@ -62,8 +92,13 @@ function SubjectRow({ subject }: { subject: SubjectStatistics }): React.JSX.Elem
           {formatNumber(subject.completedQuizzes)}{' '}
           {pluralUk(subject.completedQuizzes, 'тест', 'тести', 'тестів')},{' '}
           {formatNumber(subject.totalQuestions)}{' '}
-          {pluralUk(subject.totalQuestions, 'питання', 'питання', 'питань')}, {formatNumber(subject.earnedXP)}{' '}
-          XP
+          {pluralUk(subject.totalQuestions, 'питання', 'питання', 'питань')}
+          {latest && (
+            <>
+              , пробний НМТ {mockLabel(latest)}
+              {previous && <>, до того {mockLabel(previous)}</>}
+            </>
+          )}
         </p>
       </div>
       <p className="text-text-primary font-display shrink-0 text-2xl lining-nums sm:text-3xl">

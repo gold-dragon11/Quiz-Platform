@@ -87,8 +87,19 @@ function ProfileView({ profile }: { profile: PublicProfile }): React.JSX.Element
       <FigureGrid
         className="mt-10"
         figures={[
-          { value: formatNumber(profile.currentLevel), label: 'рівень' },
-          { value: formatNumber(profile.totalXP), label: 'XP' },
+          {
+            value: formatNumber(profile.masteredTopics),
+            label: pluralUk(profile.masteredTopics, 'тема освоєна', 'теми освоєні', 'тем освоєно'),
+          },
+          {
+            value: formatNumber(profile.mistakesFixed),
+            label: pluralUk(
+              profile.mistakesFixed,
+              'помилка виправлена',
+              'помилки виправлені',
+              'помилок виправлено',
+            ),
+          },
           {
             value: formatNumber(profile.completedQuizzes),
             label: pluralUk(profile.completedQuizzes, 'тест', 'тести', 'тестів'),

@@ -79,7 +79,7 @@ describe('QuizSessionPage', () => {
           totalQuestions: 2,
           accuracy: '50.00',
           score: '50.00',
-          xpEarned: 50,
+
           completedAt: '2026-09-16T09:10:00.000Z',
         }),
       ),

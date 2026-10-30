@@ -64,7 +64,7 @@ clock — 10 to 60 seconds each, with only questions that can honestly be done i
 that time. Or asynchronously, each whenever they like. Either way the more
 accurate wins, and at equal accuracy the faster one.
 
-**Public profile.** `/u/<username>` — avatar, level, XP, tests taken; open to
+**Public profile.** `/u/<username>` — avatar, topics mastered, mistakes fixed, tests taken; open to
 anyone, switched off by its owner in one click, and never indexed by search
 engines.
 
@@ -102,7 +102,7 @@ Taken from the demo accounts above, so everything here can be opened live.
 | ![Result with review](docs/media/result.png) | ![Mock NMT result](docs/media/mock-result.png) |
 | **Result** — then every question with its explanation | **Mock NMT** — the 100–200 score and points per task |
 | ![Mistake review](docs/media/mistake-review.png) | ![Statistics](docs/media/statistics.png) |
-| **Mistake review** — what is due today and where the rest sit on the ladder | **Statistics** — level, accuracy, time, and topics with unfixed mistakes first |
+| **Mistake review** — what is due today and where the rest sit on the ladder | **Statistics** — topics mastered per subject, mistakes fixed, the mock score, and topics with unfixed mistakes first |
 | ![Homework review for a tutor](docs/media/teacher-review.png) | |
 | **Homework review** — who has not started, who was late, scores | |
 
@@ -184,8 +184,8 @@ takes about a minute locally.
 
 ```bash
 cd backend  && npm test          # 97 unit tests
-cd backend  && npm run test:e2e  # 900 tests, 40 suites — needs a migrated, seeded database
-cd frontend && npm test          # 150 component tests (jsdom, API mocked with MSW)
+cd backend  && npm run test:e2e  # 904 tests, 40 suites — needs a migrated, seeded database
+cd frontend && npm test          # 151 component tests (jsdom, API mocked with MSW)
 ```
 
 The end-to-end suite runs against a real database and a real HTTP server: it

@@ -13,17 +13,23 @@ import { PrismaService } from './../src/prisma/prisma.service';
 import { listenOnLoopback } from './loopback';
 
 interface OverallBody {
-  totalXP: number;
-  currentLevel: number;
   completedQuizzes: number;
   averageAccuracy: string;
   totalQuestions: number;
   correctAnswers: number;
   totalStudyTime: number;
-  xpForCurrentLevel: number;
-  xpForNextLevel: number;
-  xpIntoLevel: number;
-  completionPercent: number;
+}
+
+interface ProgressBody {
+  subjects: {
+    subjectId: string;
+    subjectName: string;
+    topicsTotal: number;
+    mastered: number;
+    inProgress: number;
+  }[];
+  topics: { topicId: string; state: 'MASTERED' | 'IN_PROGRESS' }[];
+  mistakesFixed: number;
 }
 
 interface SubjectStat {
@@ -32,7 +38,6 @@ interface SubjectStat {
   completedQuizzes: number;
   totalQuestions: number;
   averageAccuracy: string;
-  earnedXP: number;
 }
 
 interface TopicStat extends SubjectStat {
@@ -49,7 +54,6 @@ interface RecentPage {
     topicName: string | null;
     score: string;
     accuracy: string;
-    xpEarned: number;
     completedAt: string;
   }[];
   page: number;
@@ -298,18 +302,12 @@ describe('Statistics (e2e)', () => {
       const { token } = await registerUser();
 
       const body = await overall(token);
-      expect(body).toMatchObject({
-        totalXP: 0,
-        currentLevel: 1,
+      expect(body).toEqual({
         completedQuizzes: 0,
         averageAccuracy: '0.00',
         totalQuestions: 0,
         correctAnswers: 0,
         totalStudyTime: 0,
-        xpForCurrentLevel: 0,
-        xpForNextLevel: 100,
-        xpIntoLevel: 0,
-        completionPercent: 0,
       });
 
       const subjects = await request(app.getHttpServer())
@@ -337,24 +335,19 @@ describe('Statistics (e2e)', () => {
         [
           'averageAccuracy',
           'completedQuizzes',
-          'completionPercent',
           'correctAnswers',
-          'currentLevel',
           'totalQuestions',
           'totalStudyTime',
-          'totalXP',
-          'xpForCurrentLevel',
-          'xpForNextLevel',
-          'xpIntoLevel',
         ].sort(),
       );
+      // XP and the level are gone (decision 46), not merely zero.
+      expect(raw).not.toMatch(/xp|level/i);
     });
   });
 
-  describe('overall statistics and level', () => {
-    it('aggregates completed quizzes and derives the level from XP', async () => {
+  describe('overall statistics', () => {
+    it('aggregates completed quizzes', async () => {
       const { token } = await registerUser();
-      // Quiz 1: 8/10 = 80% → 80 XP. Quiz 2: 5/10 = 50% → 50 XP. Total 130 XP.
       await playQuiz(token, topicId, 10, 8);
       await playQuiz(token, secondTopicId, 10, 5);
 
@@ -362,40 +355,107 @@ describe('Statistics (e2e)', () => {
       expect(body.completedQuizzes).toBe(2);
       expect(body.totalQuestions).toBe(20);
       expect(body.correctAnswers).toBe(13);
-      expect(body.totalXP).toBe(130);
       // Cumulative accuracy 13/20 = 65%.
       expect(body.averageAccuracy).toBe('65.00');
-      // 130 XP → level 2 (floor(130/100)+1), 30 into level, 30% done.
-      expect(body.currentLevel).toBe(2);
-      expect(body.xpForCurrentLevel).toBe(100);
-      expect(body.xpForNextLevel).toBe(200);
-      expect(body.xpIntoLevel).toBe(30);
-      expect(body.completionPercent).toBe(30);
     });
 
-    it('progress mirrors the level math', async () => {
-      const { token } = await registerUser();
-      await playQuiz(token, topicId, 10, 9); // 90% → 90 + 25 bonus = 115 XP
+    it('writes no XP for a completed quiz any more (decision 46)', async () => {
+      const { token, userId } = await registerUser();
+      await playQuiz(token, topicId, 10, 10);
 
-      const progress = await request(app.getHttpServer())
-        .get('/api/v1/statistics/progress')
-        .set('Authorization', `Bearer ${token}`)
-        .expect(200);
-      expect(progress.body).toEqual({
-        currentLevel: 2,
-        totalXP: 115,
-        xpForNextLevel: 200,
-        xpIntoLevel: 15,
-        completionPercent: 15,
+      expect(await prisma.xPTransaction.count({ where: { userId } })).toBe(0);
+      const stats = await prisma.statistics.findUniqueOrThrow({
+        where: { userId },
       });
+      expect(stats.totalXP).toBe(0);
+    });
+  });
+
+  /**
+   * What a learner has learned (decision 46): a topic is mastered when its
+   * last ten answers are at least 80% right and none of its questions waits
+   * on the mistake ladder. Each topic here has exactly ten questions.
+   */
+  describe('progress', () => {
+    const progress = async (token: string): Promise<ProgressBody> =>
+      (
+        await request(app.getHttpServer())
+          .get('/api/v1/statistics/progress')
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200)
+      ).body as ProgressBody;
+    const ownSubject = (body: ProgressBody) =>
+      body.subjects.find((subject) => subject.subjectId === subjectId);
+    const stateOf = (body: ProgressBody, topic: string) =>
+      body.topics.find((entry) => entry.topicId === topic)?.state;
+
+    it('lists every published subject at zero for a learner who has answered nothing', async () => {
+      const { token } = await registerUser();
+
+      const body = await progress(token);
+      expect(ownSubject(body)).toMatchObject({
+        topicsTotal: 2,
+        mastered: 0,
+        inProgress: 0,
+      });
+      expect(body.topics).toEqual([]);
+      expect(body.mistakesFixed).toBe(0);
+    });
+
+    it('masters a topic after ten answers at 80% or better with nothing on the ladder', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 10, 10);
+
+      const body = await progress(token);
+      expect(stateOf(body, topicId)).toBe('MASTERED');
+      expect(stateOf(body, secondTopicId)).toBeUndefined();
+      expect(ownSubject(body)).toMatchObject({ mastered: 1, inProgress: 0 });
+    });
+
+    it('needs ten answers before a topic can count as mastered', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 5, 5);
+
+      expect(stateOf(await progress(token), topicId)).toBe('IN_PROGRESS');
+    });
+
+    it('keeps a topic in progress while one of its questions waits on the ladder, then counts the fix', async () => {
+      const { token, userId } = await registerUser();
+      // 9 of 10 is above the bar, but the one mistake is now on the ladder.
+      await playQuiz(token, topicId, 10, 9);
+
+      let body = await progress(token);
+      expect(stateOf(body, topicId)).toBe('IN_PROGRESS');
+      expect(body.mistakesFixed).toBe(0);
+
+      // Clearing the last rung takes eleven days; the test skips to the end.
+      await prisma.mistakeReview.updateMany({
+        where: { userId },
+        data: { clearedAt: new Date() },
+      });
+
+      body = await progress(token);
+      expect(stateOf(body, topicId)).toBe('MASTERED');
+      expect(body.mistakesFixed).toBe(1);
+    });
+
+    it('does not master a topic answered below 80%', async () => {
+      const { token, userId } = await registerUser();
+      await playQuiz(token, topicId, 10, 7);
+      await prisma.mistakeReview.updateMany({
+        where: { userId },
+        data: { clearedAt: new Date() },
+      });
+
+      expect(stateOf(await progress(token), topicId)).toBe('IN_PROGRESS');
     });
   });
 
   describe('subject and topic statistics', () => {
-    it('groups by subject and topic with per-group accuracy and XP', async () => {
+    it('groups by subject and topic with per-group accuracy', async () => {
       const { token } = await registerUser();
-      await playQuiz(token, topicId, 10, 7); // main topic: 70% → 70 XP
-      await playQuiz(token, secondTopicId, 10, 4); // second topic: 40% → 40 XP
+      await playQuiz(token, topicId, 10, 7); // main topic: 70%
+      await playQuiz(token, secondTopicId, 10, 4); // second topic: 40%
 
       const subjects = (
         await request(app.getHttpServer())
@@ -409,7 +469,6 @@ describe('Statistics (e2e)', () => {
         completedQuizzes: 2,
         totalQuestions: 20,
         averageAccuracy: '55.00', // 11/20
-        earnedXP: 110,
       });
 
       const topics = (
@@ -425,12 +484,10 @@ describe('Statistics (e2e)', () => {
         completedQuizzes: 1,
         totalQuestions: 10,
         averageAccuracy: '70.00',
-        earnedXP: 70,
         subjectId,
       });
       expect(second).toMatchObject({
         averageAccuracy: '40.00',
-        earnedXP: 40,
       });
     });
 
@@ -521,7 +578,6 @@ describe('Statistics (e2e)', () => {
       // Newest (the second-topic quiz) first.
       expect(page.items[0].topicId).toBe(secondTopicId);
       expect(page.items[0].score).toBe('50.00');
-      expect(page.items[0].xpEarned).toBe(50);
       expect(page.items[1].topicId).toBe(topicId);
       expect(page.items[1].score).toBe('100.00');
     });
@@ -716,11 +772,10 @@ describe('Statistics (e2e)', () => {
     it('never mixes another user’s statistics', async () => {
       const a = await registerUser();
       const b = await registerUser();
-      await playQuiz(a.token, topicId, 5, 5); // A earns XP
+      await playQuiz(a.token, topicId, 5, 5);
       // B has done nothing.
 
       const bodyB = await overall(b.token);
-      expect(bodyB.totalXP).toBe(0);
       expect(bodyB.completedQuizzes).toBe(0);
 
       const bodyA = await overall(a.token);

@@ -25,7 +25,7 @@ import { QuizService } from '../quiz/services/quiz.service';
 import {
   DEMO_CLASSMATES,
   DEMO_PASSWORD,
-  DEMO_PRACTICE,
+  DEMO_TIMELINE,
   DEMO_STUDENT,
   DEMO_TEACHER,
   type DemoAccountSpec,
@@ -86,7 +86,7 @@ interface SnapshotQuestion {
  * Everything goes through the product's own services — a group is created
  * and joined, homework is issued and started, every sitting is completed by
  * the engine. Only the answers are written in bulk, marked right or wrong by
- * the same `evaluateAnswer` the engine uses. So the scores, XP, statistics and
+ * the same `evaluateAnswer` the engine uses. So the scores, statistics and
  * the mistake ladder the demo shows are the ones the product computed, not
  * numbers typed into a table; and the whole rebuild is a few hundred queries
  * rather than the thousand a request per answer would cost on a database an
@@ -173,62 +173,53 @@ export class DemoService {
     const rng = seeded('l&s-demo');
     const mathematics = await this.subject('mathematics');
 
-    // The student's own practice, oldest first so the ladder moves in order.
-    for (const item of DEMO_PRACTICE) {
-      const subject = await this.subject(item.subject);
-      const topic = await this.topic(subject, item.topic);
-      const session = await this.quizService.start(student, {
-        subjectId: subject,
-        topicId: topic,
-        questionCount: 10,
-        timerEnabled: false,
-      });
-      await this.sit(
-        student,
-        session.sessionId,
-        item.accuracy,
-        rng,
-        daysAgo(item.daysAgo),
-        11,
-      );
-    }
-
-    // Two mock papers: one comfortably above the threshold, one short of it.
-    for (const [slug, days, accuracy, minutes] of [
-      ['mathematics', 8, 0.72, 128],
-      ['history-of-ukraine', 4, 0.6, 104],
-    ] as const) {
-      const session = await this.quizService.startMockExam(student, {
-        subjectId: await this.subject(slug),
-      });
-      await this.sit(
-        student,
-        session.sessionId,
-        accuracy,
-        rng,
-        daysAgo(days),
-        minutes,
-      );
-    }
-
-    // Two review sessions, so the ladder shows mistakes on their way up rather
-    // than all stuck on the first rung, which reads as never having reviewed.
-    for (const [days, accuracy, count] of [
-      [9, 0.8, 12],
-      [4, 0.75, 15],
-      [1, 0.7, 15],
-    ] as const) {
-      const session = await this.quizService.startMistakeReview(student, {
-        questionCount: count,
-      });
-      await this.sit(
-        student,
-        session.sessionId,
-        accuracy,
-        rng,
-        daysAgo(days, 19),
-        count,
-      );
+    // The student's own month, oldest first, so the ladder moves in order:
+    // practice leaves mistakes, reviews carry them up the rungs and some off
+    // the ladder, and two mock papers sit among them, one comfortably above
+    // the threshold and one short of it.
+    for (const step of DEMO_TIMELINE) {
+      if (step.kind === 'practice') {
+        const subject = await this.subject(step.subject);
+        const topic = await this.topic(subject, step.topic);
+        const session = await this.quizService.start(student, {
+          subjectId: subject,
+          topicId: topic,
+          questionCount: step.questions ?? 10,
+          timerEnabled: false,
+        });
+        await this.sit(
+          student,
+          session.sessionId,
+          step.accuracy,
+          rng,
+          daysAgo(step.daysAgo),
+          11,
+        );
+      } else if (step.kind === 'mock') {
+        const session = await this.quizService.startMockExam(student, {
+          subjectId: await this.subject(step.subject),
+        });
+        await this.sit(
+          student,
+          session.sessionId,
+          step.accuracy,
+          rng,
+          daysAgo(step.daysAgo),
+          step.minutes,
+        );
+      } else {
+        const session = await this.quizService.startMistakeReview(student, {
+          questionCount: step.count,
+        });
+        await this.sit(
+          student,
+          session.sessionId,
+          step.accuracy,
+          rng,
+          daysAgo(step.daysAgo, 19),
+          step.count,
+        );
+      }
     }
 
     // The class: one group, everyone in it.

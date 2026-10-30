@@ -1,7 +1,6 @@
 import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { formatNumber, formatPercent } from '@/shared/utils/format';
 import type { QuizResultSummary } from '@/features/quiz/types/quiz.types';
-import { XpReward } from '@/features/quiz/components/XpReward';
 
 /**
  * How it went, in one number and three.
@@ -28,9 +27,6 @@ export function ResultSummary({ result }: { result: QuizResultSummary }): React.
             правильних {formatNumber(result.correctAnswers)} з {formatNumber(result.totalQuestions)}
           </p>
         </div>
-        {/* Nothing to celebrate at zero: «+0 XP» in a badge reads as a joke
-            at the reader's expense on the one result that already stings. */}
-        {result.xpEarned > 0 && <XpReward xp={result.xpEarned} />}
       </div>
 
       {/* The grid breaks down what went wrong, and only that. «Правильних»

@@ -118,7 +118,7 @@ export function MockExamPage(): React.JSX.Element {
 
       {/* A teacher sits a mock to see what the work actually is, but their
           own attempts are not progress to track — their statistics screen is
-          about their groups, and XP is not awarded to them. */}
+          about their groups. */}
       {user?.role !== UserRole.TEACHER && (
         <section className="mt-20">
           <h2 className="section-title border-border border-b pb-3">Ваші спроби</h2>

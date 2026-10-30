@@ -42,8 +42,10 @@ export interface PublicProfile {
   bio: string | null;
   avatar: AvatarView;
   registrationDate: string;
-  currentLevel: number;
-  totalXP: number;
+  /** Topics mastered under decision 46's rule. */
+  masteredTopics: number;
+  /** Mistakes cleared from the ladder for good. */
+  mistakesFixed: number;
   completedQuizzes: number;
   averageAccuracy: string;
 }

@@ -312,7 +312,6 @@ describe('Scheduled jobs (e2e)', () => {
       expect(row.status).toBe(QuizStatus.ABANDONED);
       expect(row.completedAt).toBeNull();
       expect(row.result).toBeNull();
-      expect(await prisma.xPTransaction.count({ where: { userId } })).toBe(0);
 
       const active = await request(app.getHttpServer())
         .get('/api/v1/quiz/active')
@@ -374,12 +373,11 @@ describe('Scheduled jobs (e2e)', () => {
       expect(row.status).toBe(QuizStatus.COMPLETED);
       expect(row.result?.totalQuestions).toBe(2);
       expect(row.result?.unansweredQuestions).toBe(2);
-      // Counted like any completion: the XP row exists even at zero.
-      expect(
-        await prisma.xPTransaction.count({
-          where: { quizSessionId: sessionId },
-        }),
-      ).toBeGreaterThan(0);
+      // Counted like any completion: it is in the owner's statistics.
+      const stats = await prisma.statistics.findUniqueOrThrow({
+        where: { userId },
+      });
+      expect(stats.totalQuizzes).toBeGreaterThan(0);
     });
 
     it('is not left running before its clock ends', async () => {
@@ -404,17 +402,19 @@ describe('Scheduled jobs (e2e)', () => {
       expiresAt: ago(60 * 60 * 1000),
     });
     await sweep().expect(200);
-    const xpAfterFirst = await prisma.xPTransaction.count({
-      where: { userId },
-    });
+    const countedAfterFirst = (
+      await prisma.statistics.findUniqueOrThrow({ where: { userId } })
+    ).totalQuizzes;
 
     await sweep().expect(200);
 
     expect(await statusOf(abandoned)).toBe(QuizStatus.ABANDONED);
     expect(await statusOf(expired)).toBe(QuizStatus.COMPLETED);
-    expect(await prisma.xPTransaction.count({ where: { userId } })).toBe(
-      xpAfterFirst,
-    );
+    // The expired session was counted once, not again.
+    expect(
+      (await prisma.statistics.findUniqueOrThrow({ where: { userId } }))
+        .totalQuizzes,
+    ).toBe(countedAfterFirst);
   });
 
   it('still closes sessions when another step fails, and says it failed', async () => {

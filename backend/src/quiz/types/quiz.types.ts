@@ -178,7 +178,6 @@ export interface QuizResultSummary {
   totalQuestions: number;
   accuracy: string;
   score: string;
-  xpEarned: number;
   completedAt: string;
 }
 

@@ -1,5 +1,7 @@
 # XP System
 
+> **Superseded on 30.10.2026 by decision 46.** XP and the level are no longer awarded or shown; a learner's progress is topics mastered, mistakes fixed and the mock score (docs/04-api/statistics.md §7). This file describes the old mechanism and is kept as history.
+
 **Document Version:** 1.0  
 **Status:** Draft  
 **Last Updated:** July 2026

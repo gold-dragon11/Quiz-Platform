@@ -13,7 +13,7 @@ const review = {
     totalQuestions: 5,
     accuracy: '80.00',
     score: '80.00',
-    xpEarned: 80,
+
     completedAt: '2026-09-16T09:00:00.000Z',
   },
   questions: [],

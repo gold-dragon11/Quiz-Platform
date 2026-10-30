@@ -3,25 +3,23 @@ import { SettingsService } from '../../settings/services/settings.service';
 import { RecentActivityQueryDto } from '../dto/recent-activity-query.dto';
 import { StatisticsLocaleQueryDto } from '../dto/statistics-locale-query.dto';
 import { TopicStatisticsQueryDto } from '../dto/topic-statistics-query.dto';
-import {
-  StatisticsRepository,
-  XpAward,
-} from '../repositories/statistics.repository';
+import { StatisticsRepository } from '../repositories/statistics.repository';
 import {
   StatisticsQueryRepository,
   SubjectStatisticsRow,
+  TopicMasteryRow,
   TopicStatisticsRow,
 } from '../repositories/statistics-query.repository';
 import {
   MistakeGroup,
   OverallStatistics,
   PaginatedRecentActivity,
-  ProgressSummary,
+  Progress,
   PublicProgress,
   SubjectStatistics,
+  TopicState,
   TopicStatistics,
 } from '../types/statistics.types';
-import { LevelService } from './level.service';
 import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
 
 /** Read-side statistics with no completed quizzes (decision S8). */
@@ -29,88 +27,120 @@ const EMPTY_OVERALL = {
   totalQuizzes: 0,
   totalQuestions: 0,
   correctAnswers: 0,
-  totalXP: 0,
   averageAccuracy: '0',
   totalLearningTimeSeconds: 0,
 };
 
+/** How many of a topic's latest answers decide whether it is mastered. */
+export const MASTERY_WINDOW = 10;
+/** The share of those answers that must be right, in per cent. */
+export const MASTERY_ACCURACY = 80;
+
 /**
  * Statistics module service (docs/06-backend/architecture.md §6). Owns the
  * quiz-completion write hook (Phase 5.1) and the read-only progress API
- * (Phase 5.2). Grouped views are computed at request time; the level is
- * derived from total XP through the pure LevelService.
+ * (Phase 5.2). Grouped views are computed at request time.
  */
 @Injectable()
 export class StatisticsService {
   constructor(
     private readonly statisticsRepository: StatisticsRepository,
     private readonly statisticsQueryRepository: StatisticsQueryRepository,
-    private readonly levelService: LevelService,
     private readonly settingsService: SettingsService,
   ) {}
 
   /**
-   * Overall statistics (docs/04-api/statistics.md §4): exactly the documented
-   * fields plus the derived level block (decisions S1/S2). Always well-formed,
+   * Overall statistics (docs/04-api/statistics.md §4). Always well-formed,
    * even for a user with no completed quizzes (decision S8).
    */
   async getOverall(userId: string): Promise<OverallStatistics> {
     const stats =
       (await this.statisticsQueryRepository.findOverall(userId)) ??
       EMPTY_OVERALL;
-    const level = this.levelService.progressFor(stats.totalXP);
 
     return {
-      totalXP: stats.totalXP,
-      currentLevel: level.currentLevel,
       completedQuizzes: stats.totalQuizzes,
       averageAccuracy: formatDecimal(stats.averageAccuracy),
       totalQuestions: stats.totalQuestions,
       correctAnswers: stats.correctAnswers,
       totalStudyTime: stats.totalLearningTimeSeconds,
-      xpForCurrentLevel: level.xpForCurrentLevel,
-      xpForNextLevel: level.xpForNextLevel,
-      xpIntoLevel: level.xpIntoLevel,
-      completionPercent: level.completionPercent,
     };
   }
 
   /**
    * The public subset of a user's progress for their public profile
-   * (docs/04-api/users.md §12, Phase 5.3 decision D5): level, total XP,
-   * completed quizzes, and average accuracy — nothing internal. Reuses the
-   * same level and accuracy definitions as every other statistics view.
+   * (docs/04-api/users.md §12, Phase 5.3 decision D5): topics mastered,
+   * mistakes fixed, completed quizzes and average accuracy — nothing internal.
    */
   async getPublicProgress(userId: string): Promise<PublicProgress> {
-    const stats =
-      (await this.statisticsQueryRepository.findOverall(userId)) ??
-      EMPTY_OVERALL;
-    const level = this.levelService.progressFor(stats.totalXP);
+    const [stats, mastery, mistakesFixed] = await Promise.all([
+      this.statisticsQueryRepository.findOverall(userId),
+      this.statisticsQueryRepository.findTopicMastery(userId, MASTERY_WINDOW),
+      this.statisticsQueryRepository.countFixedMistakes(userId),
+    ]);
+    const overall = stats ?? EMPTY_OVERALL;
 
     return {
-      currentLevel: level.currentLevel,
-      totalXP: stats.totalXP,
-      completedQuizzes: stats.totalQuizzes,
-      averageAccuracy: formatDecimal(stats.averageAccuracy),
+      masteredTopics: mastery.filter((row) => stateOf(row) === 'MASTERED')
+        .length,
+      mistakesFixed,
+      completedQuizzes: overall.totalQuizzes,
+      averageAccuracy: formatDecimal(overall.averageAccuracy),
     };
   }
 
   /**
-   * High-level progress overview (docs/04-api/statistics.md §7): level, total
-   * XP, and how far into the current level the user is (decision S1).
+   * What the learner has actually learned (docs/04-api/statistics.md §7,
+   * decision 46). A topic is mastered when its last ten answers are at least
+   * 80% right and none of its questions waits on the mistake ladder; ten,
+   * because a topic is not known from three lucky answers, and the ladder,
+   * because a question still being re-asked is by definition not known yet.
    */
-  async getProgress(userId: string): Promise<ProgressSummary> {
-    const stats =
-      (await this.statisticsQueryRepository.findOverall(userId)) ??
-      EMPTY_OVERALL;
-    const level = this.levelService.progressFor(stats.totalXP);
+  async getProgress(
+    userId: string,
+    query: StatisticsLocaleQueryDto,
+  ): Promise<Progress> {
+    const locale = await this.settingsService.resolveLocale(
+      query.locale,
+      userId,
+    );
+    const [subjects, mastery, mistakesFixed] = await Promise.all([
+      this.statisticsQueryRepository.findSubjectTopicCounts(locale),
+      this.statisticsQueryRepository.findTopicMastery(userId, MASTERY_WINDOW),
+      this.statisticsQueryRepository.countFixedMistakes(userId),
+    ]);
+
+    const topics = mastery.map((row) => ({
+      topicId: row.topicId,
+      subjectId: row.subjectId,
+      state: stateOf(row),
+      recentAnswers: row.recentAnswers,
+      recentCorrect: row.recentCorrect,
+    }));
 
     return {
-      currentLevel: level.currentLevel,
-      totalXP: stats.totalXP,
-      xpForNextLevel: level.xpForNextLevel,
-      xpIntoLevel: level.xpIntoLevel,
-      completionPercent: level.completionPercent,
+      subjects: subjects.map((subject) => {
+        const own = topics.filter(
+          (topic) => topic.subjectId === subject.subjectId,
+        );
+        const mastered = own.filter(
+          (topic) => topic.state === 'MASTERED',
+        ).length;
+        return {
+          subjectId: subject.subjectId,
+          subjectName: subject.subjectName,
+          topicsTotal: subject.topicsTotal,
+          mastered,
+          inProgress: own.length - mastered,
+        };
+      }),
+      topics: topics.map((topic) => ({
+        topicId: topic.topicId,
+        state: topic.state,
+        recentAnswers: topic.recentAnswers,
+        recentCorrect: topic.recentCorrect,
+      })),
+      mistakesFixed,
     };
   }
 
@@ -212,7 +242,6 @@ export class StatisticsService {
         topicName: row.topicName,
         score: formatDecimal(row.score),
         accuracy: formatDecimal(row.accuracy),
-        xpEarned: row.xpEarned,
         completedAt: row.completedAt.toISOString(),
       })),
       page: query.page,
@@ -229,7 +258,6 @@ export class StatisticsService {
       completedQuizzes: row.completedQuizzes,
       totalQuestions: row.totalQuestions,
       averageAccuracy: accuracyOf(row.correctAnswers, row.totalQuestions),
-      earnedXP: row.earnedXP,
     };
   }
 
@@ -242,48 +270,34 @@ export class StatisticsService {
       completedQuizzes: row.completedQuizzes,
       totalQuestions: row.totalQuestions,
       averageAccuracy: accuracyOf(row.correctAnswers, row.totalQuestions),
-      earnedXP: row.earnedXP,
     };
   }
 
   /**
-   * Applies a completed quiz to the user's statistics and records its XP,
-   * all within the caller's transaction (decisions D15/D17).
+   * Applies a completed quiz to the user's statistics, within the caller's
+   * transaction (decisions D15/D17). No XP any more (decision 46): the totals
+   * it keeps are the ones a learner can read meaning into.
    */
   async applyQuizCompletion(
     tx: PrismaTransactionClient,
     params: {
       userId: string;
-      quizSessionId: string;
-      resultId: string;
       totalQuestions: number;
       correctAnswers: number;
       incorrectAnswers: number;
       learningTimeSeconds: number;
-      awards: XpAward[];
     },
   ): Promise<void> {
-    const xpEarned = params.awards.reduce(
-      (sum, award) => sum + award.amount,
-      0,
-    );
-
-    await this.statisticsRepository.applyCompletedQuiz(tx, {
-      userId: params.userId,
-      totalQuestions: params.totalQuestions,
-      correctAnswers: params.correctAnswers,
-      incorrectAnswers: params.incorrectAnswers,
-      xpEarned,
-      learningTimeSeconds: params.learningTimeSeconds,
-    });
-
-    await this.statisticsRepository.recordXpAwards(tx, {
-      userId: params.userId,
-      quizSessionId: params.quizSessionId,
-      resultId: params.resultId,
-      awards: params.awards,
-    });
+    await this.statisticsRepository.applyCompletedQuiz(tx, params);
   }
+}
+
+/** A topic's state under the mastery rule (decision 46). */
+function stateOf(row: TopicMasteryRow): TopicState {
+  const accurate =
+    row.recentAnswers >= MASTERY_WINDOW &&
+    row.recentCorrect * 100 >= row.recentAnswers * MASTERY_ACCURACY;
+  return accurate && row.openMistakes === 0 ? 'MASTERED' : 'IN_PROGRESS';
 }
 
 /**

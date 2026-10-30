@@ -185,8 +185,8 @@ export class UsersService {
       bio: record.bio,
       avatar: this.avatarView(record.user.avatar),
       registrationDate: record.createdAt.toISOString(),
-      currentLevel: progress.currentLevel,
-      totalXP: progress.totalXP,
+      masteredTopics: progress.masteredTopics,
+      mistakesFixed: progress.mistakesFixed,
       completedQuizzes: progress.completedQuizzes,
       averageAccuracy: progress.averageAccuracy,
     };

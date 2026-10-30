@@ -279,12 +279,12 @@ Returns the public subset of a user's identity and progress:
 - bio;
 - avatar (type, imageUrl);
 - registrationDate;
-- currentLevel;
-- totalXP;
+- masteredTopics;
+- mistakesFixed;
 - completedQuizzes;
 - averageAccuracy.
 
-The progress fields reuse the Statistics/Level definitions; no private data (email, settings, role, statistics internals, internal ids) is exposed.
+The progress fields reuse the Statistics definitions (docs/04-api/statistics.md §7, decision 46); no private data (email, settings, role, statistics internals, internal ids) is exposed.
 
 The endpoint returns the same `404 Not Found` — indistinguishably — when the username does not exist, the target user has disabled their public profile (§11), or the account is not active (suspended or soft-deleted). This avoids revealing whether a given username is registered or why it is hidden.
 
