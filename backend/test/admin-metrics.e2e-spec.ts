@@ -71,6 +71,11 @@ describe('Admin metrics (e2e)', () => {
   };
 
   const removeTestData = async (): Promise<void> => {
+    // Sessions first: a user with sessions cannot be deleted (Restrict), and
+    // their answers go with them (Cascade).
+    await prisma.quizSession.deleteMany({
+      where: { user: { email: { startsWith: EMAIL_PREFIX } } },
+    });
     await prisma.user.deleteMany({
       where: { email: { startsWith: EMAIL_PREFIX } },
     });
@@ -133,6 +138,7 @@ describe('Admin metrics (e2e)', () => {
         'funnel',
         'recent',
         'registrations',
+        'returns',
         'subjects',
         'today',
         'totals',
@@ -160,6 +166,143 @@ describe('Admin metrics (e2e)', () => {
       expect(funnel.registered).toBeGreaterThanOrEqual(funnel.verified);
       expect(funnel.verified).toBeGreaterThanOrEqual(funnel.tookATest);
       expect(funnel.tookATest).toBeGreaterThanOrEqual(funnel.returned);
+    });
+  });
+
+  /**
+   * Weekly cohorts of new learners and whether they answered anything the
+   * next day and in their second week. The database holds other people's
+   * rows, so every test reads the change its own learners make to one week.
+   */
+  describe('who comes back', () => {
+    /** Today in Kyiv, `YYYY-MM-DD`: the days the metric counts in. */
+    const kyivToday = (): string =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Kyiv',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).format(new Date());
+    const addDays = (day: string, days: number): string => {
+      const date = new Date(`${day}T00:00:00Z`);
+      date.setUTCDate(date.getUTCDate() + days);
+      return date.toISOString().slice(0, 10);
+    };
+    const mondayOf = (day: string): string =>
+      addDays(day, -((new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7));
+    /** Late morning in Kyiv on that day, whatever the season's offset. */
+    const onDay = (day: string): Date => new Date(`${day}T09:00:00Z`);
+
+    // Three weeks back: old enough that both the next day and the second
+    // week are over, so both shares can be decided.
+    const WEEK = addDays(mondayOf(kyivToday()), -21);
+
+    let question: { id: string; subjectId: string };
+
+    beforeAll(async () => {
+      const found = await prisma.question.findFirstOrThrow({
+        select: { id: true, topic: { select: { subjectId: true } } },
+      });
+      question = { id: found.id, subjectId: found.topic.subjectId };
+    });
+
+    /** A learner who registered on `day`, confirmed, with answers on `answeredOn`. */
+    const learner = async (
+      day: string,
+      answeredOn: string[],
+      options: { role?: UserRole; verified?: boolean } = {},
+    ): Promise<void> => {
+      const { email } = await registerAccount(options.role ?? UserRole.USER);
+      const user = await prisma.user.update({
+        where: { email },
+        data: {
+          createdAt: onDay(day),
+          emailVerified: options.verified ?? true,
+        },
+      });
+      for (const answered of answeredOn) {
+        await prisma.quizSession.create({
+          data: {
+            userId: user.id,
+            subjectId: question.subjectId,
+            mode: 'SUBJECT_QUIZ',
+            timerEnabled: false,
+            questionCount: 1,
+            attempts: {
+              create: {
+                questionId: question.id,
+                isCorrect: true,
+                answeredAt: onDay(answered),
+              },
+            },
+          },
+        });
+      }
+    };
+
+    const weekOf = (metrics: PlatformMetrics, week: string) => {
+      const found = metrics.returns.find((cohort) => cohort.week === week);
+      if (!found) throw new Error(`no cohort for ${week}`);
+      return found;
+    };
+
+    it('lists eight weeks, oldest first, each starting on a Monday', async () => {
+      const { returns } = await overview();
+
+      expect(returns).toHaveLength(8);
+      expect(returns[7].week).toBe(mondayOf(kyivToday()));
+      for (const cohort of returns) {
+        expect(new Date(`${cohort.week}T00:00:00Z`).getUTCDay()).toBe(1);
+      }
+    });
+
+    it('counts who answered on the day after registering, and only that day', async () => {
+      const before = weekOf(await overview(), WEEK);
+
+      await learner(WEEK, [addDays(WEEK, 1)]);
+      await learner(WEEK, [addDays(WEEK, 2)]);
+      await learner(WEEK, []);
+
+      const after = weekOf(await overview(), WEEK);
+      expect(after.size - before.size).toBe(3);
+      expect(after.nextDay.of - before.nextDay.of).toBe(3);
+      expect(after.nextDay.returned - before.nextDay.returned).toBe(1);
+    });
+
+    it('counts the second week as days seven to thirteen', async () => {
+      const before = weekOf(await overview(), WEEK);
+
+      await learner(WEEK, [addDays(WEEK, 7)]);
+      await learner(WEEK, [addDays(WEEK, 13)]);
+      await learner(WEEK, [addDays(WEEK, 6), addDays(WEEK, 14)]);
+
+      const after = weekOf(await overview(), WEEK);
+      expect(after.secondWeek.of - before.secondWeek.of).toBe(3);
+      expect(after.secondWeek.returned - before.secondWeek.returned).toBe(2);
+    });
+
+    it('does not judge a learner whose next day is not over yet', async () => {
+      const today = kyivToday();
+      const thisWeek = mondayOf(today);
+      const before = weekOf(await overview(), thisWeek);
+
+      await learner(today, []);
+
+      const after = weekOf(await overview(), thisWeek);
+      expect(after.size - before.size).toBe(1);
+      // Counted as «not returned» it would make every young week look like a
+      // failure; it waits until the next day has passed.
+      expect(after.nextDay.of - before.nextDay.of).toBe(0);
+    });
+
+    it('leaves out teachers and learners who never confirmed their email', async () => {
+      const before = weekOf(await overview(), WEEK);
+
+      await learner(WEEK, [addDays(WEEK, 1)], { role: UserRole.TEACHER });
+      await learner(WEEK, [addDays(WEEK, 1)], { verified: false });
+
+      const after = weekOf(await overview(), WEEK);
+      expect(after.size).toBe(before.size);
     });
   });
 

@@ -721,7 +721,13 @@ GET /api/v1/admin/metrics
 ```
 
 Everything the overview draws, in one read: `totals`, `today`, `week`,
-`funnel`, `registrations`, `subjects`, `recent`.
+`funnel`, `returns`, `registrations`, `subjects`, `recent`.
+
+`returns` is eight weeks, oldest first, each
+`{ week, size, nextDay: { returned, of }, secondWeek: { returned, of } }`.
+`week` is the Monday, `YYYY-MM-DD` in Kyiv time; `size` counts learners who
+registered that week and confirmed their email; `of` counts only those whose
+next day, or second week, is already over.
 
 One endpoint rather than one per panel, so every figure comes from the same
 instant and nothing on the screen can disagree with the rest of it.

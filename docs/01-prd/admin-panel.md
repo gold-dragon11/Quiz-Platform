@@ -263,6 +263,7 @@ guessed at here.
 |---|---|
 | Headline figures | New accounts, people, tests — the week, with today beside it |
 | Funnel | Registered → confirmed → took a test → came back, over 30 days, with the number lost at each step named |
+| Returns | Eight weekly cohorts of new learners with a confirmed email: how many answered anything the next day, and in their second week (days 7 to 13). Shown as «2 з 5», with a week too young to judge marked «ще рано» rather than counted as a failure |
 | Registrations | One column per day for 30 days, empty days included |
 | Subjects | Which subjects are actually sat, and by how many people |
 | Recent accounts | The newest twenty by name, each marked for whether the address was confirmed and whether a test was ever finished |
@@ -276,6 +277,12 @@ each number looks plausible on its own.
 «Came back» is read as finishing tests on two different days. It undercounts
 somebody who returned only to read their notes, and that is the right
 direction for a figure used to decide whether any of this works.
+
+The returns table is the stricter reading, and the one the retention work
+(reminders, the new first screen) is judged by: it counts any saved answer, so
+an unfinished test or a mistake review counts too, on Kyiv calendar days, and
+only for learners — a teacher does not sit tests and would only dilute it. It
+was added before any of that work, so there is a baseline to compare against.
 
 ---
 

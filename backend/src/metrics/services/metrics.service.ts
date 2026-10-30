@@ -8,6 +8,7 @@ import type {
   PeriodCounts,
   PlatformMetrics,
   RecentAccount,
+  ReturnCohort,
   SubjectUsage,
 } from '../metrics.types';
 
@@ -15,6 +16,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const FUNNEL_DAYS = 30;
 const CHART_DAYS = 30;
 const RECENT_LIMIT = 20;
+const RETURN_WEEKS = 8;
 
 /**
  * What the platform looks like from the outside, for the one person who runs
@@ -39,18 +41,113 @@ export class MetricsService {
     const dayAgo = new Date(now.getTime() - DAY_MS);
     const weekAgo = new Date(now.getTime() - 7 * DAY_MS);
 
-    const [totals, today, week, funnel, registrations, subjects, recent] =
-      await Promise.all([
-        this.totals(),
-        this.countsSince(dayAgo),
-        this.countsSince(weekAgo),
-        this.funnel(new Date(now.getTime() - FUNNEL_DAYS * DAY_MS)),
-        this.registrations(now),
-        this.subjects(),
-        this.recent(),
-      ]);
+    const [
+      totals,
+      today,
+      week,
+      funnel,
+      returns,
+      registrations,
+      subjects,
+      recent,
+    ] = await Promise.all([
+      this.totals(),
+      this.countsSince(dayAgo),
+      this.countsSince(weekAgo),
+      this.funnel(new Date(now.getTime() - FUNNEL_DAYS * DAY_MS)),
+      this.returns(now),
+      this.registrations(now),
+      this.subjects(),
+      this.recent(),
+    ]);
 
-    return { totals, today, week, funnel, registrations, subjects, recent };
+    return {
+      totals,
+      today,
+      week,
+      funnel,
+      returns,
+      registrations,
+      subjects,
+      recent,
+    };
+  }
+
+  /**
+   * Weekly cohorts of new learners, and how many answered anything the next
+   * day and in their second week (days 7 to 13).
+   *
+   * A share counts only the people it can already be decided for: somebody
+   * who registered yesterday has not had a «next day» yet, and counting them
+   * as not having returned would make every young week look like a failure.
+   *
+   * Days are Kyiv calendar days. The columns hold UTC without a zone, so each
+   * is read as UTC first and then turned into Kyiv time.
+   */
+  async returns(now: Date = new Date()): Promise<ReturnCohort[]> {
+    const today = kyivDate(now);
+    const weeks = Array.from({ length: RETURN_WEEKS }, (_, index) =>
+      addDays(mondayOf(today), (index - RETURN_WEEKS + 1) * 7),
+    );
+
+    const rows = await this.prisma.$queryRaw<
+      {
+        week: Date;
+        size: number;
+        next_day: number;
+        next_day_of: number;
+        second_week: number;
+        second_week_of: number;
+      }[]
+    >`
+      WITH cohort AS (
+        SELECT u.id,
+               ((u."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Kyiv')::date AS d0
+        FROM users u
+        WHERE ${REAL_ACCOUNT_SQL}
+          AND u.role = 'USER'
+          AND u."emailVerified" = true
+          AND ((u."createdAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Kyiv')::date >= ${weeks[0]}::date
+      ),
+      active AS (
+        SELECT DISTINCT s."userId" AS id,
+               ((a."answeredAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Europe/Kyiv')::date AS d
+        FROM question_attempts a
+        JOIN quiz_sessions s ON s.id = a."quizSessionId"
+        WHERE s."userId" IN (SELECT id FROM cohort)
+      )
+      SELECT DATE_TRUNC('week', c.d0)::date AS week,
+             COUNT(*)::int AS size,
+             COUNT(*) FILTER (WHERE c.d0 + 1 < ${today}::date)::int AS next_day_of,
+             COUNT(*) FILTER (
+               WHERE c.d0 + 1 < ${today}::date
+                 AND EXISTS (SELECT 1 FROM active a WHERE a.id = c.id AND a.d = c.d0 + 1)
+             )::int AS next_day,
+             COUNT(*) FILTER (WHERE c.d0 + 13 < ${today}::date)::int AS second_week_of,
+             COUNT(*) FILTER (
+               WHERE c.d0 + 13 < ${today}::date
+                 AND EXISTS (
+                   SELECT 1 FROM active a
+                   WHERE a.id = c.id AND a.d BETWEEN c.d0 + 7 AND c.d0 + 13
+                 )
+             )::int AS second_week
+      FROM cohort c
+      GROUP BY 1`;
+
+    const byWeek = new Map(rows.map((row) => [toDayKey(row.week), row]));
+
+    return weeks.map((week) => {
+      const row = byWeek.get(week);
+      return {
+        week,
+        size: row?.size ?? 0,
+        nextDay: { returned: row?.next_day ?? 0, of: row?.next_day_of ?? 0 },
+        secondWeek: {
+          returned: row?.second_week ?? 0,
+          of: row?.second_week_of ?? 0,
+        },
+      };
+    });
   }
 
   private async totals(): Promise<PlatformMetrics['totals']> {
@@ -225,6 +322,29 @@ export class MetricsService {
       tookATest: row._count.quizSessions > 0,
     }));
   }
+}
+
+/** The calendar date in Kyiv at this instant, `YYYY-MM-DD`. */
+function kyivDate(instant: Date): string {
+  // en-CA formats a date as YYYY-MM-DD.
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(instant);
+}
+
+function addDays(day: string, days: number): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return toDayKey(date);
+}
+
+/** The Monday of the week this date falls in, as Postgres' DATE_TRUNC has it. */
+function mondayOf(day: string): string {
+  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay(); // 0 is Sunday
+  return addDays(day, -((weekday + 6) % 7));
 }
 
 function startOfDay(date: Date): Date {

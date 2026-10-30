@@ -184,8 +184,8 @@ takes about a minute locally.
 
 ```bash
 cd backend  && npm test          # 97 unit tests
-cd backend  && npm run test:e2e  # 895 tests, 40 suites — needs a migrated, seeded database
-cd frontend && npm test          # 149 component tests (jsdom, API mocked with MSW)
+cd backend  && npm run test:e2e  # 900 tests, 40 suites — needs a migrated, seeded database
+cd frontend && npm test          # 150 component tests (jsdom, API mocked with MSW)
 ```
 
 The end-to-end suite runs against a real database and a real HTTP server: it

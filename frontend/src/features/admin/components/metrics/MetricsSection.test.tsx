@@ -22,6 +22,17 @@ const metrics = (over: Partial<PlatformMetrics> = {}): PlatformMetrics => ({
   today: { newAccounts: 1, testsCompleted: 0, activePeople: 0 },
   week: { newAccounts: 4, testsCompleted: 6, activePeople: 3 },
   funnel: { registered: 5, verified: 5, tookATest: 2, returned: 0 },
+  returns: Array.from({ length: 8 }, (_, index) => {
+    const week = `2026-${index < 3 ? '09' : '10'}-${String([8, 15, 22, 6, 13, 20, 27, 3][index]).padStart(2, '0')}`;
+    if (index === 5) {
+      return { week, size: 5, nextDay: { returned: 2, of: 5 }, secondWeek: { returned: 1, of: 5 } };
+    }
+    if (index === 7) {
+      // This week: registered, not yet judged.
+      return { week, size: 3, nextDay: { returned: 0, of: 0 }, secondWeek: { returned: 0, of: 0 } };
+    }
+    return { week, size: 0, nextDay: { returned: 0, of: 0 }, secondWeek: { returned: 0, of: 0 } };
+  }),
   registrations: Array.from({ length: 30 }, (_, index) => ({
     day: `2026-09-${String(index + 1).padStart(2, '0')}`,
     count: index === 10 ? 4 : 0,
@@ -65,6 +76,17 @@ describe('MetricsSection', () => {
 
     expect(await screen.findByText('нових за тиждень')).toBeInTheDocument();
     expect(screen.getByText('сьогодні 1')).toBeInTheDocument();
+  });
+
+  it('shows who came back as counts, and calls a young week too early rather than a failure', async () => {
+    signedIn();
+    serve(metrics());
+    open();
+
+    const table = await screen.findByRole('table', { name: 'Повернення нових учнів за тижнями реєстрації' });
+    expect(table).toHaveTextContent('2 з 5');
+    expect(table).toHaveTextContent('1 з 5');
+    expect(screen.getAllByText('ще рано')).toHaveLength(2);
   });
 
   it('names where people were lost instead of leaving it to be subtracted', async () => {
