@@ -8,6 +8,8 @@ import type {
   DailyPoint,
   MetricsFunnel,
   RecentAccount,
+  ReturnCohort,
+  ReturnShare,
   SubjectUsage,
 } from '@/features/admin/types/admin.types';
 
@@ -40,7 +42,7 @@ export function MetricsSection(): React.JSX.Element {
     return <SectionError onRetry={() => void metrics.refetch()} />;
   }
 
-  const { totals, today, week, funnel, registrations, subjects, recent } = metrics.data;
+  const { totals, today, week, funnel, returns, registrations, subjects, recent } = metrics.data;
 
   return (
     <div className="flex flex-col gap-14">
@@ -78,6 +80,7 @@ export function MetricsSection(): React.JSX.Element {
       </p>
 
       <Funnel funnel={funnel} />
+      <Returns weeks={returns} />
       <Registrations points={registrations} />
       <Subjects rows={subjects} />
       <Recent rows={recent} />
@@ -136,6 +139,89 @@ function Funnel({ funnel }: { funnel: MetricsFunnel }): React.JSX.Element {
       )}
     </section>
   );
+}
+
+/* --- Returns ------------------------------------------------------------- */
+
+/**
+ * Whether new learners come back: the figure the reminders and the new first
+ * screen will be judged by. Counts, not percentages, while a week brings a
+ * handful of people; a week too young to judge says so instead of showing a
+ * zero that would read as a failure.
+ */
+function Returns({ weeks }: { weeks: ReturnCohort[] }): React.JSX.Element {
+  const anyone = weeks.some((week) => week.size > 0);
+
+  return (
+    <section>
+      <Heading
+        title="Повернення"
+        note="Нові учні з підтвердженою поштою; повернувся той, хто зберіг хоч одну відповідь"
+      />
+
+      {!anyone ? (
+        <p className="text-text-muted mt-6 text-sm">
+          За вісім тижнів не зареєструвався жоден учень, тож і міряти поки нічого.
+        </p>
+      ) : (
+        <table className="mt-6 w-full text-sm">
+          <caption className="sr-only">Повернення нових учнів за тижнями реєстрації</caption>
+          <thead>
+            <tr className="border-border text-text-muted border-b text-left text-xs">
+              <th scope="col" className="pb-2 font-normal">
+                Тиждень з
+              </th>
+              <th scope="col" className="pb-2 text-right font-normal">
+                Нових
+              </th>
+              <th scope="col" className="pb-2 text-right font-normal">
+                Наступного дня
+              </th>
+              <th scope="col" className="pb-2 text-right font-normal">
+                На другому тижні
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-border divide-y">
+            {[...weeks].reverse().map((week) => (
+              <tr key={week.week}>
+                <th scope="row" className="text-text-primary py-3 text-left font-normal">
+                  {weekLabel(week.week)}
+                </th>
+                <td className="text-text-primary py-3 text-right tabular-nums">{formatNumber(week.size)}</td>
+                <td className="py-3 text-right tabular-nums">
+                  <ShareCell size={week.size} share={week.nextDay} />
+                </td>
+                <td className="py-3 text-right tabular-nums">
+                  <ShareCell size={week.size} share={week.secondWeek} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+function ShareCell({ size, share }: { size: number; share: ReturnShare }): React.JSX.Element {
+  if (size === 0) {
+    return <span className="text-text-muted">нікого</span>;
+  }
+  if (share.of === 0) {
+    return <span className="text-text-muted">ще рано</span>;
+  }
+  return (
+    <span className="text-text-primary">
+      {formatNumber(share.returned)} з {formatNumber(share.of)}
+      <span className="text-text-muted ml-2 text-xs">{Math.round((share.returned / share.of) * 100)}%</span>
+    </span>
+  );
+}
+
+/** «26 жовт.»: the week's Monday as a person says it. */
+function weekLabel(monday: string): string {
+  return new Date(`${monday}T12:00:00Z`).toLocaleDateString('uk-UA', { day: 'numeric', month: 'short' });
 }
 
 /* --- Registrations ------------------------------------------------------- */

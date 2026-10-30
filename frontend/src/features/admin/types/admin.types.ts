@@ -244,11 +244,28 @@ export interface RecentAccount {
   tookATest: boolean;
 }
 
+/** Of how many people, how many; `of` holds only those it can be decided for yet. */
+export interface ReturnShare {
+  returned: number;
+  of: number;
+}
+
+/** One week's new learners and whether they came back (backend metrics.types.ts). */
+export interface ReturnCohort {
+  /** The Monday the week began, `YYYY-MM-DD`, Kyiv time. */
+  week: string;
+  size: number;
+  nextDay: ReturnShare;
+  secondWeek: ReturnShare;
+}
+
 export interface PlatformMetrics {
   totals: { accounts: number; learners: number; teachers: number; testsCompleted: number };
   today: PeriodCounts;
   week: PeriodCounts;
   funnel: MetricsFunnel;
+  /** Eight weeks, oldest first. */
+  returns: ReturnCohort[];
   registrations: DailyPoint[];
   subjects: SubjectUsage[];
   recent: RecentAccount[];
