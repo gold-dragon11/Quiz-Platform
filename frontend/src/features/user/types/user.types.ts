@@ -16,6 +16,16 @@ export interface UpdateProfilePayload {
 }
 
 /**
+ * GET and PUT /users/me/study (docs §13): the subjects the learner takes, in
+ * the order they chose them, and whether the dashboard opens on the first
+ * screen that asks.
+ */
+export interface StudyView {
+  subjectIds: string[];
+  needsOnboarding: boolean;
+}
+
+/**
  * GET /users/{username} (docs §12) — the public subset of an account. The
  * same 404 answers an unknown username, a hidden profile and an inactive
  * account, so a caller cannot tell which it was.

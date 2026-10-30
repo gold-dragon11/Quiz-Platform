@@ -7,6 +7,8 @@ import { useMistakeReviewSummary } from '@/features/mistake-review/hooks/use-mis
 import { useStudentAssignments } from '@/features/assignments/hooks/use-assignments';
 import { useDuels } from '@/features/duels/hooks/use-duels';
 import { playerName, stanceOf, theirSide } from '@/features/duels/lib/duel-state';
+import { useStudy } from '@/features/user/hooks/use-study';
+import { FirstStep } from '@/features/dashboard/components/FirstStep';
 
 interface TodayItem {
   key: string;
@@ -42,8 +44,10 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
   const review = useMistakeReviewSummary();
   const assignments = useStudentAssignments();
   const duels = useDuels();
+  const study = useStudy();
 
-  const loading = activeQuiz.isPending || review.isPending || assignments.isPending || duels.isPending;
+  const loading =
+    activeQuiz.isPending || review.isPending || assignments.isPending || duels.isPending || study.isPending;
 
   if (loading) {
     return (
@@ -129,6 +133,11 @@ export function TodayList({ userId }: { userId: string }): React.JSX.Element {
   }
 
   if (items.length === 0) {
+    // A learner who has never finished a test has nothing to be told is not
+    // due; what they lack is a first step.
+    if (study.data?.needsOnboarding) {
+      return <FirstStep />;
+    }
     return <NothingDue scheduled={review.data?.scheduled ?? 0} />;
   }
 

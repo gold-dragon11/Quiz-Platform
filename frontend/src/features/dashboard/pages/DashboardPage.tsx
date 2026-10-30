@@ -71,7 +71,7 @@ export function DashboardPage(): React.JSX.Element {
           </>
         ) : (
           <>
-            Рівень, точність і прогрес за предметами є{' '}
+            Освоєні теми, точність і прогрес за предметами є{' '}
             <Link to={ROUTES.statistics} className="text-text-secondary underline underline-offset-4">
               на сторінці статистики
             </Link>

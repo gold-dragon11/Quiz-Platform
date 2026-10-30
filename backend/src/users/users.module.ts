@@ -5,6 +5,7 @@ import { AdminUsersController } from './controllers/admin-users.controller';
 import { UsersController } from './controllers/users.controller';
 import { UsersRepository } from './repositories/users.repository';
 import { AdminUsersService } from './services/admin-users.service';
+import { StudyService } from './services/study.service';
 import { UsersService } from './services/users.service';
 
 /**
@@ -18,6 +19,6 @@ import { UsersService } from './services/users.service';
 @Module({
   imports: [StatisticsModule, AuthModule],
   controllers: [UsersController, AdminUsersController],
-  providers: [UsersService, AdminUsersService, UsersRepository],
+  providers: [UsersService, AdminUsersService, StudyService, UsersRepository],
 })
 export class UsersModule {}
