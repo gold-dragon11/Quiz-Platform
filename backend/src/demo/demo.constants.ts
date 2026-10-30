@@ -63,42 +63,107 @@ export const DEMO_CLASSMATES: (DemoAccountSpec & { accuracy: number })[] = [
   accuracy: accuracy as number,
 }));
 
-/** Practice the demo student has done on her own, oldest first. */
-export const DEMO_PRACTICE: {
-  subject: string;
-  topic: string;
-  daysAgo: number;
-  accuracy: number;
-}[] = [
+/** One thing the demo student did on her own. */
+export type DemoStep =
+  | {
+      kind: 'practice';
+      subject: string;
+      topic: string;
+      daysAgo: number;
+      accuracy: number;
+      /** Questions in the test; 10 unless a topic needs more to reach ten answers. */
+      questions?: number;
+    }
+  | {
+      kind: 'mock';
+      subject: string;
+      daysAgo: number;
+      accuracy: number;
+      minutes: number;
+    }
+  | { kind: 'review'; daysAgo: number; accuracy: number; count: number };
+
+/**
+ * The demo student's month, oldest first, played through the engine in this
+ * order so the mistake ladder moves the way it would have.
+ *
+ * It has to show progress, not only practice (decision 46): early tests leave
+ * mistakes, three reviews a few days apart carry some of them up every rung
+ * and off the ladder, and a return to the weak topic of the first week goes
+ * well — so the statistics show mistakes fixed and topics mastered beside the
+ * ones still in progress, and the ladder still has a review due today.
+ */
+export const DEMO_TIMELINE: DemoStep[] = [
   {
+    kind: 'practice',
     subject: 'mathematics',
     topic: 'quadratic-functions',
-    daysAgo: 20,
+    daysAgo: 24,
     accuracy: 0.55,
   },
   {
+    kind: 'practice',
     subject: 'ukrainian-language',
     topic: 'orthography',
-    daysAgo: 17,
+    daysAgo: 21,
     accuracy: 0.65,
   },
-  { subject: 'mathematics', topic: 'planimetry', daysAgo: 13, accuracy: 0.6 },
+  { kind: 'review', daysAgo: 20, accuracy: 1, count: 15 },
+  { kind: 'review', daysAgo: 17, accuracy: 1, count: 15 },
   {
+    kind: 'practice',
+    subject: 'mathematics',
+    topic: 'planimetry',
+    daysAgo: 14,
+    accuracy: 0.6,
+  },
+  { kind: 'review', daysAgo: 13, accuracy: 1, count: 15 },
+  {
+    kind: 'practice',
     subject: 'history-of-ukraine',
     topic: 'kyivan-rus',
     daysAgo: 10,
     accuracy: 0.75,
   },
+  { kind: 'review', daysAgo: 9, accuracy: 0.8, count: 12 },
   {
+    kind: 'mock',
+    subject: 'mathematics',
+    daysAgo: 8,
+    accuracy: 0.72,
+    minutes: 128,
+  },
+  {
+    kind: 'practice',
     subject: 'ukrainian-language',
     topic: 'punctuation',
     daysAgo: 6,
     accuracy: 0.7,
   },
   {
-    subject: 'english-language',
-    topic: 'present-tenses',
-    daysAgo: 2,
-    accuracy: 0.85,
+    kind: 'practice',
+    subject: 'mathematics',
+    topic: 'quadratic-functions',
+    daysAgo: 5,
+    accuracy: 1,
   },
+  {
+    kind: 'mock',
+    subject: 'history-of-ukraine',
+    daysAgo: 4,
+    accuracy: 0.6,
+    minutes: 104,
+  },
+  { kind: 'review', daysAgo: 4, accuracy: 0.75, count: 15 },
+  {
+    kind: 'practice',
+    subject: 'english-language',
+    // Twelve, because the demo answers no matching question and a topic is
+    // judged on its last ten answers.
+    topic: 'conditionals',
+    daysAgo: 2,
+    accuracy: 1,
+    questions: 12,
+  },
+  { kind: 'review', daysAgo: 1, accuracy: 0.7, count: 15 },
 ];

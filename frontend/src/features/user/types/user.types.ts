@@ -26,8 +26,10 @@ export interface PublicProfile {
   bio: string | null;
   avatar: { type: string; imageUrl: string } | null;
   registrationDate: string;
-  currentLevel: number;
-  totalXP: number;
+  /** Topics mastered (decision 46). */
+  masteredTopics: number;
+  /** Mistakes cleared from the ladder for good. */
+  mistakesFixed: number;
   completedQuizzes: number;
   /** Decimal string, e.g. "74.50". */
   averageAccuracy: string;

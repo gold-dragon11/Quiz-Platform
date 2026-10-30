@@ -6,7 +6,6 @@ import {
   QuestionType,
   QuizStatus,
   UserRole,
-  XPSource,
 } from '@prisma/client';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
@@ -52,7 +51,6 @@ interface ResultSummary {
   totalQuestions: number;
   accuracy: string;
   score: string;
-  xpEarned: number;
   completedAt: string;
 }
 
@@ -1726,10 +1724,9 @@ describe('Quiz Engine (e2e)', () => {
     });
   });
 
-  describe('completion, scoring, and XP', () => {
-    it('scores single choice, awards XP, and is idempotent', async () => {
+  describe('completion and scoring', () => {
+    it('scores single choice, writes no XP, and is idempotent', async () => {
       const { token, userId } = await registerUser();
-      // 8/10 correct = 80% → 80 XP, no bonus.
       const sessionId = await playSingleChoice(token, topicId, 10, 8);
 
       const done = await complete(token, sessionId).expect(200);
@@ -1741,20 +1738,18 @@ describe('Quiz Engine (e2e)', () => {
         totalQuestions: 10,
         accuracy: '80.00',
         score: '80.00',
-        xpEarned: 80,
       });
+      // XP is gone (decision 46): not zero, absent.
+      expect(summary).not.toHaveProperty('xpEarned');
 
-      // A second completion is a 409 and does not double XP.
+      // A second completion is a 409 and does not count the quiz twice.
       await complete(token, sessionId).expect(409);
 
-      const xp = await prisma.xPTransaction.findMany({
-        where: { quizSessionId: sessionId },
-      });
-      expect(xp).toHaveLength(1);
-      expect(xp[0]).toMatchObject({
-        amount: 80,
-        reason: XPSource.QUIZ_COMPLETION,
-      });
+      expect(
+        await prisma.xPTransaction.count({
+          where: { quizSessionId: sessionId },
+        }),
+      ).toBe(0);
 
       const stats = await prisma.statistics.findUniqueOrThrow({
         where: { userId },
@@ -1763,31 +1758,11 @@ describe('Quiz Engine (e2e)', () => {
       expect(stats.totalQuestions).toBe(10);
       expect(stats.correctAnswers).toBe(8);
       expect(stats.incorrectAnswers).toBe(2);
-      expect(stats.totalXP).toBe(80);
+      expect(stats.totalXP).toBe(0);
       expect(stats.averageAccuracy.toString()).toBe('80');
     });
 
-    it('awards the high-accuracy bonus at exactly 90%', async () => {
-      const { token } = await registerUser();
-      // 9/10 = 90% → 90 XP + 25 bonus = 115.
-      const sessionId = await playSingleChoice(token, topicId, 10, 9);
-      const done = await complete(token, sessionId).expect(200);
-      const summary = done.body as ResultSummary;
-
-      expect(summary.accuracy).toBe('90.00');
-      expect(summary.xpEarned).toBe(115);
-
-      const xp = await prisma.xPTransaction.findMany({
-        where: { quizSessionId: sessionId },
-        orderBy: { amount: 'asc' },
-      });
-      expect(xp.map((t) => [t.reason, t.amount])).toEqual([
-        [XPSource.HIGH_ACCURACY_BONUS, 25],
-        [XPSource.QUIZ_COMPLETION, 90],
-      ]);
-    });
-
-    it('counts unanswered questions as incorrect and still records a QUIZ_COMPLETION row', async () => {
+    it('counts unanswered questions as incorrect', async () => {
       const { token } = await registerUser();
       const started = await start(token, {
         subjectId,
@@ -1811,14 +1786,7 @@ describe('Quiz Engine (e2e)', () => {
         unansweredQuestions: 3,
         totalQuestions: 4,
         accuracy: '25.00',
-        xpEarned: 25,
       });
-
-      const xp = await prisma.xPTransaction.findMany({
-        where: { quizSessionId: sessionId },
-      });
-      expect(xp).toHaveLength(1);
-      expect(xp[0].amount).toBe(25);
     });
 
     /**

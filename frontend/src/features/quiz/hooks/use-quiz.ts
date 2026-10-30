@@ -7,7 +7,7 @@ import type { SelectedAnswer, StartQuizPayload } from '@/features/quiz/types/qui
 /**
  * Quiz engine queries + mutations (Phase 6.5). React Query owns all server
  * state; components hold only transient UI state. Completing a quiz
- * invalidates statistics so the dashboard reflects new XP/level immediately.
+ * invalidates statistics so the statistics views reflect it immediately.
  */
 
 export const QUIZ_QUERY_KEYS = {
@@ -110,7 +110,7 @@ export function useCompleteQuiz(sessionId: string) {
   return useMutation({
     mutationFn: () => quizApi.complete(sessionId),
     onSuccess: () => {
-      // New XP/level/activity — refresh statistics-backed views (dashboard).
+      // New progress and activity: refresh statistics-backed views.
       void queryClient.invalidateQueries({ queryKey: ['statistics'] });
       // The session just left ACTIVE — drop the stale "continue" card/banner.
       void queryClient.invalidateQueries({ queryKey: QUIZ_QUERY_KEYS.active });

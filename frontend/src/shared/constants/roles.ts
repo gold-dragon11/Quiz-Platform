@@ -21,7 +21,7 @@ export const LEARNER_ROLES = [UserRole.USER, UserRole.ADMIN] as const;
  *
  * A teacher sets work rather than doing it, but a mock is the one paper worth
  * seeing from the inside before setting it for a group — the clock, the
- * answer sheet, the scale. So it is open to them, and the backend keeps XP and
- * the review ladder out of their account (decision 29).
+ * answer sheet, the scale. So it is open to them, and the backend keeps the
+ * review ladder and the running totals out of their account (decision 29).
  */
 export const MOCK_EXAM_ROLES = [...LEARNER_ROLES, UserRole.TEACHER] as const;

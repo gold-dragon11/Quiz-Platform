@@ -1,37 +1,66 @@
 /**
  * The overall statistics payload (docs/04-api/statistics.md §4, decision S2).
- * Exactly the documented fields plus the derived level block; internal fields
- * (incorrectAnswers, streaks) are never exposed.
+ * Internal fields (incorrectAnswers, streaks) are never exposed. XP and the
+ * level it bought are gone (decision 46): what a learner has actually
+ * learned is in `/statistics/progress`.
  */
 export interface OverallStatistics {
-  totalXP: number;
-  currentLevel: number;
   completedQuizzes: number;
   averageAccuracy: string;
   totalQuestions: number;
   correctAnswers: number;
   totalStudyTime: number;
-  xpForCurrentLevel: number;
-  xpForNextLevel: number;
-  xpIntoLevel: number;
-  completionPercent: number;
 }
 
-/** The public subset of a user's progress (docs/04-api/users.md §12, D5). */
+/**
+ * The public subset of a user's progress (docs/04-api/users.md §12, D5):
+ * what they have mastered and fixed, and how much and how well they work.
+ */
 export interface PublicProgress {
-  currentLevel: number;
-  totalXP: number;
+  masteredTopics: number;
+  mistakesFixed: number;
   completedQuizzes: number;
   averageAccuracy: string;
 }
 
-/** High-level progress (docs/04-api/statistics.md §7, decision S1). */
-export interface ProgressSummary {
-  currentLevel: number;
-  totalXP: number;
-  xpForNextLevel: number;
-  xpIntoLevel: number;
-  completionPercent: number;
+/**
+ * Where a topic stands for one learner (decision 46). `MASTERED`: the last
+ * ten answers in it are at least 80% right and none of its questions waits on
+ * the mistake ladder. `IN_PROGRESS`: answered, but not that yet. A topic never
+ * answered has no state and is not listed.
+ */
+export type TopicState = 'MASTERED' | 'IN_PROGRESS';
+
+/** One subject's topics, by state. */
+export interface SubjectProgress {
+  subjectId: string;
+  subjectName: string;
+  /** Published topics in the subject. */
+  topicsTotal: number;
+  mastered: number;
+  inProgress: number;
+}
+
+/**
+ * What a learner has actually learned (docs/04-api/statistics.md §7,
+ * decision 46): topics mastered per subject, each topic's state, and how many
+ * mistakes have been fixed for good.
+ */
+export interface Progress {
+  /** Every published subject, so «0 of 31» reads as a place to start. */
+  subjects: SubjectProgress[];
+  /**
+   * Only topics with at least one answer, with the window the state was
+   * judged on: the last ten answers at most, and how many of them were right.
+   */
+  topics: {
+    topicId: string;
+    state: TopicState;
+    recentAnswers: number;
+    recentCorrect: number;
+  }[];
+  /** Questions once answered wrong that have since cleared the whole ladder. */
+  mistakesFixed: number;
 }
 
 /** One subject's aggregated statistics (docs/04-api/statistics.md §5). */
@@ -41,7 +70,6 @@ export interface SubjectStatistics {
   completedQuizzes: number;
   totalQuestions: number;
   averageAccuracy: string;
-  earnedXP: number;
 }
 
 /** One topic's aggregated statistics (docs/04-api/statistics.md §6). */
@@ -53,7 +81,6 @@ export interface TopicStatistics {
   completedQuizzes: number;
   totalQuestions: number;
   averageAccuracy: string;
-  earnedXP: number;
 }
 
 /**
@@ -79,7 +106,6 @@ export interface RecentActivityItem {
   topicName: string | null;
   score: string;
   accuracy: string;
-  xpEarned: number;
   completedAt: string;
 }
 

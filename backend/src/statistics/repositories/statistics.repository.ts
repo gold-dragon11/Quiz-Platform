@@ -1,20 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { XPSource } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PrismaTransactionClient } from '../../prisma/prisma-transaction.type';
 
-/** One XP award to persist during quiz completion. */
-export interface XpAward {
-  amount: number;
-  reason: XPSource;
-}
-
 /**
- * Persistence for user Statistics and XP transactions
- * (docs/02-domain/statistics.md, docs/02-domain/xp-transaction.md). Writes are
+ * Persistence for user Statistics (docs/02-domain/statistics.md). Writes are
  * transaction-aware: quiz completion passes its transaction client so the
- * result, XP, and statistics updates all commit together
+ * result and the statistics update commit together
  * (docs/06-backend/services.md §8).
+ *
+ * XP is no longer written (decision 46). `Statistics.totalXP` and the
+ * `xp_transactions` rows already recorded are kept untouched as history; no
+ * screen reads them.
  */
 @Injectable()
 export class StatisticsRepository {
@@ -24,8 +20,7 @@ export class StatisticsRepository {
    * Applies one completed quiz to the user's cumulative statistics
    * (docs/02-domain/statistics.md §5-6). Incremental — never a full recompute
    * (decision D15). averageAccuracy is recomputed from the running totals so
-   * it can never drift. Streaks and level are deferred to the Statistics
-   * phase and left untouched.
+   * it can never drift.
    */
   async applyCompletedQuiz(
     tx: PrismaTransactionClient,
@@ -34,7 +29,6 @@ export class StatisticsRepository {
       totalQuestions: number;
       correctAnswers: number;
       incorrectAnswers: number;
-      xpEarned: number;
       learningTimeSeconds: number;
     },
   ): Promise<void> {
@@ -58,40 +52,9 @@ export class StatisticsRepository {
         totalQuestions: { increment: params.totalQuestions },
         correctAnswers: { increment: params.correctAnswers },
         incorrectAnswers: { increment: params.incorrectAnswers },
-        totalXP: { increment: params.xpEarned },
         totalLearningTimeSeconds: { increment: params.learningTimeSeconds },
         averageAccuracy,
       },
-    });
-  }
-
-  /**
-   * Records each XP award as its own transaction row
-   * (docs/02-domain/xp-transaction.md). A QUIZ_COMPLETION row is always
-   * written (even for 0 XP), preserving the one-completion-one-transaction
-   * invariant; a HIGH_ACCURACY_BONUS row is added only when earned
-   * (decisions D5/R5).
-   */
-  async recordXpAwards(
-    tx: PrismaTransactionClient,
-    params: {
-      userId: string;
-      quizSessionId: string;
-      resultId: string;
-      awards: XpAward[];
-    },
-  ): Promise<void> {
-    if (params.awards.length === 0) {
-      return;
-    }
-    await tx.xPTransaction.createMany({
-      data: params.awards.map((award) => ({
-        userId: params.userId,
-        quizSessionId: params.quizSessionId,
-        resultId: params.resultId,
-        amount: award.amount,
-        reason: award.reason,
-      })),
     });
   }
 }

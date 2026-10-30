@@ -136,7 +136,7 @@ const LEARNERS = [...LEARNER_ROLES];
  *
  * «Пробний НМТ» is open to a teacher as well. It was once a learner entry,
  * because a teacher sitting a mock collected XP and a level their statistics
- * page never shows. The backend now keeps XP out of a teacher's account, and a
+ * page never shows. XP is gone for everyone now (decision 46), and a
  * teacher who is about to set a mock for a group has every reason to sit it
  * first (decision 29). It stays out of the bottom bar, which is full.
  */

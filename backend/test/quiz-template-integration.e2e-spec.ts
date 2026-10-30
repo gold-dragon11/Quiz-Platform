@@ -263,11 +263,7 @@ describe('Quiz Template Integration (e2e)', () => {
         .post(`/api/v1/quiz/${sessionId}/complete`)
         .set('Authorization', `Bearer ${token}`)
         .expect(200);
-      // 100% of 4 → 100 XP + 25 bonus = 125.
-      expect(
-        (done.body as { accuracy: string; xpEarned: number }).accuracy,
-      ).toBe('100.00');
-      expect((done.body as { xpEarned: number }).xpEarned).toBe(125);
+      expect((done.body as { accuracy: string }).accuracy).toBe('100.00');
     });
 
     it.each([

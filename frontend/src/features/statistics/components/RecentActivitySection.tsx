@@ -7,10 +7,10 @@ import type { RecentActivityItem } from '@/features/statistics/types/statistics.
 /**
  * The last ten sessions, newest first (docs/04-api/statistics.md §8).
  *
- * Already a list of rows before, but wrapped in a bordered, shadowed panel and
- * with the XP in a coloured pill — the panel repeated a grouping the hairlines
- * already carried, and the pill made the least important number on the row the
- * most colourful thing on it.
+ * Already a list of rows before, but wrapped in a bordered, shadowed panel —
+ * the panel repeated a grouping the hairlines already carried. Each row now
+ * ends on how the session went, its share of right answers; the XP it used
+ * to end on is gone (decision 46).
  *
  * `score` is not shown. The backend writes it as `score: accuracy` — one value
  * stored in two `Decimal(5,2)` columns — so the old row printed the same
@@ -53,13 +53,10 @@ function ActivityRow({ item }: { item: RecentActivityItem }): React.JSX.Element 
           {item.topicName ?? item.subjectName}
           {item.topicName && <span className="text-text-muted">, {item.subjectName}</span>}
         </p>
-        <p className="text-text-muted mt-1 text-xs">
-          {formatShortDate(item.completedAt)}, точність {formatPercent(item.accuracy)}
-        </p>
+        <p className="text-text-muted mt-1 text-xs">{formatShortDate(item.completedAt)}</p>
       </div>
       <p className="text-text-secondary font-display shrink-0 text-base lining-nums">
-        +{item.xpEarned}
-        <span className="text-text-muted ml-1.5 text-xs font-normal">XP</span>
+        {formatPercent(item.accuracy)}
       </p>
     </li>
   );

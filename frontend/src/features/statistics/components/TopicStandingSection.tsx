@@ -6,9 +6,9 @@ import { Skeleton } from '@/shared/ui/Skeleton';
 import { isApiError } from '@/shared/utils/apply-api-error';
 import { formatPercent, pluralUk } from '@/shared/utils/format';
 import { useStartQuiz } from '@/features/quiz/hooks/use-quiz';
-import { useMistakes, useTopicStatistics } from '@/features/statistics/hooks/use-statistics';
+import { useMistakes, useProgress, useTopicStatistics } from '@/features/statistics/hooks/use-statistics';
 import { SectionError } from '@/features/statistics/components/SectionError';
-import type { MistakeGroup, TopicStatistics } from '@/features/statistics/types/statistics.types';
+import type { MistakeGroup, Progress, TopicStatistics } from '@/features/statistics/types/statistics.types';
 
 /** Below this, a topic is worth sitting down with rather than retrying. */
 const TROUBLE_THRESHOLD = 60;
@@ -25,6 +25,9 @@ interface TopicStanding {
   /** null when no quiz has ever targeted this topic — see the merge note. */
   accuracy: number | null;
   answered: number;
+  /** True when the figure is the last answers in the topic, wherever they were given. */
+  recent: boolean;
+  mastered: boolean;
   mistakeCount: number;
 }
 
@@ -48,11 +51,18 @@ interface TopicStanding {
 export function TopicStandingSection(): React.JSX.Element {
   const topics = useTopicStatistics();
   const mistakes = useMistakes();
+  // Which topics are mastered (decision 46). Optional: without it the rows
+  // simply carry no mark.
+  const progress = useProgress();
+  const recent = useMemo(
+    () => new Map((progress.data?.topics ?? []).map((topic) => [topic.topicId, topic])),
+    [progress.data],
+  );
   const [expanded, setExpanded] = useState(false);
 
   const standings = useMemo(
-    () => mergeStandings(topics.data ?? [], mistakes.data ?? []),
-    [topics.data, mistakes.data],
+    () => mergeStandings(topics.data ?? [], mistakes.data ?? [], recent),
+    [topics.data, mistakes.data, recent],
   );
 
   if (topics.isPending || mistakes.isPending) {
@@ -122,7 +132,18 @@ export function TopicStandingSection(): React.JSX.Element {
  * nothing left to retry. Accuracy breaks the tie, and a topic with no measured
  * accuracy sorts last within its tier rather than being guessed at.
  */
-function mergeStandings(topics: TopicStatistics[], mistakes: MistakeGroup[]): TopicStanding[] {
+/**
+ * One row per topic the reader has met. The figure is the share right in the
+ * topic's last answers (at most ten, whatever the session was) — the same
+ * window that decides whether the topic is mastered, so a row never says
+ * «освоєна» beside a failing number. Without that data it falls back to the
+ * topic's own tests.
+ */
+function mergeStandings(
+  topics: TopicStatistics[],
+  mistakes: MistakeGroup[],
+  recent: Map<string, Progress['topics'][number]>,
+): TopicStanding[] {
   const byTopic = new Map<string, TopicStanding>();
 
   for (const topic of topics) {
@@ -133,6 +154,8 @@ function mergeStandings(topics: TopicStatistics[], mistakes: MistakeGroup[]): To
       subjectName: topic.subjectName,
       accuracy: Number.parseFloat(topic.averageAccuracy),
       answered: topic.totalQuestions,
+      recent: false,
+      mastered: false,
       mistakeCount: 0,
     });
   }
@@ -150,8 +173,20 @@ function mergeStandings(topics: TopicStatistics[], mistakes: MistakeGroup[]): To
       subjectName: group.subjectName,
       accuracy: null,
       answered: 0,
+      recent: false,
+      mastered: false,
       mistakeCount: group.mistakeCount,
     });
+  }
+
+  for (const standing of byTopic.values()) {
+    const window = recent.get(standing.topicId);
+    if (window && window.recentAnswers > 0) {
+      standing.accuracy = (window.recentCorrect / window.recentAnswers) * 100;
+      standing.answered = window.recentAnswers;
+      standing.recent = true;
+      standing.mastered = window.state === 'MASTERED';
+    }
   }
 
   return [...byTopic.values()].sort((a, b) => {
@@ -166,6 +201,7 @@ function mergeStandings(topics: TopicStatistics[], mistakes: MistakeGroup[]): To
 }
 
 function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element {
+  const mastered = standing.mastered;
   const navigate = useNavigate();
   const startQuiz = useStartQuiz();
   const [practising, setPractising] = useState(false);
@@ -208,7 +244,14 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
               (198…» on a phone, and the topic name is the thing the reader
               navigates by — there is nowhere else on this row to learn it. */}
           <p className="text-text-primary break-words">{standing.topicName}</p>
-          <p className="text-text-muted mt-1 text-xs">{standing.subjectName}</p>
+          <p className="text-text-muted mt-1 text-xs">
+            {standing.subjectName}
+            {mastered && (
+              <>
+                , <span className="text-success">тема освоєна</span>
+              </>
+            )}
+          </p>
         </div>
         <p
           className={`font-display shrink-0 text-2xl lining-nums ${
@@ -230,7 +273,10 @@ function TopicRow({ standing }: { standing: TopicStanding }): React.JSX.Element 
         <p className="text-text-muted text-xs">
           {standing.accuracy !== null && (
             <>
-              {standing.answered} {pluralUk(standing.answered, 'відповідь', 'відповіді', 'відповідей')}
+              {standing.answered}{' '}
+              {standing.recent
+                ? pluralUk(standing.answered, 'остання відповідь', 'останні відповіді', 'останніх відповідей')
+                : pluralUk(standing.answered, 'відповідь', 'відповіді', 'відповідей')}
               {standing.mistakeCount > 0 && ', '}
             </>
           )}

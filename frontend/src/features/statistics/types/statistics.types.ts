@@ -4,19 +4,34 @@
  * pre-formatted strings; study time is in seconds.
  */
 
-/** GET /statistics — overall statistics with the derived level block (§4). */
+/** GET /statistics — overall statistics (§4). */
 export interface OverallStatistics {
-  totalXP: number;
-  currentLevel: number;
   completedQuizzes: number;
   averageAccuracy: string;
   totalQuestions: number;
   correctAnswers: number;
   totalStudyTime: number;
-  xpForCurrentLevel: number;
-  xpForNextLevel: number;
-  xpIntoLevel: number;
-  completionPercent: number;
+}
+
+/**
+ * Where a topic stands (decision 46): mastered when its last ten answers are
+ * at least 80% right and none of its questions waits on the mistake ladder.
+ */
+export type TopicState = 'MASTERED' | 'IN_PROGRESS';
+
+/** GET /statistics/progress — what the learner has actually learned (§7). */
+export interface Progress {
+  /** Every published subject, including the untouched ones. */
+  subjects: {
+    subjectId: string;
+    subjectName: string;
+    topicsTotal: number;
+    mastered: number;
+    inProgress: number;
+  }[];
+  /** Only topics with at least one answer; the window is the last ten answers at most. */
+  topics: { topicId: string; state: TopicState; recentAnswers: number; recentCorrect: number }[];
+  mistakesFixed: number;
 }
 
 /** GET /statistics/subjects — one subject's aggregated statistics (§5). */
@@ -26,7 +41,6 @@ export interface SubjectStatistics {
   completedQuizzes: number;
   totalQuestions: number;
   averageAccuracy: string;
-  earnedXP: number;
 }
 
 /**
@@ -45,7 +59,6 @@ export interface TopicStatistics {
   completedQuizzes: number;
   totalQuestions: number;
   averageAccuracy: string;
-  earnedXP: number;
 }
 
 /**
@@ -71,6 +84,5 @@ export interface RecentActivityItem {
   topicName: string | null;
   score: string;
   accuracy: string;
-  xpEarned: number;
   completedAt: string;
 }

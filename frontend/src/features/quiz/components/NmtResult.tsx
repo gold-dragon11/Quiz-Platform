@@ -1,7 +1,6 @@
 import { FigureGrid } from '@/shared/ui/FigureGrid';
 import { pluralUk } from '@/shared/utils/format';
 import type { NmtResultView } from '@/features/quiz/types/quiz.types';
-import { XpReward } from '@/features/quiz/components/XpReward';
 import { labelCovers } from '@/features/quiz/lib/answer-rows';
 
 /**
@@ -14,12 +13,10 @@ import { labelCovers } from '@/features/quiz/lib/answer-rows';
  */
 export function NmtResult({
   nmt,
-  xpEarned,
   blankRows,
   level = 1,
 }: {
   nmt: NmtResultView;
-  xpEarned: number;
   /** Tasks — rows of the answer sheet — left without an answer. */
   blankRows: number;
   /** 1 for a paper sat alone; 2 for each paper of a joint block, under the block's own heading. */
@@ -53,7 +50,6 @@ export function NmtResult({
               : `тестових ${pluralUk(nmt.testPoints, 'бал', 'бали', 'балів')}, поріг не подолано, потрібно щонайменше ${nmt.threshold}`}
           </p>
         </div>
-        {xpEarned > 0 && <XpReward xp={xpEarned} />}
       </div>
 
       <FigureGrid

@@ -3,7 +3,6 @@ import { SettingsModule } from '../settings/settings.module';
 import { StatisticsController } from './controllers/statistics.controller';
 import { StatisticsQueryRepository } from './repositories/statistics-query.repository';
 import { StatisticsRepository } from './repositories/statistics.repository';
-import { LevelService } from './services/level.service';
 import { StatisticsService } from './services/statistics.service';
 
 /**
@@ -18,7 +17,6 @@ import { StatisticsService } from './services/statistics.service';
     StatisticsService,
     StatisticsRepository,
     StatisticsQueryRepository,
-    LevelService,
   ],
   exports: [StatisticsService],
 })

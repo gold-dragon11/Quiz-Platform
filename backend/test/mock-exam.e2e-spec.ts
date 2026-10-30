@@ -1369,25 +1369,26 @@ describe('Mock exam (e2e)', () => {
           .set('Authorization', `Bearer ${sitter.token}`)
           .expect(200);
         const body = review.body as {
-          result: { xpEarned: number };
+          result: Record<string, unknown>;
           nmt?: { papers: { testPoints: number }[] };
         };
         expect(body.nmt?.papers[0].testPoints).toBe(1);
 
-        const transactions = await prisma.xPTransaction.count({
-          where: { userId: sitter.userId },
-        });
+        // No XP for anyone any more (decision 46).
+        expect(body.result).not.toHaveProperty('xpEarned');
+        expect(
+          await prisma.xPTransaction.count({
+            where: { userId: sitter.userId },
+          }),
+        ).toBe(0);
         const stats = await prisma.statistics.findUnique({
           where: { userId: sitter.userId },
           select: { totalQuizzes: true, totalQuestions: true },
         });
         if (sitter === teacher) {
-          expect(body.result.xpEarned).toBe(0);
-          expect(transactions).toBe(0);
-          // Nor do the running totals: a teacher's statistics are their groups.
+          // The running totals do not move: a teacher's statistics are their groups.
           expect(stats).toEqual({ totalQuizzes: 0, totalQuestions: 0 });
         } else {
-          expect(transactions).toBeGreaterThan(0);
           expect(stats?.totalQuizzes).toBe(1);
         }
       }

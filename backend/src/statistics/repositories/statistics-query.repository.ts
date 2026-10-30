@@ -7,7 +7,6 @@ export interface OverallStatisticsRow {
   totalQuizzes: number;
   totalQuestions: number;
   correctAnswers: number;
-  totalXP: number;
   averageAccuracy: string;
   totalLearningTimeSeconds: number;
 }
@@ -19,7 +18,6 @@ export interface SubjectStatisticsRow {
   completedQuizzes: number;
   totalQuestions: number;
   correctAnswers: number;
-  earnedXP: number;
 }
 
 /** One topic's aggregated learning stats (docs/04-api/statistics.md §6). */
@@ -31,7 +29,6 @@ export interface TopicStatisticsRow {
   completedQuizzes: number;
   totalQuestions: number;
   correctAnswers: number;
-  earnedXP: number;
 }
 
 /**
@@ -56,8 +53,27 @@ export interface RecentActivityRow {
   topicName: string | null;
   score: string;
   accuracy: string;
-  xpEarned: number;
   completedAt: Date;
+}
+
+/**
+ * A topic the user has answered anything in: how the last answers went and
+ * how many of its questions still wait on the mistake ladder.
+ */
+export interface TopicMasteryRow {
+  topicId: string;
+  subjectId: string;
+  /** Answers counted, at most the window. */
+  recentAnswers: number;
+  recentCorrect: number;
+  openMistakes: number;
+}
+
+/** A published subject and how many published topics it has. */
+export interface SubjectTopicCountRow {
+  subjectId: string;
+  subjectName: string;
+  topicsTotal: number;
 }
 
 /**
@@ -78,7 +94,6 @@ export class StatisticsQueryRepository {
         totalQuizzes: true,
         totalQuestions: true,
         correctAnswers: true,
-        totalXP: true,
         averageAccuracy: true,
         totalLearningTimeSeconds: true,
       },
@@ -103,22 +118,14 @@ export class StatisticsQueryRepository {
         COALESCE(st.name, s.name) AS "subjectName",
         COUNT(DISTINCT qs.id)::int AS "completedQuizzes",
         COALESCE(SUM(r."totalQuestions"), 0)::int AS "totalQuestions",
-        COALESCE(SUM(r."correctAnswers"), 0)::int AS "correctAnswers",
-        COALESCE(xp.earned, 0)::int AS "earnedXP"
+        COALESCE(SUM(r."correctAnswers"), 0)::int AS "correctAnswers"
       FROM quiz_sessions qs
       JOIN results r ON r."quizSessionId" = qs.id
       JOIN subjects s ON s.id = qs."subjectId"
       LEFT JOIN subject_translations st
         ON st."subjectId" = s.id AND st.locale = ${locale}::"Language"
-      LEFT JOIN (
-        SELECT qs2."subjectId" AS sid, SUM(x.amount) AS earned
-        FROM xp_transactions x
-        JOIN quiz_sessions qs2 ON qs2.id = x."quizSessionId"
-        WHERE x."userId" = ${userId}::uuid AND qs2.status = 'COMPLETED'
-        GROUP BY qs2."subjectId"
-      ) xp ON xp.sid = s.id
       WHERE qs."userId" = ${userId}::uuid AND qs.status = 'COMPLETED'
-      GROUP BY s.id, COALESCE(st.name, s.name), xp.earned
+      GROUP BY s.id, COALESCE(st.name, s.name)
       ORDER BY COALESCE(st.name, s.name) ASC
     `);
   }
@@ -146,8 +153,7 @@ export class StatisticsQueryRepository {
         COALESCE(st.name, s.name) AS "subjectName",
         COUNT(DISTINCT qs.id)::int AS "completedQuizzes",
         COALESCE(SUM(r."totalQuestions"), 0)::int AS "totalQuestions",
-        COALESCE(SUM(r."correctAnswers"), 0)::int AS "correctAnswers",
-        COALESCE(xp.earned, 0)::int AS "earnedXP"
+        COALESCE(SUM(r."correctAnswers"), 0)::int AS "correctAnswers"
       FROM quiz_sessions qs
       JOIN results r ON r."quizSessionId" = qs.id
       JOIN topics t ON t.id = qs."topicId"
@@ -156,22 +162,13 @@ export class StatisticsQueryRepository {
         ON tt."topicId" = t.id AND tt.locale = ${locale}::"Language"
       LEFT JOIN subject_translations st
         ON st."subjectId" = s.id AND st.locale = ${locale}::"Language"
-      LEFT JOIN (
-        SELECT qs2."topicId" AS tid, SUM(x.amount) AS earned
-        FROM xp_transactions x
-        JOIN quiz_sessions qs2 ON qs2.id = x."quizSessionId"
-        WHERE x."userId" = ${userId}::uuid
-          AND qs2.status = 'COMPLETED'
-          AND qs2."topicId" IS NOT NULL
-        GROUP BY qs2."topicId"
-      ) xp ON xp.tid = t.id
       WHERE qs."userId" = ${userId}::uuid
         AND qs.status = 'COMPLETED'
         AND qs."topicId" IS NOT NULL
         ${subjectFilter}
       GROUP BY
         t.id, COALESCE(tt.name, t.name),
-        s.id, COALESCE(st.name, s.name), xp.earned
+        s.id, COALESCE(st.name, s.name)
       ORDER BY COALESCE(st.name, s.name) ASC, COALESCE(tt.name, t.name) ASC
     `);
   }
@@ -258,7 +255,6 @@ export class StatisticsQueryRepository {
         COALESCE(tt.name, t.name) AS "topicName",
         r.score::text AS "score",
         r.accuracy::text AS "accuracy",
-        COALESCE(xp.earned, 0)::int AS "xpEarned",
         qs."completedAt" AS "completedAt"
       FROM quiz_sessions qs
       JOIN results r ON r."quizSessionId" = qs.id
@@ -268,14 +264,87 @@ export class StatisticsQueryRepository {
       LEFT JOIN topics t ON t.id = qs."topicId"
       LEFT JOIN topic_translations tt
         ON tt."topicId" = t.id AND tt.locale = ${locale}::"Language"
-      LEFT JOIN (
-        SELECT x."quizSessionId" AS sid, SUM(x.amount) AS earned
-        FROM xp_transactions x
-        GROUP BY x."quizSessionId"
-      ) xp ON xp.sid = qs.id
       WHERE qs."userId" = ${userId}::uuid AND qs.status = 'COMPLETED'
       ORDER BY qs."completedAt" DESC
       LIMIT ${take} OFFSET ${skip}
     `);
+  }
+
+  /**
+   * For every published topic the user has answered anything in: the last
+   * `window` answers by the question's own topic, whatever the session was —
+   * a test, a mock paper, a review, homework or a duel — and how many of the
+   * topic's questions are still on the mistake ladder.
+   */
+  async findTopicMastery(
+    userId: string,
+    window: number,
+  ): Promise<TopicMasteryRow[]> {
+    return this.prisma.$queryRaw<TopicMasteryRow[]>(Prisma.sql`
+      WITH answers AS (
+        SELECT q."topicId" AS topic_id,
+               qa."isCorrect" AS correct,
+               ROW_NUMBER() OVER (
+                 PARTITION BY q."topicId"
+                 ORDER BY qa."answeredAt" DESC
+               ) AS position
+        FROM question_attempts qa
+        JOIN quiz_sessions qs ON qs.id = qa."quizSessionId"
+        JOIN questions q ON q.id = qa."questionId"
+        WHERE qs."userId" = ${userId}::uuid
+      ),
+      recent AS (
+        SELECT topic_id,
+               COUNT(*)::int AS answers,
+               COUNT(*) FILTER (WHERE correct)::int AS correct
+        FROM answers
+        WHERE position <= ${window}::int
+        GROUP BY topic_id
+      ),
+      open_mistakes AS (
+        SELECT q."topicId" AS topic_id, COUNT(*)::int AS open
+        FROM mistake_reviews m
+        JOIN questions q ON q.id = m."questionId"
+        WHERE m."userId" = ${userId}::uuid AND m."clearedAt" IS NULL
+        GROUP BY q."topicId"
+      )
+      SELECT t.id AS "topicId",
+             t."subjectId" AS "subjectId",
+             recent.answers AS "recentAnswers",
+             recent.correct AS "recentCorrect",
+             COALESCE(open_mistakes.open, 0) AS "openMistakes"
+      FROM recent
+      JOIN topics t ON t.id = recent.topic_id
+      JOIN subjects s ON s.id = t."subjectId"
+      LEFT JOIN open_mistakes ON open_mistakes.topic_id = recent.topic_id
+      WHERE t."deletedAt" IS NULL AND t."isPublished" = true
+        AND s."deletedAt" IS NULL AND s."isPublished" = true
+    `);
+  }
+
+  /** Every published subject with its count of published topics, localized. */
+  async findSubjectTopicCounts(
+    locale: Language,
+  ): Promise<SubjectTopicCountRow[]> {
+    return this.prisma.$queryRaw<SubjectTopicCountRow[]>(Prisma.sql`
+      SELECT s.id AS "subjectId",
+             COALESCE(st.name, s.name) AS "subjectName",
+             COUNT(t.id)::int AS "topicsTotal"
+      FROM subjects s
+      JOIN topics t
+        ON t."subjectId" = s.id AND t."deletedAt" IS NULL AND t."isPublished" = true
+      LEFT JOIN subject_translations st
+        ON st."subjectId" = s.id AND st.locale = ${locale}::"Language"
+      WHERE s."deletedAt" IS NULL AND s."isPublished" = true
+      GROUP BY s.id, COALESCE(st.name, s.name)
+      ORDER BY COALESCE(st.name, s.name) ASC
+    `);
+  }
+
+  /** Questions the user once got wrong and then cleared the whole ladder for. */
+  async countFixedMistakes(userId: string): Promise<number> {
+    return this.prisma.mistakeReview.count({
+      where: { userId, clearedAt: { not: null } },
+    });
   }
 }

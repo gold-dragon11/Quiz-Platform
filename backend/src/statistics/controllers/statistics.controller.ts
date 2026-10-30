@@ -9,7 +9,7 @@ import {
   MistakeGroup,
   OverallStatistics,
   PaginatedRecentActivity,
-  ProgressSummary,
+  Progress,
   SubjectStatistics,
   TopicStatistics,
 } from '../types/statistics.types';
@@ -32,12 +32,16 @@ export class StatisticsController {
     return this.statisticsService.getOverall(userId);
   }
 
-  /** GET /api/v1/statistics/progress — level and XP-to-next overview. */
+  /**
+   * GET /api/v1/statistics/progress — topics mastered per subject, each
+   * topic's state, and mistakes fixed (decision 46).
+   */
   @Get('progress')
   async getProgress(
     @CurrentUser('id') userId: string,
-  ): Promise<ProgressSummary> {
-    return this.statisticsService.getProgress(userId);
+    @Query() query: StatisticsLocaleQueryDto,
+  ): Promise<Progress> {
+    return this.statisticsService.getProgress(userId, query);
   }
 
   /** GET /api/v1/statistics/subjects — statistics grouped by subject. */

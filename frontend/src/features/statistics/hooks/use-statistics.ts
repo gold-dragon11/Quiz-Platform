@@ -13,6 +13,7 @@ const RECENT_PAGE_SIZE = 10;
 
 export const STATISTICS_QUERY_KEYS = {
   overall: ['statistics', 'overall'] as const,
+  progress: ['statistics', 'progress'] as const,
   subjects: ['statistics', 'subjects'] as const,
   topics: ['statistics', 'topics'] as const,
   recent: (pageSize: number) => ['statistics', 'recent', { pageSize }] as const,
@@ -23,6 +24,15 @@ export function useOverallStatistics() {
   return useQuery({
     queryKey: STATISTICS_QUERY_KEYS.overall,
     queryFn: () => statisticsApi.getOverall(),
+    staleTime: 30 * 1000,
+  });
+}
+
+/** Topics mastered per subject, each topic's state, mistakes fixed (decision 46). */
+export function useProgress() {
+  return useQuery({
+    queryKey: STATISTICS_QUERY_KEYS.progress,
+    queryFn: () => statisticsApi.getProgress(),
     staleTime: 30 * 1000,
   });
 }

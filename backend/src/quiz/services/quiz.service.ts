@@ -15,14 +15,12 @@ import {
   QuestionType,
   QuizStatus,
   QuizType,
-  XPSource,
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { QuizConfigService } from '../../quizzes/services/quiz-config.service';
 import { SettingsService } from '../../settings/services/settings.service';
 import { StatisticsService } from '../../statistics/services/statistics.service';
-import { XpAward } from '../../statistics/repositories/statistics.repository';
 import { StartMistakeReviewDto } from '../dto/start-mistake-review.dto';
 import { MockExamSpecQueryDto } from '../dto/mock-exam-spec-query.dto';
 import { StartMockExamDto } from '../dto/start-mock-exam.dto';
@@ -66,9 +64,6 @@ import {
 
 /** Timer budget per question (decision D5). */
 const SECONDS_PER_QUESTION = 60;
-/** Extra XP for a high-accuracy quiz, and its threshold (decisions D13/R2). */
-const HIGH_ACCURACY_THRESHOLD = 90;
-const HIGH_ACCURACY_BONUS_XP = 25;
 /** An untimed session untouched this long is closed (decision 23). */
 const ABANDON_AFTER_DAYS = 7;
 /**
@@ -1499,13 +1494,12 @@ export class QuizService {
       requestedLocale,
       userId,
     );
-    const [questions, attempts, xpEarned] = await Promise.all([
+    const [questions, attempts] = await Promise.all([
       this.quizSessionRepository.findSessionQuestions(
         sessionId,
         localeArg(locale),
       ),
       this.questionAttemptRepository.findBySession(sessionId),
-      this.sumXp(sessionId),
     ]);
 
     const attemptByQuestion = new Map(
@@ -1541,7 +1535,6 @@ export class QuizService {
         totalQuestions: result.totalQuestions,
         accuracy: result.accuracy,
         score: result.score,
-        xpEarned,
         completedAt: result.completedAt.toISOString(),
       },
       questions: reviewQuestions,
@@ -1651,17 +1644,16 @@ export class QuizService {
         // with its review.
         const nmt = sitting ? this.scoreLoadedSitting(sitting, attempts) : null;
         // A teacher sits a paper to see what their students will face
-        // (decision 29). The score is theirs to read, but XP, a level, the
-        // review ladder and the running totals are a learner's progress — a
-        // teacher's statistics are about their groups, so none of it moves.
+        // (decision 29). The score is theirs to read, but the review ladder
+        // and the running totals are a learner's progress — a teacher's
+        // statistics are about their groups, so none of it moves.
         const sitter = await tx.user.findUnique({
           where: { id: session.userId },
           select: { role: true },
         });
         const learner = sitter?.role !== UserRole.TEACHER;
-        const awards = learner ? this.xpAwards(tally.exactAccuracy) : [];
 
-        const result = await this.resultRepository.create(tx, {
+        await this.resultRepository.create(tx, {
           quizSessionId: session.id,
           correctAnswers: tally.correctAnswers,
           incorrectAnswers: tally.incorrectAnswers,
@@ -1690,18 +1682,14 @@ export class QuizService {
           );
           await this.statisticsService.applyQuizCompletion(tx, {
             userId: session.userId,
-            quizSessionId: session.id,
-            resultId: result.id,
             totalQuestions: tally.totalQuestions,
             correctAnswers: tally.correctAnswers,
             incorrectAnswers:
               tally.incorrectAnswers + tally.unansweredQuestions,
             learningTimeSeconds: durationSeconds,
-            awards,
           });
         }
 
-        const xpEarned = awards.reduce((sum, award) => sum + award.amount, 0);
         return {
           correctAnswers: tally.correctAnswers,
           incorrectAnswers: tally.incorrectAnswers,
@@ -1709,7 +1697,6 @@ export class QuizService {
           totalQuestions: tally.totalQuestions,
           accuracy: accuracy.toFixed(2),
           score: accuracy.toFixed(2),
-          xpEarned,
           completedAt: completedAt.toISOString(),
         };
       },
@@ -1738,32 +1725,6 @@ export class QuizService {
       totalQuestions,
       exactAccuracy,
     };
-  }
-
-  /**
-   * XP awards for a completed quiz (decisions D13/R2/R5): always a
-   * QUIZ_COMPLETION row of round-half-up(accuracy) — even 0 — plus a
-   * HIGH_ACCURACY_BONUS row when the exact accuracy is at least 90%.
-   */
-  private xpAwards(exactAccuracy: number): XpAward[] {
-    const awards: XpAward[] = [
-      { amount: Math.round(exactAccuracy), reason: XPSource.QUIZ_COMPLETION },
-    ];
-    if (exactAccuracy >= HIGH_ACCURACY_THRESHOLD) {
-      awards.push({
-        amount: HIGH_ACCURACY_BONUS_XP,
-        reason: XPSource.HIGH_ACCURACY_BONUS,
-      });
-    }
-    return awards;
-  }
-
-  private async sumXp(sessionId: string): Promise<number> {
-    const aggregate = await this.prisma.xPTransaction.aggregate({
-      where: { quizSessionId: sessionId },
-      _sum: { amount: true },
-    });
-    return aggregate._sum.amount ?? 0;
   }
 
   private async findSnapshotQuestion(
