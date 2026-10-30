@@ -290,7 +290,44 @@ The endpoint returns the same `404 Not Found` — indistinguishably — when the
 
 ---
 
-# 13. Validation
+# 13. First Screen
+
+The dashboard opens a new learner's first visit on one question — which subjects they take at the NMT — and a short diagnostic test in the first of them (retention plan, PR 4). The answer orders what the app offers first; it restricts nothing.
+
+## Get My Study
+
+```http
+GET /api/v1/users/me/study
+```
+
+Requires authentication.
+
+```json
+{ "subjectIds": ["…"], "needsOnboarding": true }
+```
+
+- `subjectIds` — the subjects the learner chose, in the order they chose them.
+- `needsOnboarding` — `true` only for a learner (role USER) who has neither answered nor skipped the screen and has never finished a test. A teacher, or anyone with a finished test, is never asked.
+
+## Answer the First Screen
+
+```http
+PUT /api/v1/users/me/study
+```
+
+Requires authentication.
+
+```json
+{ "subjectIds": ["…", "…"] }
+```
+
+Replaces the learner's subjects (at most 10, each a published subject's id; duplicates are ignored) and records that the screen was answered. An empty list is «skip»: no subjects, and the screen is not offered again. Returns the same body as the GET.
+
+An unknown or unpublished subject is `400 Bad Request` and changes nothing.
+
+---
+
+# 14. Validation
 
 The API validates:
 
@@ -312,7 +349,7 @@ Invalid requests return:
 
 ---
 
-# 14. Error Responses
+# 15. Error Responses
 
 Standard HTTP status codes:
 
@@ -332,7 +369,7 @@ All errors return a consistent JSON structure.
 
 ---
 
-# 15. Security
+# 16. Security
 
 The Users API follows these security practices:
 
@@ -348,7 +385,7 @@ Sensitive account changes require re-authentication if configured by the platfor
 
 ---
 
-# 16. Future Improvements
+# 17. Future Improvements
 
 Possible future features include:
 
@@ -364,7 +401,7 @@ These features are outside the MVP.
 
 ---
 
-# 17. Success Criteria
+# 18. Success Criteria
 
 The Users API is considered successful if it:
 

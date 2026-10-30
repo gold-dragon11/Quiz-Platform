@@ -28,6 +28,7 @@ Responsible for authentication and user identity.
 - profiles
 - avatars
 - user_settings
+- study_subjects
 - refresh_tokens
 
 ---
@@ -130,9 +131,16 @@ Responsibilities:
 - language;
 - theme;
 - public profile visibility;
+- when the first screen was answered or skipped (`onboardedAt`);
 - future personalization settings.
 
 Each user owns exactly one settings record.
+
+---
+
+## study_subjects
+
+The subjects a learner says they take at the NMT, from the first screen (docs/04-api/users.md §13). The composite key is (userId, subjectId); `createdAt` keeps the order they were chosen in. It orders what the app offers first and restricts nothing. Rows go with the user or the subject (cascade).
 
 ---
 

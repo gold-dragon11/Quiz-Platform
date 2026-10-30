@@ -213,6 +213,7 @@ model User {
   emailDispatches    EmailDispatch[]
   duelsChallenged    Duel[]             @relation("DuelChallenger")
   duelsReceived      Duel[]             @relation("DuelOpponent")
+  studySubjects      StudySubject[]
 
   @@map("users")
 }
@@ -266,16 +267,16 @@ model Avatar {
 
 /// docs/02-domain/user-settings.md
 model UserSettings {
-  id                       String   @id @default(uuid()) @db.Uuid
-  userId                   String   @unique @db.Uuid
-  language                 Language @default(UKRAINIAN)
-  theme                    Theme    @default(DARK)
-  publicProfileEnabled     Boolean  @default(true)
+  id                       String    @id @default(uuid()) @db.Uuid
+  userId                   String    @unique @db.Uuid
+  language                 Language  @default(UKRAINIAN)
+  theme                    Theme     @default(DARK)
+  publicProfileEnabled     Boolean   @default(true)
   /// Email about new homework and approaching deadlines
   /// (docs/00-overview/teacher-side-decisions.md decision 25). On by default:
   /// a deadline nobody is told about is a deadline that gets missed, and the
   /// learner who does not want the mail is one switch away from silence.
-  assignmentEmailsEnabled  Boolean  @default(true)
+  assignmentEmailsEnabled  Boolean   @default(true)
   /// Whether tutors of the learner's groups see a summary of their own,
   /// unassigned practice (decisions 04 and 16).
   ///
@@ -288,13 +289,31 @@ model UserSettings {
   /// One switch for every group: a teenager who does not want to share does
   /// not want to share with anybody, and a per-group screen is one they will
   /// never open.
-  shareSelfStudyWithTutors Boolean  @default(true)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  shareSelfStudyWithTutors Boolean   @default(true)
+  /// When the learner answered the first screen's «which subjects do you
+  /// take», or skipped it. Null means it has not been shown an answer yet;
+  /// it is offered only to a learner who has also never finished a test.
+  onboardedAt              DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_settings")
+}
+
+/// A subject the learner says they take at the NMT, from the first screen.
+/// It orders what the app offers first; it restricts nothing.
+model StudySubject {
+  userId    String   @db.Uuid
+  subjectId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, subjectId])
+  @@map("study_subjects")
 }
 
 /// docs/02-domain/statistics.md — aggregated, rebuildable metrics.
@@ -346,6 +365,7 @@ model Subject {
   groups            Group[]
   duels             Duel[]
   resultPaperScores ResultPaperScore[]
+  studiedBy         StudySubject[]
 
   @@index([displayOrder])
   @@map("subjects")

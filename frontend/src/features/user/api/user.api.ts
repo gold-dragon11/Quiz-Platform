@@ -2,6 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import type {
   ChangePasswordPayload,
   PublicProfile,
+  StudyView,
   UpdateProfilePayload,
 } from '@/features/user/types/user.types';
 
@@ -36,6 +37,18 @@ export const userApi = {
   /** PATCH /users/me/settings — only the public-profile switch is offered. */
   async setPublicProfileEnabled(publicProfileEnabled: boolean): Promise<void> {
     await apiClient.patch('/users/me/settings', { publicProfileEnabled });
+  },
+
+  /** GET /users/me/study — the learner's subjects and the first-screen flag (docs §13). */
+  async getStudy(): Promise<StudyView> {
+    const { data } = await apiClient.get<StudyView>('/users/me/study');
+    return data;
+  },
+
+  /** PUT /users/me/study — answers the first screen; an empty list skips it (docs §13). */
+  async updateStudy(subjectIds: string[]): Promise<StudyView> {
+    const { data } = await apiClient.put<StudyView>('/users/me/study', { subjectIds });
+    return data;
   },
 
   /** DELETE /users/me — 204 soft delete; revokes refresh sessions (docs §7). */

@@ -22,6 +22,8 @@ import { clearRefreshCookie } from '../../auth/session-cookie';
 import { AuthService } from '../../auth/services/auth.service';
 import { SelectAvatarDto } from '../dto/select-avatar.dto';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
+import { UpdateStudyDto } from '../dto/update-study.dto';
+import { StudyService, StudyView } from '../services/study.service';
 import { UsersService } from '../services/users.service';
 import {
   AvatarView,
@@ -46,6 +48,7 @@ import {
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
+    private readonly studyService: StudyService,
     private readonly authService: AuthService,
     private readonly configService: ConfigService<AppConfig, true>,
   ) {}
@@ -66,6 +69,29 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getMyAccount(@CurrentUser('id') userId: string): Promise<MyAccount> {
     return this.usersService.getMyAccount(userId);
+  }
+
+  /**
+   * GET /api/v1/users/me/study — the subjects the learner takes, and whether
+   * the dashboard should open on the first screen that asks.
+   */
+  @Get('me/study')
+  @UseGuards(JwtAuthGuard)
+  async getMyStudy(@CurrentUser('id') userId: string): Promise<StudyView> {
+    return this.studyService.get(userId);
+  }
+
+  /**
+   * PUT /api/v1/users/me/study — answers the first screen. An empty list
+   * skips it; either way the screen is not offered again.
+   */
+  @Put('me/study')
+  @UseGuards(JwtAuthGuard)
+  async updateMyStudy(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateStudyDto,
+  ): Promise<StudyView> {
+    return this.studyService.update(userId, dto);
   }
 
   /** GET /api/v1/users/me/profile — the authenticated user's own profile. */
