@@ -1494,13 +1494,27 @@ export class QuizService {
       requestedLocale,
       userId,
     );
-    const [questions, attempts] = await Promise.all([
+    const [questions, attempts, viewer] = await Promise.all([
       this.quizSessionRepository.findSessionQuestions(
         sessionId,
         localeArg(locale),
       ),
       this.questionAttemptRepository.findBySession(sessionId),
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
     ]);
+    // A teacher's sitting moves no ladder and no progress (decision 29), so
+    // there is no loop for the result to close.
+    const progress =
+      viewer?.role === UserRole.TEACHER
+        ? null
+        : await this.statisticsService.getSessionProgress(
+            userId,
+            { id: sessionId, startedAt: session.startedAt },
+            locale,
+          );
 
     const attemptByQuestion = new Map(
       attempts.map((attempt) => [attempt.questionId, attempt]),
@@ -1538,6 +1552,7 @@ export class QuizService {
         completedAt: result.completedAt.toISOString(),
       },
       questions: reviewQuestions,
+      progress,
       session: {
         subjectId: session.subjectId,
         topicId: session.topicId,

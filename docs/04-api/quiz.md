@@ -194,7 +194,7 @@ Completes the Quiz Session. In a single atomic transaction, guarded so it can on
 
 **XP:** a `QUIZ_COMPLETION` transaction of `round(accuracy)` XP is always recorded (even 0). When the exact accuracy is ≥ 90.00%, an additional `HIGH_ACCURACY_BONUS` transaction of 25 XP is recorded. Examples: 82% → 82 XP; 91% → 91 + 25 = 116 XP; 100% → 100 + 25 = 125 XP.
 
-Responds `200` with the aggregate result summary (counts, accuracy, score, xpEarned, completedAt).
+Responds `200` with the aggregate result summary (counts, accuracy, score, completedAt).
 
 ---
 
@@ -208,8 +208,9 @@ GET /api/v1/quiz/{sessionId}/result
 
 Returns the full post-completion **review** — available only after the session is Completed (`409` otherwise):
 
-- `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, xpEarned, completedAt;
+- `result` — the aggregate: correctAnswers, incorrectAnswers, unansweredQuestions, totalQuestions, accuracy, score, completedAt (no XP since decision 46);
 - `questions` — for every question in the session: the question and its options, the user's `submittedAnswer` (null if unanswered), the `correctAnswer` (in the same shape as a submission — `{ optionId }` for Single Choice, `{ pairs: [{ left, right }] }` of option UUIDs for Matching, `{ sequence }` for Ordering, `{ answerOptionIds }` for Multiple Choice, `{ numericAnswer }` for Numeric), whether it `isCorrect`, and the question's `explanation` (a teaching note, `null` when the question has none). The explanation appears **only here**: the active-session question view (§5, §9) never carries it, since revealing it mid-quiz would give the answer away.
+- `progress` — what the test did to the learner's progress, `null` for a teacher's sitting (decision 29: it moves neither the ladder nor the totals). `ladder`: the session's questions still on the mistake ladder, grouped by days until they come back, `0` meaning due now, soonest first; `fixed`: the session's questions that cleared the last rung during it; `topics`: each topic the session answered questions in, with the share right in the last ten answers before the session (`null` without any) and as of its end, whether it is mastered under decision 46's rule and whether this session made it so (`masteredNow`), newly mastered first, then by the size of the change. Computed when the result is read, so a result opened a week later says «due now» rather than «tomorrow».
 - `nmt` — present only for a mock sitting of an NMT paper or block: `{ title, papers }`, one entry per paper `{ subjectName, title, testPoints, maxTestPoints, scaledScore, threshold, scaleSource, tasks: [{ number, label, questionId, points, maxPoints }] }`, tasks in paper order; `label` is what the paper prints above the task — the number, or a run like `17–22`. `scaledScore` is `null` below the paper's threshold.
 - `session` — `{ subjectId, topicId }`, where the quiz came from. Carried so the result page can offer the learning material for the topic just tested (docs/04-api/learning-materials.md §4) without a second request to rediscover which topic that was.
 

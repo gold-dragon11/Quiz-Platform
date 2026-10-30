@@ -69,6 +69,19 @@ export interface TopicMasteryRow {
   openMistakes: number;
 }
 
+/** One topic a session touched: the answer window before it and after it. */
+export interface SessionTopicWindowRow {
+  topicId: string;
+  topicName: string;
+  beforeAnswers: number;
+  beforeCorrect: number;
+  afterAnswers: number;
+  afterCorrect: number;
+  /** Questions of this topic answered in the session itself. */
+  answeredHere: number;
+  openMistakes: number;
+}
+
 /** A published subject and how many published topics it has. */
 export interface SubjectTopicCountRow {
   subjectId: string;
@@ -338,6 +351,93 @@ export class StatisticsQueryRepository {
       WHERE s."deletedAt" IS NULL AND s."isPublished" = true
       GROUP BY s.id, COALESCE(st.name, s.name)
       ORDER BY COALESCE(st.name, s.name) ASC
+    `);
+  }
+
+  /**
+   * Where the questions of one session stand on the mistake ladder now: each
+   * row is a question of the session that has a ladder entry.
+   */
+  async findSessionLadder(
+    userId: string,
+    sessionId: string,
+  ): Promise<{ dueAt: Date; clearedAt: Date | null }[]> {
+    const questions = await this.prisma.quizSessionQuestion.findMany({
+      where: { quizSessionId: sessionId },
+      select: { questionId: true },
+    });
+    return this.prisma.mistakeReview.findMany({
+      where: {
+        userId,
+        questionId: { in: questions.map((row) => row.questionId) },
+      },
+      select: { dueAt: true, clearedAt: true },
+    });
+  }
+
+  /**
+   * Every topic one session touched, with the user's last `window` answers in
+   * it before the session began and as of its end (the session's own answers
+   * included, later ones not), and how many of its questions wait on the
+   * ladder now.
+   */
+  async findSessionTopicWindows(
+    userId: string,
+    sessionId: string,
+    startedAt: Date,
+    window: number,
+    locale: Language,
+  ): Promise<SessionTopicWindowRow[]> {
+    return this.prisma.$queryRaw<SessionTopicWindowRow[]>(Prisma.sql`
+      WITH touched AS (
+        SELECT DISTINCT q."topicId" AS topic_id
+        FROM quiz_session_questions sq
+        JOIN questions q ON q.id = sq."questionId"
+        WHERE sq."quizSessionId" = ${sessionId}::uuid
+      ),
+      answers AS (
+        SELECT q."topicId" AS topic_id,
+               qa."isCorrect" AS correct,
+               qa."answeredAt" AS at,
+               qa."quizSessionId" = ${sessionId}::uuid AS here
+        FROM question_attempts qa
+        JOIN quiz_sessions s ON s.id = qa."quizSessionId"
+        JOIN questions q ON q.id = qa."questionId"
+        WHERE s."userId" = ${userId}::uuid
+          AND q."topicId" IN (SELECT topic_id FROM touched)
+      ),
+      before AS (
+        SELECT topic_id, correct,
+               ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY at DESC) AS position
+        FROM answers
+        WHERE NOT here AND at < ${startedAt}
+      ),
+      after AS (
+        SELECT topic_id, correct,
+               ROW_NUMBER() OVER (PARTITION BY topic_id ORDER BY here DESC, at DESC) AS position
+        FROM answers
+        WHERE here OR at < ${startedAt}
+      ),
+      open_mistakes AS (
+        SELECT q."topicId" AS topic_id, COUNT(*)::int AS open
+        FROM mistake_reviews m
+        JOIN questions q ON q.id = m."questionId"
+        WHERE m."userId" = ${userId}::uuid AND m."clearedAt" IS NULL
+        GROUP BY q."topicId"
+      )
+      SELECT t.id AS "topicId",
+             COALESCE(tt.name, t.name) AS "topicName",
+             (SELECT COUNT(*) FROM before b WHERE b.topic_id = t.id AND b.position <= ${window}::int)::int AS "beforeAnswers",
+             (SELECT COUNT(*) FROM before b WHERE b.topic_id = t.id AND b.position <= ${window}::int AND b.correct)::int AS "beforeCorrect",
+             (SELECT COUNT(*) FROM after a WHERE a.topic_id = t.id AND a.position <= ${window}::int)::int AS "afterAnswers",
+             (SELECT COUNT(*) FROM after a WHERE a.topic_id = t.id AND a.position <= ${window}::int AND a.correct)::int AS "afterCorrect",
+             (SELECT COUNT(*) FROM answers a WHERE a.topic_id = t.id AND a.here)::int AS "answeredHere",
+             COALESCE(open_mistakes.open, 0) AS "openMistakes"
+      FROM touched
+      JOIN topics t ON t.id = touched.topic_id
+      LEFT JOIN topic_translations tt
+        ON tt."topicId" = t.id AND tt.locale = ${locale}::"Language"
+      LEFT JOIN open_mistakes ON open_mistakes.topic_id = t.id
     `);
   }
 

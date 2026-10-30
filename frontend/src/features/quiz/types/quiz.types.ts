@@ -166,6 +166,24 @@ export interface QuizResumeView {
 
 // --- Result / review ----------------------------------------------------
 
+/**
+ * What one finished test did to the learner's progress (docs/04-api/quiz.md §8).
+ * `ladder` groups the test's questions still on the mistake ladder by days
+ * until they come back, 0 being «today»; topics come newly mastered first.
+ */
+export interface SessionProgress {
+  ladder: { days: number; count: number }[];
+  fixed: number;
+  topics: {
+    topicId: string;
+    topicName: string;
+    before: number | null;
+    after: number;
+    mastered: boolean;
+    masteredNow: boolean;
+  }[];
+}
+
 /** Aggregate outcome of a completed quiz (docs/04-api/quiz.md §7). */
 export interface QuizResultSummary {
   correctAnswers: number;
@@ -204,6 +222,8 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /** Where this test's mistakes go next and how its topics moved; null for a teacher. */
+  progress: SessionProgress | null;
   /** Present for a mock sitting of an NMT paper or a joint block: one score per paper. */
   nmt?: { title: string; papers: NmtResultView[] };
   /** Where the quiz came from, so the result can link back to its material. */
