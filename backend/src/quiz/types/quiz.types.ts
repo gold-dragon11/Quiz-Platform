@@ -1,3 +1,4 @@
+import type { SessionProgress } from '../../statistics/types/statistics.types';
 import { Difficulty, Prisma, QuizStatus, QuizType } from '@prisma/client';
 
 /** A passage as the reader sees it (docs/02-domain/passage.md). */
@@ -213,6 +214,11 @@ export interface QuizReviewQuestion {
 export interface QuizReview {
   result: QuizResultSummary;
   questions: QuizReviewQuestion[];
+  /**
+   * Where this session's mistakes go next and how its topics moved; null for
+   * a teacher, whose sittings move neither.
+   */
+  progress: SessionProgress | null;
   /**
    * Present when the session was a mock sitting of an NMT paper or block: the
    * sitting's title and one scored paper per subject.

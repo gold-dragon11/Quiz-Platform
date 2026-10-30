@@ -1370,6 +1370,7 @@ describe('Mock exam (e2e)', () => {
           .expect(200);
         const body = review.body as {
           result: Record<string, unknown>;
+          progress: unknown;
           nmt?: { papers: { testPoints: number }[] };
         };
         expect(body.nmt?.papers[0].testPoints).toBe(1);
@@ -1386,10 +1387,13 @@ describe('Mock exam (e2e)', () => {
           select: { totalQuizzes: true, totalQuestions: true },
         });
         if (sitter === teacher) {
+          // No ladder, no progress: nothing for the result to close.
+          expect(body.progress).toBeNull();
           // The running totals do not move: a teacher's statistics are their groups.
           expect(stats).toEqual({ totalQuizzes: 0, totalQuestions: 0 });
         } else {
           expect(stats?.totalQuizzes).toBe(1);
+          expect(body.progress).not.toBeNull();
         }
       }
     });

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Language } from '@prisma/client';
 import { SettingsService } from '../../settings/services/settings.service';
 import { RecentActivityQueryDto } from '../dto/recent-activity-query.dto';
 import { StatisticsLocaleQueryDto } from '../dto/statistics-locale-query.dto';
@@ -16,6 +17,7 @@ import {
   PaginatedRecentActivity,
   Progress,
   PublicProgress,
+  SessionProgress,
   SubjectStatistics,
   TopicState,
   TopicStatistics,
@@ -30,6 +32,8 @@ const EMPTY_OVERALL = {
   averageAccuracy: '0',
   totalLearningTimeSeconds: 0,
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** How many of a topic's latest answers decide whether it is mastered. */
 export const MASTERY_WINDOW = 10;
@@ -141,6 +145,85 @@ export class StatisticsService {
         recentCorrect: topic.recentCorrect,
       })),
       mistakesFixed,
+    };
+  }
+
+  /**
+   * What one finished session did (docs/04-api/quiz.md §8): where its
+   * questions now wait on the ladder, how many it cleared, and how each topic
+   * it touched moved under the mastery rule. Read at view time, so a result
+   * opened a week later says «due now» rather than «tomorrow».
+   */
+  async getSessionProgress(
+    userId: string,
+    session: { id: string; startedAt: Date },
+    locale: Language,
+    now: Date = new Date(),
+  ): Promise<SessionProgress> {
+    const [ladderRows, windows] = await Promise.all([
+      this.statisticsQueryRepository.findSessionLadder(userId, session.id),
+      this.statisticsQueryRepository.findSessionTopicWindows(
+        userId,
+        session.id,
+        session.startedAt,
+        MASTERY_WINDOW,
+        locale,
+      ),
+    ]);
+
+    const byDays = new Map<number, number>();
+    let fixed = 0;
+    for (const row of ladderRows) {
+      if (row.clearedAt) {
+        if (row.clearedAt >= session.startedAt) fixed += 1;
+        continue;
+      }
+      const days = Math.max(
+        0,
+        Math.ceil((row.dueAt.getTime() - now.getTime()) / DAY_MS),
+      );
+      byDays.set(days, (byDays.get(days) ?? 0) + 1);
+    }
+
+    return {
+      ladder: [...byDays.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([days, count]) => ({ days, count })),
+      fixed,
+      topics: windows
+        .filter((row) => row.answeredHere > 0 && row.afterAnswers > 0)
+        .map((row) => {
+          const after = share(row.afterCorrect, row.afterAnswers);
+          const before =
+            row.beforeAnswers > 0
+              ? share(row.beforeCorrect, row.beforeAnswers)
+              : null;
+          const mastered =
+            stateOf({
+              topicId: row.topicId,
+              subjectId: '',
+              recentAnswers: row.afterAnswers,
+              recentCorrect: row.afterCorrect,
+              openMistakes: row.openMistakes,
+            }) === 'MASTERED';
+          const accurateBefore =
+            row.beforeAnswers >= MASTERY_WINDOW &&
+            row.beforeCorrect * 100 >= row.beforeAnswers * MASTERY_ACCURACY;
+          return {
+            topicId: row.topicId,
+            topicName: row.topicName,
+            before,
+            after,
+            mastered,
+            masteredNow: mastered && !accurateBefore,
+          };
+        })
+        .sort((a, b) => {
+          if (a.masteredNow !== b.masteredNow) return a.masteredNow ? -1 : 1;
+          const change = (topic: { before: number | null; after: number }) =>
+            topic.before === null ? 0 : Math.abs(topic.after - topic.before);
+          return change(b) - change(a);
+        }),
     };
   }
 
@@ -290,6 +373,11 @@ export class StatisticsService {
   ): Promise<void> {
     await this.statisticsRepository.applyCompletedQuiz(tx, params);
   }
+}
+
+/** A share in per cent, rounded to a whole number. */
+function share(correct: number, total: number): number {
+  return Math.round((correct / total) * 100);
 }
 
 /** A topic's state under the mastery rule (decision 46). */

@@ -112,6 +112,8 @@ export function useCompleteQuiz(sessionId: string) {
     onSuccess: () => {
       // New progress and activity: refresh statistics-backed views.
       void queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      // The test moved the mistake ladder: what is due today has changed.
+      void queryClient.invalidateQueries({ queryKey: ['mistake-review'] });
       // The session just left ACTIVE — drop the stale "continue" card/banner.
       void queryClient.invalidateQueries({ queryKey: QUIZ_QUERY_KEYS.active });
     },

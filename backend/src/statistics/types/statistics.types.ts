@@ -63,6 +63,35 @@ export interface Progress {
   mistakesFixed: number;
 }
 
+/**
+ * What one finished session did to the learner's progress, for the result
+ * page (docs/04-api/quiz.md §8): the loop a test closes is where its mistakes
+ * go next and which topics moved.
+ */
+export interface SessionProgress {
+  /**
+   * The session's questions still on the mistake ladder, grouped by the days
+   * until each comes back; 0 is «due now». Soonest first.
+   */
+  ladder: { days: number; count: number }[];
+  /** The session's questions that cleared the last rung during it. */
+  fixed: number;
+  /**
+   * Topics the session answered questions in, with the share right in the
+   * last ten answers before it (null when there were none) and after it.
+   * Newly mastered first, then by the size of the change.
+   */
+  topics: {
+    topicId: string;
+    topicName: string;
+    before: number | null;
+    after: number;
+    mastered: boolean;
+    /** Mastered now and not even accurate enough before (decision 46). */
+    masteredNow: boolean;
+  }[];
+}
+
 /** One subject's aggregated statistics (docs/04-api/statistics.md §5). */
 export interface SubjectStatistics {
   subjectId: string;

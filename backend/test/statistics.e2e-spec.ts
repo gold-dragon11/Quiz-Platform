@@ -135,7 +135,7 @@ describe('Statistics (e2e)', () => {
     parentTopic: string | undefined,
     total: number,
     correct: number,
-  ): Promise<void> => {
+  ): Promise<string> => {
     const started = await request(app.getHttpServer())
       .post('/api/v1/quiz/start')
       .set('Authorization', `Bearer ${token}`)
@@ -175,6 +175,7 @@ describe('Statistics (e2e)', () => {
       .post(`/api/v1/quiz/${sessionId}/complete`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
+    return sessionId;
   };
 
   const overall = async (token: string): Promise<OverallBody> =>
@@ -448,6 +449,85 @@ describe('Statistics (e2e)', () => {
       });
 
       expect(stateOf(await progress(token), topicId)).toBe('IN_PROGRESS');
+    });
+  });
+
+  /**
+   * The result page closes the loop: where the session's mistakes go next
+   * and how its topics moved (docs/04-api/quiz.md §8).
+   */
+  describe('what a result says about progress', () => {
+    interface ResultProgress {
+      ladder: { days: number; count: number }[];
+      fixed: number;
+      topics: {
+        topicId: string;
+        before: number | null;
+        after: number;
+        mastered: boolean;
+        masteredNow: boolean;
+      }[];
+    }
+
+    const resultProgress = async (
+      token: string,
+      sessionId: string,
+    ): Promise<ResultProgress> =>
+      (
+        (
+          await request(app.getHttpServer())
+            .get(`/api/v1/quiz/${sessionId}/result`)
+            .set('Authorization', `Bearer ${token}`)
+            .expect(200)
+        ).body as { progress: ResultProgress }
+      ).progress;
+
+    it('says the mistakes come back tomorrow, and how the topic stands', async () => {
+      const { token } = await registerUser();
+      const sessionId = await playQuiz(token, topicId, 10, 7);
+
+      const progress = await resultProgress(token, sessionId);
+      expect(progress.ladder).toEqual([{ days: 1, count: 3 }]);
+      expect(progress.fixed).toBe(0);
+      expect(progress.topics).toEqual([
+        expect.objectContaining({
+          topicId,
+          before: null,
+          after: 70,
+          mastered: false,
+          masteredNow: false,
+        }),
+      ]);
+    });
+
+    it('moves the mistakes up a rung when they are answered right again', async () => {
+      const { token } = await registerUser();
+      await playQuiz(token, topicId, 10, 7);
+      // The topic has exactly ten questions, so the second test is the same
+      // ten, the three mistakes among them, all answered right this time.
+      const second = await playQuiz(token, topicId, 10, 10);
+
+      const progress = await resultProgress(token, second);
+      expect(progress.ladder).toEqual([{ days: 3, count: 3 }]);
+      const topic = progress.topics.find((entry) => entry.topicId === topicId);
+      expect(topic).toMatchObject({ before: 70, after: 100 });
+      // Three questions still wait on the ladder: not mastered yet.
+      expect(topic?.mastered).toBe(false);
+    });
+
+    it('marks a topic mastered by this very test', async () => {
+      const { token } = await registerUser();
+      const sessionId = await playQuiz(token, topicId, 10, 10);
+
+      const progress = await resultProgress(token, sessionId);
+      expect(progress.ladder).toEqual([]);
+      expect(progress.topics[0]).toMatchObject({
+        topicId,
+        before: null,
+        after: 100,
+        mastered: true,
+        masteredNow: true,
+      });
     });
   });
 

@@ -12,6 +12,8 @@ import { NmtResult } from '@/features/quiz/components/NmtResult';
 import { filledRows, labelCovers } from '@/features/quiz/lib/answer-rows';
 import type { SelectedAnswer } from '@/features/quiz/types/quiz.types';
 import { MaterialLink } from '@/features/quiz/components/MaterialLink';
+import { ResultProgress } from '@/features/quiz/components/ResultProgress';
+import { useMistakeReviewSummary } from '@/features/mistake-review/hooks/use-mistake-review';
 
 /**
  * `/quiz/:sessionId/result` (RequireAuth). The post-completion result and
@@ -22,6 +24,10 @@ export function QuizResultPage(): React.JSX.Element {
   const { sessionId = '' } = useParams();
   const navigate = useNavigate();
   const result = useQuizResult(sessionId);
+  // A second way on when reviews already wait: the loop the result just
+  // described can be closed now rather than tomorrow.
+  const review = useMistakeReviewSummary();
+  const due = review.data?.due ?? 0;
 
   if (result.isPending) {
     return <ResultSkeleton />;
@@ -101,6 +107,12 @@ export function QuizResultPage(): React.JSX.Element {
         )}
       </motion.div>
 
+      {result.data.progress && (
+        <motion.div variants={fadeInUp}>
+          <ResultProgress progress={result.data.progress} />
+        </motion.div>
+      )}
+
       {result.data.session.topicId && (
         <motion.div variants={fadeInUp}>
           <MaterialLink topicId={result.data.session.topicId} />
@@ -137,6 +149,15 @@ export function QuizResultPage(): React.JSX.Element {
           "спробувати ще раз" while opening the form for a different test. */}
       <motion.div variants={fadeInUp} className="border-border flex flex-wrap gap-6 border-t pt-6">
         <Button onClick={() => navigate(ROUTES.quiz)}>Пройти ще один тест</Button>
+        {due > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate(ROUTES.mistakeReview)}
+            className="text-primary hover:text-primary-hover text-sm underline underline-offset-4 transition-colors"
+          >
+            Повторити помилки ({due})
+          </button>
+        )}
         <button
           type="button"
           onClick={() => navigate(ROUTES.dashboard)}
