@@ -55,6 +55,8 @@ Public pages are accessible without authentication.
 | `/reset-password` | Password reset |
 | `/verify-email` | Email verification |
 | `/u/:username` | Public profile page |
+| `/privacy` | Privacy policy, open signed in or not (`features/legal`) |
+| `/delete-account` | How to delete an account, including without signing in; app stores require this page |
 | `/404` | Not Found page |
 
 ---

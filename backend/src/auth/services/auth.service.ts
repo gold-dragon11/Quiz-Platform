@@ -434,16 +434,15 @@ export class AuthService implements OnModuleInit {
   }
 
   /**
-   * Self-service account deletion (docs/04-api/users.md §7). Soft delete: the
-   * account becomes Deleted and every refresh session is revoked, in one
-   * transaction (decisions A5/A6/A10). All historical learning data is
-   * preserved; email and username stay reserved. The caller's access token
+   * Self-service account deletion (docs/04-api/users.md §7). The account
+   * becomes Deleted and is anonymised in one transaction (decision 47): the
+   * learning history stays, attached to nothing that names the person, and
+   * the email and username are free again. The caller's access token
    * stops working on its next request (the strategy rejects non-Active
    * accounts). Reached only for an Active account.
    */
   async deleteAccount(userId: string): Promise<void> {
-    const deleted =
-      await this.authRepository.softDeleteAccountAndRevokeSessions(userId);
+    const deleted = await this.authRepository.deleteAndAnonymiseAccount(userId);
     if (!deleted) {
       throw new UnauthorizedException();
     }

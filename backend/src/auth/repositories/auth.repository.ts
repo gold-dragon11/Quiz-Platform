@@ -8,6 +8,11 @@ import {
 } from '@prisma/client';
 import { DEFAULT_AVATAR_URL } from '../../common/constants/avatar.constants';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  DELETED_DISPLAY_NAME,
+  deletedEmail,
+  deletedUsername,
+} from '../deleted-account';
 
 /**
  * The columns login needs. Deliberately narrow — nothing beyond what
@@ -284,25 +289,44 @@ export class AuthRepository {
   }
 
   /**
-   * Self-service account deletion (docs/04-api/users.md §7). One transaction:
-   * flips an Active account to Deleted and revokes every refresh session so no
-   * refresh can revive it (decisions A5/A6/A10). Historical records are left
-   * untouched. Returns whether the deletion was performed (false if the
-   * account was not Active).
+   * Self-service account deletion (docs/04-api/users.md §7, decision 47). One
+   * transaction: flips an Active account to Deleted, then removes everything
+   * on it that identifies the person. The email and username become unique
+   * placeholders (so the person's own are free again), the name becomes
+   * «Видалений користувач», the bio, password hash, chosen avatar, subjects and
+   * every session go. Answers, results and group history stay, attached to an
+   * account nobody can trace. Returns whether the deletion was performed
+   * (false if the account was not Active).
    */
-  async softDeleteAccountAndRevokeSessions(userId: string): Promise<boolean> {
+  async deleteAndAnonymiseAccount(userId: string): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
       const result = await tx.user.updateMany({
         where: { id: userId, accountStatus: AccountStatus.ACTIVE },
-        data: { accountStatus: AccountStatus.DELETED },
+        data: {
+          accountStatus: AccountStatus.DELETED,
+          email: deletedEmail(userId),
+          // Not a hash of anything: no password can ever match it.
+          passwordHash: '',
+          lastLoginAt: null,
+        },
       });
       if (result.count !== 1) {
         return false;
       }
-      await tx.refreshToken.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: new Date() },
+      await tx.profile.updateMany({
+        where: { userId },
+        data: {
+          displayName: DELETED_DISPLAY_NAME,
+          username: deletedUsername(userId),
+          bio: null,
+        },
       });
+      await tx.avatar.updateMany({
+        where: { userId },
+        data: { type: AvatarType.PREDEFINED, imageUrl: DEFAULT_AVATAR_URL },
+      });
+      await tx.studySubject.deleteMany({ where: { userId } });
+      await tx.refreshToken.deleteMany({ where: { userId } });
       return true;
     });
   }

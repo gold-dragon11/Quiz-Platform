@@ -23,7 +23,11 @@ const COLUMNS: { title: string; links: { label: string; to: string; external?: b
   },
   {
     title: 'Проєкт',
-    links: [{ label: 'Код на GitHub', to: REPOSITORY, external: true }],
+    links: [
+      { label: 'Код на GitHub', to: REPOSITORY, external: true },
+      { label: 'Політика приватності', to: ROUTES.privacy },
+      { label: 'Видалення акаунта', to: ROUTES.deleteAccount },
+    ],
   },
 ];
 

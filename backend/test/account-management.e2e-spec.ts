@@ -34,6 +34,8 @@ describe('Account Management (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let counter = 0;
+  // A deleted account loses the test's email prefix, so cleanup also goes by id.
+  const createdIds: string[] = [];
 
   // Registers + activates a user, returns tokens, ids, and credentials.
   const register = async (): Promise<{
@@ -54,6 +56,7 @@ describe('Account Management (e2e)', () => {
       data: { accountStatus: AccountStatus.ACTIVE },
       select: { id: true },
     });
+    createdIds.push(user.id);
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
       .send({ email, password: PASSWORD })
@@ -71,7 +74,12 @@ describe('Account Management (e2e)', () => {
 
   const removeTestData = async (): Promise<void> => {
     await prisma.user.deleteMany({
-      where: { email: { startsWith: EMAIL_PREFIX } },
+      where: {
+        OR: [
+          { email: { startsWith: EMAIL_PREFIX } },
+          { id: { in: createdIds } },
+        ],
+      },
     });
   };
 
@@ -229,7 +237,7 @@ describe('Account Management (e2e)', () => {
   });
 
   describe('DELETE /users/me', () => {
-    it('soft-deletes (204), blocks login and refresh, preserves the row, reserves email/username', async () => {
+    it('deletes (204), blocks login and refresh, keeps the row but nothing that names the person', async () => {
       const { tokens, userId, email, username } = await register();
 
       await request(app.getHttpServer())
@@ -263,15 +271,35 @@ describe('Account Management (e2e)', () => {
         .get(`/api/v1/users/${username}`)
         .expect(404);
 
-      // Email and username remain reserved — re-registration conflicts.
+      // Anonymised (decision 47): the identity on the row leads nowhere.
+      const anonymised = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: {
+          email: true,
+          passwordHash: true,
+          lastLoginAt: true,
+          profile: {
+            select: { displayName: true, username: true, bio: true },
+          },
+          avatar: { select: { imageUrl: true } },
+        },
+      });
+      expect(anonymised.email).toBe(`deleted-${userId}@deleted.invalid`);
+      expect(anonymised.passwordHash).toBe('');
+      expect(anonymised.lastLoginAt).toBeNull();
+      expect(anonymised.profile).toEqual({
+        displayName: 'Видалений користувач',
+        username: `deleted_${userId.replace(/-/g, '').slice(0, 20)}`,
+        bio: null,
+      });
+      expect(anonymised.avatar?.imageUrl).toBe('/avatars/default.png');
+      expect(await prisma.refreshToken.count({ where: { userId } })).toBe(0);
+
+      // The person's email and username are free again: they can come back.
       await request(app.getHttpServer())
         .post('/api/v1/auth/register')
-        .send({ email, username: `${username}x`, password: PASSWORD })
-        .expect(409);
-      await request(app.getHttpServer())
-        .post('/api/v1/auth/register')
-        .send({ email: `x-${email}`, username, password: PASSWORD })
-        .expect(409);
+        .send({ email, username, password: PASSWORD })
+        .expect(201);
     });
 
     it('preserves historical learning data on deletion', async () => {

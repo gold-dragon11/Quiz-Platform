@@ -117,11 +117,18 @@ On success the endpoint responds `204 No Content` and revokes every refresh-toke
 DELETE /api/v1/users/me
 ```
 
-Performs a soft delete. Authenticated, self-only; the JWT is sufficient — no password is required.
+Deletes and anonymises the account (decision 47). Authenticated, self-only; the JWT is sufficient — no password is required.
 
-The account status becomes Deleted (a soft delete — no row is removed). In a single transaction the account is marked Deleted and every refresh-token session is revoked, so it can neither refresh nor sign in again; previously issued access tokens stop working on their next request. Responds `204 No Content`.
+In a single transaction the account status becomes Deleted and everything on it that identifies the person is removed:
 
-All historical learning data — Quiz Sessions, Results, Question Attempts, XP Transactions, Statistics — and the Profile, Avatar, and Settings records remain in the database. The account's email and username stay permanently reserved and cannot be reused. The public profile of a deleted account returns `404`.
+- the email becomes `deleted-{id}@deleted.invalid` and the username `deleted_{20 hex digits of the id}`, so the person's own email and username are free to register again;
+- the display name becomes «Видалений користувач», the bio is cleared, the avatar returns to the default;
+- the password hash is blanked, and the last-login time cleared;
+- the chosen subjects (§13) and every refresh-token session are deleted, so the account can neither refresh nor sign in again; previously issued access tokens stop working on their next request.
+
+Responds `204 No Content`.
+
+The row itself stays, and so does the learning history — Quiz Sessions, Results, Question Attempts, Statistics, mistake reviews, duels, group memberships — attached to an account nobody can trace. A teacher's roster and a duel opponent's history show «Видалений користувач». The public profile of a deleted account returns `404`. Accounts deleted before this rule were anonymised by the migration `20261101120000_anonymise_deleted_accounts`; the values are defined once in `src/auth/deleted-account.ts`.
 
 ---
 
