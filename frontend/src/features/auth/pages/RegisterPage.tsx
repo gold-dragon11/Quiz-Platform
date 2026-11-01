@@ -206,6 +206,16 @@ export function RegisterPage(): React.JSX.Element {
         <Button type="submit" fullWidth isLoading={registerMutation.isPending}>
           Створити акаунт
         </Button>
+        <p className="text-text-muted text-xs">
+          Що ми зберігаємо й навіщо, сказано в{' '}
+          <Link
+            to={ROUTES.privacy}
+            className="text-text-secondary underline underline-offset-4 hover:text-primary active:text-primary focus-visible:ring-focus rounded-sm outline-none focus-visible:ring-2"
+          >
+            політиці приватності
+          </Link>
+          .
+        </p>
       </form>
     </AuthCard>
   );

@@ -41,6 +41,7 @@ import { MaterialPage } from '@/features/learning-materials';
 import { SubjectsBrowserPage } from '@/features/subjects';
 import { AdminPanelPage } from '@/features/admin';
 import { LandingPage } from '@/features/landing';
+import { DeleteAccountInfoPage, PrivacyPage } from '@/features/legal';
 
 /**
  * Full route tree per docs/05-frontend/routing.md, assembled in Phase 6.1.
@@ -93,6 +94,9 @@ export const router = createBrowserRouter([
           { path: ROUTES.verifyEmail, element: page(<VerifyEmailPage />) },
           // Open to everyone, signed in or not: the owner shares the link.
           { path: ROUTES.publicProfile, element: page(<PublicProfilePage />) },
+          // Open to everyone: a store reviewer, a parent, a person who cannot sign in.
+          { path: ROUTES.privacy, element: page(<PrivacyPage />) },
+          { path: ROUTES.deleteAccount, element: page(<DeleteAccountInfoPage />) },
 
           // Guest-only routes (redirect authenticated users away)
           {

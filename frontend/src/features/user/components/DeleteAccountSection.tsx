@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { clearSession } from '@/lib/api-client';
 import { ROUTES } from '@/shared/constants/routes';
@@ -13,8 +13,8 @@ import { useDeleteAccount } from '@/features/user/hooks/use-account-mutations';
 /**
  * Danger-zone account deletion (docs/04-api/users.md §7). Two-step intent: an
  * explicit acknowledgement checkbox gates the button, and a confirmation
- * dialog gates the request. On success the backend soft-deletes the account
- * and revokes all sessions; the client then tears down local auth + the query
+ * dialog gates the request. On success the backend deletes and anonymises the
+ * account and ends all sessions (decision 47); the client then tears down local auth + the query
  * cache and redirects to /login.
  */
 export function DeleteAccountSection(): React.JSX.Element {
@@ -46,9 +46,16 @@ export function DeleteAccountSection(): React.JSX.Element {
     <section>
       <h2 className="section-title text-error">Видалення акаунта</h2>
       <p className="text-text-secondary mt-4 max-w-xl text-sm">
-        Дію не можна скасувати. Ваша електронна адреса та імʼя користувача лишаються зарезервованими назавжди,
-        тож зареєструватися з ними знову не вийде. Історія навчання зберігається, але доступу до неї у вас
-        більше не буде.
+        Дію не можна скасувати. Ми зітремо все, що вас називає: адресу, імʼя, імʼя користувача, опис і аватар.
+        Відповіді лишаться в статистиці без звʼязку з вами, а у вчителя й суперників ви будете «Видалений
+        користувач». З тією ж адресою можна зареєструватися знову, але вже без історії. Докладніше в{' '}
+        <Link
+          to={ROUTES.privacy}
+          className="text-text-primary underline underline-offset-4 hover:text-primary active:text-primary focus-visible:ring-focus rounded-sm outline-none focus-visible:ring-2"
+        >
+          політиці приватності
+        </Link>
+        .
       </p>
 
       <div className="border-error/40 mt-8 flex flex-col gap-5 border-t pt-8">
@@ -67,7 +74,7 @@ export function DeleteAccountSection(): React.JSX.Element {
       <ConfirmDialog
         open={dialogOpen}
         title="Видалити акаунт?"
-        description="Акаунт буде остаточно деактивовано, а сеанси на всіх пристроях завершено. Скасувати це неможливо."
+        description="Ваші дані буде знеособлено, а сеанси на всіх пристроях завершено. Скасувати це неможливо."
         confirmLabel="Видалити акаунт"
         cancelLabel="Скасувати"
         confirmVariant="danger"

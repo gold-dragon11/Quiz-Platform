@@ -10,6 +10,8 @@ export const ROUTES = {
   resetPassword: '/reset-password',
   verifyEmail: '/verify-email',
   publicProfile: '/u/:username',
+  privacy: '/privacy',
+  deleteAccount: '/delete-account',
   notFound: '/404',
 
   // Authenticated
