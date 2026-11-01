@@ -245,7 +245,8 @@ Response includes:
 - theme;
 - publicProfileEnabled;
 - assignmentEmailsEnabled;
-- shareSelfStudyWithTutors.
+- shareSelfStudyWithTutors;
+- mistakeEmailsEnabled.
 
 ---
 
@@ -263,7 +264,16 @@ Supported fields:
 - theme (Dark, the only MVP option);
 - publicProfileEnabled (boolean);
 - assignmentEmailsEnabled (boolean);
-- shareSelfStudyWithTutors (boolean).
+- shareSelfStudyWithTutors (boolean);
+- mistakeEmailsEnabled (boolean) — the afternoon «mistakes are waiting» email, off by default (decision 48).
+
+The mistakes email can also be switched off without signing in, from the link at its foot:
+
+```http
+POST /api/v1/notifications/unsubscribe
+```
+
+Public. Body `{ "token": "…" }`, the token from the link (`/unsubscribe?token=…` on the site, whose page sends this request). The token is the account id and an HMAC keyed from the email-verification secret with its own label; it does not expire and can do nothing but switch this one email off. Answers `200 { "ok": true }` whether the email was on or already off; a token the server did not write is `400`. The link is a page and not the API itself because mail scanners fetch every link in a message, and a GET that changed a setting would be triggered by the scanner.
 
 Changing the language takes effect immediately and does not require a new login.
 

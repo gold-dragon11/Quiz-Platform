@@ -4,6 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { DuelsService } from '../../duels/services/duels.service';
+import { MistakesEmailService } from '../../notifications/services/mistakes-email.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { QuizService } from '../../quiz/services/quiz.service';
 
@@ -14,12 +15,14 @@ export interface HourlySweepReport {
   /** Untimed sessions untouched for a week, closed without a result. */
   sessionsAbandoned: number;
   remindersSent: number;
+  /** «Mistakes are waiting» emails; nonzero only in the Kyiv afternoon. */
+  mistakesEmailsSent: number;
   duelsExpired: number;
 }
 
 /**
- * Everything that has to happen without anyone asking (decision 23 and
- * decision 25).
+ * Everything that has to happen without anyone asking (decisions 23, 25
+ * and 48).
  *
  * The steps are independent, so one failing does not stop the rest: a mail
  * provider being down is no reason to leave a week-old session holding a
@@ -34,6 +37,7 @@ export class JobsService {
   constructor(
     private readonly quizService: QuizService,
     private readonly notificationsService: NotificationsService,
+    private readonly mistakesEmail: MistakesEmailService,
     private readonly duelsService: DuelsService,
   ) {}
 
@@ -64,6 +68,9 @@ export class JobsService {
     const remindersSent = await step('reminders', 0, () =>
       this.notificationsService.sendDueReminders(),
     );
+    const mistakesEmailsSent = await step('mistakes-email', 0, () =>
+      this.mistakesEmail.sendDue(),
+    );
     const duelsExpired = await step('duels', 0, () =>
       this.duelsService.expireStaleChallenges(),
     );
@@ -72,6 +79,7 @@ export class JobsService {
       sessionsCompleted: sessions.completed,
       sessionsAbandoned: sessions.abandoned,
       remindersSent,
+      mistakesEmailsSent,
       duelsExpired,
     };
 

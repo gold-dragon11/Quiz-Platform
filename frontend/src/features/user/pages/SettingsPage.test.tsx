@@ -26,6 +26,22 @@ const account = (isDemo: boolean) =>
     }),
   );
 
+/** The settings endpoint, recording what a PATCH sent. */
+const emailSettings = () => {
+  const sent: unknown[] = [];
+  let current = { assignmentEmailsEnabled: true, mistakeEmailsEnabled: false };
+  server.use(
+    http.get(api('/users/me/settings'), () => HttpResponse.json(current)),
+    http.patch(api('/users/me/settings'), async ({ request }) => {
+      const body = (await request.json()) as Partial<typeof current>;
+      sent.push(body);
+      current = { ...current, ...body };
+      return HttpResponse.json(current);
+    }),
+  );
+  return sent;
+};
+
 const open = () => renderScreen(<SettingsPage />, { path: '/settings', route: '/settings' });
 
 describe('SettingsPage', () => {
@@ -35,10 +51,29 @@ describe('SettingsPage', () => {
   it('offers an ordinary account its password, its profile and the way out', async () => {
     signedIn();
     server.use(account(false));
+    emailSettings();
     open();
 
     expect(await screen.findByRole('button', { name: /Змінити пароль/ })).toBeInTheDocument();
     expect(screen.getByText('Видалення акаунта')).toBeInTheDocument();
+  });
+
+  it('shows which emails arrive, the mistakes one off until asked for', async () => {
+    signedIn();
+    server.use(account(false));
+    const sent = emailSettings();
+    const { user } = open();
+
+    const homework = await screen.findByRole('checkbox', { name: /Домашні завдання/ });
+    const mistakes = screen.getByRole('checkbox', { name: /Помилки чекають/ });
+    expect(homework).toBeChecked();
+    expect(mistakes).not.toBeChecked();
+
+    await user.click(mistakes);
+
+    expect(await screen.findByText('Нагадування про помилки увімкнено.')).toBeInTheDocument();
+    expect(sent).toEqual([{ mistakeEmailsEnabled: true }]);
+    expect(screen.getByRole('checkbox', { name: /Помилки чекають/ })).toBeChecked();
   });
 
   it('offers a demo account none of it, and says why', async () => {

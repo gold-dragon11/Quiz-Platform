@@ -38,6 +38,10 @@ class CapturingEmailService extends EmailService {
     return Promise.resolve();
   }
 
+  sendMistakesWaitingEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
   sendPasswordResetEmail(recipient: string, resetUrl: string): Promise<void> {
     this.resetEmails.push({ recipient, url: resetUrl });
     return Promise.resolve();

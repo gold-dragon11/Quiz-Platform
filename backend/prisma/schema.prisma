@@ -290,6 +290,11 @@ model UserSettings {
   /// not want to share with anybody, and a per-group screen is one they will
   /// never open.
   shareSelfStudyWithTutors Boolean   @default(true)
+  /// The afternoon email «mistakes are waiting» (decision 48). Off by
+  /// default: unlike homework, nobody else is waiting on these, so the learner
+  /// asks for it. Turned off again from the link in the email, without
+  /// signing in.
+  mistakeEmailsEnabled     Boolean   @default(false)
   /// When the learner answered the first screen's «which subjects do you
   /// take», or skipped it. Null means it has not been shown an answer yet;
   /// it is offered only to a learner who has also never finished a test.
@@ -1209,6 +1214,8 @@ model DuelQuestion {
 enum NotificationKind {
   ASSIGNMENT_ISSUED
   ASSIGNMENT_DUE_SOON
+  /// refId is the Kyiv day it was sent for (src/notifications/mistakes-day.ts).
+  MISTAKES_WAITING
 }
 
 /// One notification that has already gone out.

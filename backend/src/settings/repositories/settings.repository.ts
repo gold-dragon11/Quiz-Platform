@@ -9,6 +9,7 @@ export interface UserSettingsRecord {
   publicProfileEnabled: boolean;
   assignmentEmailsEnabled: boolean;
   shareSelfStudyWithTutors: boolean;
+  mistakeEmailsEnabled: boolean;
 }
 
 /**
@@ -37,6 +38,7 @@ export class SettingsRepository {
         publicProfileEnabled: true,
         assignmentEmailsEnabled: true,
         shareSelfStudyWithTutors: true,
+        mistakeEmailsEnabled: true,
       },
     });
   }
@@ -58,6 +60,7 @@ export class SettingsRepository {
         publicProfileEnabled: true,
         assignmentEmailsEnabled: true,
         shareSelfStudyWithTutors: true,
+        mistakeEmailsEnabled: true,
       },
     });
   }

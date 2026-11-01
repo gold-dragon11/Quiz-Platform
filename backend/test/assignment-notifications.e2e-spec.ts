@@ -50,6 +50,10 @@ class CapturingEmailService extends EmailService {
     return Promise.resolve();
   }
 
+  sendMistakesWaitingEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
   forRecipient(recipient: string): Captured[] {
     return this.sent.filter((one) => one.recipient === recipient);
   }

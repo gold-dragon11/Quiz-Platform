@@ -48,6 +48,10 @@ class CapturingEmailService extends EmailService {
     return Promise.resolve();
   }
 
+  sendMistakesWaitingEmail(): Promise<void> {
+    return Promise.resolve();
+  }
+
   lastFor(recipient: string): CapturedEmail | undefined {
     return [...this.sent].reverse().find((e) => e.recipient === recipient);
   }

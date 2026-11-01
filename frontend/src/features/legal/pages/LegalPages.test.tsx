@@ -1,9 +1,12 @@
+import { HttpResponse, http } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { api, server } from '@/test/server';
 import { screen } from '@testing-library/react';
 import { renderScreen } from '@/test/render';
 import { PRIVACY_CONTACT_EMAIL } from '@/features/legal/constants';
 import { DeleteAccountInfoPage } from './DeleteAccountInfoPage';
 import { PrivacyPage } from './PrivacyPage';
+import { UnsubscribePage } from './UnsubscribePage';
 
 describe('PrivacyPage', () => {
   it('opens without a session and says what is kept, who sees it and where to write', () => {
@@ -39,5 +42,37 @@ describe('DeleteAccountInfoPage', () => {
       'href',
       `mailto:${PRIVACY_CONTACT_EMAIL}?subject=${encodeURIComponent('Видалення акаунта L&S')}`,
     );
+  });
+});
+
+describe('UnsubscribePage', () => {
+  const openWith = (route: string) => renderScreen(<UnsubscribePage />, { path: '/unsubscribe', route });
+
+  it('switches the email off as soon as the link opens, with the token from it', async () => {
+    const sent: unknown[] = [];
+    server.use(
+      http.post(api('/notifications/unsubscribe'), async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json({ ok: true });
+      }),
+    );
+
+    openWith('/unsubscribe?token=abc.def');
+
+    expect(await screen.findByText(/більше не приходитимуть/)).toBeInTheDocument();
+    expect(sent).toEqual([{ token: 'abc.def' }]);
+  });
+
+  it('says where else to switch it off when the link is broken', async () => {
+    server.use(
+      http.post(api('/notifications/unsubscribe'), () =>
+        HttpResponse.json({ message: 'Посилання недійсне.' }, { status: 400 }),
+      ),
+    );
+
+    openWith('/unsubscribe?token=broken');
+
+    expect(await screen.findByText(/Посилання не спрацювало/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'налаштуваннях' })).toHaveAttribute('href', '/settings');
   });
 });

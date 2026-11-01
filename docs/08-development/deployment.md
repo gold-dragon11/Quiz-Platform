@@ -537,13 +537,14 @@ POST /api/v1/jobs/hourly
 Authorization: Bearer <CRON_SECRET>
 ```
 
-One run does four independent things:
+One run does five independent things:
 
 | Step | What it does | Without the schedule |
 | --- | --- | --- |
 | Expired timers | Completes and scores timed sessions whose clock ran out | Waits until the owner opens the session |
 | Abandoned sessions | Closes untimed sessions with no answer saved for 7 days, without a result (decision 23) | The session holds the owner's slot indefinitely |
 | Deadline reminders | Emails recipients whose deadline is within 24 hours and who have not handed in (decision 25) | Only `POST /admin/notifications/due-reminders`, by hand |
+| Mistakes email | Between 16:00 and 21:00 Kyiv time, emails learners who switched it on, have mistakes due, have not started a test that day and were not emailed in the last 20 hours; at most 60 a day (decision 48) | Not sent |
 | Stale duels | Marks challenges nobody answered as expired | Waits until someone lists their duels |
 
 Every step is idempotent — a reminder is claimed in `email_dispatches` before it
@@ -551,7 +552,7 @@ is sent, and a session can leave `ACTIVE` only once — so a late, repeated or
 manual run is harmless. One failing step does not stop the others; the request
 then answers 500, the workflow run turns red, and the API log names the step.
 The response reports what was done:
-`{ sessionsCompleted, sessionsAbandoned, remindersSent, duelsExpired }`.
+`{ sessionsCompleted, sessionsAbandoned, remindersSent, mistakesEmailsSent, duelsExpired }`.
 
 **Setup.**
 

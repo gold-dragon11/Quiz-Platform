@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
 import { api, server } from '@/test/server';
 import { renderScreen } from '@/test/render';
+import { useAuthStore } from '@/stores/auth-store';
 import { QuizResultPage } from './QuizResultPage';
 
 const review = {
@@ -95,6 +96,31 @@ describe('QuizResultPage', () => {
 
     expect(await screen.findByRole('button', { name: 'Повторити помилки (5)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Пройти ще один тест' })).toBeInTheDocument();
+  });
+
+  it('offers the mistakes email once there are mistakes on the ladder, and switches it on', async () => {
+    useAuthStore.setState({ status: 'authenticated', accessToken: 'token' });
+    const sent: unknown[] = [];
+    serve({ ...review, progress });
+    server.use(
+      http.get(api('/auth/me'), () =>
+        HttpResponse.json({ id: 'u-1', email: 'l@example.com', role: 'USER', isDemo: false, profile: null }),
+      ),
+      http.get(api('/users/me/settings'), () =>
+        HttpResponse.json({ assignmentEmailsEnabled: true, mistakeEmailsEnabled: false }),
+      ),
+      http.patch(api('/users/me/settings'), async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json({ assignmentEmailsEnabled: true, mistakeEmailsEnabled: true });
+      }),
+    );
+
+    const { user } = openResult();
+    await user.click(await screen.findByRole('button', { name: 'Так, о 16:00' }));
+
+    expect(await screen.findByText(/Готово: о 16:00 прийде лист/)).toBeInTheDocument();
+    expect(sent).toEqual([{ mistakeEmailsEnabled: true }]);
+    useAuthStore.setState({ status: 'loading', accessToken: null });
   });
 
   it('explains an unfinished quiz instead of failing', async () => {

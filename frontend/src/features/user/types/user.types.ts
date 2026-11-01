@@ -16,6 +16,18 @@ export interface UpdateProfilePayload {
 }
 
 /**
+ * GET and PATCH /users/me/settings (docs §11): the switches the settings
+ * screen shows. Language and theme are on the record too, but the screen does
+ * not offer them (see SettingsPage).
+ */
+export interface EmailSettings {
+  /** Homework set and deadlines (decision 25); on by default. */
+  assignmentEmailsEnabled: boolean;
+  /** The afternoon «mistakes are waiting» email (decision 48); off by default. */
+  mistakeEmailsEnabled: boolean;
+}
+
+/**
  * GET and PUT /users/me/study (docs §13): the subjects the learner takes, in
  * the order they chose them, and whether the dashboard opens on the first
  * screen that asks.
