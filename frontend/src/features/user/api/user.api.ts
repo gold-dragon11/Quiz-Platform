@@ -3,6 +3,7 @@ import type {
   ChangePasswordPayload,
   PublicProfile,
   StudyView,
+  EmailSettings,
   UpdateProfilePayload,
 } from '@/features/user/types/user.types';
 
@@ -49,6 +50,29 @@ export const userApi = {
   async updateStudy(subjectIds: string[]): Promise<StudyView> {
     const { data } = await apiClient.put<StudyView>('/users/me/study', { subjectIds });
     return data;
+  },
+
+  /** GET /users/me/settings — read for the two email switches (docs §11). */
+  async getEmailSettings(): Promise<EmailSettings> {
+    const { data } = await apiClient.get<EmailSettings>('/users/me/settings');
+    return {
+      assignmentEmailsEnabled: data.assignmentEmailsEnabled,
+      mistakeEmailsEnabled: data.mistakeEmailsEnabled,
+    };
+  },
+
+  /** PATCH /users/me/settings — one or both email switches (docs §11). */
+  async updateEmailSettings(patch: Partial<EmailSettings>): Promise<EmailSettings> {
+    const { data } = await apiClient.patch<EmailSettings>('/users/me/settings', patch);
+    return {
+      assignmentEmailsEnabled: data.assignmentEmailsEnabled,
+      mistakeEmailsEnabled: data.mistakeEmailsEnabled,
+    };
+  },
+
+  /** POST /notifications/unsubscribe — public; the token from the email is the whole authorisation. */
+  async unsubscribe(token: string): Promise<void> {
+    await apiClient.post('/notifications/unsubscribe', { token });
   },
 
   /** DELETE /users/me — 204 soft delete; revokes refresh sessions (docs §7). */

@@ -293,6 +293,7 @@ describe('Scheduled jobs (e2e)', () => {
       'sessionsCompleted',
       'sessionsAbandoned',
       'remindersSent',
+      'mistakesEmailsSent',
       'duelsExpired',
     ]) {
       expect(typeof report[key]).toBe('number');

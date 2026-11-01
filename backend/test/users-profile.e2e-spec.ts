@@ -293,6 +293,7 @@ describe('User Profile & Settings (e2e)', () => {
         [
           'assignmentEmailsEnabled',
           'language',
+          'mistakeEmailsEnabled',
           'publicProfileEnabled',
           'shareSelfStudyWithTutors',
           'theme',
@@ -308,6 +309,8 @@ describe('User Profile & Settings (e2e)', () => {
         // learner joins a group (decision 16).
         assignmentEmailsEnabled: true,
         shareSelfStudyWithTutors: true,
+        // Off until asked for: nobody else waits on these mistakes (decision 48).
+        mistakeEmailsEnabled: false,
       });
     });
 
@@ -322,6 +325,7 @@ describe('User Profile & Settings (e2e)', () => {
       expect(updated).toEqual({
         assignmentEmailsEnabled: true,
         shareSelfStudyWithTutors: true,
+        mistakeEmailsEnabled: false,
         language: 'UKRAINIAN',
         theme: 'DARK',
         publicProfileEnabled: false,

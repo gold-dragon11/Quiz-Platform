@@ -55,6 +55,7 @@ UserSettings (1)
 | theme | Enum | Yes | Preferred visual theme |
 | publicProfileEnabled | Boolean | Yes | Controls whether the Public Profile is visible to other users |
 | assignmentEmailsEnabled | Boolean | Yes | Email about new homework and approaching deadlines (decision 25). Default on: a deadline nobody is told about is a missed deadline |
+| mistakeEmailsEnabled | Boolean | Yes | The afternoon «mistakes are waiting» email (decision 48). Default off: nobody else waits on these mistakes, so the learner asks for it — in settings or from the offer under a result with mistakes on the ladder |
 | shareSelfStudyWithTutors | Boolean | Yes | Whether tutors of the learner's groups see a **summary** of their own practice — never individual sessions (decisions 04 and 16). Default on, disclosed when the learner joins a group |
 | createdAt | DateTime | Yes | Creation timestamp |
 | updatedAt | DateTime | Yes | Last update timestamp |

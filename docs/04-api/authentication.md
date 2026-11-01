@@ -359,7 +359,7 @@ The response is the authenticated user's session summary — the account togethe
 | Account | id, email, role, accountStatus, emailVerified, isDemo, createdAt |
 | Profile | username, displayName, bio |
 | Avatar | type, imageUrl |
-| Settings | language, theme, publicProfileEnabled, assignmentEmailsEnabled, shareSelfStudyWithTutors |
+| Settings | language, theme, publicProfileEnabled, assignmentEmailsEnabled, shareSelfStudyWithTutors, mistakeEmailsEnabled |
 
 Learning progress is **not** included. Level, XP, and other metrics are retrieved from the Statistics API.
 

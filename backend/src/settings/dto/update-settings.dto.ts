@@ -40,4 +40,11 @@ export class UpdateSettingsDto {
   )
   @IsBoolean()
   shareSelfStudyWithTutors?: boolean;
+
+  /** The afternoon «mistakes are waiting» email (decision 48); off by default. */
+  @ValidateIf(
+    (dto: UpdateSettingsDto) => dto.mistakeEmailsEnabled !== undefined,
+  )
+  @IsBoolean()
+  mistakeEmailsEnabled?: boolean;
 }

@@ -54,6 +54,9 @@ export class SettingsService {
       ...(dto.shareSelfStudyWithTutors === undefined
         ? {}
         : { shareSelfStudyWithTutors: dto.shareSelfStudyWithTutors }),
+      ...(dto.mistakeEmailsEnabled === undefined
+        ? {}
+        : { mistakeEmailsEnabled: dto.mistakeEmailsEnabled }),
     };
 
     try {

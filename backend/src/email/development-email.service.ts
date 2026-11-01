@@ -1,5 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AssignmentEmailContext, EmailService } from './email.service';
+import {
+  AssignmentEmailContext,
+  EmailService,
+  MistakesEmailContext,
+} from './email.service';
 
 /**
  * Development stand-in for a real email provider: writes the message to the
@@ -50,6 +54,17 @@ export class DevelopmentEmailService extends EmailService {
   ): Promise<void> {
     this.logger.log(
       `[DEV EMAIL] To: ${recipient} — Reminder "${assignment.title}" due ${assignment.dueAt.toISOString()}`,
+    );
+
+    return Promise.resolve();
+  }
+
+  sendMistakesWaitingEmail(
+    recipient: string,
+    context: MistakesEmailContext,
+  ): Promise<void> {
+    this.logger.log(
+      `[DEV EMAIL] To: ${recipient} — ${context.due} mistake(s) waiting: ${context.reviewUrl} (off: ${context.unsubscribeUrl})`,
     );
 
     return Promise.resolve();

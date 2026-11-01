@@ -1,5 +1,6 @@
 import { formatNumber, pluralUk } from '@/shared/utils/format';
 import type { SessionProgress } from '@/features/quiz/types/quiz.types';
+import { MistakeEmailOffer } from '@/features/user/components/MistakeEmailOffer';
 
 /** At most this many topics: the ones that moved most, or were mastered now. */
 const TOPIC_LINES = 3;
@@ -48,6 +49,7 @@ export function ResultProgress({ progress }: { progress: SessionProgress }): Rea
           </li>
         ))}
       </ul>
+      {progress.ladder.length > 0 && <MistakeEmailOffer />}
     </section>
   );
 }

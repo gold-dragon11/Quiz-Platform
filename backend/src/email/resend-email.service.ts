@@ -2,7 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import { AppConfig } from '../config/configuration';
-import { AssignmentEmailContext, EmailService } from './email.service';
+import {
+  AssignmentEmailContext,
+  EmailService,
+  MistakesEmailContext,
+  mistakesLabel,
+  waitVerb,
+} from './email.service';
 
 /**
  * Sends real email through Resend (docs/06-backend/authentication.md §15).
@@ -97,11 +103,36 @@ export class ResendEmailService extends EmailService {
     );
   }
 
+  async sendMistakesWaitingEmail(
+    recipient: string,
+    context: MistakesEmailContext,
+  ): Promise<void> {
+    const count = mistakesLabel(context.due);
+    const verb = waitVerb(context.due);
+    await this.send(
+      recipient,
+      `L&S: ${count} ${verb} повторення`,
+      `<p>Сьогодні на повторення ${verb} ${count}: питання, на яких ви помилилися раніше.</p>
+       <p>Правильна відповідь переводить помилку на наступну сходинку, а після останньої вона зникає зі списку. Кілька хвилин зараз, і завтра їх буде менше.</p>
+       <p><a href="${context.reviewUrl}">Повторити помилки</a></p>
+       <p style="color:#777;font-size:12px">Ви отримали цей лист, бо увімкнули нагадування про помилки в налаштуваннях L&amp;S. Він приходить не частіше разу на день. <a href="${context.unsubscribeUrl}" style="color:#777">Вимкнути ці листи</a></p>`,
+      `Сьогодні на повторення ${verb} ${count}: питання, на яких ви помилилися раніше.
+` +
+        `Повторити: ${context.reviewUrl}
+
+` +
+        `Ви отримали цей лист, бо увімкнули нагадування про помилки в налаштуваннях L&S. Вимкнути: ${context.unsubscribeUrl}`,
+      // Mail clients show their own «unsubscribe» beside the sender from this.
+      { 'List-Unsubscribe': `<${context.unsubscribeUrl}>` },
+    );
+  }
+
   private async send(
     to: string,
     subject: string,
     html: string,
     text: string,
+    headers?: Record<string, string>,
   ): Promise<void> {
     const { error } = await this.resend.emails.send({
       from: this.from,
@@ -109,6 +140,7 @@ export class ResendEmailService extends EmailService {
       subject,
       html,
       text,
+      ...(headers ? { headers } : {}),
     });
 
     if (error) {

@@ -12,6 +12,7 @@ export const ROUTES = {
   publicProfile: '/u/:username',
   privacy: '/privacy',
   deleteAccount: '/delete-account',
+  unsubscribe: '/unsubscribe',
   notFound: '/404',
 
   // Authenticated

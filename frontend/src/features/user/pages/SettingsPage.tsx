@@ -3,11 +3,12 @@ import { PageHeader } from '@/shared/ui/PageHeader';
 import { AppearanceSection } from '@/features/user/components/AppearanceSection';
 import { ChangePasswordForm } from '@/features/user/components/ChangePasswordForm';
 import { DeleteAccountSection } from '@/features/user/components/DeleteAccountSection';
+import { EmailSection } from '@/features/user/components/EmailSection';
 import { PublicProfileSection } from '@/features/user/components/PublicProfileSection';
 
 /**
- * `/settings` (RequireAuth) — account settings: who can see the profile, the
- * password, and deleting the account. The platform exposes a single
+ * `/settings` (RequireAuth) — account settings: who can see the profile, which
+ * emails arrive, the password, and deleting the account. The platform exposes a single
  * authenticated account route for these (docs/05-frontend/routing.md §5), so
  * they live here as distinct sections.
  *
@@ -49,6 +50,10 @@ export function SettingsPage(): React.JSX.Element {
 
       <div className="mt-20">
         <PublicProfileSection />
+      </div>
+
+      <div className="mt-20">
+        <EmailSection />
       </div>
 
       <div className="mt-20">

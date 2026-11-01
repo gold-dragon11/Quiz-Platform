@@ -7,6 +7,7 @@ import {
   EmailService,
 } from '../../email/email.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { EmailDispatchService } from './email-dispatch.service';
 
 /** How far ahead a deadline counts as "tomorrow". */
 const REMINDER_WINDOW_HOURS = 24;
@@ -31,6 +32,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly dispatcher: EmailDispatchService,
     configService: ConfigService<AppConfig, true>,
   ) {
     this.frontendUrl = configService.get('frontendUrl', { infer: true });
@@ -50,7 +52,7 @@ export class NotificationsService {
     let sent = 0;
     for (const student of recipients) {
       if (
-        await this.dispatch(
+        await this.dispatcher.dispatch(
           student.id,
           NotificationKind.ASSIGNMENT_ISSUED,
           assignmentId,
@@ -102,7 +104,7 @@ export class NotificationsService {
           continue;
         }
         if (
-          await this.dispatch(
+          await this.dispatcher.dispatch(
             target.student.id,
             NotificationKind.ASSIGNMENT_DUE_SOON,
             assignment.id,
@@ -122,49 +124,6 @@ export class NotificationsService {
       this.logger.log(`Sent ${sent} deadline reminder(s)`);
     }
     return sent;
-  }
-
-  /**
-   * Claims the right to send, then sends.
-   *
-   * The row goes in first on purpose. Sending first and recording after would
-   * turn any crash between the two into a duplicate, and for a reminder a
-   * duplicate is worse than a miss: one lost reminder is a learner who checks
-   * the app anyway, while mail that repeats is mail that gets filtered.
-   */
-  private async dispatch(
-    userId: string,
-    kind: NotificationKind,
-    refId: string,
-    send: () => Promise<void>,
-  ): Promise<boolean> {
-    try {
-      await this.prisma.emailDispatch.create({
-        data: { userId, kind, refId },
-      });
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        return false; // already sent
-      }
-      throw error;
-    }
-
-    try {
-      await send();
-      return true;
-    } catch (error) {
-      // Never rethrown: the caller is setting homework or running a schedule,
-      // and neither should fail because a provider is down.
-      this.logger.error(
-        `Email ${kind} to ${userId} failed: ${
-          error instanceof Error ? error.message : 'unknown error'
-        }`,
-      );
-      return false;
-    }
   }
 
   private wantsEmail(student: {
