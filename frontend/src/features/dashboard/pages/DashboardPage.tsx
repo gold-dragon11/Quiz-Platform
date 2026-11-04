@@ -6,6 +6,7 @@ import { UserRole } from '@/shared/types/enums';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
 import { TeacherOverview } from '@/features/dashboard/components/TeacherOverview';
 import { TodayList } from '@/features/dashboard/components/TodayList';
+import { NmtCountdownText } from '@/features/nmt-calendar';
 
 /** "7 вересня" — the date as a person says it, for the eyebrow. */
 function todayLabel(): string {
@@ -42,7 +43,12 @@ export function DashboardPage(): React.JSX.Element {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader
-        meta={todayLabel()}
+        meta={
+          <>
+            {todayLabel()}
+            <NmtCountdownText prefix=" · " />
+          </>
+        }
         title={isTeacher ? 'Ваші групи' : 'Що робити'}
         lead={
           isTeacher

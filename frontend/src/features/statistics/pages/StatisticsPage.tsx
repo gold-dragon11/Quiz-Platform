@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/shared/constants/routes';
 import { PageHeader } from '@/shared/ui/PageHeader';
+import { NmtCountdownText } from '@/features/nmt-calendar';
 import { Skeleton } from '@/shared/ui/Skeleton';
 import { UserRole } from '@/shared/types/enums';
 import { useCurrentUser } from '@/shared/hooks/use-current-user';
@@ -48,7 +49,7 @@ export function StatisticsPage(): React.JSX.Element {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <PageHeader title="Статистика" />
+      <PageHeader title="Статистика" meta={<NmtCountdownText sentence />} />
 
       <div className="mt-12">
         <ProgressStanding />

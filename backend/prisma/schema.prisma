@@ -1241,3 +1241,18 @@ model EmailDispatch {
   @@index([kind, sentAt])
   @@map("email_dispatches")
 }
+
+/// The NMT main session as the official calendar publishes it (decision 49).
+/// At most one row, id 1. No row means no date has been entered, and then no
+/// countdown is shown anywhere: the date is never guessed.
+model NmtCalendar {
+  id               Int      @id @default(1)
+  /// The first day of the main session, a Kyiv calendar date.
+  mainSessionStart DateTime @db.Date
+  /// Where the date comes from: the ministry order or the testing centre's
+  /// page. Required, so the date can always be checked.
+  sourceUrl        String
+  updatedAt        DateTime @updatedAt
+
+  @@map("nmt_calendar")
+}
