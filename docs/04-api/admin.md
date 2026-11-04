@@ -744,3 +744,31 @@ Demo accounts and deleted accounts are excluded from every figure
 | 200 | The overview |
 | 401 | Not signed in |
 | 403 | Signed in, but not an administrator |
+
+---
+
+# 21. NMT Calendar
+
+The first day of the NMT main session, entered by an administrator from the official calendar (decision 49). It is the one date the product counts down to, and it is never guessed: until it is entered, no countdown is shown anywhere.
+
+```http
+GET /api/v1/calendar/nmt
+```
+
+Public, no authentication: the landing page shows the countdown to visitors.
+
+```json
+{ "mainSession": { "startDate": "2027-05-14", "startsAt": "2027-05-13T21:00:00.000Z", "sourceUrl": "https://…" } }
+```
+
+`startsAt` is 00:00 Kyiv time on `startDate`, the instant the countdown runs to. `mainSession` is `null` when no date is entered and from the moment the session begins, so a date nobody removed can never produce a negative countdown.
+
+```http
+GET    /api/v1/admin/calendar/nmt
+PUT    /api/v1/admin/calendar/nmt
+DELETE /api/v1/admin/calendar/nmt
+```
+
+Administrator only. GET returns `{ "calendar": { mainSessionStart, sourceUrl, updatedAt } | null }`, the entered row whether or not it has passed. PUT takes `{ "mainSessionStart": "YYYY-MM-DD", "sourceUrl": "https://…" }`: the date must be a real calendar day still ahead in Kyiv, and the source, the ministry order or the testing centre's page, is required and must be `https`; otherwise `400`. DELETE removes the date (`204`) and every countdown with it.
+
+Only the main session is kept. Each participant sits on their own day from the invitation, so the interface says «до основної сесії НМТ», never «до вашого НМТ».

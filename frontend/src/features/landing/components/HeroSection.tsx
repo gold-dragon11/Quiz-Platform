@@ -4,6 +4,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { buttonClassName } from '@/shared/ui/button-class';
 import { HeroSheets } from '@/features/landing/components/HeroSheets';
 import { SECTION_CONTAINER } from '@/features/landing/constants';
+import { useNmtCountdown } from '@/features/nmt-calendar';
 
 /**
  * The first screen, a Banner: the headline, one sentence and the two ways in
@@ -16,6 +17,8 @@ import { SECTION_CONTAINER } from '@/features/landing/constants';
  * them, as the old page's lead did on its first screen.
  */
 export function HeroSection(): React.JSX.Element {
+  const countdown = useNmtCountdown();
+
   return (
     <section aria-labelledby="hero-title" className="border-border border-b">
       <div
@@ -32,6 +35,16 @@ export function HeroSection(): React.JSX.Element {
           <p className="lp-lead mt-8">
             НМТ з української, математики, історії та англійської: тести, пробні роботи, повторення.
           </p>
+          {/* Only once the date is entered from the official calendar, with the
+              link to it: on the first screen a guess would be a claim. */}
+          {countdown && (
+            <p className="label mt-6">
+              До основної сесії НМТ <span className="tabular-nums">{countdown.text}</span>,{' '}
+              <a href={countdown.sourceUrl} target="_blank" rel="noreferrer" className="lp-link">
+                за офіційним графіком
+              </a>
+            </p>
+          )}
           <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-5">
             <Link to={ROUTES.register} className={buttonClassName({ size: 'lg' })}>
               Зареєструватися

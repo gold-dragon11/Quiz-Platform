@@ -10,6 +10,7 @@ import { QuestionsSection } from '@/features/admin/components/questions/Question
 import { QuizzesSection } from '@/features/admin/components/quizzes/QuizzesSection';
 import { UsersSection } from '@/features/admin/components/users/UsersSection';
 import { MetricsSection } from '@/features/admin/components/metrics/MetricsSection';
+import { NmtCalendarSection } from '@/features/nmt-calendar';
 
 /** Query parameter holding the open section. */
 const TAB_PARAM = 'tab';
@@ -79,6 +80,7 @@ export function AdminPanelPage(): React.JSX.Element {
           {tab === 'questions' && <QuestionsSection />}
           {tab === 'quizzes' && <QuizzesSection />}
           {tab === 'users' && <UsersSection />}
+          {tab === 'calendar' && <NmtCalendarSection />}
         </motion.div>
       </AnimatePresence>
     </div>

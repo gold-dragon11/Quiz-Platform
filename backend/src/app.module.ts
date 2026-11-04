@@ -15,6 +15,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { LearningMaterialsModule } from './learning-materials/learning-materials.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { QuestionReportsModule } from './question-reports/question-reports.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -89,6 +90,7 @@ const ADDRESS_LIMIT_PER_MINUTE = 600;
     QuestionReportsModule,
     DuelsModule,
     NotificationsModule,
+    CalendarModule,
     JobsModule,
     MetricsModule,
     LearningMaterialsModule,

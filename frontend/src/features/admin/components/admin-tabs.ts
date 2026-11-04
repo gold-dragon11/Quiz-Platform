@@ -1,4 +1,4 @@
-export type AdminTabId = 'overview' | 'subjects' | 'topics' | 'questions' | 'quizzes' | 'users';
+export type AdminTabId = 'overview' | 'subjects' | 'topics' | 'questions' | 'quizzes' | 'users' | 'calendar';
 
 /**
  * The panel's sections, in order.
@@ -16,4 +16,6 @@ export const ADMIN_TABS: { id: AdminTabId; label: string }[] = [
   { id: 'questions', label: 'Питання' },
   { id: 'quizzes', label: 'Тести' },
   { id: 'users', label: 'Користувачі' },
+  // Once a year: the date of the main session, from the official order.
+  { id: 'calendar', label: 'Календар НМТ' },
 ];
